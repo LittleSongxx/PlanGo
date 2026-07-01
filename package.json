@@ -1,7 +1,7 @@
 {
   "name": "xiaonian",
   "version": "0.1.0",
-  "description": "小念 · AI 本地生活浏览器 — 美团黑客松赛题06「周末闲时活动规划」",
+  "description": "小悠 · YOYU · AI 本地生活浏览器 — 美团黑客松赛题06「周末闲时活动规划」",
   "main": "./out/main/index.js",
   "author": "Xiaonian",
   "license": "MIT",

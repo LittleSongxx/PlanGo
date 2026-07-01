@@ -23,7 +23,7 @@ const SCENARIOS: Scenario[] = [
 ]
 
 async function main() {
-  console.log('\n=== 小念 · VitaBench 自评（数据源：' + process.env.DATA_SOURCE + '）===\n')
+  console.log('\n=== 小悠 · VitaBench 自评（数据源：' + process.env.DATA_SOURCE + '）===\n')
   let nonEmpty = 0
   let hardPass = 0
   let budgetOk = 0

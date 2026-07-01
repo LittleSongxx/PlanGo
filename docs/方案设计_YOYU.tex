@@ -51,7 +51,7 @@
   {\large 帮你把"周末这几个小时"安排明白；越用越懂你、会主动惦记你，}\\[0.15cm]
   {\large 数据还留在你自己电脑里。}\\[1.8cm]
   {\normalsize 美团黑客松 · 赛题 06「本地探索：周末闲时活动规划」}\\[0.5cm]
-  {\normalsize 方案设计文档（给导师看的版本）}\\[1.6cm]
+  {\normalsize 方案设计文档}\\[1.6cm]
   {\small 代码仓库：\url{https://github.com/bcefghj/YOYU}}\\[0.3cm]
   {\small 2026 年 7 月}
   \vfill
@@ -63,11 +63,11 @@
 % ---------------- 一句话 ----------------
 \section{一句话：小悠是干嘛的}
 
-\begin{keybox}{给导师的大白话}
+\begin{keybox}{一句话讲清楚}
 临时想"这周末带娃/陪老婆/陪爸妈出去转转"，但不知道去哪、懒得挨个查、约人又费劲、到店还怕踩雷。\textbf{小悠就是帮你把这件事一句话搞定}：它是一个装在你电脑上的浏览器，你说一句"周六下午带孩子出去玩4小时、老婆减脂、人均120"，它就自己去点评/高德把真店、真路线、真评价查出来，一次给你三套方案，还能帮你点菜、排号、发家人确认。用得越多它越懂你，到周末还会主动问你要不要安排。
 \end{keybox}
 
-我们不重做美团，美团已经很好了。我们做的是\textbf{站在美团这些平台之上、帮用户把它们用得更顺的一层}。下面全是真机截图，导师您看图就知道我们在做什么。
+我们不重做美团，美团已经很好了。我们做的是\textbf{站在美团这些平台之上、帮用户把它们用得更顺的一层}。下面先用真机截图讲清楚"它在做什么"，再讲清楚"我们是怎么设计的"。
 
 \shot{01_current.png}{小悠主界面：左边工具栏，中间是内置浏览器（带美团/点评/高德/小红书收藏夹），右边是小悠对话。右上角黄色卡片是它"主动想起你"——记得你喜欢的店，问你这周要不要再约一次。}{0.96}
 
@@ -147,93 +147,252 @@
 \shot{18_history.png}{历史会话：过往的规划、点菜、取号、外卖都能翻回来。}{0.62}
 
 % ---------------- 技术 ----------------
-\section{技术上是怎么搭的}
+\section{我们是怎么设计的（技术方案）}
 
-\subsection{整体架构（五层）}
+这一章讲"设计逻辑"：整体怎么分层、记忆怎么建、多 Agent 怎么分工、规划这条链路怎么跑、工具怎么调、出错了怎么兜。设计时我们特意对齐了美团技术团队的两条公开思路——\textbf{WOWService 的多智能体协同（Agents-as-Tools）}和 \textbf{LongCat / VitaBench-2.0 里 Agentic Memory（主动维护用户档案，而非被动检索历史）}，并落到了可运行的代码里。
+
+\subsection{总体架构：五层，各司其职}
+从上到下五层，上层只依赖下层的稳定接口，任何一层可单独替换（比如把数据层从高德换成企业自有 API，上面三层不用动）。
+
 \begin{center}
 \begin{tikzpicture}[
-  layer/.style={draw, rounded corners=3pt, minimum width=13cm, minimum height=0.85cm, align=center, font=\small},
+  layer/.style={draw, rounded corners=3pt, minimum width=13.2cm, minimum height=0.82cm, align=center, font=\small},
   arr/.style={-Latex, thick, color=primary},
 ]
-\node[layer, fill=primary!16] (ui) {界面层：内置浏览器 + 成果区画布 + 对话 + 连接面板（Electron / React）};
-\node[layer, fill=primary!11, below=0.4cm of ui] (agent) {Agent 层：主 Agent 派单 $\rightarrow$ 餐饮 / 玩乐 / 调研 / 记忆 子 Agent（多 Agent 协同）};
-\node[layer, fill=primary!8, below=0.4cm of agent] (tool) {工具层：规划 / 点菜 / 比价 / 团购 / 外卖 / 取号 / 浏览器感知-动作 / 分享};
-\node[layer, fill=primary!6, below=0.4cm of tool] (data) {数据层（可热插拔）：高德实时 / 本地数据集兜底 / 企业自有 API};
-\node[layer, fill=primary!5, below=0.4cm of data] (mem) {记忆与陪伴：三层记忆（存本机）+ 主动关心 + 微信 Bridge};
+\node[layer, fill=primary!16] (ui) {\textbf{界面层}：内置浏览器 + 成果区卡片画布 + 对话 + 连接面板（Electron / React / Zustand）};
+\node[layer, fill=primary!12, below=0.36cm of ui] (agent) {\textbf{编排层}：主 Agent（Harness Loop）+ 餐饮/玩乐/调研/记忆 子 Agent（Agents-as-Tools）};
+\node[layer, fill=primary!9, below=0.36cm of agent] (tool) {\textbf{工具层}：规划/点菜/比价/团购/外卖/取号/送花/分享 + 浏览器"感知-动作" + 记忆读写};
+\node[layer, fill=primary!6, below=0.36cm of tool] (data) {\textbf{数据层}（Adapter 热插拔）：高德实时 · 本地数据集兜底 · 企业自有 API};
+\node[layer, fill=primary!4, below=0.36cm of data] (mem) {\textbf{记忆与陪伴层}：三层记忆（落本机）+ 主动关心引擎 + 微信 Bridge};
 \draw[arr] (ui) -- (agent);
 \draw[arr] (agent) -- (tool);
 \draw[arr] (tool) -- (data);
-\draw[arr] (agent.east) to[bend left=42] (mem.east);
+\draw[arr] (agent.east) to[bend left=38] node[right=1pt,font=\scriptsize,color=soft]{读/写记忆} (mem.east);
 \end{tikzpicture}
 \end{center}
 
-\subsection{多 Agent 是怎么配合的}
-主 Agent（小悠本体）像个组长，遇到复杂活就派给专家子 Agent，每个子 Agent 只拿自己该用的工具、独立干、只回结论。这个过程在界面右侧"执行过程"里是看得见的（对标美团 WOWService 的思路）。
+\subsection{记忆系统：让它"越用越懂你"}
+本地生活的数据天生私密又高价值——你在哪、家在哪、和谁出门、口味禁忌、消费力、作息。行业里把记忆分成\textbf{短期（工作记忆）}和\textbf{长期（跨会话画像）}两层；我们在长期这层进一步拆成\textbf{三级语义金字塔}，思路和"L0 对话 → 结构化事实 → 用户画像"一致：底层留原始证据、顶层供快速调用，且\textbf{每一层都可溯源、可删除，不做不可逆的黑盒摘要}。
 
 \begin{center}
-\begin{tikzpicture}[
-  node distance=0.5cm and 0.9cm, font=\small,
-  main/.style={draw, rounded corners=3pt, fill=primary!16, minimum width=2.6cm, minimum height=0.9cm, align=center},
-  sub/.style={draw, rounded corners=3pt, fill=primary!8, minimum width=2.5cm, minimum height=0.8cm, align=center},
-  arr/.style={-Latex, thick, color=primary},
+\begin{tikzpicture}[font=\small,
+  L/.style={draw, rounded corners=3pt, align=center, minimum height=0.85cm},
+  note/.style={font=\scriptsize, color=soft, align=left},
 ]
-\node[main] (m) {主 Agent · 小悠};
-\node[sub, below left=1cm and 1.6cm of m] (a) {餐饮专家};
-\node[sub, right=0.5cm of a] (b) {玩乐专家};
-\node[sub, right=0.5cm of b] (c) {调研专家};
-\node[sub, right=0.5cm of c] (d) {记忆管家};
-\draw[arr] (m) -- (a); \draw[arr] (m) -- (b); \draw[arr] (m) -- (c); \draw[arr] (m) -- (d);
-\node[font=\scriptsize\itshape, below=0.15cm of a] {找餐厅/点菜/比价};
-\node[font=\scriptsize\itshape, below=0.15cm of b] {玩乐+看天气};
-\node[font=\scriptsize\itshape, below=0.15cm of c] {上网读攻略};
-\node[font=\scriptsize\itshape, below=0.15cm of d] {记住你偏好};
+\node[L, fill=primary!20, minimum width=5.2cm] (l3) {\textbf{Profile 用户画像}（第 3 层）};
+\node[L, fill=primary!11, minimum width=8.2cm, below=0.3cm of l3] (l2) {\textbf{PreferenceChunk 偏好碎片}（第 2 层）};
+\node[L, fill=primary!5, minimum width=11cm, below=0.3cm of l2] (l1) {\textbf{Event 原始事件}：对话/下单/评价（第 1 层，留证据）};
+\node[note, right=0.25cm of l3] {LLM 压缩出的一句稳定画像，注入 System Prompt};
+\node[note, right=0.25cm of l2] {带 极性/强度/证据数/来源 的结构化偏好};
+\node[note, right=0.25cm of l1] {可回溯、可删除};
 \end{tikzpicture}
 \end{center}
 
-真实代码（每个子 Agent 限定自己的工具子集、只读、并行）：
-\begin{tcolorbox}[colback=black!4,colframe=black!30,left=4pt,right=4pt,top=2pt,bottom=2pt,fontupper=\scriptsize\ttfamily]
-const SUBAGENTS = [\\
-\ \{ name:'dining\_agent',\ \ tools:['search\_nearby\_poi','check\_availability',\\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 'recommend\_dishes','compare\_deal'] \},\\
-\ \{ name:'activity\_agent', tools:['search\_nearby\_poi','get\_weather'] \},\\
-\ \{ name:'research\_agent', tools:['browser\_navigate','browser\_read\_page'] \},\\
-\ \{ name:'memory\_agent',\ \ tools:['remember\_preference'] \},\\
-]
-\end{tcolorbox}
+\textbf{（1）短期记忆}：主 Agent 每轮把最近 6 条对话按滑动窗口带入，并\textbf{每轮动态重建 System Prompt}——把"当前时间/城市/已知偏好/已装技能"实时注入，避免长上下文里"中间被遗忘"。
 
-\subsection{"AI 看网页"是怎么实现的（Set-of-Marks）}
-小悠读页面时，先给所有可交互元素编号，再在页面上画彩色框（就是前面第 2 节那张图）。核心是给不同角色配不同颜色，让"AI 看到了什么"肉眼可见：
-\begin{tcolorbox}[colback=black!4,colframe=black!30,left=4pt,right=4pt,top=2pt,bottom=2pt,fontupper=\footnotesize\ttfamily]
-function color(el)\{ // button=green link=blue input=purple other=orange\\
-\ \ if (button) return '\#22c55e';\\
-\ \ if (link)\ \ \ return '\#3b82f6';\\
-\ \ if (input)\ \ return '\#a855f7';\\
-\ \ return '\#f59e0b';\\
+\textbf{（2）长期记忆的写入与增强（重要性加权）}：同一条偏好被再次提及时，不是简单覆盖，而是\textbf{证据数 +1、强度上调}（封顶 1.0）；只有强度 $\geq 0.5$ 的高置信偏好才会进入 System Prompt 参与决策。这对应行业里"被多次提及/高置信才固化"的双阈值思路。
+
+\begin{tcolorbox}[colback=black!4,colframe=black!30,left=4pt,right=4pt,top=2pt,bottom=2pt,fontupper=\scriptsize\ttfamily]
+// Layer 2: reinforce a preference (repeat -> +evidence, +strength; not overwrite)\\
+addPreference(text) \{\\
+\ \ if (exists) \{ existing.evidence\_count += 1;\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ existing.strength = min(1, existing.strength + 0.15) \}\\
+\ \ else preferences.push(\{ text, strength: 0.6, evidence\_count: 1 \})\\
 \}
 \end{tcolorbox}
 
-\subsection{规划这条闭环怎么跑（流程图）}
+\textbf{（3）长期记忆的沉淀（Agentic Memory / RewriteMemory）}：我们不做"把历史一股脑塞回上下文"的暴力堆砌，而是用 LLM \textbf{主动地}把零散偏好碎片\textbf{合并去重、压缩成不超过 60 字的稳定画像}（对齐 VitaBench-2.0 里 Agentic Memory 的做法）。失败则静默降级，用原有画像。
+
+\begin{tcolorbox}[colback=black!4,colframe=black!30,left=4pt,right=4pt,top=2pt,bottom=2pt,fontupper=\scriptsize\ttfamily]
+// Layer 3: RewriteMemory -- LLM compresses fragments into a stable profile\\
+async rewriteMemory() \{\\
+\ \ summary = await LLM(sys="merge \& dedup prefs -> <=60-char stable profile",\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ input=preferences)  // keep only high-confidence, long-lived\\
+\}
+\end{tcolorbox}
+
+\textbf{（4）读取与主动召回}：规划/点菜/推荐时，画像与高置信偏好被自动带入（记得"老婆减脂"就默认按减脂过滤，不用你重复说）；打开应用时还会用画像生成一句"想起你"的开场（见第 1 页主界面的黄色卡片）。
+
+\textbf{（5）本地 + 可控}：整棵记忆树以明文 JSON 落在你自己电脑的 userData 目录，\textbf{可查看、可删单条、可一键清空}，不上传服务器。这是隐私底线，也是用户敢把真实生活交给它的前提。
+
 \begin{center}
-\begin{tikzpicture}[
-  node distance=0.55cm, font=\small,
-  box/.style={draw, rounded corners=3pt, fill=primary!9, minimum width=2.3cm, minimum height=0.8cm, align=center},
-  arr/.style={-Latex, thick, color=primary},
-]
-\node[box] (n1) {一句话需求};
-\node[box, right=of n1] (n2) {定位+看天气};
-\node[box, right=of n2] (n3) {真查店/去水分};
-\node[box, right=of n3] (n4) {组装3套+校验};
-\node[box, below=0.7cm of n4] (n5) {画路线/雷达};
-\node[box, left=of n5] (n6) {点菜/比价/取号};
-\node[box, left=of n6] (n7) {发家人确认};
-\node[box, left=of n7] (n8) {写进记忆};
-\draw[arr] (n1)--(n2); \draw[arr] (n2)--(n3); \draw[arr] (n3)--(n4); \draw[arr] (n4)--(n5);
-\draw[arr] (n5)--(n6); \draw[arr] (n6)--(n7); \draw[arr] (n7)--(n8);
+\begin{tikzpicture}[node distance=0.4cm, font=\scriptsize,
+  b/.style={draw, rounded corners=2pt, fill=primary!8, align=center, minimum height=0.72cm, text width=1.9cm},
+  arr/.style={-Latex, thick, color=primary}]
+\node[b] (e) {对话/下单\\(Event)};
+\node[b, right=of e] (x) {抽取偏好};
+\node[b, right=of x] (h) {命中已有?\\累加强度};
+\node[b, right=of h] (r) {RewriteMemory\\压成画像};
+\node[b, right=of r] (i) {注入下轮\\System Prompt};
+\node[b, right=of i] (g) {主动召回\\开场};
+\draw[arr] (e)--(x); \draw[arr] (x)--(h); \draw[arr] (h)--(r); \draw[arr] (r)--(i); \draw[arr] (i)--(g);
 \end{tikzpicture}
 \end{center}
 
+\subsection{多 Agent 协同：主-子分工，Agents-as-Tools}
+单个大模型在"又要找玩乐、又要挑餐厅、又要上网查攻略、又要沉淀记忆"这种复合任务里容易顾此失彼。我们采用\textbf{层次化多智能体}：主 Agent（小悠本体）负责全局对话控制与决策，把专业活\textbf{当成"可调用的工具"}派给专用子 Agent——这正是 WOWService 的 \textbf{Agents-as-Tools} 范式；子 Agent 干完只回"结论摘要"给主 Agent（即 \textbf{Handoff}：任务 + 上下文一次性交接、再一次性回收）。
+
+设计上三条硬约束保证它稳：\textbf{(1) 工具子集隔离}（每个子 Agent 只拿本职工具，餐饮 Agent 拿不到浏览器）；\textbf{(2) 只读}（子 Agent 一律不做写操作，下单/取号只能由主 Agent 走两步确认）；\textbf{(3) 上下文隔离 + 可并行}（各跑独立 Harness Loop、noHistory，互不污染，能同时找玩乐和餐厅）。整个派单-回收过程在右侧"执行过程"里\textbf{透明可见}（如第 2 节第 3 张图）。
+
+\begin{center}
+{\small
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.1cm} p{3.0cm} >{\raggedright\arraybackslash}X}
+\toprule
+子 Agent & 职责 & 限定工具子集（只读） \\
+\midrule
+餐饮专家 & 找餐厅/查可订/点菜/比价 & search\_nearby\_poi · check\_availability · recommend\_dishes · compare\_deal \\
+玩乐专家 & 亲子/展览/citywalk + 看天气选室内外 & search\_nearby\_poi · get\_weather \\
+调研专家 & 打开小红书/点评攻略页 → 读取 → 汇总 & browser\_navigate · browser\_read\_page · browser\_extract \\
+记忆管家 & 识别并沉淀长期偏好、带入本次规划 & remember\_preference \\
+\bottomrule
+\end{tabularx}}
+\end{center}
+
+\begin{center}
+\begin{tikzpicture}[font=\small,
+  main/.style={draw, rounded corners=3pt, fill=primary!16, minimum width=3.4cm, minimum height=0.85cm, align=center},
+  sub/.style={draw, rounded corners=3pt, fill=primary!8, minimum width=2.35cm, minimum height=0.8cm, align=center},
+  arr/.style={-Latex, thick, color=primary},
+  ra/.style={-Latex, thick, color=soft, dashed},
+]
+\node[main] (m) {主 Agent · 小悠\\（全局决策/整合）};
+\node[sub, below left=1.15cm and 2.2cm of m] (a) {餐饮专家};
+\node[sub, right=0.45cm of a] (b) {玩乐专家};
+\node[sub, right=0.45cm of b] (c) {调研专家};
+\node[sub, right=0.45cm of c] (d) {记忆管家};
+\draw[arr] (m) -- (a) node[midway,sloped,above,font=\scriptsize]{派单}; \draw[arr] (m) -- (b); \draw[arr] (m) -- (c); \draw[arr] (m) -- (d);
+\draw[ra] (a) to[bend left=12] node[midway,sloped,below,font=\scriptsize,color=soft]{回结论} (m);
+\draw[ra] (b) to[bend left=8] (m); \draw[ra] (c) to[bend right=8] (m); \draw[ra] (d) to[bend right=12] (m);
+\end{tikzpicture}
+\end{center}
+
+\begin{tcolorbox}[colback=black!4,colframe=black!30,left=4pt,right=4pt,top=2pt,bottom=2pt,fontupper=\scriptsize\ttfamily]
+// Each sub-agent = a callable READ tool: own tool subset, own loop, summary only\\
+for (const spec of SUBAGENTS) registerTool(\{\\
+\ \ name: spec.name, kind: 'READ',\\
+\ \ execute: async (\{ task \}) => \{\\
+\ \ \ \ emitStep('lead -> ' + spec.label)   // visualize dispatch in the trace panel\\
+\ \ \ \ const reply = await runAgentLoop(task, [], \{\\
+\ \ \ \ \ \ toolNames: spec.toolNames, noHistory: true, maxTurns: 5 \})\\
+\ \ \ \ return \{ result: spec.label + ' conclusion: ' + reply.content \}\\
+\ \ \}\\
+\})
+\end{tcolorbox}
+
+\subsection{规划引擎：Planning 策略（赛题交付物之一）}
+"一句话出三套可落地方案"是这条链路的核心。我们把它拆成\textbf{七步流水线}，规划与校验\textbf{分离}、约束\textbf{by construction}（在生成时就满足，而非事后补救）：
+
+\begin{center}
+\begin{tikzpicture}[node distance=0.34cm, font=\scriptsize,
+  b/.style={draw, rounded corners=2pt, fill=primary!9, align=center, minimum height=0.95cm, text width=1.85cm},
+  arr/.style={-Latex, thick, color=primary}]
+\node[b] (s1) {意图槽位\\SceneDemand};
+\node[b, right=of s1] (s2) {并行取供给\\(玩乐//餐饮)};
+\node[b, right=of s2] (s3) {抗污染\\去水分排序};
+\node[b, right=of s3] (s4) {组装时间线\\(玩→吃→加场)};
+\node[b, below=0.55cm of s4] (s5) {生成即校验\\Verifier};
+\node[b, left=of s5] (s6) {定向重生\\(<=2 轮)};
+\node[b, left=of s6] (s7) {五维打分\\+ 三套互斥};
+\draw[arr] (s1)--(s2); \draw[arr] (s2)--(s3); \draw[arr] (s3)--(s4); \draw[arr] (s4)--(s5);
+\draw[arr] (s5)--(s6) node[midway,above,font=\scriptsize]{有硬伤}; \draw[arr] (s6)--(s7);
+\draw[arr] (s6.north) to[bend left=30] (s5.south);
+\end{tikzpicture}
+\end{center}
+
+\begin{itemize}[leftmargin=1.3em,itemsep=1pt]
+  \item \textbf{人群约束是结构化"真理源"}：每个 persona（减脂/带娃/陪长辈/约会…）都定义了\textbf{硬排除标签、软偏好标签、检索关键词}。硬约束直接进 Verifier（如"减脂"硬排除火锅/烧烤/自助/甜品；"带娃"硬排除酒吧/密室），软偏好只影响排序。persona 可像技能一样插拔扩展。
+  \item \textbf{抗污染漏斗（去水分）}：对候选店做\textbf{贝叶斯收缩}（评分向先验均值收缩，证据越少收缩越狠）→ \textbf{刷量团伙降权} → \textbf{流行度去偏}，把"近满分但真实经营信号很少"的可疑店打到后面，并给出"可信/已去水分"的理由。
+  \item \textbf{生成即校验 + 定向重生}：Verifier 是\textbf{确定性代码}（非 LLM），逐条查预算、人群硬约束、场景互斥、带娃适龄、营业时间、时序。命中硬伤就只\textbf{换掉出问题的那个节点}（从候选池取下一个合规项），最多 2 轮，收敛快、可解释。
+  \item \textbf{五维确定性打分}：省钱/好玩/便捷/合适/特色，全部用方案里的\textbf{真实数据}算（人均 vs 预算、真实评分、段间车程…），\textbf{可复现、与雷达图严格对齐}，每一维都给一句自然语言理由。
+  \item \textbf{三套差异化且互斥}：经济（最省）/ 均衡（去水分榜首）/ 特色（高分出片），共享一次检索、跨方案不重复门店。雨雪天自动把户外活动降级为室内。
+\end{itemize}
+
+\subsection{工具调用链路（赛题交付物之一）}
+主 Agent 是一个 \textbf{Harness 式 Loop}（对标 Claude Code）：在 while 循环里让模型决定调哪个工具、把结果回喂、直到给出最终答复，用 MAX\_TURNS 兜底防跑飞。工具在注册表里分 \textbf{READ / WRITE} 两类；所有 WRITE（预约/取号/外卖/送花/下单）\textbf{必须先生成"两步确认"卡、停下等用户点确认}，绝不假装已完成。
+
+\begin{center}
+\begin{tikzpicture}[node distance=0.42cm, font=\scriptsize,
+  b/.style={draw, rounded corners=2pt, fill=primary!9, align=center, minimum height=0.72cm, text width=2.2cm},
+  d/.style={draw, diamond, aspect=2, fill=primary!14, align=center, inner sep=1pt, text width=1.7cm},
+  arr/.style={-Latex, thick, color=primary}]
+\node[b] (u) {用户一句话};
+\node[b, right=of u] (l) {LongCat 决策};
+\node[d, right=0.5cm of l] (q) {要调工具?};
+\node[b, right=0.5cm of q] (t) {执行工具\\(READ/WRITE)};
+\node[b, below=0.55cm of t] (o) {结果回喂};
+\node[b, left=of o] (w) {WRITE?\\两步确认};
+\node[b, left=of w] (f) {最终答复\\+成果卡};
+\draw[arr] (u)--(l); \draw[arr] (l)--(q);
+\draw[arr] (q)--node[above,font=\scriptsize]{是}(t); \draw[arr] (t)--(o); \draw[arr] (o)--(w); \draw[arr] (w)--(f);
+\draw[arr] (q.south) to[bend right=20] node[right,font=\scriptsize]{否}(f.north);
+\draw[arr] (o.east) to[bend right=30] (l.south);
+\end{tikzpicture}
+\end{center}
+
+数据层用 \textbf{Adapter 模式}让底层数据源\textbf{热插拔}：Agent 只认稳定的领域方法（searchPoi / getWeather / route），底下可换成 \textbf{高德实时 / 本地数据集 / 企业自有 API}，每个 Adapter 内部再逐层回退。浏览器的"感知-动作"层：读页面时先用 Readability 抽干净正文、用 Set-of-Marks 给可点元素编号画彩色框（下方代码），动作时合成一个肉眼可见的光标先移动再点击，做到"看得见的 AI"。
+
+\begin{tcolorbox}[colback=black!4,colframe=black!30,left=4pt,right=4pt,top=2pt,bottom=2pt,fontupper=\footnotesize\ttfamily]
+function color(el)\{ // Set-of-Marks: color a mark by element role\\
+\ \ if (button) return '\#22c55e';  // button = green\\
+\ \ if (link)\ \ \ return '\#3b82f6';  // link\ \ \ = blue\\
+\ \ if (input)\ \ return '\#a855f7';  // input\ \ = purple\\
+\ \ return '\#f59e0b';               // other\ \ = orange\\
+\}
+\end{tcolorbox}
+
+\subsection{异常处理机制（赛题交付物之一）}
+真实世界一定会满座、售罄、超时、风控。我们的原则是\textbf{"错误即信息，绝不返回空、绝不假装成功、绝不编造"}，落成四道防线：
+
+\begin{center}
+{\small
+\begin{tabularx}{\linewidth}{>{\bfseries}p{3.2cm} >{\raggedright\arraybackslash}X}
+\toprule
+防线 & 做法 \\
+\midrule
+工具级 ToolHarness & 每个数据/工具调用统一包 超时(12s) + 重试(指数退避) + 降级默认值 + 来源标注；失败不抛崩，返回带 error 的结构 \\
+模型级 自纠 & 工具报错被转成文字回喂给模型（"满座/超时"），模型据此主动给备选/改时段/换品类 \\
+规划级 三级降级 & 精确匹配无结果 → 放宽软约束重搜 → 放宽品类兜底，\textbf{保证绝不返回 0 方案} \\
+数据源级 逐层回退 & 高德/企业 API 失败自动回退到本地数据集；估算数据一律标 simulated \\
+\bottomrule
+\end{tabularx}}
+\end{center}
+
+再加两条"诚实边界"：营业时间等信息\textbf{拿不到就标"建议态"而不是猜}；一切写操作两步确认、且提供 \textbf{cancel\_action} 让计划有变时撤销。这既是工程稳健，也是评审里"技术成熟度/稳定性"的直接体现。
+
+\subsection{主动关心与微信 24h 陪伴}
+主动引擎借鉴"随机脉冲 + 时段"机制：每 60s 一次脉冲，只在\textbf{饭点/周末等 DPVP 合适时段}、以较低概率发声（避免打扰），话术只用\textbf{本地行为数据 + 记忆}生成（"记得你喜欢 X，这周再约一次？"）。取号/预约后会往\textbf{提醒队列}塞一条"该出发了"。连上微信后，主动关心\textbf{同步推送到微信}——人不在电脑前也能被惦记，这就是"24h 陪伴"。
+
 \subsection{技术栈}
-Electron + React + TypeScript + Zustand + Tailwind；大模型 LongCat-2.0（默认，可切 MiniMax/DeepSeek/Kimi）；高德 Web/JS SDK（定位/POI/路线/天气）；Mozilla Readability 抽正文 + Set-of-Marks 蒸馏可点元素；本地数据集兜底。
+Electron + React + TypeScript + Zustand + Tailwind；大模型 LongCat（默认，可切 MiniMax / DeepSeek / Kimi）；高德 Web/JS SDK（定位/POI/路线/天气）；Mozilla Readability 抽正文 + 自研 Set-of-Marks 蒸馏可点元素；记忆本地明文 JSON；数据源 Mock（VitaBench 数据集）/ 高德实时 / 企业 API 三态热插拔。
+
+% ---------------- 对齐赛题 ----------------
+\section{对齐赛题：交付物与评审维度}
+
+\subsection{赛题要求怎么落的}
+赛题要"接受一句自然语言目标 → 输出可执行的完整方案 → 自动完成关键下单/预订动作"，并给孩子5岁/老婆减脂、或4人2男2女这类群体约束。这条链路我们全程打通：一句话（"周六下午带娃4小时、老婆减脂、人均120"）→ persona 硬过滤（减脂排除火锅甜品、带娃排除酒吧密室）→ 三套真实方案 + 路线 + 五维分 → 点菜避雷 / 排号 / 外卖 / 送花（两步确认）→ 二维码发家人投票。
+
+\begin{center}
+{\small
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{4.6cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{交付要求} & \textbf{我们的对应} \\
+\midrule
+Demo（命令行/Web UI） & Electron 桌面应用，内置真实浏览器工作台（本文全是真机截图） \\
+完整 Tool 实现（含 Mock API） & 20+ 工具，READ/WRITE 分类；数据源 Adapter 提供 VitaBench Mock，可一键切高德实时 \\
+Planning 策略 & 见 3.4：七步流水线、约束 by construction、三套互斥、五维打分 \\
+工具调用链路 & 见 3.5：Harness Loop + 工具注册表 + Adapter 热插拔 + 两步确认 \\
+异常处理机制 & 见 3.6：四道防线（工具/模型/规划/数据源）+ 诚实边界 \\
+\bottomrule
+\end{tabularx}}
+\end{center}
+
+\subsection{我们在四个评审维度上的亮点}
+\begin{itemize}[leftmargin=1.3em,itemsep=1.5pt]
+  \item \textbf{创新性}：不做"又一个聊天框"，而是把 AI 放进\textbf{真能操控网页的浏览器}里（Set-of-Marks 可视化操作）+ \textbf{Agentic 本地记忆}（越用越懂、主动关心）+ \textbf{数据留本机}的隐私范式。切入角度是"帮你把事做完"而非"给你一堆链接"。
+  \item \textbf{完整性}：从需求理解 → 多 Agent 规划 → 抗污染 → 生成即校验 → 可落地执行（取号/外卖/送花/发家人）→ 记忆沉淀，是一条\textbf{闭环}；错误有四道兜底，稳定性有保障。
+  \item \textbf{应用效果}：一句话即可触发，右侧"执行过程"透明可见；结果基于\textbf{高德实时 + 大众点评真实榜单}，并主动去水分；预算/来源\textbf{绝对诚实}，超预算就说超了多少。
+  \item \textbf{商业价值}：站在美团生态\textbf{之上}放大 GTV——把"逛-比-订-约-履约"串成一次完成，天然带动到店/团购/外卖/跑腿；本地记忆带来\textbf{高频复访与用户忠诚}；Adapter + 技能 + persona 可插拔，易向企业/垂类扩展。
+\end{itemize}
 
 % ---------------- 能做/不能做 ----------------
 \section{我们能做什么、还不能做什么（诚实）}
@@ -265,6 +424,6 @@ Electron + React + TypeScript + Zustand + Tailwind；大模型 LongCat-2.0（默
 小悠先"想起你"（记忆召回）→ 你一句话，它带着你的偏好、看着天气出三套真实方案 → 你眼看它自己开点评读评价、必吃榜佐证 → 点菜（招牌/避雷）→ 半自动取号 → 顺手送束花（两步确认）→ 二维码发家人投票 → 出发提醒、把新偏好记下来 → 就算你离开电脑，它也在微信里 24h 惦记你。一条线讲完"越懂你 + 陪你过周末 + 数据留本机"。
 
 \vspace{0.3cm}
-\begin{center}\small 代码都在这里，导师可以直接看：\url{https://github.com/bcefghj/YOYU}\end{center}
+\begin{center}\small 完整代码：\url{https://github.com/bcefghj/YOYU}\end{center}
 
 \end{document}
