@@ -1,0 +1,77 @@
+// preload：一能力一方法，contextBridge 暴露给渲染层。
+import { contextBridge, ipcRenderer } from 'electron'
+import { IPC } from '../shared/ipc'
+
+const api = {
+  // 对话主线
+  chat: (message: string, history: unknown[]) => ipcRenderer.invoke(IPC.agentChat, { message, history }),
+  confirm: (token: string, ok: boolean) => ipcRenderer.invoke(IPC.agentConfirm, { token, ok }),
+
+  // 事件订阅（main → renderer）
+  onStep: (cb: (s: unknown) => void) => sub(IPC.agentStep, cb),
+  onCard: (cb: (c: unknown) => void) => sub(IPC.agentStreamCard, cb),
+  onProactive: (cb: (p: unknown) => void) => sub(IPC.proactivePush, cb),
+  onImIncoming: (cb: (m: unknown) => void) => sub(IPC.imIncoming, cb),
+
+  // 浏览器桥
+  onBrowserExec: (cb: (p: { id: number; action: string; args: Record<string, unknown> }) => void) =>
+    ipcRenderer.on(IPC.browserExec, (_e, p) => cb(p)),
+  browserExecResult: (id: number, result: unknown) => ipcRenderer.send(IPC.browserExecResult, { id, result }),
+
+  // 配置 / LLM
+  getConfig: () => ipcRenderer.invoke(IPC.getConfig),
+  setConfig: (patch: unknown) => ipcRenderer.invoke(IPC.setConfig, patch),
+  setSource: (source: string) => ipcRenderer.invoke('config:setSource', source),
+  pingLlm: () => ipcRenderer.invoke(IPC.pingLlm),
+
+  // 技能
+  listSkills: () => ipcRenderer.invoke(IPC.listSkills),
+  toggleSkill: (id: string, enabled: boolean) => ipcRenderer.invoke(IPC.toggleSkill, { id, enabled }),
+
+  // IM
+  imStatus: () => ipcRenderer.invoke(IPC.imStatus),
+  imLoginQr: () => ipcRenderer.invoke(IPC.imLoginQr),
+  imSimulate: (text: string, from?: string) => ipcRenderer.invoke('im:simulate', { text, from }),
+
+  // 主动关心
+  proactiveList: () => ipcRenderer.invoke(IPC.proactiveList),
+  proactiveTrigger: () => ipcRenderer.invoke('proactive:trigger'),
+
+  // 记忆
+  getMemory: () => ipcRenderer.invoke(IPC.memoryGet),
+  memoryGreeting: () => ipcRenderer.invoke(IPC.memoryGreeting),
+  memoryDelete: (payload: { kind: 'pref' | 'fav'; value: string }) => ipcRenderer.invoke(IPC.memoryDelete, payload),
+  memoryClear: () => ipcRenderer.invoke(IPC.memoryClear),
+
+  // 分享协作
+  shareCreate: (payload: { plan?: unknown; city?: string }) => ipcRenderer.invoke(IPC.shareCreate, payload),
+  shareFeedback: (id: string) => ipcRenderer.invoke(IPC.shareFeedback, id),
+
+  // 攻略导入
+  guideSetImage: (dataUrl: string) => ipcRenderer.invoke(IPC.guideSetImage, dataUrl),
+
+  // 附近发现 / 优惠发现
+  discoverFetch: (city?: string) => ipcRenderer.invoke(IPC.discoverFetch, city),
+  dealsFetch: (city?: string) => ipcRenderer.invoke(IPC.dealsFetch, city),
+
+  // 定位
+  getLocation: () => ipcRenderer.invoke(IPC.locationGet),
+  detectLocation: () => ipcRenderer.invoke('location:detect'),
+  setCity: (city: string) => ipcRenderer.invoke(IPC.locationSet, city),
+  onLocation: (cb: (l: unknown) => void) => sub(IPC.locationUpdate, cb),
+  reportLocation: (p: { city?: string; coords?: string }) => ipcRenderer.invoke('location:report', p),
+
+  // 高德 JS SDK + 外链
+  getAmapJsConfig: () => ipcRenderer.invoke('amap:jsConfig'),
+  openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url)
+}
+
+function sub(channel: string, cb: (p: unknown) => void): () => void {
+  const listener = (_e: unknown, payload: unknown) => cb(payload)
+  ipcRenderer.on(channel, listener)
+  return () => ipcRenderer.removeListener(channel, listener)
+}
+
+contextBridge.exposeInMainWorld('xiaonian', api)
+
+export type XiaonianApi = typeof api
