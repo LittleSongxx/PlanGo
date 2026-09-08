@@ -140,6 +140,25 @@ class RunQueue:
         except Exception:
             return None
 
+    async def dead_letter(self, item: QueueItem, attempts: int, error: Exception) -> None:
+        """Publish then acknowledge atomically; a failed XADD leaves the delivery pending."""
+        if not self.available or self.client is None:
+            raise RuntimeError("queue_unavailable")
+        # MULTI alone would still execute XACK if XADD returned WRONGTYPE.
+        # Lua stops at the failed publish, and the PEL check makes retries safe.
+        await self.client.eval("""
+            local pending = redis.call('XPENDING', KEYS[1], ARGV[1], ARGV[2], ARGV[2], 1)
+            if #pending == 0 then return false end
+            local id = redis.call('XADD', KEYS[2], 'MAXLEN', '~', 20000, '*',
+                'run_id', ARGV[3], 'kind', ARGV[4], 'stream_id', ARGV[2],
+                'attempts', ARGV[5], 'error', ARGV[6])
+            redis.call('XACK', KEYS[1], ARGV[1], ARGV[2])
+            redis.call('HDEL', KEYS[3], ARGV[2])
+            return id
+        """, 3, item.stream, f"{self.stream}:dead-letter", self._attempt_key,
+            self.group, item.stream_id, item.run_id, item.kind, attempts, type(error).__name__)
+        self._failures.pop(item.stream_id, None)
+
     async def consume(
         self,
         handler: Callable[[QueueItem], Awaitable[None]],
@@ -176,18 +195,7 @@ class RunQueue:
                 await handler(item)
             except Exception as exc:
                 if attempts >= self.max_retries:
-                    await self.publish(
-                        f"{self.stream}:dead-letter",
-                        {
-                            "run_id": item.run_id,
-                            "kind": item.kind,
-                            "stream_id": item.stream_id,
-                            "attempts": attempts,
-                            "error": type(exc).__name__,
-                        },
-                    )
-                    await self.ack(item)
-                    await clear_attempt(item)
+                    await self.dead_letter(item, attempts, exc)
                 # Otherwise leave the message pending for XAUTOCLAIM.
                 return
             await clear_attempt(item)

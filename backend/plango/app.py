@@ -8,19 +8,21 @@ import os
 import re
 import uuid
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from plango_harness.agent.contracts import MemoryProposal
 from plango_harness.persistence.database import memory_episode, memory_fact
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import select, update
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
+from sqlalchemy import or_, select, update
 
 from .browser import Observation, bindings
+from .geo import install_geo_routes
 from .location import LocationContext
 from .reminders import install_reminder_routes, setup_reminders
-from .runtime import DesktopRuntime
+from .runtime import DesktopRuntime, _utc
 from .settings import settings_from_env
 
 
@@ -38,7 +40,19 @@ def validate_image(value):
     return value
 
 
+class SelectedPoi(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    poi_id: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9:_-]+$")
+    name: str = Field(min_length=1, max_length=200)
+    address: str = Field(default="", max_length=1000)
+    longitude: float = Field(ge=-180, le=180, allow_inf_nan=False, strict=True)
+    latitude: float = Field(ge=-90, le=90, allow_inf_nan=False, strict=True)
+    source: Literal["amap"] = "amap"
+    observed_at: AwareDatetime | None = None
+
+
 class CreateRun(BaseModel):
+    selected_poi: SelectedPoi | None = None
     location_context: LocationContext | None = None
     user_id: str = Field(default="desktop", min_length=1, max_length=128)
     input_text: str = Field(min_length=1, max_length=12000)
@@ -73,6 +87,21 @@ class SelectPlan(BaseModel):
     plan_version: int = Field(ge=1)
 
 
+class DraftDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    decision: Literal["save", "prepare"]
+    interrupt_id: str = Field(min_length=1, max_length=256)
+    plan_id: str = Field(min_length=1, max_length=128)
+    plan_version: int = Field(ge=1, strict=True)
+
+
+class PreparationResume(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    plan_id: str = Field(min_length=1, max_length=128)
+    plan_version: int = Field(ge=1, strict=True)
+    approval_id: str = Field(min_length=1, max_length=256)
+
+
 class Replan(BaseModel):
     location_context: LocationContext | None = None
     reason: str = "按原需求重新观测并规划"
@@ -82,6 +111,21 @@ class Preference(BaseModel):
     text: str = Field(min_length=1, max_length=1000)
     polarity: Literal["like", "dislike"] = "like"
     user_id: str = "desktop"
+
+
+class FeedbackPreference(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    text: str = Field(min_length=1, max_length=1000)
+    polarity: Literal["positive", "negative"] = "positive"
+
+
+class Feedback(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    feedback_id: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
+    turn_id: int = Field(ge=1, strict=True)
+    rating: Literal["helpful", "unhelpful"]
+    text: str = Field(default="", max_length=1000)
+    preference: FeedbackPreference | None = None
 
 
 class Favorite(BaseModel):
@@ -114,6 +158,7 @@ def create_app(settings=None, *, token=None):
             raise HTTPException(401, "invalid backend credential")
 
     protected = [Depends(auth)]
+    install_geo_routes(app, runtime, protected)
 
     @app.exception_handler(ValueError)
     async def value_error(request, exc):
@@ -157,6 +202,7 @@ def create_app(settings=None, *, token=None):
             body.image,
             body.enabled_skills,
             body.location_context.model_dump(mode="json") if body.location_context else None,
+            selected_poi=body.selected_poi.model_dump(mode="json") if body.selected_poi else None,
         )
 
     @app.get("/api/v1/runs", dependencies=protected)
@@ -239,6 +285,14 @@ def create_app(settings=None, *, token=None):
     async def select_plan(run_id: str, body: SelectPlan):
         return await runtime.select_plan(run_id, body.plan_id, body.plan_version)
 
+    @app.post("/api/v1/runs/{run_id}/draft-decision", dependencies=protected, status_code=202)
+    async def decide_draft(run_id: str, body: DraftDecision):
+        return await runtime.decide_draft(run_id, body.decision, body.interrupt_id, body.plan_id, body.plan_version)
+
+    @app.post("/api/v1/runs/{run_id}/preparation/resume", dependencies=protected, status_code=202)
+    async def resume_preparation(run_id: str, body: PreparationResume):
+        return await runtime.resume_preparation(run_id, body.plan_id, body.plan_version, body.approval_id)
+
     @app.post("/api/v1/runs/{run_id}/cancel", dependencies=protected)
     async def cancel(run_id: str):
         return await runtime.cancel(run_id)
@@ -271,6 +325,19 @@ def create_app(settings=None, *, token=None):
     async def observation(command_id: str, body: Observation):
         return await runtime.bridge.accept(command_id, body)
 
+    @app.get("/api/v1/runs/{run_id}/feedback", dependencies=protected)
+    async def feedback_history(run_id: str):
+        return {"feedback": await runtime.feedback(run_id)}
+
+    @app.post("/api/v1/runs/{run_id}/feedback", dependencies=protected)
+    async def save_feedback(run_id: str, body: Feedback):
+        return await runtime.save_feedback(run_id, body.model_dump(mode="json"))
+
+    @app.delete("/api/v1/memory/episodes/{episode_id}", dependencies=protected)
+    async def forget_episode(episode_id: str, user_id: str = "desktop"):
+        await runtime.memory.forget_episode(user_id, episode_id)
+        return await profile(user_id)
+
     @app.get("/api/v1/memory/profile", dependencies=protected)
     async def profile(user_id: str = "desktop"):
         async with runtime.database.session() as session:
@@ -278,7 +345,9 @@ def create_app(settings=None, *, token=None):
                 (
                     await session.execute(
                         select(memory_fact).where(
-                            memory_fact.c.user_id == user_id, memory_fact.c.valid_to.is_(None)
+                            memory_fact.c.user_id == user_id,
+                            or_(memory_fact.c.valid_from.is_(None), memory_fact.c.valid_from <= datetime.now(timezone.utc)),
+                            or_(memory_fact.c.valid_to.is_(None), memory_fact.c.valid_to > datetime.now(timezone.utc))
                         )
                     )
                 )
@@ -289,7 +358,7 @@ def create_app(settings=None, *, token=None):
                 (
                     await session.execute(
                         select(memory_episode)
-                        .where(memory_episode.c.user_id == user_id)
+                        .where(memory_episode.c.user_id == user_id, or_(memory_episode.c.valid_until.is_(None), memory_episode.c.valid_until > datetime.now(timezone.utc)))
                         .order_by(memory_episode.c.created_at.desc())
                         .limit(50)
                     )
@@ -301,16 +370,17 @@ def create_app(settings=None, *, token=None):
         favorites = []
         for fact in facts:
             value = fact["value_json"] or {}
+            provenance = {"source": fact["source"], "explicit": str(fact["source"]).startswith(("user:", "user-confirmed:", "user-correction:", "explicit:"))}
             if fact["fact_key"].startswith("preference:"):
-                preferences.append({"id": fact["id"], **value})
+                preferences.append({"id": fact["id"], **value, **provenance})
             if fact["fact_key"].startswith("favorite:"):
-                favorites.append({"id": fact["id"], **value})
+                favorites.append({"id": fact["id"], **value, **provenance})
         return {
             "preferences": preferences,
             "favorites": favorites,
             "footprints": [],
             "summaries": [
-                {"id": r["id"], "text": r["summary"], "createdAt": str(r["created_at"])}
+                {"id": r["id"], "text": r["summary"], "createdAt": _utc(r["created_at"]).isoformat(), "scope": (r["payload_json"] or {}).get("scope")}
                 for r in episodes
             ],
             "facts": [

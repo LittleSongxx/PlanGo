@@ -17,6 +17,11 @@ let activations = 0
 let state = { run_id: 'run-test', input_text: 'fixture', phase: 'RESEARCHING', event_seq: 1, version: 1, state: {} }
 let selected: unknown
 const token = 'transport-fixture-only'
+let streamConnections = 0, streamReleases = 0
+let pausedConnections = 0
+const streamCursors: string[] = []
+let streamState = { run_id: 'run-stream', input_text: 'fixture', phase: 'RESEARCHING', event_seq: 0, version: 1, state: {} }
+const streamEvents: any[] = []
 const server = createServer(async (req, res) => {
   assert.equal(req.headers.authorization, `Bearer ${token}`)
   const url = new URL(req.url || '/', 'http://localhost')
@@ -24,13 +29,44 @@ const server = createServer(async (req, res) => {
   for await (const part of req) body += part
   res.setHeader('Content-Type', 'application/json')
   const send = (value: unknown) => res.end(JSON.stringify(value))
+  if (url.pathname === '/api/v1/runs/run-batch') return send({ run_id: 'run-batch', input_text: 'fixture', phase: 'SUCCEEDED', event_seq: 3, version: 1, state: {} })
+  if (url.pathname === '/api/v1/runs/run-batch/events') return send({ events: (Number(url.searchParams.get('after')) === 0 ? [1, 3] : [2, 3]).map(seq => ({ run_id: 'run-batch', seq, event_type: 'fixture', payload: {} })) })
+  if (url.pathname === '/api/v1/runs/run-paused') return send({ run_id: 'run-paused', input_text: 'fixture', phase: 'REQUIREMENTS_READY', event_seq: 0, version: 1, interrupt_id: 'clarification:fixture', state: {} })
+  if (url.pathname === '/api/v1/runs/run-paused/events') {
+    if (!req.headers.accept?.includes('text/event-stream')) return send({ events: [] })
+    if (++pausedConnections === 1) { res.statusCode = 503; return send({ detail: 'connection interrupted' }) }
+    res.setHeader('Content-Type', 'text/event-stream')
+    res.write(': heartbeat\n\n')
+    return
+  }
+  if (url.pathname === '/api/v1/runs/run-stream') return send(streamState)
+  if (url.pathname === '/api/v1/runs/run-stream/events') {
+    if (!req.headers.accept?.includes('text/event-stream')) return send({ events: [] })
+    streamConnections++
+    streamCursors.push(String(req.headers['last-event-id']))
+    res.setHeader('Content-Type', 'text/event-stream')
+    streamState = { ...streamState, phase: 'SUCCEEDED', event_seq: 3, version: 2 }
+    if (streamConnections === 1) {
+      const frame = Buffer.from('id: 1\r\ndata: ' + JSON.stringify({ run_id: 'run-stream', seq: 1, event_type: 'fixture', payload: { message: '断线前事件' } }) + '\r\n\r\n')
+      const split = frame.indexOf(Buffer.from('断')) + 1
+      res.write(frame.subarray(0, split))
+      setTimeout(() => res.end(frame.subarray(split)), 20)
+    } else if (streamConnections === 2) {
+      res.end(`id: 3\ndata: ${JSON.stringify({ run_id: 'run-stream', seq: 3, event_type: 'fixture', payload: {} })}\n\n`)
+    } else {
+      assert.equal(streamReleases, 0, 'Terminal snapshot cannot stop before its event_seq is received')
+      for (const seq of [1, 2, 3]) res.write(`id: ${seq}\ndata: ${JSON.stringify({ run_id: 'run-stream', seq, event_type: 'fixture', payload: { message: '恢复后的事件' } })}\n\n`)
+      res.end()
+    }
+    return
+  }
   if (url.pathname === '/api/v1/health/ready') return send({ ready: true })
   if (url.pathname === '/api/v1/browser/commands') return send({ commands, cursor: 0 })
   if (url.pathname.endsWith('/result')) {
     if (failures-- > 0) { res.statusCode = 503; return send({ detail: 'fixture transient failure' }) }
     received.push(JSON.parse(body)); return send({ accepted: true })
   }
-  if (url.pathname.endsWith('/events')) return send({ events: [] })
+  if (url.pathname.endsWith('/events')) return send({ events: Array.from({ length: state.event_seq }, (_, i) => ({ run_id: state.run_id, seq: i + 1, event_type: 'fixture', payload: {} })).filter(event => event.seq > Number(url.searchParams.get('after') || 0)) })
   if (url.pathname.endsWith('/plans/select')) { selected = JSON.parse(body); state = { ...state, phase: 'REPLANNING', version: 2, event_seq: 2 }; return send(state) }
   if (url.pathname === '/api/v1/runs/run-test') return send(state)
   if (url.pathname === '/api/v1/runs') return send({ runs: [state] })
@@ -64,6 +100,34 @@ try {
   assert.equal(activations, 1)
   await client.close()
 
+  // Real HTTP SSE reconnect keeps Last-Event-ID and drains a terminal snapshot's tail.
+  client = new HarnessClient({ ...base, emit: event => streamEvents.push(event), onTerminal: () => streamReleases++, execute: async () => { throw new Error('read-only stream test') } })
+  await client.getRun('run-stream')
+  await waitFor(() => streamReleases === 1)
+  assert.deepEqual(streamCursors.slice(0, 3), ['0', '1', '1'], 'A gap must not advance the durable event cursor')
+  assert.deepEqual(streamEvents.filter(event => event.seq > 0).map(event => event.seq), [1, 2, 3], 'Replayed events are not duplicated')
+  assert.equal(streamEvents.find(event => event.seq === 1).payload.message, '断线前事件', 'UTF-8 characters survive chunk splitting')
+  const restored = await client.getRun('run-stream')
+  assert.deepEqual(restored.events?.map(event => event.seq), [1, 2, 3], 'History restoration receives the canonical main-process event log')
+  await client.close()
+
+  // A resumed paused task often has no new event/version. It must still clear the UI's offline state.
+  const recovery: any[] = []
+  client = new HarnessClient({ ...base, emit: event => recovery.push(event), execute: async () => { throw new Error('read-only reconnect') } })
+  await client.getRun('run-paused')
+  await waitFor(() => recovery.filter(event => event.event_type === 'snapshot').length >= 2)
+  const failedAt = recovery.findIndex(event => event.event_type === 'connection_error')
+  assert.ok(failedAt > 0 && recovery.slice(failedAt + 1).some(event => event.event_type === 'snapshot'), 'Unchanged recovery snapshot clears the connection error')
+  const recoveredSnapshots = recovery.filter(event => event.event_type === 'snapshot')
+  assert.deepEqual(recoveredSnapshots[0].payload.snapshot, recoveredSnapshots.at(-1).payload.snapshot)
+  await client.close()
+
+  client = new HarnessClient({ ...base, execute: async () => { throw new Error('read-only event recovery') } })
+  await assert.rejects(client.getRun('run-batch'), /event gap/)
+  const batch = await client.getRun('run-batch')
+  assert.deepEqual(batch.events?.map(event => event.seq), [1, 2, 3], 'Recovery must retain the prefix accepted before the gap in a batch')
+  await client.close()
+
   // A process can stop after recording dispatch but before any acknowledgement.
   const crashed = { ...command, command_id: 'command-crashed' }
   writeFileSync(join(root, 'browser-receipts.json'), JSON.stringify([[crashed.command_id, { command: crashed }]]))
@@ -92,7 +156,7 @@ try {
   await closing
   const journal = new Map<string, any>(JSON.parse(readFileSync(join(root, 'browser-receipts.json'), 'utf8')))
   assert.equal(journal.get(pending.command_id).result.outcome, 'executed')
-  console.log('Harness transport regression passed: durable receipt retry, identity conflict, terminal release, selection and restart drain')
+  console.log('Harness transport regression passed: durable receipt retry, identity conflict, SSE resume with terminal tail, selection and restart drain')
 } finally {
   await client?.close()
   server.closeAllConnections()

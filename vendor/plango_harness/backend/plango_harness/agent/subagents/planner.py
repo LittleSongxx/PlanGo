@@ -3,7 +3,13 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from plango_harness.agent.contracts import Evidence, PlaceCandidate, PlanDraft, PlanDraftStop, TripSpec
+from plango_harness.agent.contracts import (
+    Evidence,
+    PlaceCandidate,
+    PlanDraft,
+    PlanDraftStop,
+    TripSpec,
+)
 from plango_harness.agent.model_adapter import ModelAdapter
 from plango_harness.domain.planning import place_fits
 
@@ -46,11 +52,13 @@ class PlannerAgent:
             system=(
                 "你是 PlanGo 的 Planner Agent。根据 TripSpec、已观测候选地点和 Advocate 报告，"
                 "提出一个有序的 PlanDraft。候选目录用columns定义共享列名，rows每行按列名读取。每个 place_id 必须来自已观测地点目录，不能编造地点、路线、"
-                "价格或营业事实；必须覆盖 required_activities、遵守 activity_order，预算按明确人数计算。"
+                "价格或营业事实；必须包含 must_visit_place_ids、覆盖 required_activities、遵守 activity_order，预算按明确人数计算。"
                 "无须额外凑站点。只能调整顺序和建议停留时长。返回结构化结果。"
+                "label用简短中文标题；rationale用不超过160字向用户解释已查到的选店理由，不提TripSpec、PlanDraft、Agent、角色报告或内部ID。"
+                "候选distance_km只是距搜索中心的直线参考，不能据此保证实际步行路线、时长或从用户起点可达；这些交给后续工具核验。"
             ),
             user=(
-                f"TripSpec：{spec.model_dump_json()}\n候选目录：{compact_catalog}\n"
+                f"TripSpec：{spec.model_dump_json(exclude={'goal'})}\n候选目录：{compact_catalog}\n"
                 f"Advocate 报告：{reports}"
             ),
             fallback=fallback,
@@ -100,17 +108,25 @@ class PlannerAgent:
             return value
 
         eligible = [place for place in places if place_fits(spec, place, evidence)]
-        ordered = sorted(eligible or places, key=lambda p: (not p.price_known, p.average_price, -score(p)))
+        prefer_nearby = spec.max_distance_km is not None or "距离优先" in spec.hard_constraints
+        def priority(place: PlaceCandidate):
+            return (spec.max_distance_km is not None and place.distance_km > spec.max_distance_km,
+                    place.price_known and place.average_price * party_size > spec.total_budget,
+                    not place.price_known, place.distance_km if prefer_nearby else 0.0,
+                    place.average_price, -score(place))
+        ordered = sorted(eligible or places, key=priority)
         goals = list(dict.fromkeys([*(c for c in spec.activity_order if c in spec.required_activities), *spec.required_activities]))
-        selected: list[PlaceCandidate] = []
+        selected: list[PlaceCandidate] = [place for place in ordered if place.place_id in spec.must_visit_place_ids]
         for category in goals:
+            if any(place.category == category for place in selected):
+                continue
             candidates = [p for p in ordered if p.category == category and p not in selected]
             if candidates:
                 selected.append(candidates[0])
-        if not goals:
+        if not goals and not selected:
             suitable = [p for p in ordered if not wants_child or set(p.tags) & {"亲子", "儿童", "动物"}]
             affordable = [p for p in (suitable or ordered) if p.average_price * party_size <= spec.total_budget]
-            selected = sorted(affordable or suitable or ordered, key=score, reverse=True)[:1]
+            selected = (sorted(affordable or suitable or ordered, key=priority) if prefer_nearby else sorted(affordable or suitable or ordered, key=score, reverse=True))[:1]
         # Optional additions never consume the cost/window needed by a goal.
         total = sum(p.average_price * party_size for p in selected)
         for category in spec.optional_activities:
@@ -123,14 +139,14 @@ class PlannerAgent:
         if spec.activity_order:
             selected.sort(key=lambda p: spec.activity_order.index(p.category) if p.category in spec.activity_order else len(spec.activity_order))
         return PlanDraft(
-            label="确定性 fallback",
+            label="基础方案",
             stops=[
                 PlanDraftStop(
                     place_id=place.place_id,
                     duration_minutes=90 if place.category == "餐厅" else 80,
-                    reason="模型不可用时按评分、距离和预算选择已观测地点",
+                    reason="结合评分、距离和预算挑选已查到的地点",
                 )
                 for place in selected
             ],
-            rationale="仅使用 Discovery 已观测地点的确定性 fallback",
+            rationale="依据已查到的地点整理",
         )

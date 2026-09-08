@@ -1,0 +1,40 @@
+# PlanGo 当前 Agent 架构
+
+代码对应 docs/Agent架构与选型.md。专业节点不是自治进程；当前不集成产品 MCP，也不采用自由 Agent Team。Redis承载调度，持久业务事实仍在数据库。图中聚焦Agent链；附近发现/地址解析也可直接走后端Geo API，地图展示由高德JS SDK完成，不必经过模型。
+
+```mermaid
+%%{init: {'layout':'elk','flowchart':{'wrappingWidth':340},'theme':'base','themeVariables':{'primaryColor':'#edf7f1','primaryTextColor':'#183e32','primaryBorderColor':'#70a68b','lineColor':'#55776a','fontFamily':'Noto Sans CJK SC, sans-serif','fontSize':'17px'}}}%%
+flowchart TB
+  user["用户<br/>输入 · 修改 · 审批 · 接管"]
+  ui["Electron + React 工作区"]
+  user <--> ui
+  subgraph backend["独立 Python 服务 · API + Worker"]
+    workflow["LangGraph 持久工作流<br/>确定性协调器 · Plan-and-Execute"]
+    specialists["LLM 专业节点<br/>需求 / 发现 / 方案 / 可选视角与批评"]
+    verify["确定性编译与三态验证<br/>满足 / 违反 / 未知"]
+    react["浏览器 ReAct 循环<br/>观察 → 决策 → 审批 → 操作 → 验收"]
+    workflow <--> specialists
+    workflow <--> verify
+    workflow <--> react
+  end
+  ui <-->|"任务、审批、持久事件"| workflow
+  source["真实高德 API<br/>地点 / 路线 / 日期天气"]
+  specialists <--> source
+  subgraph desktop["同一可见浏览器会话 · 受信主进程"]
+    bridge["命令桥<br/>所有者 / 授权 / 幂等 / UNKNOWN"]
+    driver["Playwright/CDP 固定操作<br/>DOM-first · 按需只读截图"]
+    view["WebContentsView + 原生弹窗<br/>同一持久 Cookie 分区"]
+    bridge <--> driver
+    driver <--> view
+  end
+  react <-->|"绑定命令与观测"| bridge
+  ui <-->|"可见页面与人工操作"| view
+  durable[("PostgreSQL<br/>任务 / checkpoint / 审批 / 回执 / 记忆")]
+  workflow <--> durable
+  react <--> durable
+  queue[("Redis Streams<br/>任务调度与恢复")]
+  queue <--> workflow
+  skills["本地 Skills：渐进加载的任务指导<br/>新任务冻结启用列表，不授予权限"]
+  skills -.-> specialists
+  skills -.-> react
+```

@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm'
 // 聊天气泡里的 markdown 渲染：表格/加粗/列表/分割线都排整齐，解决"文字格式看起来有点乱"。
 export function Markdown({ children }: { children: string }): JSX.Element {
   return (
-    <div className="md-body text-sm leading-relaxed break-words">
+    <div className="md-body text-[13px] leading-[1.75] break-words">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -14,8 +14,8 @@ export function Markdown({ children }: { children: string }): JSX.Element {
           p: ({ children }) => <p className="my-1 first:mt-0 last:mb-0">{children}</p>,
           ul: ({ children }) => <ul className="my-1 pl-4 list-disc space-y-0.5 marker:text-neutral-400">{children}</ul>,
           ol: ({ children }) => <ol className="my-1 pl-4 list-decimal space-y-0.5 marker:text-neutral-400">{children}</ol>,
-          li: ({ children }) => <li className="leading-snug">{children}</li>,
-          strong: ({ children }) => <strong className="font-semibold text-neutral-900">{children}</strong>,
+          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          strong: ({ children }) => <strong className="font-semibold text-brand-ink">{children}</strong>,
           hr: () => <hr className="my-2 border-neutral-200" />,
           blockquote: ({ children }) => <blockquote className="my-1.5 pl-2.5 border-l-2 border-brand/50 text-neutral-500 text-[13px]">{children}</blockquote>,
           a: ({ children, href }) => (

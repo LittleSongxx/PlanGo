@@ -490,10 +490,16 @@ class ActionAndPlanningCheck(unittest.TestCase):
                     client,
                     run_id,
                     lambda v: (
-                        v["state"].get("plan_version", 0) > 1
+                        v["state"].get("turn_id", 1) > paused["state"]["turn_id"]
                         and bool(v["state"].get("browser_wait"))
                     ),
                 )
+                # Rereading invalidates the old proposal immediately; the replacement
+                # plan version exists only after this fresh observation is compiled.
+                self.assertEqual(refreshed["state"]["plan_version"], candidate["version"])
+                self.assertIsNone(refreshed["state"].get("action_proposal"))
+                self.assertIsNone(refreshed["state"].get("execution_goal"))
+                self.assertEqual(client.post("/api/v1/runs/" + run_id + "/resume", json={"decision": "approve", "interrupt_id": paused["interrupt_id"]}).status_code, 409)
                 fresh_cmd = client.get(
                     "/api/v1/browser/commands?browser_session_id=fixture-desktop"
                 ).json()["commands"][0]
@@ -510,9 +516,11 @@ class ActionAndPlanningCheck(unittest.TestCase):
                         and v["phase"] in {"WAITING_APPROVAL", "FAILED", "INFEASIBLE"}
                     ),
                 )
+                self.assertEqual(updated["phase"], "WAITING_APPROVAL", updated)
                 self.assertEqual(updated["state"]["trip_spec"]["budget"], 400)
                 self.assertEqual(updated["state"]["trip_spec"]["party_size"], 2)
                 self.assertEqual(updated["state"]["selected_plan"]["version"], 2)
+                self.assertEqual([stop["place_id"] for stop in updated["state"]["selected_plan"]["stops"]], [stop["place_id"] for stop in candidate["stops"]])
                 self.assertNotEqual(updated["interrupt_id"], paused["interrupt_id"])
                 self.assertEqual(
                     client.post(
@@ -619,6 +627,9 @@ class BoundaryCheck(unittest.TestCase):
                 self.assertEqual(done["state"]["model_token_count"], 40)
                 self.assertEqual(calls[0][1]["content"][1]["image_url"]["url"], image)
                 self.assertEqual(done["state"]["browser_artifacts"][0]["source"], "user")
+                self.assertEqual(done["state"]["execution_outcome"]["data"]["scope"], "image_text")
+                self.assertFalse(done["state"]["execution_outcome"]["data"]["merchant_verified"])
+                self.assertFalse(done["state"]["execution_outcome"]["data"]["price_verified"])
                 followup = client.post(
                     "/api/v1/runs/" + run_id + "/messages", json={"text": "帮我预约餐厅"}
                 )

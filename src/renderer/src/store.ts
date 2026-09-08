@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent } from '@shared/types'
-import { projectHarness, projectEvents, runBusy, canResolveAction } from './lib/harnessProjection'
+import { projectHarness, projectEvents, runBusy, canResolveAction, row } from './lib/harnessProjection'
 import { originFallback as computeOrigin } from './lib/cityCenter'
 import { migrateLocalStorage } from './lib/storageMigration'
 import type { BrowserIntent, BrowserViewState, BrowserTabState } from '@shared/browserView'
+import type { LocationGranularity, LocationInfo, SelectedPoi } from '@shared/location'
 
 migrateLocalStorage(localStorage)
 
@@ -58,7 +59,10 @@ function saveSessions(list: SavedSession[]): void {
 }
 
 export interface RouteTarget {
-  origin?: string // "lng,lat" 我的位置
+  origin?: string // "lng,lat" user origin
+  originName?: string
+  initialMode?: 'driving' | 'walking' | 'transit'
+  originGranularity?: LocationGranularity
   dest: string // "lng,lat"
   destName: string
   city: string
@@ -83,7 +87,9 @@ interface State {
   cancelRun: () => Promise<void>
   resolveAction: (runId: string, actionId: string, status: 'SUCCEEDED' | 'FAILED', note: string, reference?: string) => Promise<void>
   selectPlan: (plan: Plan) => Promise<void>
+  decideDraft: (runId: string, interruptId: string, planId: string, planVersion: number, decision: 'save' | 'prepare') => Promise<void>
   resumeBrowser: () => Promise<void>
+  resumePreparation: (runId: string, planId: string, planVersion: number, approvalId: string) => Promise<void>
   proactive: ProactiveMsg[]
   settingsOpen: boolean
   view: WorkView
@@ -91,6 +97,8 @@ interface State {
   city: string
   citySource: string
   district: string
+  locationGranularity: LocationGranularity
+  locationObservedAt: string
   locAccuracy: number // 定位精度（米），0=未知
   coords: string // "lng,lat" GCJ02，用户当前位置（地图起点）
   routeTarget: RouteTarget | null // 页面内路线面板目标
@@ -111,7 +119,7 @@ interface State {
   setActiveTab: (id: string) => void
 
   pushMessage: (m: ChatMessage) => void
-  send: (text: string, image?: string) => Promise<void>
+  send: (text: string, image?: string, selectedPoi?: SelectedPoi) => Promise<void>
   confirm: (token: string, ok: boolean) => Promise<void>
 
   applyStep: (s: AgentStep & { patch?: boolean }) => void
@@ -124,7 +132,7 @@ interface State {
   setCity: (city: string, source?: string) => void
   setCoords: (coords: string) => void
   originFallback: () => string // 出发点：真实坐标优先，否则当前城市中心（永远有值）
-  setLocationInfo: (info: { city?: string; district?: string; coords?: string; source?: string; accuracy?: number }) => void
+  setLocationInfo: (info: Partial<LocationInfo>) => void
   navigateInApp: (url: string) => void
   openRoute: (t: RouteTarget) => void
   closeRoute: () => void
@@ -149,7 +157,7 @@ export const useStore = create<State>((set, get) => ({
     {
       role: 'assistant',
       content:
-        '你好，我是PlanGo 👋 你的 AI 本地生活管家。\n告诉我人数、预算和想去的地方，我会结合真实地图与浏览器信息规划行程。菜单、团购和执行结果会保留来源；登录或网站操作需要你接管时，我会停下来等你。'
+        '你好，我是 PlanGo。\n\n告诉我想去哪儿、和谁一起、什么时候出发。我会结合真实资料整理安排，保留来源和待核验事项。\n\n需要登录或执行关键操作时，会先停下来请你确认。'
     }
   ],
   steps: [],
@@ -168,6 +176,8 @@ export const useStore = create<State>((set, get) => ({
   citySource: 'config',
   district: '',
   locAccuracy: 0,
+  locationGranularity: 'city',
+  locationObservedAt: '',
   coords: '',
   routeTarget: null,
   sharePlan: null,
@@ -184,7 +194,7 @@ export const useStore = create<State>((set, get) => ({
   browserIntent: async (intent) => {
     set({ browserError: '' })
     try { get().applyBrowserState(await window.plango.browser.request(intent)); set({ browserError: '' }) }
-    catch (error) { set({ browserError: (error as Error).message }) }
+    catch (error) { set({ browserError: (error as Error).message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '') }) }
   },
   addTab: (url) => { void get().browserIntent({ kind: 'create', url }) },
   closeTab: (id) => { void get().browserIntent({ kind: 'close', id }) },
@@ -199,11 +209,13 @@ export const useStore = create<State>((set, get) => ({
     if (current && current.run_id !== run.run_id) return
     if (current && ((run.version ?? 0) < (current.version ?? 0) || (run.version === current.version && run.event_seq < current.event_seq))) return
     const projected = projectHarness(run)
+    const newDecision = !!run.interrupt_id && run.interrupt_id !== current?.interrupt_id && (!!run.draft_review || run.phase === 'WAITING_APPROVAL')
     const newlyFinished = !!run.outcome && (!current?.outcome || run.state.turn_id !== current.state.turn_id)
     set((s) => ({ run, messages: projected.messages.length ? projected.messages : s.messages, cards: projected.cards,
+      ...(run.events ? { events: run.events, steps: projectEvents(run.events) } : {}),
       backendReady: true, backendError: '', busy: s.requestBusy || runBusy(run),
       aiBrowsing: run.outcome || run.state.browser_wait ? { active: false, site: '', action: '' } : s.aiBrowsing,
-      view: projected.cards.length && (!s.cards.length || newlyFinished) ? 'outcome' : s.view }))
+      view: projected.cards.length && (!s.cards.length || newlyFinished || newDecision) ? 'outcome' : s.view }))
     get().persistSession()
   },
 
@@ -212,10 +224,8 @@ export const useStore = create<State>((set, get) => ({
     if (!run || refreshingRun === run.run_id) return
     refreshingRun = run.run_id
     try {
-      const [snapshot, result] = await Promise.all([window.plango.harness.getRun(run.run_id), window.plango.harness.events(run.run_id, get().events.at(-1)?.seq || 0)])
+      const snapshot = await window.plango.harness.getRun(run.run_id)
       if (get().activeSessionId !== activeSessionId || get().run?.run_id !== run.run_id) return
-      const events = [...new Map([...get().events, ...result.events].map(e => [e.seq, { ...e, run_id: run.run_id }])).values()].sort((a, b) => a.seq - b.seq)
-      set({ events, steps: projectEvents(events) })
       get().applyHarness(snapshot)
     } catch (e) {
       if (get().activeSessionId === activeSessionId) set({ backendError: String(e), backendReady: false })
@@ -249,21 +259,22 @@ export const useStore = create<State>((set, get) => ({
 
   receiveHarnessEvent: (event) => {
     if (get().run?.run_id !== event.run_id) return
+    if (event.event_type === 'snapshot') { get().applyHarness(event.payload.snapshot as HarnessSnapshot); return }
+    if (event.event_type === 'connection_error') set({ backendReady: false, backendError: String(event.payload.message || '任务连接中断') })
     const events = [...new Map([...get().events, event].map(e => [e.seq, e])).values()].sort((a, b) => a.seq - b.seq)
     set({ events, steps: projectEvents(events) })
-    void get().refreshRun()
   },
 
-  send: async (text, image) => {
+  send: async (text, image, selectedPoi) => {
     if (!text.trim() || get().busy) return
     if (!get().backendReady) { set({ backendError: '运行服务尚未连接，请先重新连接。' }); return }
+    if (selectedPoi) get().newSession()
     const { run, activeSessionId } = get()
     set((s) => ({ busy: true, requestBusy: true, backendError: '', messages: [...s.messages, { role: 'user', content: text }] }))
     try {
-      const snapshot = run ? await window.plango.harness.sendMessage(run.run_id, text, image) : await window.plango.harness.createRun(text, image)
+      const snapshot = run ? await window.plango.harness.sendMessage(run.run_id, text, image) : await window.plango.harness.createRun(text, image, selectedPoi)
       if (get().activeSessionId !== activeSessionId) return
       get().applyHarness(snapshot)
-      await get().refreshRun()
     } catch (e) {
       if (get().activeSessionId === activeSessionId) set({ backendError: String(e) })
     } finally {
@@ -281,7 +292,7 @@ export const useStore = create<State>((set, get) => ({
     } catch (e) {
       if (get().activeSessionId === activeSessionId) set({ backendError: String(e) })
     } finally {
-      if (get().activeSessionId === activeSessionId) { set({ requestBusy: false, busy: runBusy(get().run) }); await get().refreshRun() }
+      if (get().activeSessionId === activeSessionId) { set({ requestBusy: false, busy: runBusy(get().run) }) }
     }
   },
 
@@ -307,6 +318,19 @@ export const useStore = create<State>((set, get) => ({
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 
+  decideDraft: async (runId, interruptId, planId, planVersion, decision) => {
+    const { run, activeSessionId } = get(), draft = run?.draft_review
+    if (!run || run.outcome || ['FAILED', 'CANCELLED', 'INFEASIBLE', 'PARTIAL_FAILED', 'SUCCEEDED'].includes(run.phase) || run.run_id !== runId || get().busy || !get().backendReady || !draft || run.interrupt_id !== interruptId || draft.interrupt_id !== interruptId ||
+      draft.plan_id !== planId || draft.plan_version !== planVersion || row(run.state.selected_plan).plan_id !== planId || row(run.state.selected_plan).version !== planVersion ||
+      (decision === 'prepare' && (!draft.can_prepare || draft.preparation_blockers.length > 0 || draft.conflicts.some(check => check.passed !== true)))) return
+    set({ requestBusy: true, busy: true, backendError: '' })
+    try {
+      const snapshot = await window.plango.harness.decideDraft(runId, interruptId, planId, planVersion, decision)
+      if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
+    } catch (error) { if (get().activeSessionId === activeSessionId) set({ backendError: String(error) }) }
+    finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
+  },
+
   cancelRun: async () => {
     const { run, activeSessionId } = get()
     if (!run) return
@@ -314,6 +338,19 @@ export const useStore = create<State>((set, get) => ({
       const snapshot = await window.plango.harness.cancel(run.run_id)
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
     } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
+  },
+
+  resumePreparation: async (runId, planId, planVersion, approvalId) => {
+    const { run, activeSessionId } = get(), resume = run?.preparation_resume, goal = row(run?.state.execution_goal)
+    if (!run || run.run_id !== runId || get().busy || !get().backendReady || run.command_pending || !resume?.can_resume || resume.blockers.length ||
+      resume.plan_id !== planId || resume.plan_version !== planVersion || resume.approval_id !== approvalId || goal.kind !== 'itinerary_preparation' ||
+      goal.plan_id !== planId || goal.plan_version !== planVersion || goal.approval_id !== approvalId || row(run.state.selected_plan).plan_id !== planId || row(run.state.selected_plan).version !== planVersion) return
+    set({ requestBusy: true, busy: true, backendError: '' })
+    try {
+      const snapshot = await window.plango.harness.resumePreparation(runId, planId, planVersion, approvalId)
+      if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
+    } catch (error) { if (get().activeSessionId === activeSessionId) set({ backendError: String(error) }) }
+    finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 
   resumeBrowser: async () => {
@@ -362,14 +399,16 @@ export const useStore = create<State>((set, get) => ({
       district: info.district ?? '',
       coords: info.coords ?? '',
       citySource: info.source ?? s.citySource,
-      locAccuracy: info.accuracy ?? 0
+      locAccuracy: info.accuracy ?? 0,
+      locationGranularity: info.granularity ?? (info.coords ? 'unknown' : 'city'),
+      locationObservedAt: info.observed_at ?? ''
     })),
   // 页面内导航：在内置浏览器新开一个标签打开高德网页版路线（不跳系统外部浏览器）
   navigateInApp: (url) => {
     get().addTab(url)
     set({ view: 'browser' })
   },
-  openRoute: (t) => set({ routeTarget: t, view: 'outcome' }),
+  openRoute: (t) => set({ routeTarget: { ...t, originGranularity: t.originGranularity ?? get().locationGranularity } }),
   closeRoute: () => set({ routeTarget: null }),
   openShare: (p) => set({ sharePlan: p }),
   closeShare: () => set({ sharePlan: null }),
@@ -396,7 +435,6 @@ export const useStore = create<State>((set, get) => ({
       if (get().activeSessionId !== id) return
       set({ requestBusy: false })
       get().applyHarness(snapshot)
-      await get().refreshRun()
     }).catch(e => {
       if (get().activeSessionId === id) set({ busy: false, requestBusy: false, backendError: String(e), backendReady: false })
     })

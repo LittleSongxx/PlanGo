@@ -2,6 +2,7 @@
 
 from plango_harness.agent.contracts import (
     Evidence,
+    PlaceCandidate,
     PlanCandidate,
     PlanDraft,
     PlanDraftStop,
@@ -44,7 +45,7 @@ class BrowserPlanEngine(PlanEngine):
     preserve_locks = staticmethod(preserve_locks)
 
     async def evaluate(self, spec, plan, *, evidence=None, weather=None, on_tool_call=None):
-        enriched = await self.enrich(spec, plan, on_tool_call=on_tool_call)
+        enriched = await self.enrich(spec, plan, evidence=evidence, on_tool_call=on_tool_call)
         rows = {
             e.evidence_id: e
             for raw in [*(evidence or []), *self.last_evidence]
@@ -73,12 +74,14 @@ async def variants(state, deps):
     spec = state.get("trip_spec")
     if not selected or not spec or not state.get("verifier"):
         return {}
+    selected = PlanCandidate.model_validate(selected)
+    observed_places = [PlaceCandidate.model_validate(item) for item in state.get("place_candidates", [])]
     candidates = [selected]
     seen = {tuple(s.place_id for s in selected.stops)}
     ctx = deps.tool_context(state)
     # Actual provider reads consume this budget; leave room for the next approval/execution stage.
     ctx.max_tool_calls = max(
-        0, deps.max_tool_calls - max(6, 2 + sum(s.category == "餐厅" for s in selected.stops))
+        0, deps.tool_limit(state) - max(6, 2 + sum(s.category == "餐厅" for s in selected.stops))
     )
     evidence = {
         e.evidence_id: e
@@ -110,7 +113,7 @@ async def variants(state, deps):
             options = sorted(
                 [
                     p
-                    for p in state.get("place_candidates", [])
+                    for p in observed_places
                     if p.category == original.category and p.place_id not in occupied
                 ],
                 key=priority,
@@ -141,7 +144,7 @@ async def variants(state, deps):
                 candidate = compile_plan_draft(
                     spec,
                     draft,
-                    state.get("place_candidates", []),
+                    observed_places,
                     evidence=list(evidence.values()),
                     version=selected.version,
                 )

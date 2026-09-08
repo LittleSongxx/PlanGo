@@ -1,0 +1,915 @@
+{
+  "scope": "Controlled local native GET form + actual Electron/SQLite/model; not merchant fulfillment or quality metrics",
+  "profile": "/home/song/code/Agent/multi-agent/PlanGo/output/preparation-e2e/session-plD5Ds",
+  "records": [
+    {
+      "name": "inventory",
+      "at": "2026-09-08T20:37:49.972Z",
+      "detail": {
+        "scenario": "UI selected canonical POI → plan approval → native GET form ready_to_review → UI party edit and stale approval",
+        "controlled": true,
+        "noMerchantFulfillment": true,
+        "submissionsMustRemain": 0
+      }
+    },
+    {
+      "name": "origin-selected-via-ui",
+      "at": "2026-09-08T20:38:09.806Z",
+      "detail": {
+        "message": [
+          "运行服务已连接",
+          "准备就绪",
+          "高德匹配为「重庆市渝中区邹容路2号」（渝中区 · 地址级），已设为规划起点。请核对是否为你期望的位置。"
+        ]
+      }
+    },
+    {
+      "name": "selected-poi-and-fixture",
+      "at": "2026-09-08T20:39:25.422Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "poi_id": "amap:B0MD1HTUN5",
+        "name": "王幺妹家常菜",
+        "address": "新华路259号附12号",
+        "fixtureUrl": "http://127.0.0.1:55887/restaurant",
+        "scope": "canonical POI identity plus controlled page facts; no real fulfillment",
+        "phase": "CREATED"
+      }
+    },
+    {
+      "name": "requirements-via-ui",
+      "at": "2026-09-08T20:43:57.420Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "date": "2026-09-09",
+        "party_size": 3,
+        "time": "18:30-19:30",
+        "budget": "none",
+        "scope": "controlled local form preparation only",
+        "submissions": 0
+      }
+    },
+    {
+      "name": "clarification-answer-via-ui",
+      "at": "2026-09-08T20:45:19.900Z",
+      "detail": {
+        "party": "3 total including user",
+        "start": "18:30",
+        "duration_minutes": 60,
+        "total_budget": 300,
+        "submissions": 0
+      }
+    },
+    {
+      "name": "preserve-selected-target-via-ui",
+      "at": "2026-09-08T20:47:25.211Z",
+      "detail": {
+        "target": "王幺妹家常菜",
+        "address": "新华路259号附12号",
+        "party_size": 3,
+        "total_budget": 300,
+        "submissions": 0
+      }
+    },
+    {
+      "name": "controlled-form-visible-before-approval",
+      "at": "2026-09-08T20:49:08.245Z",
+      "detail": {
+        "form": {
+          "method": "get",
+          "action": "http://127.0.0.1:55887/reserve",
+          "identity": "商家：王幺妹家常菜\n\n地址：新华路259号附12号\n\n人均50元\n\n营业时间：00:00-24:00\n\n营业中，可预约，剩余座位10，无需排队\n\n人数\n预约日期\n预约时间\n确认预约",
+          "controls": [
+            {
+              "name": "人数",
+              "type": "number",
+              "value": "3"
+            },
+            {
+              "name": "预约日期",
+              "type": "date",
+              "value": "2026-09-09"
+            },
+            {
+              "name": "预约时间",
+              "type": "time",
+              "value": "18:30"
+            },
+            {
+              "name": "",
+              "type": "submit"
+            }
+          ]
+        },
+        "submissions": 0,
+        "phase": "REQUIREMENTS_READY",
+        "preparationEntered": false,
+        "approvalVisible": 0,
+        "nativeScreenshot": true
+      }
+    },
+    {
+      "name": "owned-processes-stopped-for-recheck",
+      "at": "2026-09-08T21:12:06.784Z",
+      "detail": {
+        "submissions": 0,
+        "preservedDatabase": true,
+        "profile": "/home/song/code/Agent/multi-agent/PlanGo/output/preparation-e2e/session-plD5Ds"
+      }
+    },
+    {
+      "name": "same-scene-original-wording-recheck",
+      "at": "2026-09-08T21:12:41.110Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "submissions": 0
+      }
+    },
+    {
+      "name": "explicit-recovery-of-persisted-bad-state",
+      "at": "2026-09-08T21:14:27.863Z",
+      "detail": {
+        "submissions": 0,
+        "note": "UI correction of pre-fix stored counts and mistakenly geocoded search center; not data reset"
+      }
+    },
+    {
+      "name": "preserved-old-run-cancelled",
+      "at": "2026-09-08T21:17:42.057Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "submissions": 0
+      }
+    },
+    {
+      "name": "fresh-recheck-same-fixture",
+      "at": "2026-09-08T21:18:50.481Z",
+      "detail": {
+        "run_id": "bff5d130840f4a9ab9517257ef0b8c43",
+        "keptOldRun": true,
+        "submissions": 0
+      }
+    },
+    {
+      "name": "restored-original-run-for-repair",
+      "at": "2026-09-08T21:21:37.582Z",
+      "detail": {
+        "originalRun": "d51586748f934797a6c8b202ccd8df5b",
+        "currentVisibleSummary": "整理\n需要补充要求\n· 需求已整理\n等待你的下一步\n· 需求已整理\n补充要求已收到\n· 需求已整理\n任务进展已更新\n· 需求已整理\n补充要求已收到\n· 需求已整理\n需求已整理\n· 需求已整理\n确认下一处理步骤\n· 需求已整理\n需要补充要求\n· 需求已整理\n等待你的下一步\n· 需求已整理\n补充要求已收到\n· 需求已整理\n任务进展已更新\n· 需求已整理\n补充要求已收到\n· 需求已整理\n已读取保存的偏好\n· 已接收\n需求已整理\n· 需求已整理\n确认下一处理步骤\n· 需求已整理\n需要补充要求\n· 需求已整理\n等待你的下一步\n· 需求已整理\n补充要求已收到\n· 需求已整理\n任务进展已更新\n· 需求已整理\n补充要求已收到\n· 需求已整理\n任务进展已更新\n· 查找资料\n等待你的下一步\n· 需求已整理\n浏览器观测结果\n· 需求已整理\n继续处理页面\n· 需求已整理\n任务进展已更新\n· 需求已整理\n页面内容已读取\n· 查找资料\n等待你的下一步\n· 需求已整理\n浏览器观测结果\n· 需求已整理\n继续处理页面\n· 需求已整理\n任务进展已更新\n· 需求已整理\n页面内容已读取\n· 查找资料\n等待你的下一步\n· 等待确认\n任务已停止\n· 用户取消\nShift + Enter 换行\n\n重要操作需你确认，任务可随时停止",
+        "submissions": 0
+      }
+    },
+    {
+      "name": "original-run-recovery-restart",
+      "at": "2026-09-08T21:38:15.199Z",
+      "detail": {
+        "submissions": 0,
+        "preservedAllRuns": true
+      }
+    },
+    {
+      "name": "original-run-explicit-correction-via-ui",
+      "at": "2026-09-08T21:38:53.253Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "submissions": 0
+      }
+    },
+    {
+      "name": "original-run-recovered-to-draft",
+      "at": "2026-09-08T21:41:18.361Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "phase": "REQUIREMENTS_READY",
+        "party_size": 3,
+        "counts": {
+          "用户": 0,
+          "成人": 3
+        },
+        "budget": null,
+        "plan_id": "75faa91b3f0338",
+        "plan_version": 1,
+        "draft": {
+          "kind": "draft_review",
+          "interrupt_id": "draft:d51586748f934797a6c8b202ccd8df5b:75faa91b3f0338:1",
+          "plan_id": "75faa91b3f0338",
+          "plan_version": 1,
+          "can_prepare": false,
+          "preparation_blockers": [
+            "王幺妹家常菜缺少当前可信门店及地址来源"
+          ],
+          "scope": "draft_ready",
+          "unknowns": [
+            {
+              "name": "unsupported_constraint",
+              "kind": "unknown",
+              "passed": null,
+              "detail": "尚不能核验的明确要求：停留60分钟"
+            },
+            {
+              "name": "supply:amap:B0MD1HTUN5",
+              "kind": "unknown",
+              "passed": null,
+              "detail": "王幺妹家常菜 的营业或排队信息尚未完整核实；当前时间安排为待核验草案"
+            },
+            {
+              "name": "route:amap:B0MD1HTUN5",
+              "kind": "unknown",
+              "passed": null,
+              "detail": "王幺妹家常菜 的路线或环境证据不可用"
+            }
+          ],
+          "conflicts": []
+        },
+        "prepareDisabled": true,
+        "saveVisible": true,
+        "submissions": 0
+      }
+    },
+    {
+      "name": "draft-save-via-ui",
+      "at": "2026-09-08T21:42:17.661Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "phase": "SUCCEEDED",
+        "scope": "draft_ready",
+        "business_completed": false,
+        "oldInterrupt": "draft:d51586748f934797a6c8b202ccd8df5b:75faa91b3f0338:1",
+        "currentInterrupt": null,
+        "submissions": 0
+      }
+    },
+    {
+      "name": "canonical-reference-recovery-via-ui",
+      "at": "2026-09-08T21:46:59.681Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "submissions": 0
+      }
+    },
+    {
+      "name": "identity-evidence-blocker",
+      "at": "2026-09-08T21:49:28.983Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "search": {
+          "name": "王幺妹家常菜",
+          "latitude": 29.556375,
+          "longitude": 106.580225,
+          "city_code": null
+        },
+        "stop": {
+          "place_id": "amap:B0MD1HTUN5",
+          "name": "王幺妹家常菜",
+          "address": "新华路259号附12号",
+          "category": "餐厅",
+          "start_minute": 1111,
+          "end_minute": 1171,
+          "estimated_cost": 93,
+          "unit_price": 31,
+          "estimated_wait_min": null,
+          "supply_source": "amap",
+          "supply_observed_at": "2026-09-08T21:47:08.904011Z",
+          "supply_expires_at": "2026-09-08T21:49:08.904011Z",
+          "distance_km": 0.21,
+          "travel_min": 1,
+          "requested_dwell_min": 60,
+          "tags": [
+            "餐饮服务;中餐厅;中餐厅",
+            "evidence_unknown",
+            "supply_unknown",
+            "reservation_unknown"
+          ],
+          "locked": false,
+          "evidence_ids": [
+            "amap-route:203dc16b4a52:2ffba5dd",
+            "supply:amap:B0MD1HTUN5:1111"
+          ]
+        },
+        "candidate": {
+          "place_id": "amap:B0MD1HTUN5",
+          "name": "王幺妹家常菜",
+          "address": "新华路259号附12号",
+          "category": "餐厅",
+          "latitude": 29.556375,
+          "longitude": 106.580225,
+          "rating": 3.7,
+          "average_price": 31,
+          "price_known": true,
+          "open_minute": 540,
+          "close_minute": 1440,
+          "distance_km": 0,
+          "tags": [
+            "餐饮服务;中餐厅;中餐厅"
+          ],
+          "source": "amap",
+          "evidence_ids": [
+            "selected-poi:d51586748f934797a6c8b202ccd8df5b"
+          ]
+        },
+        "linkedEvidence": [
+          {
+            "id": "amap-route:203dc16b4a52:2ffba5dd",
+            "source": "amap",
+            "payload": {
+              "distance_km": 0.21,
+              "driving_min": 1,
+              "transit_min": null,
+              "walking_min": null,
+              "recommended": "driving",
+              "source": "amap",
+              "destination_place_id": "amap:B0MD1HTUN5",
+              "requested_visit_date": "2026-09-09",
+              "requested_timezone": "Asia/Shanghai",
+              "origin": [
+                29.55575,
+                106.580239
+              ]
+            },
+            "observed_at": "2026-09-08T21:47:29.029777Z",
+            "expires_at": "2026-09-08T21:57:29.029777Z"
+          },
+          {
+            "id": "supply:amap:B0MD1HTUN5:1111",
+            "source": "amap",
+            "payload": {
+              "place_id": "amap:B0MD1HTUN5",
+              "requested_visit_date": "2026-09-09",
+              "requested_timezone": "Asia/Shanghai",
+              "date_verified": true,
+              "open_now": true,
+              "reservable": null,
+              "seats_left": null,
+              "estimated_wait_min": null,
+              "open_minute": 540,
+              "close_minute": 1440,
+              "source": "amap"
+            },
+            "observed_at": "2026-09-08T21:47:08.904011Z",
+            "expires_at": "2026-09-08T21:49:08.904011Z"
+          }
+        ],
+        "totalTokens": 56381,
+        "submissions": 0
+      }
+    },
+    {
+      "name": "actual-isolated-scenario-limits",
+      "at": "2026-09-08T21:52:03.862Z",
+      "detail": {
+        "max_model_tokens": 60000,
+        "max_tool_calls": 48,
+        "max_run_seconds": 300,
+        "current_tokens": 56381,
+        "submissions": 0
+      }
+    },
+    {
+      "name": "turn-budget-before-final-recheck",
+      "at": "2026-09-08T22:00:07.856Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "turn_id": 8,
+        "turn_budget": {
+          "id": "replan:3321da9c2bc34e42a063b7bf2d16281d",
+          "grant_seq": 72,
+          "model_baseline": 28168,
+          "tool_baseline": 8,
+          "started_at": 1788904019.7291794,
+          "deadline_at": 1788904320.5499244,
+          "resumed_at": 1788904028.9489768
+        },
+        "cumulative_model_tokens": 56381,
+        "model_remaining": 31787,
+        "submissions": 0
+      }
+    },
+    {
+      "name": "same-run-live-identity-refresh-requested",
+      "at": "2026-09-08T22:08:44.822Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "turn_budget": {
+          "id": "user:89",
+          "grant_seq": 89,
+          "model_baseline": 56381,
+          "tool_baseline": 13,
+          "started_at": 1788905324.5874274,
+          "deadline_at": 1788905624.5874274
+        },
+        "cumulative_model_tokens": 56381,
+        "cap": 60000,
+        "submissions": 0
+      }
+    },
+    {
+      "name": "prepare-draft-via-ui",
+      "at": "2026-09-08T22:10:08.134Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "goal": {
+          "kind": "itinerary_preparation",
+          "run_id": "d51586748f934797a6c8b202ccd8df5b",
+          "plan_id": "1863281a658beb",
+          "plan_version": 3,
+          "approval_id": "draft:d51586748f934797a6c8b202ccd8df5b:1863281a658beb:3",
+          "request": "就以「王幺妹家常菜」（新华路259号附12号）为中心，帮我排一套附近的周末方案；用户补充：今天2026-09-0918:30到19:30，3位成人一起吃晚餐，不设预算，只按当前网页里的「王幺妹家常菜」安排一个餐厅行程，不增加其他地点。行程确认后核对预约表单，不要提交。；用户补充：补充并更正：总共3人，包含我在内；今天2026年9月9日，18:30开始，停留60分钟，总预算300元。只去当前网页这家餐厅，没有第二个地点。；用户补充：保留原来选中的「王幺妹家常菜」（重庆市渝中区新华路259号附12号），不更改地区和门店。总共3人包含我，今天18:30开始，用餐时长1小时，总预算300元。按当前网页准备这家店。；用户补充：今天2026-09-0918:30到19:30，3位成人一起吃晚餐，不设预算，只按当前网页里的「王幺妹家常菜」安排一个餐厅行程，不增加其他地点。行程确认后核对预约表单，不要提交。；用户补充：继续原来的餐厅行程规划。同行总共3人，包含我，均为成人。出发地是重庆市渝中区邹容路1号；搜索中心改为「王幺妹家常菜」。今天2026年9月9日18:30开始，整个行程2小时，不设预算。只按照当前网页中的该门店资料，审批后仅准备表单，不提交。；用户补充：继续原来的行程规划，只去当前网页这家店，从当前位置出发。总共3名成人，包含我，今天2026年9月9日18:30出发，整个行程2小时，不设预算。请重新核验当前网页资料，然后仅准备表单，不提交。；用户补充：重新核验这家门店，其他要求不变。",
+          "requirements": {
+            "goal": "就以「王幺妹家常菜」（新华路259号附12号）为中心，帮我排一套附近的周末方案；用户补充：今天2026-09-0918:30到19:30，3位成人一起吃晚餐，不设预算，只按当前网页里的「王幺妹家常菜」安排一个餐厅行程，不增加其他地点。行程确认后核对预约表单，不要提交。；用户补充：补充并更正：总共3人，包含我在内；今天2026年9月9日，18:30开始，停留60分钟，总预算300元。只去当前网页这家餐厅，没有第二个地点。；用户补充：保留原来选中的「王幺妹家常菜」（重庆市渝中区新华路259号附12号），不更改地区和门店。总共3人包含我，今天18:30开始，用餐时长1小时，总预算300元。按当前网页准备这家店。；用户补充：今天2026-09-0918:30到19:30，3位成人一起吃晚餐，不设预算，只按当前网页里的「王幺妹家常菜」安排一个餐厅行程，不增加其他地点。行程确认后核对预约表单，不要提交。；用户补充：继续原来的餐厅行程规划。同行总共3人，包含我，均为成人。出发地是重庆市渝中区邹容路1号；搜索中心改为「王幺妹家常菜」。今天2026年9月9日18:30开始，整个行程2小时，不设预算。只按照当前网页中的该门店资料，审批后仅准备表单，不提交。；用户补充：继续原来的行程规划，只去当前网页这家店，从当前位置出发。总共3名成人，包含我，今天2026年9月9日18:30出发，整个行程2小时，不设预算。请重新核验当前网页资料，然后仅准备表单，不提交。；用户补充：重新核验这家门店，其他要求不变。",
+            "party": [
+              {
+                "role": "成人",
+                "age": null,
+                "hard_constraints": [],
+                "preferences": [],
+                "budget_cap": null,
+                "can_queue": true
+              }
+            ],
+            "hard_constraints": [
+              "距离优先",
+              "停留60分钟"
+            ],
+            "soft_preferences": [],
+            "visit_date": "2026-09-09",
+            "timezone": "Asia/Shanghai",
+            "time_window_start": "18:30",
+            "duration_minutes": 120,
+            "time_window": {
+              "start": "18:30",
+              "duration_minutes": 120
+            },
+            "budget": null,
+            "per_person_budget": null,
+            "party_size": 3,
+            "party_counts": {
+              "用户": 0,
+              "成人": 3
+            },
+            "required_activities": [
+              "餐厅"
+            ],
+            "optional_activities": [],
+            "excluded_activities": [],
+            "activity_order": [],
+            "location": {
+              "name": "重庆",
+              "latitude": 29.55575,
+              "longitude": 106.580239,
+              "city_code": null
+            },
+            "search_location": {
+              "name": "王幺妹家常菜",
+              "latitude": 29.556375,
+              "longitude": 106.580225,
+              "city_code": null
+            },
+            "must_visit_place_ids": [
+              "amap:B0MD1HTUN5"
+            ],
+            "weather_sensitive": true,
+            "indoor_required": false,
+            "outdoor_required": false,
+            "max_queue_minutes": null,
+            "max_distance_km": null,
+            "travel_mode": "driving"
+          },
+          "stops": [
+            {
+              "place_id": "amap:B0MD1HTUN5",
+              "name": "王幺妹家常菜",
+              "address": "新华路259号附12号",
+              "category": "餐厅",
+              "start_minute": 1111,
+              "end_minute": 1171,
+              "estimated_cost": 93,
+              "unit_price": 31,
+              "estimated_wait_min": null,
+              "supply_source": "amap",
+              "supply_observed_at": "2026-09-08T22:08:53.012402Z",
+              "supply_expires_at": "2026-09-08T22:10:53.012402Z",
+              "distance_km": 0.21,
+              "distance_kind": "route",
+              "travel_min": 1,
+              "requested_dwell_min": 60,
+              "tags": [
+                "餐饮服务;中餐厅;中餐厅",
+                "supply_unknown",
+                "reservation_unknown"
+              ],
+              "locked": false,
+              "evidence_ids": [
+                "selected-poi:d51586748f934797a6c8b202ccd8df5b:9",
+                "amap-route:203dc16b4a52:2ffba5dd",
+                "supply:amap:B0MD1HTUN5:1111"
+              ]
+            }
+          ],
+          "plan_verification": "draft",
+          "pending_checks": [
+            {
+              "name": "unsupported_constraint",
+              "kind": "unknown",
+              "passed": null,
+              "detail": "尚不能核验的明确要求：停留60分钟"
+            },
+            {
+              "name": "supply:amap:B0MD1HTUN5",
+              "kind": "unknown",
+              "passed": null,
+              "detail": "王幺妹家常菜 的营业或排队信息尚未完整核实；当前时间安排为待核验草案"
+            }
+          ]
+        },
+        "budgetId": "user:89",
+        "phase": "REQUIREMENTS_READY",
+        "submissions": 0
+      }
+    },
+    {
+      "name": "closed-tab-user-resume-attempt",
+      "at": "2026-09-08T22:14:48.553Z",
+      "detail": {
+        "phase": "REQUIREMENTS_READY",
+        "browser_wait": {
+          "type": "browser",
+          "id": "browser:ff7795ad0c1fcacb7f620d15d4ce2e775a697ea6",
+          "command_id": "ff7795ad0c1fcacb7f620d15d4ce2e775a697ea6",
+          "operation": "extract",
+          "message": "等待桌面浏览器；请保持应用开启，登录或接管后继续。",
+          "paused_at": 1788905688.336476
+        },
+        "submissions": 0
+      }
+    },
+    {
+      "name": "read-only-tab-recovery-backend-restarted",
+      "at": "2026-09-08T22:24:46.417Z",
+      "detail": {
+        "tab": "tab_abda4b33-1193-4d27-ba80-418d961de859",
+        "goal": "1863281a658beb",
+        "browser_wait": {
+          "type": "browser",
+          "id": "browser:ff7795ad0c1fcacb7f620d15d4ce2e775a697ea6",
+          "command_id": "ff7795ad0c1fcacb7f620d15d4ce2e775a697ea6",
+          "operation": "extract",
+          "message": "原标签页已关闭。请打开原目标页面，点击继续后重新绑定当前可见标签进行只读核对。",
+          "paused_at": 1788905688.336476,
+          "error_kind": "tab_closed"
+        },
+        "submissions": 0
+      }
+    },
+    {
+      "name": "read-only-tab-recovery-result",
+      "at": "2026-09-08T22:25:41.881Z",
+      "detail": {
+        "phase": "PARTIAL_FAILED",
+        "goalPlan": "1863281a658beb",
+        "goalVersion": 3,
+        "visibleTab": "tab_abda4b33-1193-4d27-ba80-418d961de859",
+        "observationTab": "tab_abda4b33-1193-4d27-ba80-418d961de859",
+        "outcome": {
+          "kind": "itinerary_preparation",
+          "status": "mismatch",
+          "summary": "行程准备尚未完成：需要补齐或修正同一预约表单中的商家、人数、日期和时间信息。",
+          "evidence_ids": [],
+          "data": {
+            "scope": "preparation_incomplete",
+            "business_completed": false,
+            "plan_verification": "draft",
+            "pending_checks": [
+              {
+                "name": "unsupported_constraint",
+                "kind": "unknown",
+                "passed": null,
+                "detail": "尚不能核验的明确要求：停留60分钟"
+              },
+              {
+                "name": "supply:amap:B0MD1HTUN5",
+                "kind": "unknown",
+                "passed": null,
+                "detail": "王幺妹家常菜 的营业或排队信息尚未完整核实；当前时间安排为待核验草案"
+              }
+            ],
+            "entries": [],
+            "issues": [
+              {
+                "place_id": "amap:B0MD1HTUN5",
+                "status": "mismatch",
+                "detail": "表单值与目标不一致",
+                "differences": [
+                  {
+                    "form_id": "070b96f092db973787bac73981d6ba26a3093c71:frame-0:form-0",
+                    "evidence_id": "page:070b96f092db973787bac73981d6ba26a3093c71",
+                    "expected": {
+                      "party_size": "3",
+                      "date": "2026-09-09",
+                      "time": "18:31"
+                    },
+                    "observed": {
+                      "party_size": "3",
+                      "date": "2026-09-09",
+                      "time": "18:30"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "action": null,
+        "submissions": 0
+      }
+    },
+    {
+      "name": "preparation-mismatch-and-process-ui",
+      "at": "2026-09-08T22:35:08.377Z",
+      "detail": {
+        "canonicalMismatchVisible": true,
+        "processDefaultClosed": true,
+        "expandWorks": true,
+        "processCount": "任务过程（123）",
+        "submissions": 0
+      }
+    },
+    {
+      "name": "resume-original-goal-time-proposal",
+      "at": "2026-09-08T22:49:20.751Z",
+      "detail": {
+        "phase": "WAITING_APPROVAL",
+        "resume": {
+          "plan_id": "1863281a658beb",
+          "plan_version": 3,
+          "approval_id": "draft:d51586748f934797a6c8b202ccd8df5b:1863281a658beb:3",
+          "can_resume": false,
+          "blockers": [
+            "当前核对已经在进行或已经完成"
+          ]
+        },
+        "goalPlan": "1863281a658beb",
+        "goalVersion": 3,
+        "goalApproval": "draft:d51586748f934797a6c8b202ccd8df5b:1863281a658beb:3",
+        "action": {
+          "operation": "type",
+          "arguments": {
+            "idx": 2,
+            "text": "18:31"
+          },
+          "snapshot_id": "630eaa3c691a6fe7b5e8af69609fe97bc5e0d3d9",
+          "tab_id": "tab_6d4bada4-be45-48b6-b713-adc68a08d342",
+          "url": "http://127.0.0.1:55887/restaurant",
+          "target": {
+            "idx": 2,
+            "tag": "input",
+            "role": "",
+            "name": "预约时间",
+            "text": "",
+            "input_type": "time",
+            "disabled": false
+          },
+          "request_hash": "4635e893905aca094b6dec4bac2066594aeb060cc3189558c8f1709fba4cd4f5",
+          "action_id": "web_ac09cf7d2e9d50d5fa345c51"
+        },
+        "budget": {
+          "id": "prepare:4cc0470d7ef646759e21a276abd83d48",
+          "grant_seq": 124,
+          "model_baseline": 90096,
+          "tool_baseline": 20,
+          "started_at": 1788907755.4028258,
+          "deadline_at": 1788908056.3007772,
+          "resumed_at": 1788907756.4228146
+        },
+        "submissions": 0
+      }
+    },
+    {
+      "name": "localhost-write-policy-held",
+      "at": "2026-09-08T22:58:44.689Z",
+      "detail": {
+        "nativeTime": "18:30",
+        "error": "site_not_allowed",
+        "submissions": 0
+      }
+    },
+    {
+      "name": "supported-host-local-fixture",
+      "at": "2026-09-08T22:59:09.583Z",
+      "detail": {
+        "url": "http://fixture.meituan.com:55887/restaurant",
+        "localServer": "127.0.0.1:55887",
+        "productionAllowlistUnchanged": true,
+        "realMerchant": false,
+        "submissions": 0
+      }
+    },
+    {
+      "name": "three-person-preparation-result",
+      "at": "2026-09-08T23:00:14.550Z",
+      "detail": {
+        "phase": "SUCCEEDED",
+        "scope": "ready_to_review",
+        "business_completed": false,
+        "nativeTime": "18:31",
+        "entries": [
+          {
+            "place_id": "amap:B0MD1HTUN5",
+            "form_id": "7f86f0fb3296719c34a1773b0a5a6007bac8745d:frame-0:form-0",
+            "source_url": "http://fixture.meituan.com:55887/restaurant",
+            "snapshot_id": "7f86f0fb3296719c34a1773b0a5a6007bac8745d",
+            "page_version": "5212055ef39e93ad22221fc5148c4f8d1f031948f8b6ca85317632d502f87654",
+            "evidence_id": "page:7f86f0fb3296719c34a1773b0a5a6007bac8745d",
+            "submit_idx": 3,
+            "party_size": 3,
+            "visit_date": "2026-09-09",
+            "visit_time": "18:31",
+            "timezone": "Asia/Shanghai",
+            "time_source": "approved_plan"
+          }
+        ],
+        "pending_checks": [
+          {
+            "name": "unsupported_constraint",
+            "kind": "unknown",
+            "passed": null,
+            "detail": "尚不能核验的明确要求：停留60分钟"
+          },
+          {
+            "name": "supply:amap:B0MD1HTUN5",
+            "kind": "unknown",
+            "passed": null,
+            "detail": "王幺妹家常菜 的营业或排队信息尚未完整核实；当前时间安排为待核验草案"
+          }
+        ],
+        "actions": [
+          {
+            "action_id": "web_0625d8b481323ac641513de7",
+            "status": "SUCCEEDED",
+            "scope": "browser_interaction"
+          }
+        ],
+        "model_tokens": 91945,
+        "submissions": 0
+      }
+    },
+    {
+      "name": "single-people-edit-invalidates-old-goal",
+      "at": "2026-09-08T23:03:57.325Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "oldPlanVersion": 3,
+        "oldGoalApproval": "draft:d51586748f934797a6c8b202ccd8df5b:1863281a658beb:3",
+        "oldGoalCleared": true,
+        "oldOutcomeCleared": true,
+        "oldResumeMetadataAbsent": true,
+        "budget": {
+          "id": "replan:a3076ac9f82847a386196320f09deb6a",
+          "grant_seq": 158,
+          "model_baseline": 91945,
+          "tool_baseline": 25,
+          "started_at": 1788908637.0740569,
+          "deadline_at": 1788908937.0740569
+        },
+        "nativePeople": "3",
+        "submissions": 0
+      }
+    },
+    {
+      "name": "four-person-preparation-closed-loop",
+      "at": "2026-09-08T23:06:27.605Z",
+      "detail": {
+        "run_id": "d51586748f934797a6c8b202ccd8df5b",
+        "phase": "SUCCEEDED",
+        "plan_version": 4,
+        "goalApproval": "draft:d51586748f934797a6c8b202ccd8df5b:c97da2201ca24e:4",
+        "oldApproval": "draft:d51586748f934797a6c8b202ccd8df5b:1863281a658beb:3",
+        "scope": "ready_to_review",
+        "entry": {
+          "place_id": "amap:B0MD1HTUN5",
+          "form_id": "91500fd10b09833696c0f6fcd7ef71fe6ea0cccc:frame-0:form-0",
+          "source_url": "http://fixture.meituan.com:55887/restaurant",
+          "snapshot_id": "91500fd10b09833696c0f6fcd7ef71fe6ea0cccc",
+          "page_version": "c5c00ba4d06e882a37d86462e1e9d2cc242c7437b2ce7040bda8c2ed07933fe7",
+          "evidence_id": "page:91500fd10b09833696c0f6fcd7ef71fe6ea0cccc",
+          "submit_idx": 3,
+          "party_size": 4,
+          "visit_date": "2026-09-09",
+          "visit_time": "18:31",
+          "timezone": "Asia/Shanghai",
+          "time_source": "approved_plan"
+        },
+        "pending_checks": [
+          {
+            "name": "unsupported_constraint",
+            "kind": "unknown",
+            "passed": null,
+            "detail": "尚不能核验的明确要求：停留60分钟"
+          },
+          {
+            "name": "supply:amap:B0MD1HTUN5",
+            "kind": "unknown",
+            "passed": null,
+            "detail": "王幺妹家常菜 的营业或排队信息尚未完整核实；当前时间安排为待核验草案"
+          }
+        ],
+        "nativePeople": "4",
+        "nativeTime": "18:31",
+        "model_tokens": 117705,
+        "budget": {
+          "id": "replan:a3076ac9f82847a386196320f09deb6a",
+          "grant_seq": 158,
+          "model_baseline": 91945,
+          "tool_baseline": 25,
+          "started_at": 1788908637.0740569,
+          "deadline_at": 1788909054.1381586,
+          "resumed_at": 1788908787.1636264
+        },
+        "submissions": 0
+      }
+    },
+    {
+      "name": "final-ledger-and-native-form",
+      "at": "2026-09-08T23:11:04.577Z",
+      "detail": {
+        "commands": 17,
+        "types": [
+          {
+            "command_id": "e2b01728fdc68fc8f41eeed23dda5dcb4e2bd577",
+            "run_id": "d51586748f934797a6c8b202ccd8df5b",
+            "operation": "type",
+            "arguments": {
+              "idx": 2,
+              "text": "18:31"
+            },
+            "outcome": "blocked",
+            "error_kind": "site_not_allowed",
+            "url": null
+          },
+          {
+            "command_id": "5eaeca225f15087d58da77682bba78eba68ee698",
+            "run_id": "d51586748f934797a6c8b202ccd8df5b",
+            "operation": "type",
+            "arguments": {
+              "idx": 2,
+              "text": "18:31"
+            },
+            "outcome": "executed",
+            "error_kind": null,
+            "url": "http://fixture.meituan.com:55887/restaurant"
+          },
+          {
+            "command_id": "efd35d234f0859c406f43663e64ccdfe733f153d",
+            "run_id": "d51586748f934797a6c8b202ccd8df5b",
+            "operation": "type",
+            "arguments": {
+              "idx": 0,
+              "text": "4"
+            },
+            "outcome": "executed",
+            "error_kind": null,
+            "url": "http://fixture.meituan.com:55887/restaurant"
+          }
+        ],
+        "clicks": 0,
+        "submissions": 0,
+        "nativePeople": "4",
+        "nativeTime": "18:31",
+        "nativeScreenshot": true
+      }
+    },
+    {
+      "name": "final-visible-result",
+      "at": "2026-09-08T23:15:43.374Z",
+      "detail": {
+        "scope": "ready_to_review",
+        "party_size": 4,
+        "plan_version": 4,
+        "submissions": 0,
+        "nativePeople": "4",
+        "nativeTime": "18:31",
+        "cumulativeModelTokens": 117705,
+        "modelBaseline": 91945,
+        "cap": 60000
+      }
+    },
+    {
+      "name": "cleanup",
+      "at": "2026-09-08T23:17:13.463Z",
+      "detail": {
+        "stoppedOwnedElectron": true,
+        "stoppedOwnedBackend": true,
+        "preservedProfile": "/home/song/code/Agent/multi-agent/PlanGo/output/preparation-e2e/session-plD5Ds"
+      }
+    },
+    {
+      "name": "all-owned-services-closed",
+      "at": "2026-09-08T23:19:11.195Z",
+      "detail": {
+        "electronClosed": true,
+        "backendExited": true,
+        "fixtureListening": false,
+        "submissions": 0
+      }
+    }
+  ]
+}

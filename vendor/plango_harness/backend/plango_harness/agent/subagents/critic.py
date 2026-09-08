@@ -26,7 +26,7 @@ class CriticAgent:
                 "你是 PlanGo 的独立 Critic Agent。检查候选计划是否满足用户硬约束，"
                 "只基于给定计划和 Verifier 结果，不编造外部事实。若有问题给出可执行的修复方向。"
             ),
-            user=f"TripSpec：{spec.model_dump_json()}\n计划：{plan.model_dump_json()}\nVerifier：{verifier.model_dump_json()}",
+            user=f"TripSpec：{spec.model_dump_json(exclude={'goal'})}\n计划：{plan.model_dump_json()}\nVerifier：{verifier.model_dump_json()}",
             fallback=CriticOutput(
                 verdict=fallback.verdict,
                 issues=[item.detail for item in fallback.issues],

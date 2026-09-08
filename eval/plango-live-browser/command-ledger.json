@@ -1,0 +1,44 @@
+[
+  {
+    "run_id": "34ffd41681af4e549bf5f1914e3580a7",
+    "command_id": "c6415e7f219f82f9101303f4656fd0ad861742e9",
+    "operation": "extract",
+    "outcome": "observed"
+  },
+  {
+    "run_id": "34ffd41681af4e549bf5f1914e3580a7",
+    "command_id": "c993d2d85cea485716790b18b94046eac6c36280",
+    "operation": "extract",
+    "outcome": "observed"
+  },
+  {
+    "run_id": "34ffd41681af4e549bf5f1914e3580a7",
+    "command_id": "c0c69fd4ffb42f90ed3ba4f205bde5cf2bfa3577",
+    "operation": "extract",
+    "outcome": "observed"
+  },
+  {
+    "run_id": "c98b5abde68449838cb37c0bb0092650",
+    "command_id": "649c1b94965c3a369aabcbf6b4d9b48a4a588f7e",
+    "operation": "extract",
+    "outcome": "observed"
+  },
+  {
+    "run_id": "c98b5abde68449838cb37c0bb0092650",
+    "command_id": "58419a670c60a658162b8011d1f5f5ff7816a2fe",
+    "operation": "extract",
+    "outcome": "observed"
+  },
+  {
+    "run_id": "6903a5625c244b82983989f5f268635e",
+    "command_id": "0fa1f83e2d2288c8c79a61bd83884ccc39a80ec7",
+    "operation": "extract",
+    "outcome": "observed"
+  },
+  {
+    "run_id": "6903a5625c244b82983989f5f268635e",
+    "command_id": "ca3863f2252eda983ee18ff24b0c4477d9e71494",
+    "operation": "extract",
+    "outcome": "observed"
+  }
+]

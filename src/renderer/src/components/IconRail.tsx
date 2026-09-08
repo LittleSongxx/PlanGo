@@ -1,5 +1,5 @@
 import { useStore } from '../store'
-import { Sparkles, Globe, LayoutList, Settings, MapPin, Compass, History, MessageCircle, Ticket } from 'lucide-react'
+import { Route, Globe, LayoutList, Settings, MapPin, Compass, History, MessageCircle, Ticket, Plus, ArrowUpRight } from 'lucide-react'
 import { locationLabel } from '@shared/location'
 
 interface NavItem {
@@ -19,16 +19,15 @@ export function IconRail(): JSX.Element {
   const setSidePanelOpen = useStore((s) => s.setSidePanelOpen)
   const setDiscoverOpen = useStore((s) => s.setDiscoverOpen)
   const cards = useStore((s) => s.cards)
+  const newSession = useStore(state => state.newSession)
   const city = useStore((s) => s.city)
   const district = useStore((s) => s.district)
   const citySource = useStore((s) => s.citySource)
   const locAccuracy = useStore((s) => s.locAccuracy)
+  const granularity = useStore((s) => s.locationGranularity)
 
   const planCount = cards.filter((c) => c.kind === 'plan' || c.kind === 'plans').length
-  const precise = citySource === 'gps' || citySource === 'amap-gps'
-  const isIp = citySource === 'ip' || citySource === 'amap-ip'
-  const locLabel = locationLabel(citySource, locAccuracy)
-  const locColor = precise ? 'text-green-400' : isIp ? 'text-sky-400' : 'text-amber-400'
+  const locLabel = locationLabel(citySource, locAccuracy, granularity)
 
   const top: NavItem[] = [
     { id: 'browser', label: '浏览器', icon: <Globe size={20} />, onClick: () => setView('browser'), active: view === 'browser' },
@@ -44,51 +43,27 @@ export function IconRail(): JSX.Element {
   ]
 
   return (
-    <aside className="w-[68px] shrink-0 flex flex-col items-center bg-neutral-900 text-neutral-300 py-3 gap-1 select-none">
-      <div className="w-9 h-9 rounded-xl bg-brand flex items-center justify-center mb-2" title="PlanGo">
-        <Sparkles size={18} className="text-brand-ink" />
-      </div>
-
-      {top.map((n) => (
-        <RailButton key={n.id} item={n} />
-      ))}
-
-      <div className="w-8 h-px bg-neutral-700 my-2" />
-
-      {mid.map((n) => (
-        <RailButton key={n.id} item={n} />
-      ))}
-
-      <div className="mt-auto flex flex-col items-center gap-1">
-        <button
-          onClick={() => setSettings(true)}
-          className="text-[10px] text-neutral-400 text-center leading-tight px-1 hover:text-brand"
-          title={`当前定位：${city}${district ? '·' + district : ''}（${locLabel}）\n点击可在设置里重新定位/手动指定`}
-        >
-          <MapPin size={12} className={`inline mb-0.5 ${locColor}`} />
-          <div className="truncate max-w-[56px]">{district || city}</div>
-          <div className={`text-[8px] leading-none ${locColor}`}>{locLabel}</div>
+    <aside className="w-[176px] shrink-0 flex flex-col min-h-0 overflow-y-auto select-none" aria-label="主导航">
+      <div className="flex items-center gap-2.5 px-2 pt-3 pb-6" title="PlanGo"><span className="w-10 h-10 rounded-[14px] bg-brand-strong text-white flex items-center justify-center shadow-card"><Route size={21} strokeWidth={2} /></span><div><span className="text-[23px] tracking-[-0.8px] font-bold text-brand-ink">PlanGo</span><p className="text-[10px] text-[var(--muted)] mt-0.5">生活，有计划地出发</p></div></div>
+      <button onClick={newSession} className="plango-primary w-full mb-6" title="开始新安排"><Plus size={16} />开始新安排</button>
+      <div className="plango-kicker px-3 mb-2">工作台</div>
+      <nav className="space-y-1">{top.map(item => <RailButton key={item.id} item={item} />)}</nav>
+      <div className="plango-kicker px-3 mt-7 mb-2">发现与管理</div>
+      <nav className="space-y-1">{mid.map(item => <RailButton key={item.id} item={item} />)}</nav>
+      <div className="mt-auto pt-5 space-y-2">
+        <button onClick={() => setSettings(true)} className="w-full rounded-2xl border border-[var(--line)] bg-white/70 p-3 text-left hover:bg-white transition-colors" title={`当前定位：${city}${district ? '·' + district : ''}（${locLabel}）\n点击可在设置里重新定位/手动指定`}>
+          <div className="flex items-center gap-1.5 text-[10px] text-[var(--muted)]"><MapPin size={12} />当前地区<ArrowUpRight size={11} className="ml-auto" /></div>
+          <div className="mt-2 text-sm font-semibold truncate">{city}{district ? ` · ${district}` : ''}</div><div className="text-[10px] text-[var(--muted)] mt-1 truncate">{locLabel}</div>
         </button>
-        <RailButton item={{ id: 'settings', label: '设置', icon: <Settings size={20} />, onClick: () => setSettings(true) }} />
+        <RailButton item={{ id: 'settings', label: '设置', icon: <Settings size={18} />, onClick: () => setSettings(true) }} />
       </div>
     </aside>
   )
 }
 
 function RailButton({ item }: { item: NavItem }): JSX.Element {
-  return (
-    <button
-      onClick={item.onClick}
-      title={item.label}
-      className={`relative w-[52px] h-[52px] rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors ${
-        item.active ? 'bg-brand text-brand-ink' : 'hover:bg-neutral-800 text-neutral-300'
-      }`}
-    >
-      {item.icon}
-      <span className="text-[10px] leading-none">{item.label}</span>
-      {item.badge ? (
-        <span className="absolute top-1 right-1 min-w-[15px] h-[15px] px-0.5 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center">{item.badge}</span>
-      ) : null}
-    </button>
-  )
+  return <button onClick={item.onClick} title={item.label} aria-label={item.label} aria-current={item.active ? 'page' : undefined}
+    className={`relative w-full h-11 rounded-xl flex items-center gap-3 px-3 transition-colors text-[13px] ${item.active ? 'bg-white text-brand-strong font-semibold shadow-card border border-[#d8e6dc]' : 'border border-transparent text-[#617269] hover:bg-white/70 hover:text-brand-ink'}`}>
+    {item.icon}<span>{item.id === 'outcome' ? '方案与结果' : item.id === 'plugins' ? '连接与能力' : item.label}</span>{item.badge ? <span className="ml-auto rounded-md bg-brand-soft text-brand-strong px-1.5 py-0.5 text-[10px] tabular-nums">{item.badge}</span> : null}
+  </button>
 }

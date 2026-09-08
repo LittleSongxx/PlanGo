@@ -66,7 +66,7 @@ export function fromAmap(p: AmapPoi): POISummary {
     enable_reservation: false,
     business_hours: hours,
     products: [],
-    source: 'real',
+    source: 'amap',
     image: p.photos?.[0]?.url,
     images: (p.photos || []).map((ph) => ph.url).filter(Boolean).slice(0, 6),
     recommended,

@@ -12,6 +12,16 @@ const time = (value: unknown): string => num(value) === undefined ? '时间待�
 export function phaseLabel(run: HarnessSnapshot | null): string {
   if (!run) return '准备就绪'
   if (run.command_pending) return '处理中'
+  if (!run.outcome && !['FAILED', 'CANCELLED', 'INFEASIBLE', 'PARTIAL_FAILED', 'SUCCEEDED'].includes(run.phase) && run.draft_review && run.interrupt_id === run.draft_review.interrupt_id) return '草案待核对'
+  if (!run.outcome && !['FAILED', 'CANCELLED', 'INFEASIBLE', 'PARTIAL_FAILED', 'SUCCEEDED'].includes(run.phase) && Object.keys(row(run.state.browser_wait)).length) return '等待浏览器处理'
+  const outcome = row(run.state.execution_outcome), result = row(outcome.data)
+  if (['SUCCEEDED', 'PARTIAL_FAILED'].includes(run.phase) && result.business_completed === false) {
+    if (result.scope === 'draft_ready') return '草案已保存 · 待核验'
+    if (result.scope === 'ready_to_review' && outcome.status === 'satisfied') return '准备就绪 · 待核对'
+    if (result.scope === 'preparation_incomplete') return '准备事项待完善'
+    if (result.scope === 'image_text') return outcome.status === 'satisfied' ? '图片识别已完成' : '图片识别待补充'
+    if (result.scope === 'read_only') return outcome.status === 'satisfied' ? '资料读取已完成' : '资料读取待补充'
+  }
   return ({ CREATED: '已接收', PENDING: '排队中', RUNNING: '运行中', REQUIREMENTS_READY: '已理解需求', RESEARCHING: '查找真实信息', PLAN_DRAFTED: '方案已生成', REVIEWING: '校验方案', WAITING_APPROVAL: '等待确认', WAITING_BROWSER: '等待浏览器', EXECUTING: '执行中', REPLANNING: '重新规划', SUCCEEDED: '已完成', PARTIAL_FAILED: '部分完成', INFEASIBLE: '当前约束下不可行', FAILED: '运行失败', CANCELLED: '已取消' } as Record<string, string>)[run.phase] || run.phase
 }
 
@@ -29,6 +39,8 @@ function evidenceOf(state: Row): HarnessEvidence[] {
 
 function projectPlan(candidate: Row, run: HarnessSnapshot, evidence: HarnessEvidence[]): Plan {
   const state = run.state
+  const spec = row(state.trip_spec)
+  const cap = num(spec.budget) ?? (num(spec.per_person_budget) !== undefined && num(spec.party_size) !== undefined ? Number(spec.per_person_budget) * Number(spec.party_size) : undefined)
   const places = rows(state.place_candidates)
   const checks = rows(candidate.checks)
   const verifier = row(state.verifier)
@@ -38,10 +50,13 @@ function projectPlan(candidate: Row, run: HarnessSnapshot, evidence: HarnessEvid
     const place = places.find(p => p.place_id === stop.place_id) || {}
     return stop.price_known === false || place.price_known === false || (num(stop.unit_price) === undefined && num(place.average_price) === undefined)
   })
-  const candidateSource = (stop: Row): SourceTag => source(stop.supply_source || places.find(p => p.place_id === stop.place_id)?.source)
+  const candidateSource = (stop: Row): SourceTag => source(places.find(p => p.place_id === stop.place_id)?.source || stop.supply_source)
   return {
     plan_id: str(candidate.plan_id), run_id: run.run_id, version: num(candidate.version), party_size: num(candidate.party_size) ?? num(row(state.trip_spec).party_size),
-    title: str(candidate.label) || '当前方案', style: 'balanced', total_cost: priceUnknown ? null : num(candidate.total_cost) ?? null,
+    visit_date: str(spec.visit_date) || undefined, timezone: str(spec.timezone) || undefined,
+    origin: num(row(spec.location).latitude) !== undefined && num(row(spec.location).longitude) !== undefined ? { name: str(row(spec.location).name), latitude: Number(row(spec.location).latitude), longitude: Number(row(spec.location).longitude) } : undefined,
+    travel_mode: ['driving', 'walking', 'transit'].includes(str(spec.travel_mode)) ? spec.travel_mode as 'driving' | 'walking' | 'transit' : undefined,
+    title: ['PlanDraft', 'PlanCandidate', '确定性 fallback'].includes(str(candidate.label)) ? '基础方案' : str(candidate.label) || '当前方案', budget_limit: cap ?? (spec.budget === null && spec.per_person_budget === null ? null : undefined), style: 'balanced', total_cost: priceUnknown ? null : num(candidate.total_cost) ?? null,
     radar: {}, share_message: str(candidate.rationale),
     evidence: evidence.filter(e => strings(candidate.evidence_ids).includes(e.evidence_id) || stops.some(s => strings(s.evidence_ids).includes(e.evidence_id))),
     validation_notes: [...new Set(checks.filter(c => c.passed !== true).map(c => str(c.detail) || str(c.name)).concat(unknownNotes, verifier.executable === false ? ['当前是待核验方案，尚不具备执行条件。'] : []))],
@@ -59,7 +74,8 @@ function projectPlan(candidate: Row, run: HarnessSnapshot, evidence: HarnessEvid
         source: candidateSource(stop), recommended: [], is_distraction: false
       }
       return { node_id: `${str(stop.place_id)}:${i}`, time_start: time(stop.start_minute), time_end: time(stop.end_minute), category: kind, title: str(stop.name), poi,
-        reason: str(stop.reason) || str(candidate.rationale), locked: stop.locked === true, transit_from_prev_min: num(stop.travel_min) ?? 0, wait_min: num(stop.estimated_wait_min) ?? null,
+        reason: str(stop.reason) || str(candidate.rationale), locked: stop.locked === true, transit_from_prev_min: strings(stop.tags).includes('route_unknown') || stop.distance_kind === 'straight_line_lower_bound' ? null : num(stop.travel_min) ?? null, distance_km: num(stop.distance_km) ?? null,
+        distance_kind: ['route', 'straight_line_lower_bound'].includes(str(stop.distance_kind)) ? stop.distance_kind as 'route' | 'straight_line_lower_bound' : undefined, wait_min: num(stop.estimated_wait_min) ?? null,
         verify_state: row(state.verifier).plan_id === candidate.plan_id && row(state.verifier).executable === true ? 'verified' as const : 'suggested' as const }
     })
   }
@@ -91,10 +107,38 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
     seenPages.add(key)
     return true
   }).reverse()
+  // A guarded stop can persist its preparation outcome before an optional artifact is emitted.
+  // The current canonical outcome wins over an older success artifact for the same goal.
+  const preparation = row(state.execution_outcome), preparationGoal = row(state.execution_goal)
+  if (preparation.kind === 'itinerary_preparation' && preparationGoal.kind === 'itinerary_preparation' && str(preparationGoal.approval_id)) {
+    const artifactId = `preparation:${preparationGoal.approval_id}`
+    const index = artifacts.findIndex(artifact => artifact.type === 'browser_preparation' && artifact.artifact_id === artifactId)
+    const observation = row(state.browser_observation), observationId = `page:${str(observation.command_id)}`
+    const linked = strings(preparation.evidence_ids).includes(observationId) || rows(row(preparation.data).issues).some(issue => rows(issue.differences).some(difference => difference.evidence_id === observationId))
+    const sameArtifact = index >= 0 && JSON.stringify(artifacts[index].data) === JSON.stringify(preparation)
+    const projected = { type: 'browser_preparation', artifact_id: artifactId, data: preparation, observed_at: linked ? observation.observed_at : sameArtifact ? artifacts[index].observed_at : undefined }
+    if (index < 0) artifacts.push(projected)
+    else artifacts[index] = projected
+  }
   for (const artifact of artifacts) {
     const data = row(artifact.data)
+    if (artifact.type === 'browser_preparation') {
+      const result = row(data.data), goal = row(state.execution_goal), stops = rows(goal.stops)
+      const name = (placeId: unknown) => str(stops.find(stop => stop.place_id === placeId)?.name) || '待核对地点'
+      const current = !run.command_pending && !run.cancel_requested && !state.browser_wait && !!str(goal.approval_id) && !!str(selected.plan_id) && artifact.artifact_id === `preparation:${str(goal.approval_id)}` && goal.plan_id === selected.plan_id && goal.plan_version === selected.version
+      const resume = run.preparation_resume
+      cards.push({ kind: 'preparation', current, resume: current && resume && resume.plan_id === goal.plan_id && resume.plan_version === goal.plan_version && resume.approval_id === goal.approval_id ? { ...resume, run_id: run.run_id } : undefined, ready: current && data.status === 'satisfied' && result.scope === 'ready_to_review' && result.business_completed === false,
+        summary: current ? str(data.summary) : '这是先前方案的准备记录，当前方案需要重新核对。', pendingChecks: rows(result.pending_checks).map(check => str(check.detail) || str(check.name)), observedAt: str(artifact.observed_at),
+        entries: rows(result.entries).map(entry => ({ name: name(entry.place_id), address: str(stops.find(stop => stop.place_id === entry.place_id)?.address),
+          partySize: num(entry.party_size), date: str(entry.visit_date), time: str(entry.visit_time), timezone: str(entry.timezone) })),
+        issues: rows(result.issues).map(issue => ({ name: name(issue.place_id), mismatch: issue.status === 'mismatch', detail: [str(issue.detail), ...rows(issue.differences).map(difference => {
+          const expected = row(difference.expected), observed = row(difference.observed)
+          return `目标：${str(expected.party_size) || '未知'} 人 · ${str(expected.date) || '日期未知'} ${str(expected.time) || ''}；页面：${str(observed.party_size) || '未知'} 人 · ${str(observed.date) || '日期未知'} ${str(observed.time) || ''}`
+        })].filter(Boolean).join('；') })) })
+      continue
+    }
     if (artifact.type === 'browser_visual') {
-      cards.push({ kind: 'browser_page', title: str(artifact.title) || '截图理解', url: str(artifact.url), text: str(data.visual_text),
+      cards.push({ kind: 'browser_page', title: str(artifact.title) || '截图理解', url: str(artifact.url), text: str(data.visual_text), source: source(artifact.source),
         observedAt: str(artifact.observed_at), scope: 'visual_observation', limitations: strings(data.limitations) })
       continue
     }
@@ -112,7 +156,10 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
     const offers = rows(data.offers)
     if (menu.length) cards.push({ kind: 'dishes', mode: 'menu', source: source(artifact.source), shopName: str(artifact.title), dishes: menu.filter(x => str(x.name)).map(x => ({ name: str(x.name), price: num(x.price), reason: [str(x.unit), str(x.quote)].filter(Boolean).join(' · ') })) })
     if (offers.length) cards.push({ kind: 'groupbuy', shopName: str(artifact.title), source: 'browser', packages: offers.filter(x => str(x.name)).map(x => ({ name: str(x.name), price: num(x.price) ?? null, originalPrice: num(x.original_price) ?? null, includes: strings(x.conditions), fitPeople: num(x.people) ? `适用 ${x.people} 人` : '适用人数待确认' })) })
-    if (str(data.text) || data.tables || (!menu.length && !offers.length)) cards.push({ kind: 'browser_page', title: str(artifact.title) || '页面观测', url: str(artifact.url), text: str(data.text) || JSON.stringify(data.tables || data, null, 2), observedAt: str(artifact.observed_at) })
+    if (str(data.text) || data.tables || (!menu.length && !offers.length)) {
+      const tableText = rows(data.tables).map(table => [strings(table.headers).join(' · '), ...(Array.isArray(table.rows) ? table.rows.filter(Array.isArray).map(cells => cells.map(value => String(value ?? '')).join(' · ')) : [])].filter(Boolean).join('\n')).filter(Boolean).join('\n\n')
+      cards.push({ kind: 'browser_page', title: str(artifact.title) || (artifact.type === 'image' ? '图片识别' : '页面观测'), scope: artifact.type === 'image' ? 'image_text' : undefined, url: str(artifact.url), text: str(data.text) || tableText || '此页面暂无可直接显示的文字摘录，可在浏览器中继续查看。', source: source(artifact.source), observedAt: str(artifact.observed_at) })
+    }
   }
 
   const proposal = row(state.action_proposal)
@@ -159,12 +206,22 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
     }
     cards.push({ kind: 'confirm', token: interruptId, title: matchesBrowser ? '确认本次浏览器操作' : `确认行程 · 方案 v${proposal.plan_version}`, detail, danger: true })
   }
+  const draft = run.draft_review
+  if (!run.outcome && !['FAILED', 'CANCELLED', 'INFEASIBLE', 'PARTIAL_FAILED', 'SUCCEEDED'].includes(run.phase) && draft?.scope === 'draft_ready' && draft.interrupt_id === run.interrupt_id && draft.plan_id === selected.plan_id && draft.plan_version === selected.version && !run.command_pending) {
+    const conflicts = rows(draft.conflicts).filter(check => check.passed !== true).map(check => str(check.detail) || str(check.name))
+    const blockers = strings(draft.preparation_blockers)
+    cards.push({ kind: 'draft_review', draft: { runId: run.run_id, interruptId: draft.interrupt_id, planId: draft.plan_id, planVersion: draft.plan_version,
+      unknowns: rows(draft.unknowns).map(check => str(check.detail) || str(check.name)), canPrepare: draft.can_prepare === true && !conflicts.length && !blockers.length,
+      blockedReason: [...new Set([...conflicts, ...blockers])].join('；') || undefined } })
+  }
   const results = rows(state.action_results)
   if (results.length) cards.push({ kind: 'receipt', shareMessage: '', items: results.map(a => {
     const result = row(a.result)
+    const observation = row(result.observation)
+    const operationDetail = str(result.note) || str(observation.error) || str(a.error) || str(result.message) || (a.status === 'SUCCEEDED' ? '该步骤已结束，业务结果仍需核对。' : '该步骤未完成，请查看当前页面。')
     const businessConfirmed = a.status === 'SUCCEEDED' && ((result.scope === 'business_receipt' && row(result.receipt).identity_verified === true) || (result.scope === 'user_confirmation' && result.source === 'user' && result.user_confirmed === true))
-    return { business_confirmed: businessConfirmed, run_id: run.run_id, action_id: str(a.action_id), resolution_required: a.status === 'UNKNOWN' && a.resolution_required !== false, label: str(result.shop_name) || str(result.name) || str(a.action_id), status: a.status === 'SUCCEEDED' ? 'ok' : a.status === 'FAILED' || a.status === 'CANCELLED' ? 'fail' : 'pending',
-      detail: result.scope === 'browser_interaction' && a.status === 'SUCCEEDED' ? '页面步骤完成，业务结果尚待核验。' : a.status === 'UNKNOWN' ? '提交结果未知，请核查实际订单或业务记录；不会自动重复提交。' : [str(result.note) || str(a.error) || str(result.message) || `${str(a.status)} ${JSON.stringify(result)}`, str(result.reference) ? `业务编号：${str(result.reference)}` : ''].filter(Boolean).join(' · '),
+    return { business_confirmed: businessConfirmed, run_id: run.run_id, action_id: str(a.action_id), resolution_required: a.status === 'UNKNOWN' && a.resolution_required !== false, label: str(result.shop_name) || str(result.name) || (result.scope === 'browser_interaction' || result.source === 'browser' ? '页面操作' : '操作记录'), status: a.status === 'SUCCEEDED' ? 'ok' : a.status === 'FAILED' || a.status === 'CANCELLED' ? 'fail' : 'pending',
+      detail: result.scope === 'browser_interaction' && a.status === 'SUCCEEDED' ? '页面步骤完成，业务结果尚待核验。' : a.status === 'UNKNOWN' ? '提交结果未知，请核查实际订单或业务记录；不会自动重复提交。' : [operationDetail, str(result.reference) ? `业务编号：${str(result.reference)}` : ''].filter(Boolean).join(' · '),
       source: source(result.source) }
   }) })
 
@@ -177,20 +234,41 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
   const wait = row(state.browser_wait)
   const pending = str(state.pending_message)
   if (pending && messages.at(-1)?.content !== pending) messages.push({ role: 'user', content: pending })
-  const summary = (needsFreshObservation ? '当前页面目标无法核对，请重新读取页面后再确认。' : '') || str(row(state.clarification).question) || str(wait.message) || str(wait.reason) || str(state.reason) || (plans.length ? `已生成${plans.length > 1 ? `${plans.length} 份候选` : ''}方案，请查看成果区。${run.phase === 'WAITING_APPROVAL' ? '实际操作需在确认卡中批准。' : ''}` : run.outcome ? phaseLabel(run) : '')
+  const summary = (run.outcome ? str(state.reason) : '') || (needsFreshObservation ? '当前页面目标无法核对，请重新读取页面后再确认。' : '') || str(row(state.clarification).question) || str(wait.message) || str(wait.reason) || str(state.reason) || (plans.length ? `已生成${plans.length > 1 ? `${plans.length} 份候选` : ''}方案，请查看成果区。${run.phase === 'WAITING_APPROVAL' ? '实际操作需在确认卡中批准。' : ''}` : run.outcome ? phaseLabel(run) : '')
   if (summary && messages.at(-1)?.content !== summary) messages.push({ role: 'assistant', content: summary })
   return { cards, messages, evidence }
 }
 
+const eventLabels: Record<string, string> = {
+  USER_MESSAGE: '补充要求已收到', GRAPH_INTERRUPTED: '等待你的下一步', REPLAN_REQUESTED: '按新需求调整',
+  SUPERVISOR_DECISION: '确认下一处理步骤', DISCOVERY_COMPLETE: '地点资料已查到',
+  ADVOCATE_FANOUT_STARTED: '正在核对同行需求', ADVOCATE_COMPLETE: '同行需求已核对',
+  PLAN_SYNTHESIZED: '方案草稿已生成', PLAN_VERIFIED: '方案核验已完成',
+  CLARIFICATION_REQUESTED: '需要补充要求', CLARIFICATION_RECEIVED: '补充要求已收到',
+  BUDGET_EXHAUSTED: '本轮处理时限或额度已到', PLAN_REPAIR_SELECTED: '已选择修订方案',
+  BROWSER_COMMAND_DISPATCHED: '浏览器操作已发出',
+  BROWSER_COMMAND_BLOCKED: '操作范围受限，等待人工核对',
+  DRAFT_DECISION_REQUESTED: '正在处理草案选择', DRAFT_SAVED: '草案已保存', DRAFT_PREPARATION_STARTED: '正在核对表单',
+  RUN_CREATED: '任务已接收', RUN_STARTED: '开始处理', RUN_GRAPH_INTERRUPTED: '等待下一步',
+  BROWSER_OBSERVATION: '浏览器观测结果', BROWSER_RESUME_REQUESTED: '继续处理页面', BROWSER_OBSERVED: '页面内容已读取',
+  RUN_MESSAGE_RECEIVED: '补充要求已收到', RUN_REPLAN_REQUESTED: '正在调整方案', RUN_PLAN_SELECTED: '已选择方案',
+  RUN_FINALIZED: '本轮处理结束', RUN_FAILED: '任务未能完成', RUN_CANCELLED: '任务已停止',
+  CONNECTION_ERROR: '连接暂时中断', IMAGE_EXTRACTED: '图片识别结果已保存',
+  REQUIREMENTS_READY: '需求已整理', RESEARCH_COMPLETED: '资料查找完成', PLAN_DRAFTED: '候选方案已生成',
+  APPROVAL_REQUESTED: '等待你的确认', APPROVAL_RESOLVED: '确认结果已收到', MEMORY_RETRIEVED: '已读取保存的偏好',
+  BROWSER_VISION_COMPLETED: '截图理解已完成'
+}
+const eventPhaseLabels: Record<string, string> = { CREATED: '已接收', PENDING: '排队中', RUNNING: '处理中', REQUIREMENTS_READY: '需求已整理', RESEARCHING: '查找资料', PLAN_DRAFTED: '方案已生成', REVIEWING: '核对信息', WAITING_APPROVAL: '等待确认', WAITING_BROWSER: '等待浏览器', EXECUTING: '执行中', REPLANNING: '调整方案', SUCCEEDED: '本轮已结束', PARTIAL_FAILED: '仍有待处理事项', INFEASIBLE: '当前要求无法同时满足', FAILED: '未能完成', CANCELLED: '已停止' }
+
 export function projectEvents(events: HarnessEvent[]): AgentStep[] {
-  return events.slice(-60).map(e => {
+  return events.map(e => {
     const kind = e.event_type.toUpperCase()
     const outcome = (str(e.payload.outcome) || str(e.payload.status) || (kind === 'RUN_FINALIZED' ? str(e.payload.phase) || str(e.phase) : '')).toUpperCase()
-    const status: AgentStep['status'] = /FAILED|ERROR|TIMEOUT|EXHAUSTED|INFEASIBLE/.test(kind) || ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED', 'PARTIAL_FAILED', 'INFEASIBLE'].includes(outcome) ? 'error'
+    const status: AgentStep['status'] = /FAILED|ERROR|BLOCKED|TIMEOUT|EXHAUSTED|INFEASIBLE/.test(kind) || ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED', 'PARTIAL_FAILED', 'INFEASIBLE'].includes(outcome) ? 'error'
       : outcome === 'UNKNOWN' || /WAITING|REQUESTED|QUEUED|PENDING|PAUSED|INTERRUPTED/.test(kind) || ['browser', 'approval'].includes(str(e.payload.type)) ? 'waiting'
-      : ['SUCCEEDED', 'OBSERVED', 'EXECUTED'].includes(outcome) || /(?:^|_)(?:SUCCEEDED|COMPLETE|COMPLETED|READY|RESOLVED|RETRIEVED|REFLECTED|RECEIVED)(?:_|$)/.test(kind) ? 'done'
+      : ['SUCCEEDED', 'OBSERVED', 'EXECUTED'].includes(outcome) || /(?:^|_)(?:SUCCEEDED|COMPLETE|COMPLETED|READY|RESOLVED|RETRIEVED|REFLECTED|RECEIVED|EXTRACTED|OBSERVED)(?:_|$)/.test(kind) ? 'done'
       : /^WAITING_/.test(str(e.phase)) ? 'waiting'
       : /STARTED|RUNNING|EXECUTING/.test(kind) ? 'running' : 'idle'
-    return { id: `${e.run_id}:${e.seq}`, label: str(e.payload.label) || e.event_type.replaceAll('_', ' '), status, detail: str(e.payload.detail) || str(e.payload.message) || str(e.payload.reason) || e.phase }
+    return { id: `${e.run_id}:${e.seq}`, label: str(e.payload.label) || eventLabels[kind] || '任务进展已更新', status, detail: str(e.payload.detail) || str(e.payload.message) || str(e.payload.reason) || eventPhaseLabels[str(e.phase)] }
   })
 }

@@ -1,6 +1,7 @@
 // 桌面 Skill 列表与开关；技能正文由独立 Harness 按需读取。
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs'
 import { join } from 'path'
+import { getConfig, setConfig } from '../config'
 
 export interface SkillMeta {
   id: string
@@ -57,9 +58,11 @@ function loadSkills(): SkillMeta[] {
 
 export function toggleSkill(id: string, enabled: boolean): void {
   const s = loadSkills().find((x) => x.id === id)
-  if (s) s.enabled = enabled
+  if (!s) throw new Error('Skill is no longer installed')
+  setConfig({ skillEnabled: { [id]: enabled } })
 }
 
 export function listSkills(): SkillMeta[] {
-  return loadSkills()
+  const enabled = getConfig().skillEnabled
+  return loadSkills().map(skill => ({ ...skill, enabled: enabled[skill.id] ?? true }))
 }

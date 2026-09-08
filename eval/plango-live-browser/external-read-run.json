@@ -1,0 +1,2163 @@
+{
+  "run_id": "34ffd41681af4e549bf5f1914e3580a7",
+  "thread_id": "34ffd41681af4e549bf5f1914e3580a7",
+  "user_id": "desktop",
+  "input_text": "请只读取当前重庆市政府网页，提取三峡博物馆的开放时间、停止入馆时间、地址和交通信息，保留来源网址。不要规划或提交任何操作。",
+  "phase": "PARTIAL_FAILED",
+  "outcome": "PARTIAL_FAILED",
+  "event_seq": 13,
+  "interrupt_id": null,
+  "version": 5,
+  "state": {
+    "run_id": "34ffd41681af4e549bf5f1914e3580a7",
+    "browser_wait": null,
+    "browser_vision_turn": null,
+    "browser_vision_reason": null,
+    "browser_steps": 3,
+    "browser_image_context": "",
+    "browser_image_turn_id": null,
+    "browser_next": {
+      "operation": "finish",
+      "vision_reason": null,
+      "skill_id": null,
+      "url": null,
+      "idx": null,
+      "text": null,
+      "direction": "down",
+      "rationale": "已保存真实页面观测；未配置模型或没有进一步受支持操作。"
+    },
+    "browser_observation": {
+      "command_id": "c0c69fd4ffb42f90ed3ba4f205bde5cf2bfa3577",
+      "browser_session_id": "2819014a-0170-4b48-b9a6-4cecafded517",
+      "ok": true,
+      "outcome": "observed",
+      "snapshot_id": "c0c69fd4ffb42f90ed3ba4f205bde5cf2bfa3577",
+      "page_version": "b26ae7d072b71b9d160bb36966766ebfca884fc62e0cbfed88592272c15c1a39",
+      "tab_id": "tab_d542ac76-2c29-4725-919d-fc04ed33e636",
+      "url": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/202608/t20260826_15982331.html",
+      "title": "三峡博物馆_重庆市人民政府网",
+      "text": "三峡博物馆\n\n          \n          \n                                \n                                  来源：渝悦生活\n                                  发布时间：2026-08-26 03:15\n                                \n          \n          \n          重庆中国三峡博物馆（重庆博物馆）是一座集巴渝文化、三峡文化、抗战文化、移民文化和城市文化等为特色的历史艺术类综合性博物馆，是中央地方共建国家级博物馆、国家文化和科技融合示范基地、首批国家一级博物馆、国家文物局重点科研基地、全国最具创新力博物馆。前身为1951年成立的西南博物院，1955年更名为重庆市博物馆，2000年经国务院办公厅批准设立重庆中国三峡博物馆。占地面积5万平方米，建筑面积7.17万平方米，包括主馆、白鹤梁水下博物馆、宋庆龄纪念馆、涂山窑遗址、三峡文物科技保护中心五个场馆。现有馆藏文物11.59件/套（28万余件），涵盖35个文物门类，常设《壮丽三峡》《远古巴渝》《重庆：城市之路》展览13个，年均推出临时展览20-30个。三峡博物馆《远古巴渝》展厅内景图《壮丽三峡》展厅内景图“舍小家，为大家 一片真心献三峡”三峡移民雕塑地址：重庆市渝中区人民路236号开放时间：9:00-17:00（16:00后停止入馆，16:45清场，17:00闭馆）；星期一闭馆（国家法定节假日除外）交通路线：轨道交通轻轨二号线曾家岩站 轻轨三号线牛角沱站公交线路（大礼堂站、学田湾站）132路、145路、 181路、261路、262路、265路、 421路、829路、862路（内环）、866路、881路、152路、215路、104路、112路、338路、609路、322路",
+      "elements": [
+        {
+          "idx": 0,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "登录",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 1,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "注册",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 2,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "繁體版",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 3,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "EN",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 4,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "智能机器人",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 5,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "无障碍",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 6,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "关怀版",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 7,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "手机版",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 8,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/"
+        },
+        {
+          "idx": 9,
+          "tag": "input",
+          "role": "",
+          "name": "搜索您想了解的政策/资讯/服务",
+          "text": "",
+          "input_type": "text",
+          "disabled": false
+        },
+        {
+          "idx": 10,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "首页",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/"
+        },
+        {
+          "idx": 11,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "政务公开",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/zwgk/"
+        },
+        {
+          "idx": 12,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "政务服务",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 13,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "互动交流",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/hdjl/"
+        },
+        {
+          "idx": 14,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "走进重庆",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/zjcq/"
+        },
+        {
+          "idx": 15,
+          "tag": "a",
+          "role": "",
+          "name": "首页",
+          "text": "首页",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/"
+        },
+        {
+          "idx": 16,
+          "tag": "a",
+          "role": "",
+          "name": "走进重庆",
+          "text": "走进重庆",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/zjcq/"
+        },
+        {
+          "idx": 17,
+          "tag": "a",
+          "role": "",
+          "name": "精品旅游线路",
+          "text": "精品旅游线路",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/"
+        },
+        {
+          "idx": 18,
+          "tag": "a",
+          "role": "",
+          "name": "都市游",
+          "text": "都市游",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/"
+        },
+        {
+          "idx": 19,
+          "tag": "a",
+          "role": "",
+          "name": "都市精品之旅",
+          "text": "都市精品之旅",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/"
+        },
+        {
+          "idx": 20,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "[小]",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 21,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "[大]",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 22,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "【打印正文】",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 23,
+          "tag": "a",
+          "role": "",
+          "name": "分享到微信",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 24,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "中国政府网",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 25,
+          "tag": "img",
+          "role": "tab",
+          "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 26,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "中国政府网",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 27,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "国务院部门网站",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 28,
+          "tag": "img",
+          "role": "tab",
+          "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 29,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "地方政府网站",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 30,
+          "tag": "img",
+          "role": "tab",
+          "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 31,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "市政府部门网站",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 32,
+          "tag": "img",
+          "role": "tab",
+          "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 33,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "区县政府网站",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 34,
+          "tag": "img",
+          "role": "tab",
+          "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 35,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "其他网站",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 36,
+          "tag": "img",
+          "role": "tab",
+          "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 37,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "公共服务单位网站",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 38,
+          "tag": "img",
+          "role": "tab",
+          "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 39,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "新闻媒体网站",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 40,
+          "tag": "img",
+          "role": "tab",
+          "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 41,
+          "tag": "a",
+          "role": "",
+          "name": "网站备案查询",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 42,
+          "tag": "a",
+          "role": "",
+          "name": "党政机关",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 43,
+          "tag": "img",
+          "role": "",
+          "name": "",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 44,
+          "tag": "a",
+          "role": "",
+          "name": "适老化无障碍服务",
+          "text": "",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 45,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "网站地图",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/wzxg/wzdt/"
+        },
+        {
+          "idx": 46,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "版权声明",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/wzxg/bqsm/"
+        },
+        {
+          "idx": 47,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "联系我们",
+          "input_type": "",
+          "disabled": false,
+          "href": "https://www.cq.gov.cn/wzxg/lxwm/"
+        },
+        {
+          "idx": 48,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "渝ICP备05003300号",
+          "input_type": "",
+          "disabled": false
+        },
+        {
+          "idx": 49,
+          "tag": "a",
+          "role": "",
+          "name": "",
+          "text": "渝公网安备 50010302000814号",
+          "input_type": "",
+          "disabled": false
+        }
+      ],
+      "tables": [],
+      "fields": {
+        "dom": {
+          "canvas_count": 0,
+          "manual_gate": null,
+          "forms": []
+        }
+      },
+      "observed_at": "2026-09-08T20:18:10.864443+00:00"
+    },
+    "browser_action": null,
+    "browser_receipt_pending": false,
+    "browser_artifacts": [
+      {
+        "artifact_id": "page:c0c69fd4ffb42f90ed3ba4f205bde5cf2bfa3577",
+        "type": "browser_page",
+        "title": "三峡博物馆_重庆市人民政府网",
+        "url": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/202608/t20260826_15982331.html",
+        "snapshot_id": "c0c69fd4ffb42f90ed3ba4f205bde5cf2bfa3577",
+        "page_version": "b26ae7d072b71b9d160bb36966766ebfca884fc62e0cbfed88592272c15c1a39",
+        "tab_id": "tab_d542ac76-2c29-4725-919d-fc04ed33e636",
+        "source": "browser",
+        "observed_at": "2026-09-08T20:18:10.864443+00:00",
+        "data": {
+          "text": "三峡博物馆\n\n          \n          \n                                \n                                  来源：渝悦生活\n                                  发布时间：2026-08-26 03:15\n                                \n          \n          \n          重庆中国三峡博物馆（重庆博物馆）是一座集巴渝文化、三峡文化、抗战文化、移民文化和城市文化等为特色的历史艺术类综合性博物馆，是中央地方共建国家级博物馆、国家文化和科技融合示范基地、首批国家一级博物馆、国家文物局重点科研基地、全国最具创新力博物馆。前身为1951年成立的西南博物院，1955年更名为重庆市博物馆，2000年经国务院办公厅批准设立重庆中国三峡博物馆。占地面积5万平方米，建筑面积7.17万平方米，包括主馆、白鹤梁水下博物馆、宋庆龄纪念馆、涂山窑遗址、三峡文物科技保护中心五个场馆。现有馆藏文物11.59件/套（28万余件），涵盖35个文物门类，常设《壮丽三峡》《远古巴渝》《重庆：城市之路》展览13个，年均推出临时展览20-30个。三峡博物馆《远古巴渝》展厅内景图《壮丽三峡》展厅内景图“舍小家，为大家 一片真心献三峡”三峡移民雕塑地址：重庆市渝中区人民路236号开放时间：9:00-17:00（16:00后停止入馆，16:45清场，17:00闭馆）；星期一闭馆（国家法定节假日除外）交通路线：轨道交通轻轨二号线曾家岩站 轻轨三号线牛角沱站公交线路（大礼堂站、学田湾站）132路、145路、 181路、261路、262路、265路、 421路、829路、862路（内环）、866路、881路、152路、215路、104路、112路、338路、609路、322路",
+          "tables": [],
+          "elements": [
+            {
+              "idx": 0,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "登录",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 1,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "注册",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 2,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "繁體版",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 3,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "EN",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 4,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "智能机器人",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 5,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "无障碍",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 6,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "关怀版",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 7,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "手机版",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 8,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/"
+            },
+            {
+              "idx": 9,
+              "tag": "input",
+              "role": "",
+              "name": "搜索您想了解的政策/资讯/服务",
+              "text": "",
+              "input_type": "text",
+              "disabled": false
+            },
+            {
+              "idx": 10,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "首页",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/"
+            },
+            {
+              "idx": 11,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "政务公开",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zwgk/"
+            },
+            {
+              "idx": 12,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "政务服务",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 13,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "互动交流",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/hdjl/"
+            },
+            {
+              "idx": 14,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "走进重庆",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/"
+            },
+            {
+              "idx": 15,
+              "tag": "a",
+              "role": "",
+              "name": "首页",
+              "text": "首页",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/"
+            },
+            {
+              "idx": 16,
+              "tag": "a",
+              "role": "",
+              "name": "走进重庆",
+              "text": "走进重庆",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/"
+            },
+            {
+              "idx": 17,
+              "tag": "a",
+              "role": "",
+              "name": "精品旅游线路",
+              "text": "精品旅游线路",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/"
+            },
+            {
+              "idx": 18,
+              "tag": "a",
+              "role": "",
+              "name": "都市游",
+              "text": "都市游",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/"
+            },
+            {
+              "idx": 19,
+              "tag": "a",
+              "role": "",
+              "name": "都市精品之旅",
+              "text": "都市精品之旅",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/"
+            },
+            {
+              "idx": 20,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "[小]",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 21,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "[大]",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 22,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "【打印正文】",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 23,
+              "tag": "a",
+              "role": "",
+              "name": "分享到微信",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 24,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "中国政府网",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 25,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 26,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "中国政府网",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 27,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "国务院部门网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 28,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 29,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "地方政府网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 30,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 31,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "市政府部门网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 32,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 33,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "区县政府网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 34,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 35,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "其他网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 36,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 37,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "公共服务单位网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 38,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 39,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "新闻媒体网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 40,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 41,
+              "tag": "a",
+              "role": "",
+              "name": "网站备案查询",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 42,
+              "tag": "a",
+              "role": "",
+              "name": "党政机关",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 43,
+              "tag": "img",
+              "role": "",
+              "name": "",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 44,
+              "tag": "a",
+              "role": "",
+              "name": "适老化无障碍服务",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 45,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "网站地图",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/wzxg/wzdt/"
+            },
+            {
+              "idx": 46,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "版权声明",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/wzxg/bqsm/"
+            },
+            {
+              "idx": 47,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "联系我们",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/wzxg/lxwm/"
+            },
+            {
+              "idx": 48,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "渝ICP备05003300号",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 49,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "渝公网安备 50010302000814号",
+              "input_type": "",
+              "disabled": false
+            }
+          ],
+          "menu": [],
+          "offers": [],
+          "places": [],
+          "forms": []
+        }
+      },
+      {
+        "artifact_id": "page:c6415e7f219f82f9101303f4656fd0ad861742e9",
+        "type": "browser_page",
+        "title": "三峡博物馆_重庆市人民政府网",
+        "url": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/202608/t20260826_15982331.html",
+        "snapshot_id": "c6415e7f219f82f9101303f4656fd0ad861742e9",
+        "page_version": "4292ee8548d4689f19196bdfd08fe5839d34bdbf9a4e54df4173993895933fae",
+        "tab_id": "tab_d542ac76-2c29-4725-919d-fc04ed33e636",
+        "source": "browser",
+        "observed_at": "2026-09-08T20:17:56.201239+00:00",
+        "data": {
+          "text": "三峡博物馆\n\n          \n          \n                                \n                                  来源：渝悦生活\n                                  发布时间：2026-08-26 03:15\n                                \n          \n          \n          重庆中国三峡博物馆（重庆博物馆）是一座集巴渝文化、三峡文化、抗战文化、移民文化和城市文化等为特色的历史艺术类综合性博物馆，是中央地方共建国家级博物馆、国家文化和科技融合示范基地、首批国家一级博物馆、国家文物局重点科研基地、全国最具创新力博物馆。前身为1951年成立的西南博物院，1955年更名为重庆市博物馆，2000年经国务院办公厅批准设立重庆中国三峡博物馆。占地面积5万平方米，建筑面积7.17万平方米，包括主馆、白鹤梁水下博物馆、宋庆龄纪念馆、涂山窑遗址、三峡文物科技保护中心五个场馆。现有馆藏文物11.59件/套（28万余件），涵盖35个文物门类，常设《壮丽三峡》《远古巴渝》《重庆：城市之路》展览13个，年均推出临时展览20-30个。三峡博物馆《远古巴渝》展厅内景图《壮丽三峡》展厅内景图“舍小家，为大家 一片真心献三峡”三峡移民雕塑地址：重庆市渝中区人民路236号开放时间：9:00-17:00（16:00后停止入馆，16:45清场，17:00闭馆）；星期一闭馆（国家法定节假日除外）交通路线：轨道交通轻轨二号线曾家岩站 轻轨三号线牛角沱站公交线路（大礼堂站、学田湾站）132路、145路、 181路、261路、262路、265路、 421路、829路、862路（内环）、866路、881路、152路、215路、104路、112路、338路、609路、322路",
+          "tables": [],
+          "elements": [
+            {
+              "idx": 0,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "登录",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 1,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "注册",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 2,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "繁體版",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 3,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "EN",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 4,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "智能机器人",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 5,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "无障碍",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 6,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "关怀版",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 7,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "手机版",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 8,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/"
+            },
+            {
+              "idx": 9,
+              "tag": "input",
+              "role": "",
+              "name": "搜索您想了解的政策/资讯/服务",
+              "text": "",
+              "input_type": "text",
+              "disabled": false
+            },
+            {
+              "idx": 10,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "首页",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/"
+            },
+            {
+              "idx": 11,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "政务公开",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zwgk/"
+            },
+            {
+              "idx": 12,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "政务服务",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 13,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "互动交流",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/hdjl/"
+            },
+            {
+              "idx": 14,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "走进重庆",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/"
+            },
+            {
+              "idx": 15,
+              "tag": "a",
+              "role": "",
+              "name": "首页",
+              "text": "首页",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/"
+            },
+            {
+              "idx": 16,
+              "tag": "a",
+              "role": "",
+              "name": "走进重庆",
+              "text": "走进重庆",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/"
+            },
+            {
+              "idx": 17,
+              "tag": "a",
+              "role": "",
+              "name": "精品旅游线路",
+              "text": "精品旅游线路",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/"
+            },
+            {
+              "idx": 18,
+              "tag": "a",
+              "role": "",
+              "name": "都市游",
+              "text": "都市游",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/"
+            },
+            {
+              "idx": 19,
+              "tag": "a",
+              "role": "",
+              "name": "都市精品之旅",
+              "text": "都市精品之旅",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/"
+            },
+            {
+              "idx": 20,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "[小]",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 21,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "[大]",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 22,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "【打印正文】",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 23,
+              "tag": "a",
+              "role": "",
+              "name": "分享到微信",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 24,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "中国政府网",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 25,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 26,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "中国政府网",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 27,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "国务院部门网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 28,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 29,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "地方政府网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 30,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 31,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "市政府部门网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 32,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 33,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "区县政府网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 34,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 35,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "其他网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 36,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 37,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "公共服务单位网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 38,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 39,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "新闻媒体网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 40,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 41,
+              "tag": "a",
+              "role": "",
+              "name": "网站备案查询",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 42,
+              "tag": "a",
+              "role": "",
+              "name": "党政机关",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 43,
+              "tag": "img",
+              "role": "",
+              "name": "",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 44,
+              "tag": "a",
+              "role": "",
+              "name": "适老化无障碍服务",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 45,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "网站地图",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/wzxg/wzdt/"
+            },
+            {
+              "idx": 46,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "版权声明",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/wzxg/bqsm/"
+            },
+            {
+              "idx": 47,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "联系我们",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/wzxg/lxwm/"
+            },
+            {
+              "idx": 48,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "渝ICP备05003300号",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 49,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "渝公网安备 50010302000814号",
+              "input_type": "",
+              "disabled": false
+            }
+          ],
+          "menu": [],
+          "offers": [],
+          "places": [],
+          "forms": []
+        }
+      },
+      {
+        "artifact_id": "page:c993d2d85cea485716790b18b94046eac6c36280",
+        "type": "browser_page",
+        "title": "三峡博物馆_重庆市人民政府网",
+        "url": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/202608/t20260826_15982331.html",
+        "snapshot_id": "c993d2d85cea485716790b18b94046eac6c36280",
+        "page_version": "9a038bcebda8d7ea4ac5070dc69dde09e049b14873451d300235eeccf52cdf62",
+        "tab_id": "tab_d542ac76-2c29-4725-919d-fc04ed33e636",
+        "source": "browser",
+        "observed_at": "2026-09-08T20:18:03.133958+00:00",
+        "data": {
+          "text": "三峡博物馆\n\n          \n          \n                                \n                                  来源：渝悦生活\n                                  发布时间：2026-08-26 03:15\n                                \n          \n          \n          重庆中国三峡博物馆（重庆博物馆）是一座集巴渝文化、三峡文化、抗战文化、移民文化和城市文化等为特色的历史艺术类综合性博物馆，是中央地方共建国家级博物馆、国家文化和科技融合示范基地、首批国家一级博物馆、国家文物局重点科研基地、全国最具创新力博物馆。前身为1951年成立的西南博物院，1955年更名为重庆市博物馆，2000年经国务院办公厅批准设立重庆中国三峡博物馆。占地面积5万平方米，建筑面积7.17万平方米，包括主馆、白鹤梁水下博物馆、宋庆龄纪念馆、涂山窑遗址、三峡文物科技保护中心五个场馆。现有馆藏文物11.59件/套（28万余件），涵盖35个文物门类，常设《壮丽三峡》《远古巴渝》《重庆：城市之路》展览13个，年均推出临时展览20-30个。三峡博物馆《远古巴渝》展厅内景图《壮丽三峡》展厅内景图“舍小家，为大家 一片真心献三峡”三峡移民雕塑地址：重庆市渝中区人民路236号开放时间：9:00-17:00（16:00后停止入馆，16:45清场，17:00闭馆）；星期一闭馆（国家法定节假日除外）交通路线：轨道交通轻轨二号线曾家岩站 轻轨三号线牛角沱站公交线路（大礼堂站、学田湾站）132路、145路、 181路、261路、262路、265路、 421路、829路、862路（内环）、866路、881路、152路、215路、104路、112路、338路、609路、322路",
+          "tables": [],
+          "elements": [
+            {
+              "idx": 0,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "登录",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 1,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "注册",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 2,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "繁體版",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 3,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "EN",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 4,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "智能机器人",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 5,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "无障碍",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 6,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "关怀版",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 7,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "手机版",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 8,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/"
+            },
+            {
+              "idx": 9,
+              "tag": "input",
+              "role": "",
+              "name": "搜索您想了解的政策/资讯/服务",
+              "text": "",
+              "input_type": "text",
+              "disabled": false
+            },
+            {
+              "idx": 10,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "首页",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/"
+            },
+            {
+              "idx": 11,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "政务公开",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zwgk/"
+            },
+            {
+              "idx": 12,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "政务服务",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 13,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "互动交流",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/hdjl/"
+            },
+            {
+              "idx": 14,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "走进重庆",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/"
+            },
+            {
+              "idx": 15,
+              "tag": "a",
+              "role": "",
+              "name": "首页",
+              "text": "首页",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/"
+            },
+            {
+              "idx": 16,
+              "tag": "a",
+              "role": "",
+              "name": "走进重庆",
+              "text": "走进重庆",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/"
+            },
+            {
+              "idx": 17,
+              "tag": "a",
+              "role": "",
+              "name": "精品旅游线路",
+              "text": "精品旅游线路",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/"
+            },
+            {
+              "idx": 18,
+              "tag": "a",
+              "role": "",
+              "name": "都市游",
+              "text": "都市游",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/"
+            },
+            {
+              "idx": 19,
+              "tag": "a",
+              "role": "",
+              "name": "都市精品之旅",
+              "text": "都市精品之旅",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/"
+            },
+            {
+              "idx": 20,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "[小]",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 21,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "[大]",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 22,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "【打印正文】",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 23,
+              "tag": "a",
+              "role": "",
+              "name": "分享到微信",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 24,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "中国政府网",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 25,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 26,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "中国政府网",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 27,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "国务院部门网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 28,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 29,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "地方政府网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 30,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 31,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "市政府部门网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 32,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 33,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "区县政府网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 34,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 35,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "其他网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 36,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 37,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "公共服务单位网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 38,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 39,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "新闻媒体网站",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 40,
+              "tag": "img",
+              "role": "tab",
+              "name": "tab标签,中国政府网,国务院部门网站,地方政府网站,市政府部门网站,区县政府网站,其他网站,公共服务单位网站,新闻媒体网站,当前有浮动窗口，按ctrl+下键进入窗口,按tab键在浮动层中遍历信息,按esc键返回",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 41,
+              "tag": "a",
+              "role": "",
+              "name": "网站备案查询",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 42,
+              "tag": "a",
+              "role": "",
+              "name": "党政机关",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 43,
+              "tag": "img",
+              "role": "",
+              "name": "",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 44,
+              "tag": "a",
+              "role": "",
+              "name": "适老化无障碍服务",
+              "text": "",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 45,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "网站地图",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/wzxg/wzdt/"
+            },
+            {
+              "idx": 46,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "版权声明",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/wzxg/bqsm/"
+            },
+            {
+              "idx": 47,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "联系我们",
+              "input_type": "",
+              "disabled": false,
+              "href": "https://www.cq.gov.cn/wzxg/lxwm/"
+            },
+            {
+              "idx": 48,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "渝ICP备05003300号",
+              "input_type": "",
+              "disabled": false
+            },
+            {
+              "idx": 49,
+              "tag": "a",
+              "role": "",
+              "name": "",
+              "text": "渝公网安备 50010302000814号",
+              "input_type": "",
+              "disabled": false
+            }
+          ],
+          "menu": [],
+          "offers": [],
+          "places": [],
+          "forms": []
+        }
+      }
+    ],
+    "browser_task_context": {
+      "mode": "browser",
+      "request": "请只读取当前重庆市政府网页，提取三峡博物馆的开放时间、停止入馆时间、地址和交通信息，保留来源网址。不要规划或提交任何操作。",
+      "edits": [],
+      "party_size": null,
+      "total_budget": null,
+      "per_person_budget": null,
+      "kind": "write",
+      "budget_ambiguous": false,
+      "turn_id": 1,
+      "latest": "请只读取当前重庆市政府网页，提取三峡博物馆的开放时间、停止入馆时间、地址和交通信息，保留来源网址。不要规划或提交任何操作。"
+    },
+    "thread_id": "34ffd41681af4e549bf5f1914e3580a7",
+    "user_id": "desktop",
+    "input_text": "请只读取当前重庆市政府网页，提取三峡博物馆的开放时间、停止入馆时间、地址和交通信息，保留来源网址。不要规划或提交任何操作。",
+    "requirement_reference_at": "2026-09-08T20:17:55.396471+00:00",
+    "requirement_patch": [],
+    "requirement_refresh": {},
+    "previous_plan": null,
+    "selected_poi": null,
+    "messages": [
+      {
+        "content": "请只读取当前重庆市政府网页，提取三峡博物馆的开放时间、停止入馆时间、地址和交通信息，保留来源网址。不要规划或提交任何操作。",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": "c059c9d9-9bf9-4dd1-9866-a1505241e6d3"
+      }
+    ],
+    "phase": "PARTIAL_FAILED",
+    "outcome": "PARTIAL_FAILED",
+    "reason": "已读取页面；业务操作尚未完成，需要在网站继续处理。",
+    "turn_count": 0,
+    "turn_id": 1,
+    "plan_version": 0,
+    "tool_call_count": 3,
+    "repair_round": 0,
+    "repair_applied": false,
+    "started_at": null,
+    "deadline_at": 1788898777.1570747,
+    "timeout_stage": null,
+    "model_token_count": 10327,
+    "model_call_count": 5,
+    "model_fallback_count": 1,
+    "model_total_latency_ms": 17352.47,
+    "model_last_error": "model_token_budget",
+    "model_last_usage": {},
+    "model_calls": [
+      {
+        "kind": "structured",
+        "status": "success",
+        "latency_ms": 4135.52,
+        "error": null,
+        "model": "qwen3.7-plus-2026-05-26",
+        "prompt_version": "plango-structured-v2-schema-repair",
+        "thinking_mode": "disabled",
+        "input_tokens": 1124,
+        "output_tokens": 157,
+        "total_tokens": 1281
+      },
+      {
+        "kind": "structured",
+        "status": "success",
+        "latency_ms": 2348.95,
+        "error": null,
+        "model": "qwen3.7-plus-2026-05-26",
+        "prompt_version": "plango-structured-v2-schema-repair",
+        "thinking_mode": "disabled",
+        "input_tokens": 3148,
+        "output_tokens": 92,
+        "total_tokens": 3240
+      },
+      {
+        "kind": "structured",
+        "status": "success",
+        "latency_ms": 4396.53,
+        "error": null,
+        "model": "qwen3.7-plus-2026-05-26",
+        "prompt_version": "plango-structured-v2-schema-repair",
+        "thinking_mode": "disabled",
+        "input_tokens": 1124,
+        "output_tokens": 161,
+        "total_tokens": 1285
+      },
+      {
+        "kind": "structured",
+        "status": "success",
+        "latency_ms": 2719.41,
+        "error": null,
+        "model": "qwen3.7-plus-2026-05-26",
+        "prompt_version": "plango-structured-v2-schema-repair",
+        "thinking_mode": "disabled",
+        "input_tokens": 3146,
+        "output_tokens": 95,
+        "total_tokens": 3241
+      },
+      {
+        "kind": "structured",
+        "status": "success",
+        "latency_ms": 3751.35,
+        "error": null,
+        "model": "qwen3.7-plus-2026-05-26",
+        "prompt_version": "plango-structured-v2-schema-repair",
+        "thinking_mode": "disabled",
+        "input_tokens": 1124,
+        "output_tokens": 156,
+        "total_tokens": 1280
+      },
+      {
+        "kind": "structured",
+        "status": "fallback",
+        "latency_ms": 0.71,
+        "error": "model_token_budget",
+        "model": "qwen3.7-plus-2026-05-26",
+        "prompt_version": "plango-structured-v2-schema-repair",
+        "thinking_mode": "disabled"
+      }
+    ],
+    "delegated_roles": [],
+    "advocate_role": null,
+    "clarification": null,
+    "interrupt_id": null,
+    "previous_spec": null,
+    "memory_context": [],
+    "evidence": [],
+    "weather": null,
+    "place_candidates": [],
+    "artifacts": [],
+    "candidate_plans": [],
+    "plan_draft": null,
+    "draft_errors": [],
+    "advocate_reports": [],
+    "critique": null,
+    "verifier": null,
+    "selected_plan": null,
+    "action_proposal": null,
+    "action_results": [],
+    "memory_delta": [],
+    "approval_decision": null,
+    "execution_goal": null,
+    "execution_outcome": null,
+    "execution_started": false,
+    "reflection_done": false,
+    "next_action": null,
+    "next_arguments": {},
+    "last_observation": null,
+    "trace": [
+      {
+        "event": "browser_observed",
+        "phase": "RESEARCHING",
+        "agent_id": "browser",
+        "payload": {
+          "command_id": "c6415e7f219f82f9101303f4656fd0ad861742e9",
+          "url": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/202608/t20260826_15982331.html"
+        }
+      },
+      {
+        "event": "browser_observed",
+        "phase": "RESEARCHING",
+        "agent_id": "browser",
+        "payload": {
+          "command_id": "c993d2d85cea485716790b18b94046eac6c36280",
+          "url": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/202608/t20260826_15982331.html"
+        }
+      },
+      {
+        "event": "browser_observed",
+        "phase": "RESEARCHING",
+        "agent_id": "browser",
+        "payload": {
+          "command_id": "c0c69fd4ffb42f90ed3ba4f205bde5cf2bfa3577",
+          "url": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/202608/t20260826_15982331.html"
+        }
+      }
+    ]
+  },
+  "cancel_requested": false,
+  "command_pending": false,
+  "updated_at": "2026-09-08 20:18:14.877301",
+  "browser_session_id": "2819014a-0170-4b48-b9a6-4cecafded517",
+  "location_context": {
+    "city": "重庆",
+    "longitude": null,
+    "latitude": null,
+    "source": "config",
+    "coordinate_system": "GCJ02",
+    "detail_source": "config",
+    "accuracy": null,
+    "granularity": "city",
+    "observed_at": null
+  }
+}

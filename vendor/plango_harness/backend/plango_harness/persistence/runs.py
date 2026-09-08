@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from contextlib import asynccontextmanager
 from datetime import timedelta
 from typing import Any, Mapping, Sequence
 
 from sqlalchemy import and_, desc, or_, select, update
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from plango_harness.agent.contracts import RunEvent, RunPhase
 from plango_harness.persistence.database import (
@@ -85,7 +87,7 @@ class RunRepository:
                 )
 
     async def create_with_event(
-        self, run_id: str, user_id: str, input_text: str
+        self, run_id: str, user_id: str, input_text: str, *, selected_poi: dict[str, Any] | None = None
     ) -> RunEvent:
         """Create a run and its first audit fact in one transaction."""
         now = utc_now()
@@ -111,6 +113,9 @@ class RunRepository:
             "model_last_usage": {},
             "model_calls": [],
         }
+        if selected_poi is not None:
+            state["selected_poi"] = selected_poi
+        initial_payload = {"input_text": input_text, **({"selected_poi": selected_poi} if selected_poi is not None else {})}
         async with self._event_lock:
             async with self.database.session() as session:
                 async with session.begin():
@@ -137,7 +142,7 @@ class RunRepository:
                             event_type="RUN_CREATED",
                             phase=RunPhase.CREATED.value,
                             agent_id="runtime",
-                            payload_json={"input_text": input_text},
+                            payload_json=initial_payload,
                             created_at=now,
                         )
                     )
@@ -147,7 +152,7 @@ class RunRepository:
             event_type="RUN_CREATED",
             phase=RunPhase.CREATED,
             agent_id="runtime",
-            payload={"input_text": input_text},
+            payload=initial_payload,
             created_at=now,
         )
 
@@ -406,6 +411,14 @@ class RunRepository:
                         event_payload["command_id"] = command_id
                     if text is not None:
                         values["input_text"] = text
+                    if text and text.strip() and event_type in {"USER_MESSAGE", "RESUME_REQUESTED"} and (
+                        command_payload is None or command_payload.get("decision") in {"edit", "resume"}
+                    ):
+                        projection = dict(row[2] or {})
+                        grant = {"id": f"user:{seq}", "grant_seq": seq, "model_baseline": int(projection.get("model_token_count", 0)),
+                                 "tool_baseline": int(projection.get("tool_call_count", 0))}
+                        values["state_json"] = {**projection, "turn_budget": grant}
+                        event_payload["budget_grant_id"] = grant["id"]
                     await session.execute(
                         update(agent_run).where(agent_run.c.run_id == run_id).values(**values)
                     )
@@ -672,52 +685,59 @@ class RunRepository:
                     await asyncio.sleep(0)
         raise RuntimeError("event allocation failed")
 
-    async def _append_event_unlocked(
-        self,
-        *,
-        run_id: str,
-        phase: RunPhase,
-        event_type: str,
-        payload: dict[str, Any] | None = None,
-        agent_id: str | None = None,
+    @asynccontextmanager
+    async def event_transaction(self):
+        """One local sequencing lock and database transaction for a fact and its audit event."""
+        async with self._event_lock:
+            async with self.database.session() as session:
+                async with session.begin():
+                    yield session
+
+    async def _append_event_unlocked(self, **kwargs: Any) -> RunEvent:
+        async with self.database.session() as session:
+            async with session.begin():
+                return await self.append_event_in_transaction(session, **kwargs)
+
+    async def append_event_in_transaction(
+        self, session: AsyncSession, *, run_id: str, phase: RunPhase, event_type: str,
+        payload: dict[str, Any] | None = None, agent_id: str | None = None,
         lease_owner: str | None = None,
     ) -> RunEvent:
+        """Caller holds the sequencing lock and a database transaction; result data and event commit together."""
         now = utc_now()
         payload = _jsonable(payload or {})
         phase_value = phase.value if isinstance(phase, RunPhase) else str(phase)
-        async with self.database.session() as session:
-            async with session.begin():
-                # Lock the run row before allocating the sequence. This is
-                # safe under concurrent workers; SQLite's single writer still
-                # provides serial local behavior.
-                current_row = (
-                    await session.execute(
-                        select(agent_run.c.last_event_seq, agent_run.c.lease_owner)
-                        .where(agent_run.c.run_id == run_id)
-                        .with_for_update()
-                    )
-                ).first()
-                if not current_row:
-                    raise KeyError(f"run not found: {run_id}")
-                if lease_owner is not None and current_row[1] != lease_owner:
-                    raise RuntimeError("run lease fenced")
-                seq = int(current_row[0] or 0) + 1
-                await session.execute(
-                    run_event.insert().values(
-                        run_id=run_id,
-                        seq=seq,
-                        event_type=event_type,
-                        phase=phase_value,
-                        agent_id=agent_id,
-                        payload_json=payload,
-                        created_at=now,
-                    )
-                )
-                await session.execute(
-                    update(agent_run)
-                    .where(agent_run.c.run_id == run_id)
-                    .values(last_event_seq=seq, updated_at=now)
-                )
+        # Lock the run row before allocating the sequence. This is
+        # safe under concurrent workers; SQLite's single writer still
+        # provides serial local behavior.
+        current_row = (
+            await session.execute(
+                select(agent_run.c.last_event_seq, agent_run.c.lease_owner)
+                .where(agent_run.c.run_id == run_id)
+                .with_for_update()
+            )
+        ).first()
+        if not current_row:
+            raise KeyError(f"run not found: {run_id}")
+        if lease_owner is not None and current_row[1] != lease_owner:
+            raise RuntimeError("run lease fenced")
+        seq = int(current_row[0] or 0) + 1
+        await session.execute(
+            run_event.insert().values(
+                run_id=run_id,
+                seq=seq,
+                event_type=event_type,
+                phase=phase_value,
+                agent_id=agent_id,
+                payload_json=payload,
+                created_at=now,
+            )
+        )
+        await session.execute(
+            update(agent_run)
+            .where(agent_run.c.run_id == run_id)
+            .values(last_event_seq=seq, updated_at=now)
+        )
         return RunEvent(
             run_id=run_id,
             seq=seq,

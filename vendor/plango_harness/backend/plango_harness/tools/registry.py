@@ -6,10 +6,16 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Awaitable, Callable, Type
 
-from pydantic import BaseModel, Field
 from langgraph.errors import GraphBubbleUp
+from pydantic import BaseModel, Field
 
-from plango_harness.agent.contracts import ActionItem, ActionProposal, Location, PlanCandidate, TripSpec
+from plango_harness.agent.contracts import (
+    ActionItem,
+    ActionProposal,
+    Location,
+    PlanCandidate,
+    TripSpec,
+)
 from plango_harness.domain.planning import PlanEngine, ToolBudgetExceeded
 from plango_harness.memory.repository import MemoryRepository
 from plango_harness.observability import agent_span
@@ -226,7 +232,10 @@ class ToolRegistry:
     async def _get_weather(self, ctx: ToolContext, args: BaseModel) -> dict[str, Any]:
         del args
         assert ctx.trip_spec is not None
-        weather, evidence = await ctx.world.get_weather(ctx.trip_spec.location)
+        if ctx.trip_spec.visit_date is not None and getattr(ctx.world, "strict_location", False):
+            weather, evidence = await ctx.world.get_weather(ctx.trip_spec.location, ctx.trip_spec.visit_date, ctx.trip_spec.timezone)  # type: ignore[call-arg]
+        else:
+            weather, evidence = await ctx.world.get_weather(ctx.trip_spec.location)
         return {"weather": weather, "evidence": evidence.model_dump(mode="json")}
 
     async def _propose_actions(self, ctx: ToolContext, args: PlanArg) -> dict[str, Any]:

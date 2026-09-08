@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, Literal
 
 from plango_harness.agent.contracts import Activity, PartyMember, TripSpec
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.model_adapter import ModelAdapter
+from plango_harness.agent.requirements import preservation_instruction, temporal_patch
 
 _CN_DIGITS = {
     "零": 0,
@@ -21,6 +22,28 @@ _CN_DIGITS = {
     "九": 9,
     "十": 10,
 }
+
+_VENUE_REFERENCE = re.compile(r"(?:当前|这个|这家|该|原来(?:的)?|原先(?:的)?|之前(?:的)?|已选|选中(?:的)?)(?:网页|页面|店|门店|餐厅|商家)")
+
+
+def _location_kind(value: str) -> Literal["current_origin", "selected_place", "generic_activity", "named_location"]:
+    """Distinguish references and venue categories before any geographic lookup."""
+    if re.fullmatch(r"(?:当前|目前|现在)(?:的)?(?:出发地址|出发地点|出发地|地址|位置|起点)?|(?:这个|该|此)(?:新(?:的)?)?(?:起点|出发地址|出发地点|出发地)|这里|此处|原来(?:的)?(?:出发地址|出发地点|起点)", value):
+        return "current_origin"
+    if _VENUE_REFERENCE.match(value) or value in {"这个", "这家", "原来的"}:
+        return "selected_place"
+    quantity = r"(?:(?:[一二两三四五六七八九十几\d]+|任意)(?:家|个|处|所|座|间|场)?|附近(?:的)?|周边(?:的)?|本地(?:的)?)?"
+    category = r"餐厅|餐馆|饭店|咖啡馆|咖啡店|咖啡|公园|展览|展馆|博物馆|美术馆|电影院|影院|电影|动物园|水族馆|海洋馆|亲子活动|城市漫步"
+    if re.fullmatch(quantity + "(?:" + category + ")", value):
+        return "generic_activity"
+    return "named_location"
+
+
+def _location_reference(value: str) -> Literal["current_origin", "selected_place"] | None:
+    kind = _location_kind(value)
+    if kind == "current_origin":
+        return "current_origin"
+    return "selected_place" if kind == "selected_place" else None
 _TIME_AMOUNT = re.compile(r"(?<![\d.零一二两三四五六七八九十个])([+-]?\d+(?:\.\d+)?|半|[零一二两三四五六七八九十]+)\s*(?:个)?(半)?\s*(小时|分钟|分|时)(半)?(?:\s*(\d+)\s*分钟)?")
 _CLOCK_POINT = re.compile(r"(?<!\d)(\d{1,2}|[零一二两三四五六七八九十]+)\s*点(?:\s*(?:(半)|([\d零一二两三四五六七八九十]+)\s*分(?!钟)|([0-5]?\d)(?!\d|\s*(?:小时|分钟|个|时))))?")
 _QUEUE_CUE = r"排队|等候|等位|等待|(?<=最多)等"
@@ -94,6 +117,7 @@ def _constraint_key(value: str) -> str | None:
 
 def _duration_scope(text: str) -> str:
     """Remove only other concepts' quantities, not their entire sentence."""
+    text = re.sub(r"(?:一个|一段)(?=(?:\d+(?:\.\d+)?|[一二两三四五六七八九十]+)\s*(?:小时|分钟)(?:的)?行程)", " ", text)
     text = re.sub(r"(?:[01]?\d|2[0-3])[:：][0-5]\d", " ", _CLOCK_POINT.sub(" ", text))
     end = 0
     def mask(match: re.Match[str]) -> str:
@@ -114,7 +138,7 @@ def _bound_candidates(text: str) -> dict[str, tuple[list[float] | None, bool]]:
     # Missing key = absent; None = explicit clear; [] = mentioned/unknown.
     # Only a later clause about this same field may replace its evidence.
     result: dict[str, tuple[list[float] | None, bool]] = {}
-    for field, cue in (("max_queue_minutes", _QUEUE_CUE), ("max_distance_km", r"距离|路程|步行|移动|每(?:一)?段|单段")):
+    for field, cue in (("max_queue_minutes", _QUEUE_CUE), ("max_distance_km", r"距离|路程|步行(?!街)|移动|每(?:一)?段|单段")):
         for clause in re.split(r"[，,；;。]|(?<!不)再|并且|但", text):
             if not re.search(cue, clause):
                 continue
@@ -288,9 +312,9 @@ def _semantic_patch(text: str, previous: TripSpec | None) -> dict[str, Any]:
         total_subject = r"(?:总预算|总费用|总开销|总额(?:上限|限制)?|(?<!人均)(?<!每人)预算)"
         per_subject = r"(?:人均|每人)(?:预算)?(?:上限|限制)?"
         both = r"(?:" + total_subject + r"\s*(?:和|与|及|、)\s*" + per_subject + "|" + per_subject + r"\s*(?:和|与|及|、)\s*" + total_subject + ")"
-        shared = r"(?<!总)(?<!人均)(?<!每人)预算不限|(?:取消|去掉|撤掉)" + both + "|" + both + r"(?:都|也)?(?:取消|撤掉|不限|不设金额上限)"
+        shared = r"(?<!总)(?<!人均)(?<!每人)预算不限|不设(?:置)?预算|(?:取消|去掉|撤掉)" + both + "|" + both + r"(?:都|也)?(?:取消|撤掉|不限|不设金额上限)"
         for field, subject in (("budget", total_subject), ("per_person_budget", per_subject)):
-            clearing = shared + "|(?:取消|去掉|撤掉)" + subject + "|" + subject + r"(?:也)?(?:取消|撤掉|不限|不设金额上限)"
+            clearing = shared + "|(?:取消|去掉|撤掉|不设(?:置)?)" + subject + "|" + subject + r"(?:也)?(?:取消|撤掉|不限|不设金额上限)"
             money_events[field].extend((span.start() + m.end(), None) for m in re.finditer(clearing, clause))
             money_events[field].extend((span.start() + m.end(), "unknown") for m in re.finditer(subject + r"\s*(?:改为|改成|仍然|还是|暂时|先)?\s*(?:待定|未定|不确定|没定)", clause))
     unknown_money: list[str] = []
@@ -337,9 +361,21 @@ def _semantic_patch(text: str, previous: TripSpec | None) -> dict[str, Any]:
                 departed.add(role)
         if re.search(pattern, role_text) and role not in departed:
             roles.append(PartyMember(role=role))
-    if any(value > 0 for value in role_counts.values()) or re.search(r"我(?:带|和|与|本人)", text):
-        role_counts["用户"] = 1  # Public self-inclusive outing convention.
-    if len(roles) > 1:
+    explicit_self = bool(re.search(r"我(?:带|和|与|本人)", text))
+    prior_self = bool(previous and re.search(r"我(?:带|和|与|本人)", previous.goal))
+    explicit_total = max(total_events, key=lambda event: event[0])[1] if total_events else None
+    current_counts = {**(previous.party_counts if previous else {}), **role_counts}
+    inclusive_adults = bool(explicit_total is not None and re.search(r"(?:包含|包括)我(?:在内)?", text)
+                            and current_counts.get("成人") == explicit_total)
+    placeholder_self = not prior_self and not (previous and _total_count_events(previous.goal))
+    if explicit_self:
+        role_counts["用户"] = 1
+    elif inclusive_adults or (any(value > 0 for value in role_counts.values()) and placeholder_self):
+        # A default speaker slot is not another confirmed traveller. An adult
+        # group can include the speaker; only “我和…” states an extra person.
+        role_counts["用户"] = 0
+        roles = [member for member in roles if member.role != "用户"]
+    if any(member.role != "用户" for member in roles):
         values["party"] = roles
     elif departed and previous:
         values["party"] = [member for member in previous.party if member.role not in departed]
@@ -357,14 +393,15 @@ def _semantic_patch(text: str, previous: TripSpec | None) -> dict[str, Any]:
             values["party_size_unknown"] = True
     elif re.search(r"我一个人|独自|单人|只有我", text):
         values.update(party_size=1, party=[PartyMember(role="用户")], party_counts={**{role: 0 for role in (previous.party_counts if previous else {})}, "用户": 1})
-    elif previous is None and len(roles) > 1 and all(member.role in role_counts for member in roles[1:]):
-        size = 1 + sum(role_counts[member.role] for member in roles[1:])
+    elif previous is None and any(member.role != "用户" for member in roles) and all(member.role in role_counts for member in roles):
+        size = sum(role_counts[member.role] for member in roles)
         values.update(party_size=size if size <= 12 else None, party_size_unknown=size > 12)
     elif party_mentioned and (previous is None or previous.party_size is None or any(member.role not in {**previous.party_counts, **role_counts} for member in roles)):
         values["party_size_unknown"] = True
     merged_counts = {**(previous.party_counts if previous else {}), **role_counts}
     if previous and role_counts and not total_events and not invalid_role_count and (
         previous.party_size == sum(previous.party_counts.values())
+        or placeholder_self and previous.party_size == 1 and not any(role != "用户" and count > 0 for role, count in previous.party_counts.items())
         or previous.party_size is None and all(member.role in merged_counts for member in previous.party)
     ) and all(member.role in merged_counts for member in roles[1:]):
         remaining = sum(merged_counts.values())
@@ -413,8 +450,9 @@ class RequirementAgent:
         memory_context: list[dict],
         previous_spec: TripSpec | None = None,
         messages: list[Any] | None = None,
+        *, reference_at: str | None = None,
     ) -> RequirementOutput:
-        fallback = self._fallback(text, memory_context, previous_spec)
+        fallback = self._fallback(text, memory_context, previous_spec, reference_at=reference_at)
         previous = previous_spec.model_dump_json() if previous_spec else "无"
         conversation = [getattr(item, "content", str(item)) for item in (messages or [])[-6:]]
         output = await self.model.structured(
@@ -433,11 +471,12 @@ class RequirementAgent:
                 "明确请求的活动放入 required_activities，只有可选活动放 optional_activities；"
                 "仅明确的先后关系放 activity_order。budget 是总额，per_person_budget 是人均；"
                 "party 描述角色资料，party_size 是明确总人数，party_counts只记录明确角色人数，未知分配不得猜测；角色退出记录0。"
+                "3位成人表示总共3人；我和3个朋友表示4人。默认用户占位不算额外成员。不设预算使用clear_budget/clear_per_person_budget。"
                 "同事和朋友是不同角色；长辈规范为老人。"
             ),
             user=(
                 f"当前用户消息：{text}\n上一版 TripSpec：{previous}\n"
-                f"最近对话：{conversation}\n相关记忆：{memory_context}"
+                f"最近对话：{conversation}\n相关记忆：{memory_context}\n本轮消息时间：{reference_at or '未提供'}；默认时区Asia/Shanghai"
             ),
             fallback=fallback,
         )
@@ -610,6 +649,10 @@ class RequirementAgent:
                     values.append(raw)
                 elif (key or raw) in represented:
                     continue  # Already represented in another field, or explicitly removed.
+                elif preservation_instruction(raw):
+                    continue
+                elif re.fullmatch(r"重新(?:核验|核实)(?:门店|商家|地点|信息|供给|候选|数据)", raw):
+                    continue  # A refresh instruction is not a merchant constraint.
                 elif not field.startswith("remove_") and raw in grounded_text and not scalar_label.match(raw):
                     # Keep unknown explicit requirements; ask for clarification
                     # instead of silently dropping them to improve exact-match scores.
@@ -679,13 +722,16 @@ class RequirementAgent:
                 "remove_activities",
                 "activity_order",
                 "location_name",
+                "search_location_name",
+                "visit_date",
+                "timezone",
                 "time_window_start",
                 "duration_minutes",
             )
         )
         generic_actionable = text.strip() in {"安排下午活动", "安排一个下午活动"}
         if not fallback.clarification_needed and (
-            explicit_slot or fallback.clear_budget or fallback.clear_per_person_budget
+            explicit_slot or fallback.clear_budget or fallback.clear_per_person_budget or fallback.time_window_start_unknown
             or (previous_spec is None and generic_actionable)
         ):
             # Deterministic extraction is the lower bound for actionable input;
@@ -703,6 +749,9 @@ class RequirementAgent:
                 "remove_soft_preferences",
                 "budget",
                 "location_name",
+                "search_location_name",
+                "visit_date",
+                "timezone",
                 "time_window_start",
                 "duration_minutes",
             )
@@ -723,11 +772,25 @@ class RequirementAgent:
             updates["clarification_needed"] = True
             updates["clarification_fields"] = list(dict.fromkeys([*updates.get("clarification_fields", []), *unresolved_bounds]))
             updates["clarification_question"] = "请确认未能确定的预算、时长或距离/排队上限。"
+        updates["search_location_name"] = fallback.search_location_name
+        updates["location_reference"] = fallback.location_reference
+        updates["search_location_reference"] = fallback.search_location_reference
+        updates["travel_mode"] = fallback.travel_mode
+        if fallback.location_reference:
+            updates["location_name"] = None
+        proposed_origin = updates.get("location_name", output.location_name)
+        if proposed_origin and _location_kind(proposed_origin) != "named_location":
+            updates["location_name"] = None
+        if not fallback.location_name and (fallback.search_location_name or _VENUE_REFERENCE.search(text)):
+            updates["location_name"] = None
+        for field in ("visit_date", "visit_date_unknown", "timezone", "time_window_start_unknown"):
+            updates[field] = getattr(fallback, field)
         return output.model_copy(update=updates)
 
     @staticmethod
     def _fallback(
-        text: str, memory_context: list[dict], previous_spec: TripSpec | None = None
+        text: str, memory_context: list[dict], previous_spec: TripSpec | None = None,
+        *, reference_at: str | None = None,
     ) -> RequirementOutput:
         value = text or "安排一个下午活动"
         budget: float | None = None
@@ -745,6 +808,15 @@ class RequirementAgent:
         indoor_required: bool | None = None
         max_queue_minutes: int | None = None
         max_distance_km: float | None = None
+        travel_mode: Literal["driving", "walking", "transit"] | None = None
+        rejected_modes = set()
+        for travel in re.finditer(r"步行(?!街)|走路|公交(?!站)|公共交通|地铁(?!站)|驾车|开车|打车", value):
+            parsed_mode: Literal["driving", "walking", "transit"] = "walking" if travel[0] in {"步行", "走路"} else "transit" if travel[0] in {"公交", "公共交通", "地铁"} else "driving"
+            if re.search(r"不要|不用|不坐|不乘|不走|取消|别", value[max(0, travel.start() - 6):travel.start()]):
+                rejected_modes.add(parsed_mode)
+            else:
+                travel_mode = parsed_mode
+        travel_conflict = travel_mode is None and (previous_spec.travel_mode if previous_spec else "driving") in rejected_modes
         def negated(pattern: str) -> bool:
             return bool(re.search(r"(?:(?<!不)(?<!不要)(?<!不能)取消|去掉|不再|不要求|不要|不用|不需要)(?:要求|坚持|优先|选择)?(?:原来的|原有的|原来|原有)?\s*(?:" + pattern + r")|(?:" + pattern + r")(?:这个硬要求|这个要求|这个条件|这一项|限制|要求|规则)?(?:解除|撤掉|取消)", value))
         if any(word in value for word in ("孩子", "娃", "亲子")):
@@ -821,19 +893,62 @@ class RequirementAgent:
                 elif key and key not in remove_hard:
                     hard.append(key)
         location_name: str | None = None
+        search_location_name: str | None = None
+        location_reference = None
+        search_location_reference: Literal["current_origin", "selected_place", "generic_activity"] | None = None
+        center = re.search(r"以\s*[「“\"『]([^」”\"』]+)[」”\"』](?:[（(][^）)]*[）)])?\s*为中心", value)
+        center = center or re.search(r"以\s*([^，,。；;\n]+?)\s*为中心", value)
+        if center:
+            search_location_name = center.group(1).strip()
+        named_center = re.search(r"(?:搜索|检索)中心\s*(?:改为|改成|改到|设为|设置为|恢复到|恢复为|还原到|是|[:：])\s*[「“\"『]?([^」”\"』，,。；;\n]+)", value)
+        if named_center:
+            search_location_name = named_center.group(1).strip()
+            search_location_reference = _location_reference(search_location_name)
+            if search_location_reference:
+                search_location_name = None
         location_matches = re.finditer(
-            r"(?<!现)(?:在|去|从)\s*([\u4e00-\u9fffA-Za-z0-9·]{2,24}?)(?=出发|安排|玩|逛|吃|喝|看|参观|先|用餐|聚餐|附近|预算|下午|上午|晚上|今天|周六|，|,|$)",
+            r"(?<!现)(?:在|去|从|改到|改成|改为|换到|调整到)\s*([\u4e00-\u9fffA-Za-z0-9·]{2,24}?)(?=出发|安排|玩|逛|吃|喝|看|参观|先|用餐|聚餐|附近|预算|下午|上午|晚上|今天|周六|，|,|$)",
             value,
         )
-        generic_locations = {"附近", "周边", "周围", "这边", "那里", "室内", "户外", "公园", "动物园", "餐厅", "展览", "电影", "咖啡", "博物馆", "电影院", "城市漫步"}
+        generic_locations = {"附近", "周边", "周围", "这边", "那里", "室内", "户外", "公园", "动物园", "餐厅", "展览", "电影", "咖啡", "博物馆", "电影院", "城市漫步", "明天", "今天", "后天", "周末", "时间", "预算"}
         for location_match in location_matches:
             candidate = location_match.group(1).strip("的")
+            clause_prefix = re.split(r"[，,；;。]", value[:location_match.start()])[-1]
+            if re.fullmatch(r"[+\-\d.零一二两三四五六七八九十百千万半]+(?:元|块|人|个人|分钟|小时|公里|米)?", candidate):
+                continue
+            if re.fullmatch(r"(?:步行(?!街)|走路|公交|公共交通|地铁|驾车|开车|打车)(?:[\d.零一二两三四五六七八九十半]*\s*(?:公里|km|米)?(?:内|以内|方式|模式|出行)?)?", candidate, re.I):
+                continue
+            reference = _location_reference(candidate)
+            if _location_kind(candidate) == "generic_activity":
+                if not search_location_name and not search_location_reference:
+                    search_location_reference = "generic_activity"
+                continue
+            if reference:
+                if location_match[0].startswith("从") or re.search(r"起点|出发地点|出发地址", clause_prefix):
+                    # A later “this new origin” uses the explicit assignment
+                    # in this message; it must not erase the address to resolve.
+                    if reference != "current_origin" or location_name is None:
+                        location_reference, location_name = reference, None
+                else:
+                    search_location_reference, search_location_name = reference, None
+                continue
+            if location_match[0].startswith(("改到", "改成", "改为", "换到", "调整到")) and re.search(r"预算|人均|人数|排队|时长|时间", clause_prefix):
+                continue
             if re.search(r"(?:排|放)$", value[:location_match.start()]) and re.search(r"(?:前|后)$", candidate):
                 continue
             if not all(piece in generic_locations for piece in re.split(r"[和与及、]", candidate)) and not re.search(r"看展|看电影|吃饭|咖啡|之前|之后|以后|(?:排|放)(?:在|到)|(?:排|放)(?:最前|最后)|^[并且]+", candidate):
-                location_name = candidate or location_name
+                if location_match[0].startswith(("去", "改到", "改成", "改为", "换到", "调整到")) and not re.search(r"起点|出发地点", clause_prefix):
+                    search_location_name = candidate or search_location_name
+                    search_location_reference = None
+                else:
+                    location_name = candidate or location_name
+                    location_reference = None
         if explicit_location := re.search(r"(?:出发地点|起点|地点|位置)[:：]\s*([^，,；;。]+)", value):
-            location_name = explicit_location.group(1).strip()
+            explicit_name = explicit_location.group(1).strip()
+            explicit_reference = _location_reference(explicit_name)
+            if explicit_reference != "current_origin" or location_name is None:
+                location_reference = explicit_reference
+                location_name = None if explicit_reference else explicit_name
         time_start: str | None = None
         clock_match = re.search(r"(?<!\d)([01]?\d|2[0-3])[:：]([0-5]\d)(?!\d)", value)
         time_match = _CLOCK_POINT.search(value)
@@ -852,8 +967,6 @@ class RequirementAgent:
                 hour += 12
             minute = 30 if time_match.group(2) else int(_hours(time_match.group(3) or time_match.group(4) or "0") or 0)
             time_start = f"{hour:02d}:{minute:02d}"
-        elif any(word in value for word in ("晚上", "晚餐", "吃晚饭")):
-            time_start = "18:00"
         duration: int | None = None
         duration_text = _duration_scope(value)
         duration_match = _TIME_AMOUNT.search(duration_text)
@@ -883,6 +996,8 @@ class RequirementAgent:
         # Explicit requirements must not depend on the model remembering to
         # emit them. Unknown mandatory clauses pause before planning.
         for clause in re.split(r"[，,。；;]|(?:而且|并且|但)", value):
+            if preservation_instruction(clause):
+                continue
             cancelling = bool(re.search(r"取消|去掉|不再要求|不需要|不要求", clause))
             if cancelling and previous_spec:
                 for old in previous_spec.hard_constraints:
@@ -928,6 +1043,7 @@ class RequirementAgent:
                     indoor_required = None
                 else:
                     semantics.pop(field, None)
+        temporal = temporal_patch(value, previous_spec, reference_at)
         result = RequirementOutput(
             goal=goal,
             party=party,
@@ -937,18 +1053,24 @@ class RequirementAgent:
             remove_soft_preferences=list(dict.fromkeys(remove_soft)) or None,
             budget=budget,
             location_name=location_name,
+            search_location_name=search_location_name,
+            location_reference=location_reference,
+            search_location_reference=search_location_reference,
             time_window_start=time_start,
             duration_minutes=duration,
             indoor_required=indoor_required,
             max_queue_minutes=max_queue_minutes,
             max_distance_km=max_distance_km,
-            clarification_needed=bool(unhandled) or vague or meal_without_context,
-            clarification_fields=["unsupported"] if unhandled else ["context"] if vague or meal_without_context else [],
+            travel_mode=travel_mode,
+            clarification_needed=bool(unhandled) or vague or meal_without_context or travel_conflict,
+            clarification_fields=["travel_mode"] if travel_conflict else ["unsupported"] if unhandled else ["context"] if vague or meal_without_context else [],
             clarification_question=(
-                "这些要求尚不能自动核验，请确认可执行条件：" + "、".join(unhandled)
+                "已排除原交通方式，请确认改为步行、驾车还是公共交通。" if travel_conflict else "这些要求尚不能自动核验，请确认可执行条件：" + "、".join(unhandled)
                 if unhandled else "请补充地点、时间和预算"
                 if vague or meal_without_context
                 else ""
             ),
         )
-        return result.model_copy(update=semantics)
+        if temporal.get("clarification_needed"):
+            temporal["clarification_fields"] = list(dict.fromkeys([*result.clarification_fields, *semantics.get("clarification_fields", []), *temporal.get("clarification_fields", [])]))
+        return result.model_copy(update={**semantics, **temporal})

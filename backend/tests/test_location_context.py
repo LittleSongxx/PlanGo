@@ -98,7 +98,7 @@ class LocationContextCheck(unittest.TestCase):
             app = create_app(config, token="location-test")
             calls = []
 
-            async def geocode(address):
+            async def geocode(address, *, city=None):
                 calls.append(address)
                 return (
                     Location(name=address, latitude=39.9042, longitude=116.4074)
@@ -111,7 +111,7 @@ class LocationContextCheck(unittest.TestCase):
                 response = client.post(
                     "/api/v1/runs",
                     json={
-                        "input_text": "我们2人，在北京先看展再吃饭，预算400元，行程4小时",
+                        "input_text": "我们2人，按当前网页内容，在北京先看展再吃饭，预算400元，行程4小时",
                         "browser_session_id": "fixture",
                         "location_context": {
                             "city": "上海",

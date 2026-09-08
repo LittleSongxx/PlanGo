@@ -83,7 +83,7 @@ class LiveSupplyContractCheck(unittest.IsolatedAsyncioTestCase):
         world.page = page
         world.amap.search_places = search
         world.amap.estimate_route = route
-        token = run_context.set({"places": {}})
+        token = run_context.set({"places": {}, "world_source": "browser"})
         try:
             found, source_evidence = await world.search_places(
                 "餐厅", Location(name="上海", latitude=31.2304, longitude=121.4737)

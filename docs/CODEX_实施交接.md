@@ -4,6 +4,10 @@
 
 **最新要求：全面更名为 PlanGo。** R0 源码、环境、数据库/Redis与桌面状态已实施迁移，详细本轮验证和后续工作见 [实施进度](实施进度.md)。下文旧路径表格是迁移前定位与兼容依据。展示名用 `PlanGo`，技术标识用 `plango` / `PLANGO_`；先完成 R0，再继续 P0→P3。旧文件名、路径和测试证据在下文作为迁移前定位依据保留，不能据此继续要求新项目使用旧名称。可直接复制的启动提示词见 [CODEX_接手提示词.md](CODEX_接手提示词.md)。
 
+## 本轮实施状态（优先阅读）
+
+R0→P3本轮核心实施与声明范围内的真实用户流程已完成，最新部署/提交及边界见[实施进度](实施进度.md)和[Agent架构与选型](Agent架构与选型.md)。后文迁移前问题与阶段清单保留为历史定位，不要重复改回旧执行器或迁移已有数据。用户最新要求暂停完整质量指标测评，优先真实用户行为验证；已知未覆盖商家交易等能力以进度末节为准。
+
 ## 用户要求与授权范围
 
 用户希望将 YOYU 丰富的本地生活功能、真实可见浏览器操作，与有持久化、审批、证据和恢复能力的 Harness 融合；最终项目命名为 PlanGo，必须完全独立。用户明确要求不要盲目复制 Planora，需边实施边验证和优化。用户将自行新开 Codex 对话并粘贴提示词接手，无需代为启动其他会话。
@@ -133,10 +137,10 @@ env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:full-stack
 ```bash
 npm run services:up
 conda run --no-capture-output -n plango python scripts/check_deployment.py
-env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed
+PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plango-e2e env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed
 ```
 
-`test:deployed` 会调用真实模型并重启本项目 API/worker（当前 YOYU，迁移后 PlanGo）。密钥已授权用于有界验证，但不要无限重跑，也不执行真实订单/支付。先用受控页面回归，再用公共真实站点的只读任务验证泛化；具体业务写入保持用户授权。
+`test:deployed` 必须先启动独立 `plango-e2e` 测试服务并显式设置测试URL，脚本检查容器归属和端口；真实模型调用与API/worker重启只发生在测试项目。密钥已授权用于有界验证，但不要无限重跑，也不执行真实订单/支付。先用受控页面回归，再用公共真实站点的只读任务验证泛化；具体业务写入保持用户授权。
 
 交接前证据：47 Python 函数测试+35 subtests、39 Chromium 断言、23部署 API 检查；真实模型+真实 Electron菜单/重启链已验证；重庆JS配置、在线SDK、公共地标解析、诊断底图已验证。测试数不是任务成功率，历史模型两批各3/4、首批usage不完整，全部保留；不能覆盖失败或改变分母后宣称提升。
 

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { projectHarness, runBusy, canResolveAction } from '../src/renderer/src/lib/harnessProjection'
+import { projectHarness, runBusy, canResolveAction, phaseLabel } from '../src/renderer/src/lib/harnessProjection'
 import type { HarnessSnapshot } from '../src/shared/types'
 
 const plan = { plan_id: 'plan-1', version: 2, label: '真实方案', total_cost: 0, party_size: 4,
@@ -267,3 +267,53 @@ assert.deepEqual(visualCard.limitations, ['小字无法辨认'])
 assert(!JSON.stringify(visual.cards).includes('must-not-render-image-payload'))
 assert(!visual.cards.some(card => card.kind === 'receipt'))
 console.log('Visual observations retain scope/limitations and cannot become business receipts')
+
+const preparationComplete = { ...snapshot, phase: 'SUCCEEDED', state: { execution_outcome: { status: 'satisfied', data: { scope: 'ready_to_review', business_completed: false } } } }
+assert.equal(phaseLabel(preparationComplete), '准备就绪 · 待核对')
+assert.equal(phaseLabel({ ...preparationComplete, phase: 'WAITING_APPROVAL' }), '等待确认', 'Stored outcomes must not hide a current approval')
+assert.equal(phaseLabel({ ...preparationComplete, state: { execution_outcome: { status: 'satisfied', data: { scope: 'image_text', business_completed: false } } } }), '图片识别已完成')
+assert.equal(projectHarness({ ...snapshot, state: { browser_artifacts: [{ type: 'image', source: 'user', data: { text: '图片内价格 128 元' } }] } }).cards.find(card => card.kind === 'browser_page')?.scope, 'image_text')
+
+const draftSnapshot: HarnessSnapshot = { ...snapshot, phase: 'REQUIREMENTS_READY', interrupt_id: 'draft:run-1:plan-1:2',
+  draft_review: { interrupt_id: 'draft:run-1:plan-1:2', plan_id: 'plan-1', plan_version: 2, can_prepare: true, preparation_blockers: [], unknowns: [{ name: 'queue', detail: '排队时间未核验' }], conflicts: [], scope: 'draft_ready' },
+  state: { ...snapshot.state, action_proposal: undefined, clarification: { kind: 'draft_review' } } }
+const draftCard = projectHarness(draftSnapshot).cards.find(card => card.kind === 'draft_review')!
+assert.equal(draftCard.draft.canPrepare, true)
+assert.deepEqual(draftCard.draft.unknowns, ['排队时间未核验'])
+assert.equal(phaseLabel(draftSnapshot), '草案待核对')
+assert(!projectHarness({ ...draftSnapshot, draft_review: { ...draftSnapshot.draft_review!, plan_version: 1 } }).cards.some(card => card.kind === 'draft_review'), 'Stale plan/version draft cannot offer a decision')
+assert.equal(projectHarness({ ...draftSnapshot, draft_review: { ...draftSnapshot.draft_review!, conflicts: [{ name: 'budget', detail: '已知预算冲突', passed: false }] } }).cards.find(card => card.kind === 'draft_review')?.draft.canPrepare, false)
+let draftCalls = 0
+;(window.plango.harness as any).decideDraft = async (runId: string, interruptId: string, planId: string, version: number, decision: string) => {
+  draftCalls++; assert.deepEqual([runId, interruptId, planId, version, decision], ['run-1', 'draft:run-1:plan-1:2', 'plan-1', 2, 'prepare']); return draftSnapshot
+}
+useStore.setState({ run: draftSnapshot, busy: false, requestBusy: false, backendReady: true })
+await useStore.getState().decideDraft('run-1', 'old-interrupt', 'plan-1', 2, 'prepare')
+await useStore.getState().decideDraft('run-1', 'draft:run-1:plan-1:2', 'plan-1', 1, 'prepare')
+assert.equal(draftCalls, 0)
+await useStore.getState().decideDraft('run-1', 'draft:run-1:plan-1:2', 'plan-1', 2, 'prepare')
+assert.equal(draftCalls, 1)
+assert.equal(phaseLabel({ ...snapshot, phase: 'SUCCEEDED', state: { execution_outcome: { kind: 'planning_draft', status: 'satisfied', data: { scope: 'draft_ready', business_completed: false } } } }), '草案已保存 · 待核验')
+
+const preparationPaused: HarnessSnapshot = { ...draftSnapshot, phase: 'PARTIAL_FAILED', outcome: 'PARTIAL_FAILED', interrupt_id: null, draft_review: null,
+  preparation_resume: { plan_id: 'plan-1', plan_version: 2, approval_id: 'draft:run-1:plan-1:2', can_resume: true, blockers: [] },
+  state: { ...draftSnapshot.state, execution_goal: { kind: 'itinerary_preparation', plan_id: 'plan-1', plan_version: 2, approval_id: 'draft:run-1:plan-1:2', stops: [] },
+    execution_outcome: { kind: 'itinerary_preparation', status: 'mismatch', summary: '表单时间不一致', data: { scope: 'preparation_incomplete', business_completed: false, pending_checks: [{ name: 'queue', detail: '排队尚未核验' }], issues: [], entries: [] } } } }
+const pausedPreparationCard = projectHarness(preparationPaused).cards.find(card => card.kind === 'preparation')!
+assert.equal(pausedPreparationCard.ready, false, 'A guarded stop must still expose the durable mismatch without an optional artifact')
+assert.deepEqual(pausedPreparationCard.pendingChecks, ['排队尚未核验'])
+assert.equal(pausedPreparationCard.resume?.approval_id, 'draft:run-1:plan-1:2')
+let preparationResumes = 0
+;(window.plango.harness as any).resumePreparation = async (...args: unknown[]) => { preparationResumes++; assert.deepEqual(args, ['run-1', 'plan-1', 2, 'draft:run-1:plan-1:2']); return preparationPaused }
+useStore.setState({ run: preparationPaused, busy: false, requestBusy: false, backendReady: true })
+await useStore.getState().resumePreparation('run-1', 'plan-1', 1, 'draft:run-1:plan-1:2')
+await useStore.getState().resumePreparation('run-1', 'plan-1', 2, 'old-approval')
+assert.equal(preparationResumes, 0)
+useStore.setState({ run: { ...preparationPaused, preparation_resume: { ...preparationPaused.preparation_resume!, can_resume: false, blockers: ['先核对UNKNOWN'] } } })
+await useStore.getState().resumePreparation('run-1', 'plan-1', 2, 'draft:run-1:plan-1:2')
+assert.equal(preparationResumes, 0)
+useStore.setState({ run: preparationPaused })
+await useStore.getState().resumePreparation('run-1', 'plan-1', 2, 'draft:run-1:plan-1:2')
+assert.equal(preparationResumes, 1)
+const formerlyReady = { ...preparationPaused, state: { ...preparationPaused.state, browser_artifacts: [{ type: 'browser_preparation', artifact_id: 'preparation:draft:run-1:plan-1:2', data: { status: 'satisfied', data: { scope: 'ready_to_review', business_completed: false } } }] } }
+assert.equal(projectHarness(formerlyReady).cards.find(card => card.kind === 'preparation')?.ready, false, 'A persisted current mismatch must replace an earlier ready artifact for the same goal')

@@ -10,6 +10,7 @@ import { HarnessClient } from './harnessClient'
 import { IPC } from '../shared/ipc'
 import { listSkills } from './skills/loader'
 import { getLocation } from './location'
+import { toLocationContext } from '../shared/location'
 
 let client: HarnessClient | undefined
 let startup: Promise<HarnessClient> | undefined
@@ -62,13 +63,7 @@ async function connect(): Promise<HarnessClient> {
     onTerminal: releaseBrowserRun,
     onActivate: (runId, supersede) => { if (supersede) cancelBrowserRun(runId); activateBrowserRun(runId) },
     enabledSkills: () => listSkills().filter(skill => skill.enabled).map(skill => skill.id),
-    location: () => {
-      const config = getConfig()
-      const coordinates = config.coords.split(',').map(Number)
-      const valid = config.coords && coordinates.length === 2 && coordinates.every(Number.isFinite) && Math.abs(coordinates[0]) <= 180 && Math.abs(coordinates[1]) <= 90
-      const source = getLocation().source
-      return { city: config.city, ...(valid ? { longitude: coordinates[0], latitude: coordinates[1] } : {}), source: source === 'manual' || source === 'address' ? 'manual' : source === 'config' ? 'config' : 'device' }
-    },
+    location: () => toLocationContext(getLocation()),
     remind: (notification) => {
       const window = getMainWindow()
       if (!window || window.isDestroyed() || window.webContents.isLoading()) return false

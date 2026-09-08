@@ -6,7 +6,7 @@ import type { LocationInfo } from '@shared/location'
 
 let loading: Promise<any> | null = null
 
-const PLUGINS = ['AMap.Scale', 'AMap.ToolBar', 'AMap.Driving', 'AMap.Walking', 'AMap.Transfer', 'AMap.Geolocation', 'AMap.CitySearch', 'AMap.Geocoder']
+const PLUGINS = ['AMap.Scale', 'AMap.ToolBar', 'AMap.Driving', 'AMap.Walking', 'AMap.Transfer', 'AMap.Geolocation', 'AMap.CitySearch']
 
 export function loadAMap(): Promise<any> {
   if (window.AMap) return Promise.resolve(window.AMap)
@@ -40,17 +40,7 @@ function viaBrowserGPS(AMap: any): Promise<DetectedLoc | null> {
             const lng = lnglat.lng
             const lat = lnglat.lat
             const coords = `${lng},${lat}`
-            // 逆地理拿城市/区
-            try {
-              const geocoder = new AMap.Geocoder({})
-              geocoder.getAddress([lng, lat], (s2: string, r2: any) => {
-                const comp = r2?.regeocode?.addressComponent
-                const city = normalize(comp?.city || comp?.province || '')
-                res({ city, district: comp?.district || '', coords, source: 'gps', accuracy })
-              })
-            } catch {
-              res({ city: '', coords, source: 'gps', accuracy })
-            }
+            res({ city: '', coords, source: 'gps', accuracy, coordinate_system: 'GCJ02', granularity: 'point', observed_at: new Date(pos.timestamp).toISOString() })
           })
         } catch {
           res(null)
@@ -76,7 +66,8 @@ function viaAmapGeo(AMap: any): Promise<DetectedLoc | null> {
             district: comp.district || '',
             coords: `${result.position.lng},${result.position.lat}`,
             source: 'amap-gps',
-            accuracy: result.accuracy
+            accuracy: typeof result.accuracy === 'number' && Number.isFinite(result.accuracy) ? result.accuracy : undefined,
+            coordinate_system: 'GCJ02', granularity: 'point', observed_at: new Date().toISOString()
           })
         } else res(null)
       })
@@ -93,10 +84,7 @@ function viaCitySearch(AMap: any): Promise<DetectedLoc | null> {
       const cs = new AMap.CitySearch()
       cs.getLocalCity((status: string, result: any) => {
         if (status === 'complete' && result?.city) {
-          let coords: string | undefined
-          const c = result.bounds?.getCenter?.()
-          if (c) coords = `${c.getLng()},${c.getLat()}`
-          res({ city: normalize(result.city), coords, source: 'amap-city' })
+          res({ city: normalize(result.city), source: 'amap-city', coordinate_system: 'GCJ02', granularity: 'city', observed_at: new Date().toISOString() })
         } else res(null)
       })
     } catch {
@@ -119,37 +107,20 @@ export async function detectViaAMap(): Promise<DetectedLoc | null> {
   if (gpsCands.length) {
     gpsCands.sort((a, b) => (a.accuracy ?? 9999) - (b.accuracy ?? 9999))
     const best = gpsCands[0]
-    // GPS 拿到坐标但城市为空时，用 CitySearch 的城市名补齐
-    if (!best.city && city?.city) best.city = city.city
-    return best
+    // Reverse geocoding belongs to the backend; retain the device's own measured accuracy/time.
+    try {
+      const [longitude, latitude] = best.coords!.split(',').map(Number)
+      const result = await window.plango.geo.reverse({ longitude, latitude })
+      return { ...best, city: normalize(result.location.city), district: result.location.district }
+    } catch { return best.city ? best : city }
   }
   return city
 }
 
-// 手动/地址 → 坐标（桌面无 GPS 时用户可指定"我在哪"）
-export async function geocodeAddress(address: string, city?: string): Promise<DetectedLoc | null> {
-  let AMap: any
-  try {
-    AMap = await loadAMap()
-  } catch {
-    return null
-  }
-  return new Promise((res) => {
-    try {
-      const geocoder = new AMap.Geocoder({ city: city || '全国' })
-      geocoder.getLocation(address, (status: string, result: any) => {
-        const g = status === 'complete' && result?.geocodes?.[0] ? result.geocodes[0] : null
-        if (!g?.location) return res(null)
-        const comp = g.addressComponent || {}
-        res({
-          city: normalize(comp.city || comp.province || city || ''),
-          district: comp.district || '',
-          coords: `${g.location.lng},${g.location.lat}`,
-          source: 'address'
-        })
-      })
-    } catch {
-      res(null)
-    }
-  })
+// User address parsing uses the same backend Geo service as planning and discovery.
+export async function geocodeAddress(address: string, city?: string): Promise<(DetectedLoc & { formattedAddress: string }) | null> {
+  const result = await window.plango.geo.geocode({ address, ...(city ? { city } : {}) })
+  return { city: normalize(result.location.city), district: result.location.district, formattedAddress: result.location.address,
+    coords: `${result.location.longitude},${result.location.latitude}`, source: 'address', coordinate_system: 'GCJ02',
+    granularity: result.location.granularity, observed_at: result.observed_at }
 }

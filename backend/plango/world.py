@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 from langgraph.types import interrupt
-from plango_harness.agent.contracts import Evidence, Location, PlaceCandidate
+from plango_harness.agent.contracts import Evidence, Location, PlaceCandidate, TripSpec
 from plango_harness.providers.world import (
     AmapWorldProvider,
     Supply,
@@ -181,7 +181,46 @@ class BrowserWorld:
         self.amap = AmapWorldProvider(settings)
 
     def bind_run_state(self, state):
-        run_context.get()["turn_id"] = state.get("turn_id", 1)
+        context = run_context.get()
+        context["turn_id"] = state.get("turn_id", 1)
+        if "place_candidates" in state:
+            context["places"] = {place.place_id: place for raw in state.get("place_candidates", []) for place in [PlaceCandidate.model_validate(raw)]}
+        task = state.get("browser_task_context") or {}
+        spec_raw = state.get("trip_spec") or state.get("previous_spec")
+        spec = TripSpec.model_validate(spec_raw) if spec_raw else None
+        # Derive the choice from the persisted task, keeping it in this run's
+        # context rather than a mutable provider-wide switch.
+        texts = [task.get("request") or (spec.goal if spec else ""), *task.get("edits", []), state.get("input_text", "")]
+        source = "amap" if self.settings.amap_webservice_key else "browser"
+        for text in texts:
+            text = str(text)
+            if re.search(r"(?:不(?:要|用|再)|无需|别).{0,4}(?:网页|页面|浏览器)|(?:改用|使用|通过|按|用)高德", text):
+                source = "amap" if self.settings.amap_webservice_key else "browser"
+            elif re.search(r"(?:当前|这个|该|打开的)(?:网页|页面|浏览器)|(?:根据|按照?|参考|用|从).{0,8}(?:网页|页面|菜单)", text):
+                source = "browser"
+        context["world_source"] = source
+        previous_raw = state.get("previous_spec")
+        previous = TripSpec.model_validate(previous_raw) if previous_raw else None
+        context["world_geography_changed"] = bool(spec and previous and (
+            spec.location != previous.location or spec.search_location != previous.search_location
+        ))
+        if spec:
+            context["geocode_city"] = (spec.search_location.city_code if spec.search_location else None) or spec.location.city_code or context.get("geocode_city")
+            context["world_travel_mode"] = spec.travel_mode
+            context["world_location"] = spec.search_location or spec.location
+            context["world_radius_km"] = spec.max_distance_km or 5.0
+            if context["world_geography_changed"]:
+                context["places"] = {key: place for key, place in context.get("places", {}).items() if self._in_current_region(place)}
+
+    def _uses_browser(self):
+        return run_context.get().get("world_source", "amap" if self.settings.amap_webservice_key else "browser") == "browser"
+
+    def _in_current_region(self, place):
+        context = run_context.get()
+        location = context.get("world_location")
+        return not (context.get("world_geography_changed") and location) or _distance_km(
+            location, place.latitude, place.longitude
+        ) <= context.get("world_radius_km", 5.0)
 
     async def page(self):
         observation = await self.bridge.request("extract", {})
@@ -363,12 +402,16 @@ class BrowserWorld:
         binding = await self.bridge.binding(state["run_id"])
         raw = binding.get("location_context")
         context = LocationContext.model_validate(raw) if raw else None
-        return select_origin(state, extracted_name, previous_spec, context)
+        chosen = select_origin(state, extracted_name, previous_spec, context)
+        run_context.get()["geocode_city"] = (chosen[1].city_code if chosen[1] else None) or (context.city if context else None)
+        return chosen
 
     async def geocode(self, address):
         if self.settings.amap_webservice_key:
-            result = await self.amap.geocode(address)
-            if result:
+            result = await self.amap.geocode(address, city=run_context.get().get("geocode_city"))
+            if result and result.city_code:
+                run_context.get()["geocode_city"] = result.city_code
+            if result or not self._uses_browser():
                 return result
         binding = await self.bridge.binding(run_context.get()["run_id"])
         if binding.get("location_context"):
@@ -380,6 +423,10 @@ class BrowserWorld:
         return None
 
     async def search_places(self, query, location, *, limit=8):
+        if not self._uses_browser():
+            amap_places, amap_evidence = await self.amap.search_places(query, location, limit=limit)
+            run_context.get().setdefault("places", {}).update({p.place_id: p for p in amap_places})
+            return amap_places, amap_evidence
         observation = await self.page()
         data = await self.extract(observation)
         places: list[PlaceCandidate] = []
@@ -391,7 +438,7 @@ class BrowserWorld:
         for observed in data.places:
             existing = known.get(observed.name)
             if observed.address and self.settings.amap_webservice_key:
-                geo = await self.amap.geocode(observed.address)
+                geo = await self.amap.geocode(observed.address, city=run_context.get().get("geocode_city"))
                 if (
                     geo
                     and existing is not None
@@ -405,6 +452,7 @@ class BrowserWorld:
                             (observation["url"] + observed.name + observed.address).encode()
                         ).hexdigest()[:20],
                         name=observed.name,
+                        address=observed.address,
                         category=observed.category,
                         latitude=geo.latitude,
                         longitude=geo.longitude,
@@ -499,6 +547,11 @@ class BrowserWorld:
                     confidence=0.85,
                 )
             )
+        # A newly selected region cannot inherit a distant venue from an old
+        # open page merely because the page remains visible and fresh.
+        places = [place for place in places if self._in_current_region(place)]
+        place_ids = {place.place_id for place in places}
+        evidence = [item for item in evidence if not item.payload.get("place_id") or item.payload["place_id"] in place_ids]
         cache = run_context.get().setdefault("places", {})
         for index, p in enumerate(places):
             hours = literal_supply(
@@ -539,13 +592,14 @@ class BrowserWorld:
 
     async def get_place(self, place_id):
         cache = run_context.get().setdefault("places", {})
-        if place_id in cache:
+        if place_id in cache and self._in_current_region(cache[place_id]):
             return cache[place_id]
         # Restore provider evidence from the durable graph projection after a pause/restart.
         row = await self.bridge.runtime.runs.get(run_context.get()["run_id"])
         for raw in (row.get("state_json") or {}).get("place_candidates", []):
             p = PlaceCandidate.model_validate(raw)
-            cache[p.place_id] = p
+            if self._in_current_region(p):
+                cache[p.place_id] = p
         if place_id in cache:
             return cache[place_id]
         return (
@@ -554,7 +608,16 @@ class BrowserWorld:
             else None
         )
 
+    async def refresh_place(self, previous):
+        fresh, proof = await self.amap.refresh_place(previous)
+        run_context.get().setdefault("places", {})[fresh.place_id] = fresh
+        return fresh, proof
+
     async def get_supply(self, place_id, at_minute):
+        if not self._uses_browser():
+            # Amap cannot prove queues, seats or booking availability. Its
+            # source-aware unknown result needs no synthetic page observation.
+            return await self.amap.get_supply(place_id, at_minute)
         observation = await self.page()
         now = datetime.fromisoformat(observation["observed_at"])
         for raw in (observation.get("fields") or {}).get("places", []):
@@ -613,23 +676,34 @@ class BrowserWorld:
         )
 
     async def estimate_route(self, origin, destination):
+        mode = run_context.get().get("world_travel_mode", "driving")
+        async def amap_route():
+            return await self.amap.estimate_route(origin, destination) if mode == "driving" else await self.amap.estimate_route(origin, destination, mode=mode)
+        if not self._uses_browser():
+            return await amap_route()
         observation = await self.page()
         routes = (observation.get("fields") or {}).get("routes", {})
         route = routes.get(destination.place_id)
-        if isinstance(route, dict):
+        route_origin = route.get("origin") if isinstance(route, dict) else None
+        origin_matches = isinstance(route_origin, dict) and all(
+            route_origin.get(key) == getattr(origin, key) for key in ("latitude", "longitude")
+        )
+        mode_matches = isinstance(route, dict) and route.get(f"{mode}_min") is not None
+        if isinstance(route, dict) and mode_matches and (not run_context.get().get("world_geography_changed") or origin_matches):
+            observed_at = datetime.fromisoformat(observation["observed_at"])
             return {**route, "source": "browser"}, Evidence(
                 evidence_id=f"browser-route:{observation['command_id']}:{destination.place_id}",
                 source="browser",
                 source_ref=observation["url"],
                 claim="页面提供的路线观测",
                 payload=route,
-                observed_at=datetime.now(timezone.utc),
-                expires_at=datetime.now(timezone.utc) + timedelta(minutes=10),
+                observed_at=observed_at,
+                expires_at=observed_at + timedelta(minutes=10),
             )
-        return await self.amap.estimate_route(origin, destination)
+        return await amap_route()
 
-    async def get_weather(self, location):
-        return await self.amap.get_weather(location)
+    async def get_weather(self, location, visit_date=None, timezone_name="Asia/Shanghai"):
+        return await self.amap.get_weather(location, visit_date, timezone_name)
 
     async def close(self):
         await self.amap.close()

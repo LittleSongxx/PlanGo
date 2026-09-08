@@ -1,0 +1,119 @@
+{
+  "scope": "Read-only comparison of every pre-R0 original row against the current main PlanGo database; original SQL restored only into a disposable database of the isolated plango-e2e PostgreSQL container",
+  "baseline_sql_sha256": "12ae1ec8ccf2485eb1634199b384013437f59192640cb1f60d841cb873fcaf4b",
+  "tables": [
+    {
+      "original_table": "agent_action",
+      "current_table": "agent_action",
+      "original_rows": 0,
+      "current_rows": 0,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "agent_run",
+      "current_table": "agent_run",
+      "original_rows": 4,
+      "current_rows": 8,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "checkpoint_blobs",
+      "current_table": "checkpoint_blobs",
+      "original_rows": 148,
+      "current_rows": 248,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "checkpoint_migrations",
+      "current_table": "checkpoint_migrations",
+      "original_rows": 10,
+      "current_rows": 10,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "checkpoint_writes",
+      "current_table": "checkpoint_writes",
+      "original_rows": 534,
+      "current_rows": 928,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "checkpoints",
+      "current_table": "checkpoints",
+      "original_rows": 54,
+      "current_rows": 86,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "memory_document",
+      "current_table": "memory_document",
+      "original_rows": 0,
+      "current_rows": 0,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "memory_event",
+      "current_table": "memory_event",
+      "original_rows": 0,
+      "current_rows": 0,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "procedural_rule",
+      "current_table": "procedural_rule",
+      "original_rows": 0,
+      "current_rows": 0,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "run_event",
+      "current_table": "run_event",
+      "original_rows": 74,
+      "current_rows": 101,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "run_plan",
+      "current_table": "run_plan",
+      "original_rows": 0,
+      "current_rows": 0,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "trip_episode",
+      "current_table": "trip_episode",
+      "original_rows": 0,
+      "current_rows": 0,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "user_fact",
+      "current_table": "user_fact",
+      "original_rows": 0,
+      "current_rows": 0,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "yoyu_browser_binding",
+      "current_table": "plango_browser_binding",
+      "original_rows": 4,
+      "current_rows": 8,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "yoyu_browser_command",
+      "current_table": "plango_browser_command",
+      "original_rows": 18,
+      "current_rows": 24,
+      "missing_original_rows": 0
+    },
+    {
+      "original_table": "yoyu_reminder",
+      "current_table": "plango_reminder",
+      "original_rows": 0,
+      "current_rows": 0,
+      "missing_original_rows": 0
+    }
+  ],
+  "passed": true
+}

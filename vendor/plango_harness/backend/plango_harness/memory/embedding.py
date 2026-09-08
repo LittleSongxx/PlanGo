@@ -17,6 +17,8 @@ class EmbeddingService:
         self._client: Any | None = None
 
     def _get_client(self):
+        if not self.settings.embedding_enabled:
+            return None
         if (
             self._client is None
             and self.settings.runtime_profile != "sandbox"

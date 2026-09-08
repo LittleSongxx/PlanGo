@@ -4,6 +4,14 @@
 
 :root {
   color-scheme: light;
+  --canvas: #f2f5f1;
+  --surface: #ffffff;
+  --surface-soft: #f7f9f7;
+  --line: #e1e8e2;
+  --ink: #20352c;
+  --muted: #76837b;
+  --accent: #296c53;
+  --accent-soft: #edf7f1;
 }
 
 html,
@@ -14,9 +22,11 @@ body,
 }
 
 body {
-  font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
-  background: #faf9f7;
-  color: #1a1a1a;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background: var(--canvas);
+  color: var(--ink);
   overflow: hidden;
 }
 
@@ -26,11 +36,11 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d9d9d9;
+  background: #cdd8d0;
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #bdbdbd;
+  background: #a8b8ae;
 }
 
 @keyframes fadeInUp {
@@ -54,4 +64,38 @@ body {
   to {
     transform: rotate(360deg);
   }
+}
+
+@layer base {
+  button, input, textarea, select { font: inherit; }
+  button { -webkit-app-region: no-drag; }
+  button:disabled { cursor: not-allowed; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  ::selection { background: #c5e9d7; color: #183e32; }
+}
+
+@layer components {
+  .plango-surface { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 6px 26px -18px #183e3240; }
+  .plango-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 2px 12px -8px #183e3230; }
+  .plango-panel-header { display: flex; align-items: center; min-height: 64px; border-bottom: 1px solid var(--line); padding: 14px 20px; }
+  .plango-kicker { color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; }
+  .plango-muted { color: var(--muted); }
+  .plango-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--accent); color: white; border-radius: 12px; padding: 10px 16px; font-size: 13px; font-weight: 600; transition: background .16s ease, transform .16s ease; }
+  .plango-primary:hover:not(:disabled) { background: #20573f; }
+  .plango-primary:active:not(:disabled) { transform: translateY(1px); }
+  .plango-icon-button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; height: 32px; border-radius: 10px; color: #66796d; transition: background .16s ease, color .16s ease; }
+  .plango-icon-button:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); }
+  .plango-field { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); padding: 9px 12px; font-size: 13px; color: var(--ink); }
+  .plango-field:focus { border-color: #74a388; outline: none; box-shadow: 0 0 0 3px #dceee34d; }
+  .plango-dialog-backdrop { background: #18372b55; backdrop-filter: blur(3px); }
+  .plango-section { border: 1px solid var(--line); border-radius: 16px; background: white; padding: 16px; }
+  .plango-dialog { color: var(--ink); border: 1px solid var(--line); border-radius: 24px; padding: 0; background: var(--surface); box-shadow: 0 24px 90px -24px #163d2a50; max-width: calc(100vw - 48px); max-height: calc(100vh - 48px); overflow: hidden; }
+  .plango-dialog[open] { display: flex; flex-direction: column; }
+  .plango-dialog::backdrop { background: #18372b55; backdrop-filter: blur(3px); }
+  .plango-dialog-drawer { height: calc(100vh - 32px); max-height: calc(100vh - 32px); margin: 16px 16px 16px auto; }
+  .plango-dialog-history { height: calc(100vh - 32px); max-height: calc(100vh - 32px); margin: 16px auto 16px 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }

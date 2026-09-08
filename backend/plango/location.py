@@ -3,7 +3,7 @@
 from typing import Literal
 
 from plango_harness.agent.contracts import Location
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
 
 class LocationContext(BaseModel):
@@ -12,11 +12,20 @@ class LocationContext(BaseModel):
     longitude: float | None = Field(default=None, ge=-180, le=180, allow_inf_nan=False, strict=True)
     latitude: float | None = Field(default=None, ge=-90, le=90, allow_inf_nan=False, strict=True)
     source: Literal["config", "manual", "device"]
+    coordinate_system: Literal["GCJ02"] = "GCJ02"
+    detail_source: Literal["config", "manual", "address", "gps", "amap-gps", "ip", "amap-ip", "amap-city", "pconline", "ip-api"] | None = None
+    accuracy: float | None = Field(default=None, ge=0, le=1_000_000, allow_inf_nan=False, strict=True)
+    granularity: Literal["point", "address", "district", "city", "unknown"] | None = None
+    observed_at: AwareDatetime | None = None
 
     @model_validator(mode="after")
     def coordinate_pair(self):
         if (self.longitude is None) != (self.latitude is None):
             raise ValueError("longitude_and_latitude_must_be_provided_together")
+        if self.accuracy is not None and self.detail_source not in {"gps", "amap-gps"}:
+            raise ValueError("accuracy_requires_observed_device_location")
+        if self.granularity in {"point", "address"} and self.longitude is None:
+            raise ValueError("precise_location_requires_coordinates")
         return self
 
 

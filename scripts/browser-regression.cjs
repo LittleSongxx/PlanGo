@@ -15,6 +15,12 @@ app.commandLine.appendSwitch('disable-gpu')
 const fixture = '<!doctype html><html><body><h1>真实菜单测试页</h1><table><tr><th>菜品</th><th>价格</th></tr><tr><td>双人套餐</td><td>128 元</td></tr></table><button id="submit" onclick="window.submits=(window.submits||0)+1">预约</button><input id="search" placeholder="搜索"><p id="result"></p></body></html>'
 let slowRequests = 0
 const server = createServer((req,res) => {
+  if (req.url === '/forms-frame') { res.setHeader('Content-Type','text/html; charset=utf-8'); res.end('<form id="booking" action="/frame-book"><h2>框架门店</h2><label>人数<input name="party" value="2"></label><button type="submit">框架提交</button></form>'); return }
+  if (req.url === '/forms') {
+    res.setHeader('Content-Type','text/html; charset=utf-8')
+    res.end(`<h1>OUTSIDE_OTHER_SHOP</h1><form id="booking" action="/book"><h2>重庆溪畔餐厅</h2><p>重庆市渝中区受控地址</p><fieldset><label>人数<input name="party" value="3"></label></fieldset><label for="day">到店日期</label><input id="day" name="date" type="date" value="2026-09-12"><input aria-label="到店时间" name="time" type="time" value="18:30"><label>同意<input name="accepted" type="checkbox" checked></label><select name="choice" multiple><option value="a" selected>甲</option><option value="b" selected>乙</option></select><input type="password" value="SECRET_PASSWORD"><input type="file"><input type="hidden" value="SECRET_HIDDEN"><div style="display:none"><input value="SECRET_DISPLAY"></div><div style="opacity:0"><input value="SECRET_OPACITY"><span>HIDDEN_OTHER_SHOP</span></div><button type="submit">确认预约</button><button type="button">返回</button><button type="submit" formaction="/wrong-entry">另一个入口</button></form><label for="contact">联系人</label><input id="contact" form="booking" name="contact" value="受控姓名"><form action="/other"><h2>另一门店</h2><input name="other" value="other-value"></form><iframe src="http://frame.meituan.com:${server.address().port}/forms-frame" style="width:500px;height:180px"></iframe>`)
+    return
+  }
   if (req.url === '/slow') { slowRequests++; setTimeout(() => { res.setHeader('Content-Type','text/html'); res.end(fixture) },1800); return }
   if (req.url === '/frame') { res.setHeader('Content-Type','text/html; charset=utf-8'); res.end('<input placeholder="框架输入"><script>parent.postMessage("frame-ready","*")</script>'); return }
   if (req.url === '/redirect') { res.writeHead(302, { Location: '/redirected' }); res.end(); return }
@@ -274,6 +280,24 @@ async function main() {
   assert(!cancelledNavigation.ok, 'cancellation aborts a pending native navigation')
   await new Promise(r=>setTimeout(r,1900))
   assert(!api.getBrowserState().tabs.some(t=>api.getBrowserTab(t.id).getURL().endsWith('/slow')), 'cancelled navigation cannot commit after its response arrives')
+  host.setSize(900, 900)
+  const formsTab = await createBrowserTab(url + 'forms')
+  await waitFor(() => !formsTab.contents.isLoading())
+  const formRead = await execute(command('snapshot', {}, { run_id: 'forms-run', tab_id: formsTab.id }))
+  assert(formRead.ok, 'real form snapshot can be observed without granting submission permission')
+  const forms = formRead.fields.dom.forms
+  const booking = forms.find(form => form.action_url === url + 'book')
+  assert(forms.length === 3 && new Set(forms.map(form => form.form_id)).size === 3, 'native forms have unique snapshot/frame-local identities')
+  assert(booking && !booking.truncated && booking.context_text.includes('重庆溪畔餐厅') && !booking.context_text.includes('OUTSIDE_OTHER_SHOP') && !booking.context_text.includes('HIDDEN_OTHER_SHOP'), 'form context contains only its own visible text')
+  assert(!JSON.stringify(forms).includes('SECRET_'), 'password/file/hidden and invisible values never leave the driver')
+  assert(booking.controls.find(control => control.name === 'party').value === '3' && booking.controls.find(control => control.name === 'contact').value === '受控姓名', 'native form-associated controls retain actual values including external form= fields')
+  assert(booking.controls.find(control => control.name === 'date').label.includes('到店日期') && booking.controls.find(control => control.name === 'time').label === '到店时间', 'field labels come from actual label/aria associations')
+  assert(booking.controls.find(control => control.name === 'accepted').value === true && JSON.stringify(booking.controls.find(control => control.name === 'choice').value) === '["a","b"]', 'checkbox and multiselect values keep their native types')
+  assert(booking.submit_indices.length === 1 && formRead.elements[booking.submit_indices[0]].input_type === 'submit' && !formRead.elements[booking.submit_indices[0]].disabled, 'only a visible native submit matching the form action can be reviewed')
+  assert(forms.every(form => form.controls.every(control => formRead.elements[control.idx])), 'form indexes map to the flattened visible-frame elements')
+  await formsTab.contents.executeJavaScript("const field=document.createElement('textarea');field.name='long';field.value='x'.repeat(2001);document.querySelector('#booking').appendChild(field);true")
+  const truncatedForm = await execute(command('snapshot', {}, { run_id: 'forms-run', tab_id: formsTab.id }))
+  assert(truncatedForm.fields.dom.forms.find(form => form.action_url === url + 'book').truncated === true, 'bounded form truncation remains explicit rather than pretending a complete check')
   console.log(`Browser regression: ${checks} assertions passed (real WebContentsView + trusted bridge + Playwright)`)
 }
 async function finish(code) {

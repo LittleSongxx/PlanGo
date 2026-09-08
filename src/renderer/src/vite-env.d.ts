@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import type { AgentReply, OutcomeCard, AgentStep, HarnessApi, HarnessEvent, ReminderApi } from '@shared/types'
-import type { LocationInfo } from '@shared/location'
+import type { LocationInfo, GeoLocationResult } from '@shared/location'
 import type { BrowserIntent, BrowserLayout, BrowserViewState, BrowserActivity } from '@shared/browserView'
 
 interface PlangoApi {
@@ -29,19 +29,21 @@ interface PlangoApi {
   proactiveTrigger: () => Promise<{ id: string; ts: number; text: string; kind: string }>
   getMemory: () => Promise<any>
   memoryGreeting: () => Promise<{ text: string }>
-  memoryDelete: (payload: { kind: 'pref' | 'fav'; value: string }) => Promise<any>
+  memoryDelete: (payload: { kind: 'pref' | 'fav' | 'episode'; value: string }) => Promise<any>
+  memorySave: (text: string, polarity: 'like' | 'dislike') => Promise<any>
   memoryClear: () => Promise<any>
   shareCreate: (payload: { plan?: any; city?: string }) => Promise<{ ok: boolean; error?: string; id?: string; url?: string; qr?: string }>
   shareFeedback: (id: string) => Promise<{ found: boolean; views: number; tally: { up: number; meh: number; down: number }; prefs: { member: string; idea: string; budget?: number; ts: number }[]; mergeInstruction: string }>
   guideSetImage: (dataUrl: string) => Promise<{ ok: boolean }>
-  discoverFetch: (city?: string) => Promise<{ city: string; groups: import('@shared/types').DiscoverGroup[]; source: import('@shared/types').SourceTag }>
+  discoverFetch: (request?: { city?: string; refresh?: boolean }) => Promise<{ city: string; groups: import('@shared/types').DiscoverGroup[]; source: import('@shared/types').SourceTag; scope: 'around' | 'city'; observed_at: string; expires_at: string; cache_hit: boolean }>
   dealsFetch: (city?: string) => Promise<{ city: string; items: { poi: import('@shared/types').POISummary; deal: import('@shared/types').DealRow }[]; source: import('@shared/types').SourceTag }>
   getLocation: () => Promise<LocationInfo>
   detectLocation: () => Promise<LocationInfo>
   setCity: (city: string) => Promise<LocationInfo>
   onLocation: (cb: (l: LocationInfo) => void) => () => void
   reportLocation: (p: LocationInfo & { userInitiated?: boolean }) => Promise<LocationInfo>
-  getAmapJsConfig: () => Promise<{ jsKey: string; jsSecurity: string; webKey: string }>
+  geo: { geocode: (request: { address: string; city?: string }) => Promise<GeoLocationResult>; reverse: (request: { longitude: number; latitude: number }) => Promise<GeoLocationResult> }
+  getAmapJsConfig: () => Promise<{ jsKey: string; jsSecurity: string }>
   openExternal: (url: string) => Promise<boolean>
 }
 

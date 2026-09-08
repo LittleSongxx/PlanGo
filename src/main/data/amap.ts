@@ -1,80 +1,35 @@
-// 高德 Web 服务客户端：桌面附近发现的实时 POI 搜索。
-import { getConfig } from '../config'
-import type { POISummary } from '@shared/types'
+// All Web API reads use the authenticated backend; this adapter preserves the existing rich POI cards.
+import type { HarnessClient } from '../harnessClient'
 import { fromAmap, type AmapPoi } from './converter'
+import { toLocationContext, type GeoLocationResult, type LocationInfo } from '../../shared/location'
 
-const BASE = 'https://restapi.amap.com/v5'
-
-function key(): string {
-  const k = getConfig().amap.key
-  if (!k) throw new Error('未配置 AMAP_WEBSERVICE_KEY')
-  return k
+export interface GeoSearchResult {
+  source: 'amap'
+  scope: 'around' | 'city'
+  pois: AmapPoi[]
+  observed_at: string
+  expires_at: string
+  cache_hit: boolean
+  source_ref: string
 }
-
-// 免费 key QPS 有限：全局串行 + 最小间隔，避免 CUQPS_HAS_EXCEEDED_THE_LIMIT（移植自 yoyu）。
-let lastCall = 0
-const MIN_INTERVAL = 220
-let chain: Promise<void> = Promise.resolve()
-async function throttle(): Promise<void> {
-  const mine = chain.then(async () => {
-    const wait = MIN_INTERVAL - (Date.now() - lastCall)
-    if (wait > 0) await new Promise((r) => setTimeout(r, wait))
-    lastCall = Date.now()
+export function requireFresh(value: { observed_at: string; expires_at: string }): void {
+  if (!Number.isFinite(Date.parse(value.observed_at)) || !Number.isFinite(Date.parse(value.expires_at)) || Date.parse(value.expires_at) <= Date.now()) throw new Error('地理结果已过期，请刷新后重试。')
+}
+export async function searchPoi(client: Pick<HarnessClient, 'request'>, keywords: string, location: LocationInfo, opts: { types?: string; page?: number; refresh?: boolean } = {}) {
+  const result = await client.request<GeoSearchResult>('/api/v1/geo/search', 'POST', {
+    query: keywords, location_context: toLocationContext(location), radius_m: 5000, page: opts.page ?? 1, limit: 20, refresh: opts.refresh ?? false,
+    ...(opts.types ? { types: opts.types } : {})
   })
-  chain = mine.catch(() => {})
-  return mine
+  requireFresh(result)
+  return { ...result, items: result.pois.map(poi => ({ ...fromAmap(poi), observed_at: result.observed_at })) }
 }
-
-const cache = new Map<string, any>()
-
-async function get(path: string, params: Record<string, string | number | undefined>): Promise<any> {
-  const qs = new URLSearchParams({ key: key() })
-  for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') qs.set(k, String(v))
-  const url = `${BASE}${path}?${qs.toString()}`
-  const ckey = url.replace(/[?&]key=[^&]*/, '')
-  if (cache.has(ckey)) return cache.get(ckey)
-
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await throttle()
-    const controller = new AbortController()
-    const t = setTimeout(() => controller.abort(), 12_000)
-    try {
-      const res = await fetch(url, { signal: controller.signal })
-      if (!res.ok) throw new Error(`高德 ${res.status}`)
-      const data = await res.json()
-      if (data.status === '1') {
-        cache.set(ckey, data)
-        return data
-      }
-      const info = String(data.info || 'unknown')
-      if (/CUQPS|QPS|BUSINESS/i.test(info) && attempt < 2) {
-        await new Promise((r) => setTimeout(r, 350 * (attempt + 1)))
-        continue
-      }
-      throw new Error(`高德错误：${info}`)
-    } catch (e) {
-      if (attempt < 2) {
-        await new Promise((r) => setTimeout(r, 300))
-        continue
-      }
-      throw e
-    } finally {
-      clearTimeout(t)
-    }
-  }
-  throw new Error('高德重试仍失败')
+export async function geocode(client: Pick<HarnessClient, 'request'>, address: string, city?: string): Promise<GeoLocationResult> {
+  const result = await client.request<GeoLocationResult>('/api/v1/geo/geocode', 'POST', { address, ...(city ? { city } : {}) })
+  requireFresh(result)
+  return result
 }
-
-// v5 关键字搜索（region + city_limit 锁定同城，business/photos 富字段）。移植 yoyu text_search。
-export async function searchPoi(keywords: string, city: string, opts: { types?: string; page?: number } = {}): Promise<POISummary[]> {
-  const data = await get('/place/text', {
-    keywords,
-    region: city,
-    city_limit: 'true',
-    page_size: 20,
-    page_num: opts.page ?? 1,
-    types: opts.types,
-    show_fields: 'business,photos'
-  })
-  return (data.pois || []).map((p: AmapPoi) => fromAmap(p))
+export async function reverse(client: Pick<HarnessClient, 'request'>, longitude: number, latitude: number): Promise<GeoLocationResult> {
+  const result = await client.request<GeoLocationResult>('/api/v1/geo/reverse', 'POST', { longitude, latitude })
+  requireFresh(result)
+  return result
 }

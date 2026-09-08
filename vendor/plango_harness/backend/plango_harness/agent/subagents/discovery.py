@@ -68,9 +68,9 @@ class DiscoveryAgent:
                 self.last_tool_calls += 1
                 limit = 20 if query in typed_queries else 10  # Existing tool maximum.
                 rows, refs = (
-                    await search(query, spec.location, limit)
+                    await search(query, spec.search_location or spec.location, limit)
                     if search
-                    else await self.world.search_places(query, spec.location, limit=limit)
+                    else await self.world.search_places(query, spec.search_location or spec.location, limit=limit)
                 )
                 evidence.extend(refs)
                 if query in typed_queries and any(row.category == query for row in rows):

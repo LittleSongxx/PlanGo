@@ -4,49 +4,24 @@ import { canResolveAction } from '../lib/harnessProjection'
 import type { OutcomeCard, Plan, DealRow, DishReco, ReceiptItem, SourceTag, TakeoutItem, DiscoverGroup, POISummary, GroupBuyPackage, HarnessEvidence } from '@shared/types'
 import { SourceBadge } from './SourceBadge'
 import { PlanMap } from './PlanMap'
-import { RouteSheet } from './RouteSheet'
-import { ShareModal } from './ShareModal'
-import { MapPin, Clock, Utensils, Ticket, Users, CheckCircle2, XCircle, AlertTriangle, Send, ListChecks, Tag, Wallet, Globe, Navigation, Mic, MicOff, Compass } from 'lucide-react'
+import { PoiImage } from './PoiImage'
+import { ResultFeedback } from './ResultFeedback'
+import { DraftReviewCard } from './DraftReviewCard'
+import { MapPin, Clock, Utensils, Ticket, Users, CheckCircle2, XCircle, AlertTriangle, Send, ListChecks, Tag, Wallet, Globe, Navigation, Mic, MicOff, Compass, ArrowRight, Sparkles, FileText } from 'lucide-react'
 
-// 无真实图时的分类占位图（对齐 yoyu _CAT_IMG，诚实标"示意图"）。按标题/标签选主题，避免千篇一律。
-const THEME_IMG: { re: RegExp; url: string }[] = [
-  { re: /火锅|烧烤|串/, url: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=400&q=70' },
-  { re: /咖啡|coffee|café/i, url: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=400&q=70' },
-  { re: /甜品|烘焙|蛋糕|面包/, url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=70' },
-  { re: /沙拉|轻食|减脂|健康/, url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=70' },
-  { re: /日料|寿司|居酒屋/, url: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400&q=70' },
-  { re: /茶|奶茶|饮/, url: 'https://images.unsplash.com/photo-1558857563-b371033873b8?w=400&q=70' },
-  { re: /公园|广场|绿道|湖/, url: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400&q=70' },
-  { re: /博物馆|展|艺术|美术/, url: 'https://images.unsplash.com/photo-1499426600726-a950358acf16?w=400&q=70' },
-  { re: /乐园|游乐|亲子|儿童|反斗/, url: 'https://images.unsplash.com/photo-1560807707-8cc77767d783?w=400&q=70' },
-  { re: /电影|影院|剧|KTV|唱/, url: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&q=70' },
-  { re: /海|沙滩|山|徒步|户外/, url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=70' }
-]
-const CAT_IMG: Record<string, string> = {
-  dining: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=70',
-  activity: 'https://images.unsplash.com/photo-1533107862482-0e6974b06ec4?w=400&q=70'
-}
-function poiImage(title: string, tags: string[] | undefined, category: string): { url: string; real: boolean } {
-  const blob = `${title}${(tags || []).join('')}`
-  const t = THEME_IMG.find((x) => x.re.test(blob))
-  if (t) return { url: t.url, real: false }
-  return { url: CAT_IMG[category === 'dining' ? 'dining' : 'activity'], real: false }
-}
+const cardPriority = (card: OutcomeCard): number => card.kind === 'confirm' || card.kind === 'draft_review' ? 2 : card.kind === 'preparation' && card.current ? 1 : 0
 
 export function OutcomeCanvas(): JSX.Element {
   const cards = useStore((s) => s.cards)
+  const run = useStore((s) => s.run)
   const setView = useStore((s) => s.setView)
   const refreshRun = useStore((s) => s.refreshRun)
-  const routeTarget = useStore((s) => s.routeTarget)
-  const closeRoute = useStore((s) => s.closeRoute)
   return (
-    <div className="h-full flex flex-col bg-neutral-50">
-      {routeTarget && <RouteSheet target={routeTarget} onClose={closeRoute} />}
-      <ShareModal />
-      <div className="h-10 shrink-0 flex items-center gap-2 px-4 border-b border-neutral-200 bg-white">
+    <div className="h-full flex flex-col bg-[#f7f9f6]">
+      <div className="min-h-[52px] shrink-0 flex items-center gap-2 px-5 border-b border-[var(--line)] bg-white/75">
         <ListChecks size={16} className="text-brand-ink" />
-        <span className="text-sm font-semibold">成果区</span>
-        <span className="text-xs text-neutral-400">行程 · 比价 · 点菜 · 排号 · 确认 · 执行回执</span>
+        <span className="text-xs font-medium text-brand-ink">本次安排</span>
+        <span className="text-[11px] text-[var(--muted)] hidden xl:inline">资料、方案与需要你确认的事项</span>
         <div className="ml-auto flex items-center gap-1">
           {cards.length > 0 && (
             <button onClick={() => void refreshRun()} className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg text-neutral-500 hover:bg-neutral-100" title="从运行服务重新加载成果">
@@ -58,19 +33,20 @@ export function OutcomeCanvas(): JSX.Element {
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-4">
-        {cards.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center text-neutral-400 gap-3">
-            <div className="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center">
-              <ListChecks size={30} className="text-brand-ink" />
-            </div>
-            <div className="text-sm max-w-xs">
-              让PlanGo规划一下，行程、比价、点菜、排号、执行回执都会以精美卡片出现在这块大画布里。
-            </div>
+      <div className="flex-1 overflow-y-auto p-5 lg:p-6">
+        <ResultFeedback />
+        {cards.length === 0 && run?.outcome ? <div className="max-w-4xl mx-auto plango-card p-6"><h2 className="text-base font-semibold">本轮尚无可展示的成果</h2><p className="text-sm text-[var(--muted)] leading-6 mt-3">{String(run.state.reason || '你可以在对话中查看任务记录，调整需求后继续。')}</p></div> : cards.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center px-5">
+            <div aria-hidden="true" className="relative w-32 h-28 mb-7"><div className="absolute left-4 top-3 w-20 h-24 rounded-2xl border border-[#d5e4d9] bg-[#eaf3ec] rotate-[-10deg]" /><div className="absolute right-3 top-1 w-20 h-24 rounded-2xl border border-[#d6e6db] bg-white shadow-panel rotate-[8deg] flex items-center justify-center"><FileText size={30} className="text-[#5a8a6c]" /></div><span className="absolute bottom-0 right-0 h-10 w-10 rounded-2xl bg-brand-strong text-white flex items-center justify-center"><Sparkles size={18} /></span></div>
+            <div className="plango-kicker">A LITTLE PLANNING, A BETTER DAY</div>
+            <h2 className="text-[25px] leading-9 tracking-[-0.6px] font-semibold text-brand-ink mt-3">把想去的地方，变成清楚的安排</h2>
+            <p className="text-[13px] leading-6 text-[var(--muted)] max-w-sm mt-3">在右侧说说人数、时间和偏好。查到的资料、可调整的方案与执行记录，会逐步汇集到这里。</p>
+            <button onClick={() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="任务输入"]')?.focus()} className="plango-primary mt-7">从对话开始<ArrowRight size={15} /></button>
+            <div className="flex items-center gap-5 mt-9 text-[11px] text-[#7e8e82]"><span>有来源的资料</span><span className="h-1 w-1 rounded-full bg-[#b9cbbd]" /><span>可以继续修改</span><span className="h-1 w-1 rounded-full bg-[#b9cbbd]" /><span>由你确认关键操作</span></div>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto space-y-4">
-            {cards.map((c, i) => ({ c, i })).reverse().map(({ c, i }) => (
+          <div className="max-w-4xl mx-auto space-y-5">
+            {cards.map((c, i) => ({ c, i })).reverse().sort((a, b) => cardPriority(b.c) - cardPriority(a.c)).map(({ c, i }) => (
               <CardView key={`${c.kind}-${i}`} card={c} />
             ))}
           </div>
@@ -81,9 +57,25 @@ export function OutcomeCanvas(): JSX.Element {
 }
 
 function CardView({ card }: { card: OutcomeCard }): JSX.Element {
+  const busy = useStore(state => state.busy)
+  const decideDraft = useStore(state => state.decideDraft)
+  const resumePreparation = useStore(state => state.resumePreparation)
   switch (card.kind) {
+    case 'draft_review':
+      return <DraftReviewCard draft={card.draft} busy={busy} onDecision={decision => void decideDraft(card.draft.runId, card.draft.interruptId, card.draft.planId, card.draft.planVersion, decision)} />
+    case 'preparation':
+      return <Card accent>
+        <div className="flex items-center gap-3"><span className={`flex h-10 w-10 items-center justify-center rounded-xl ${card.ready ? 'bg-brand-soft text-brand-strong' : 'bg-amber-50 text-amber-700'}`}>{card.ready ? <ListChecks size={20} /> : <Clock size={20} />}</span><div><div className="plango-kicker">准备核对</div><h3 className="font-semibold text-base mt-1">{card.ready ? '已准备，待你复核' : '准备事项尚待完善'}</h3></div><SourceBadge source="browser" /></div>
+        <p className="text-[13px] leading-6 text-neutral-600 mt-4">{card.summary}</p>
+        {!!card.pendingChecks?.length && <div className="mt-3 p-4 rounded-xl border border-amber-100 bg-amber-50 text-xs leading-6 text-amber-800"><b>计划仍有待核验事项</b><ul className="list-disc pl-4">{card.pendingChecks.map((note, index) => <li key={index}>{note}</li>)}</ul></div>}
+        {card.entries.map((entry, index) => <div key={index} className="mt-3 rounded-xl border border-[var(--line)] bg-[#f7faf7] p-4"><h4 className="font-semibold text-sm">{entry.name}</h4><p className="text-xs text-[var(--muted)] mt-1">{entry.address}</p><p className="text-sm mt-3">{entry.partySize === undefined ? '人数待核对' : `${entry.partySize} 人`} · {entry.date} {entry.time} {entry.timezone === 'Asia/Shanghai' ? '北京时间' : entry.timezone}</p></div>)}
+        {card.issues.map((issue, index) => <div key={index} className={`mt-3 rounded-xl border p-3 text-xs leading-6 ${issue.mismatch ? 'border-red-100 bg-red-50 text-red-700' : 'border-amber-100 bg-amber-50 text-amber-800'}`}><b>{issue.name} · {issue.mismatch ? '需要修正' : '待补充核对'}</b><div>{issue.detail}</div></div>)}
+        <div className="mt-4 flex items-center justify-between gap-4 border-t border-[var(--line)] pt-4"><div className="text-[11px] text-[var(--muted)] leading-5">尚未提交预约、订单或付款。<br />{card.observedAt ? `核对记录：${new Date(card.observedAt).toLocaleString('zh-CN')}` : '核对时间未知'}</div><div className="flex flex-wrap gap-2"><button onClick={() => useStore.getState().setView('browser')} className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] px-3 py-2 text-xs bg-white"><Globe size={14} />打开浏览器核对</button>{card.resume && <button disabled={busy || !card.resume.can_resume} onClick={() => void resumePreparation(card.resume!.run_id, card.resume!.plan_id, card.resume!.plan_version, card.resume!.approval_id)} className="plango-primary disabled:opacity-40">继续核对表单</button>}</div></div>
+        {card.resume?.can_resume && <p className="mt-3 text-[11px] text-[var(--muted)]">继续会重新读取原方案的表单，并在填写前请你确认。</p>}
+        {card.resume && !card.resume.can_resume && !!card.resume.blockers.length && <p className="mt-3 text-xs text-amber-700">{card.resume.blockers.join('；')}</p>}
+      </Card>
     case 'browser_page':
-      return <Card><div className="flex gap-2 items-center text-sm font-semibold">{card.title}<SourceBadge source="browser" /></div><div className="text-[11px] text-neutral-400 my-1">{card.observedAt ? new Date(card.observedAt).toLocaleString() : '观测时间未知'}</div>{card.scope === 'visual_observation' && <p className="text-xs text-amber-700 my-2">截图理解：仅描述画面，不代表已核验商家事实或完成业务操作。</p>}<pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs text-neutral-600">{card.text}</pre>{card.limitations?.map((limitation, index) => <p key={index} className="text-xs text-neutral-500 mt-1">{limitation}</p>)}{/^https?:\/\//i.test(card.url) && <button onClick={() => useStore.getState().navigateInApp(card.url)} className="text-xs underline mt-2">查看原始页面</button>}</Card>
+      return <Card><div className="flex gap-2 items-center text-sm font-semibold">{card.title}<SourceBadge source={card.source || 'browser'} /></div><div className="text-[11px] text-[var(--muted)] mt-1.5">{card.observedAt ? new Date(card.observedAt).toLocaleString('zh-CN') : '观测时间未知'}</div>{card.scope === 'image_text' && <p className="text-xs text-amber-700 my-2">图片识别：内容来自你提供的图片，价格和商家信息尚未实时核验。</p>}{card.scope === 'visual_observation' && <p className="text-xs text-amber-700 my-2">截图理解：仅描述画面，不代表已核验商家事实或完成业务操作。</p>}<pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words text-[13px] leading-6 text-[#425748] bg-[#f6f9f6] rounded-xl border border-[#e8eee8] p-4 mt-3">{card.text}</pre>{card.limitations?.map((limitation, index) => <p key={index} className="text-xs text-neutral-500 mt-1">{limitation}</p>)}{/^https?:\/\//i.test(card.url) && <button onClick={() => useStore.getState().navigateInApp(card.url)} className="text-xs font-medium text-brand-strong underline underline-offset-4 mt-3">查看原始页面</button>}</Card>
     case 'evidence':
       return <EvidenceCard items={card.items} />
     case 'plan':
@@ -116,7 +108,7 @@ function CardView({ card }: { card: OutcomeCard }): JSX.Element {
 }
 
 function Card({ children, accent }: { children: React.ReactNode; accent?: boolean }): JSX.Element {
-  return <div className={`bg-white rounded-xl border ${accent ? 'border-brand shadow-md' : 'border-neutral-200 shadow-sm'} p-3.5 animate-in`}>{children}</div>
+  return <div className={`plango-card ${accent ? 'border-[#bfd8c8] shadow-panel' : ''} p-5 animate-in`}>{children}</div>
 }
 
 // SVG 五维雷达图（移植 weplan ui.js radar）。scores 为 0-100，labels 省钱/好玩/便捷/合适/特色。
@@ -143,10 +135,10 @@ function RadarChart({ radar, size = 168 }: { radar: Record<string, number>; size
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {gridRings}
       {axes}
-      <polygon points={dataPts} fill="rgba(255,184,0,.22)" stroke="#f5a623" strokeWidth={2} strokeLinejoin="round" />
+      <polygon points={dataPts} fill="rgba(91,156,115,.17)" stroke="#3d8a60" strokeWidth={2} strokeLinejoin="round" />
       {vals.map((v, i) => {
         const [x, y] = pt(i, v)
-        return <circle key={i} cx={x} cy={y} r={3} fill="#f5a623" />
+        return <circle key={i} cx={x} cy={y} r={3} fill="#3d8a60" />
       })}
       {labels.map((l, i) => {
         const [x, y] = pt(i, 1.26)
@@ -161,7 +153,7 @@ function RadarChart({ radar, size = 168 }: { radar: Record<string, number>; size
   )
 }
 
-// 三方案 Tab 卡：经济 / 均衡 / 特色（对齐 weplan/yoyu）
+// Candidate plans retain their own identity and approval version.
 function PlansCard({
   variants,
   city,
@@ -180,17 +172,17 @@ function PlansCard({
     <Card accent>
       <div className="flex items-center gap-1.5 mb-2">
         <MapPin size={15} className="text-brand-ink" />
-        <span className="font-semibold text-[15px]">{city}·周末规划 · {variants.length} 套方案</span>
+        <span className="font-semibold text-[15px]">{city} · 行程方案 · {variants.length} 套</span>
       </div>
 
       {/* Tab 切换 */}
-      <div className="grid grid-cols-3 gap-1.5 mb-3">
+      <div className="grid grid-cols-3 gap-2 mb-4">
         {variants.map((v, i) => (
           <button
             key={i}
-            onClick={() => setTab(i)}
+            onClick={() => setTab(i)} aria-pressed={i === tab}
             className={`rounded-xl border px-2 py-2 text-left transition-colors ${
-              i === tab ? 'border-brand bg-brand/10' : 'border-neutral-200 hover:border-neutral-300'
+              i === tab ? 'border-[#8bb79b] bg-brand-soft shadow-card' : 'border-[var(--line)] bg-white hover:border-[#acc6b5]'
             }`}
           >
             <div className="text-xs font-semibold flex items-center gap-1">
@@ -309,7 +301,7 @@ function VariantEditBox({ label, planId, version }: { label: string; planId?: st
             if (e.key === 'Enter') submit(text)
           }}
           placeholder={listening ? '🎙️ 正在听…' : `改「${label}」这套…`}
-          className="flex-1 text-xs px-3 py-2 rounded-full border border-neutral-200 focus:border-brand outline-none bg-neutral-50"
+          className="plango-field flex-1 min-w-0"
         />
         {supportsSpeech && (
           <button
@@ -348,7 +340,9 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
         </div>
       )}
       <div className="text-xs text-neutral-500 mb-3 flex items-center gap-2 flex-wrap">
+        {plan.visit_date && <span>{plan.visit_date}{plan.timezone === 'Asia/Shanghai' ? ' · 北京时间' : plan.timezone ? ` · ${plan.timezone}` : ''}</span>}
         <span>{plan.total_cost === null ? '总费用待核验' : `合计约 ¥${plan.total_cost}`} · {plan.nodes.length} 站{plan.party_size ? ` · ${plan.party_size} 人` : ''}{plan.version ? ` · v${plan.version}` : ''}</span>
+        {plan.budget_limit === null ? <span>预算未设上限</span> : plan.budget_limit !== undefined ? <span>总预算 ¥{plan.budget_limit}</span> : null}
         {plan.total_distance_km ? <span className="flex items-center gap-0.5"><Navigation size={11} /> 全程约 {plan.total_distance_km}km</span> : null}
         {plan.total_travel_min ? <span className="flex items-center gap-0.5"><Clock size={11} /> 通勤约 {plan.total_travel_min}分钟</span> : null}
         {plan.source_mix && (
@@ -371,8 +365,9 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
         {plan.nodes.map((n) => (
           <div key={n.node_id} className="relative">
             <div className="absolute -left-[13px] top-1 w-3 h-3 rounded-full bg-brand border-2 border-white" />
-            {n.poi?.tags.includes('route_unknown') && <div className="text-[11px] text-amber-700 mb-1">↓ 路线与通勤时间待核验</div>}
-            {!n.poi?.tags.includes('route_unknown') && n.route_from_prev && n.transit_from_prev_min > 0 && (
+            {n.distance_kind === 'straight_line_lower_bound' && n.distance_km != null ? <div className="text-[11px] text-amber-700 mb-1">↓ 直线至少 {distanceLabel(n.distance_km, true)}，路线待核验</div> : n.poi?.tags.includes('route_unknown') && <div className="text-[11px] text-amber-700 mb-1">↓ 路线与通勤时间待核验</div>}
+            {n.distance_kind === 'route' && n.distance_km != null && !n.route_from_prev && <div className="text-[11px] text-[var(--muted)] mb-1">↓ 路线约 {distanceLabel(n.distance_km)}{n.transit_from_prev_min != null && n.transit_from_prev_min > 0 ? ` · 约 ${n.transit_from_prev_min} 分钟` : ''}</div>}
+            {!n.poi?.tags.includes('route_unknown') && n.route_from_prev && (n.transit_from_prev_min ?? 0) > 0 && (
               <div className="text-[11px] text-neutral-400 mb-1">
                 ↓ {n.route_from_prev.desc}
                 {n.route_from_prev.distance_m ? ` · ${(n.route_from_prev.distance_m / 1000).toFixed(1)}km` : ''}
@@ -385,22 +380,7 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
               {n.verify_state === 'booked' && <span className="text-[10px] text-green-600">已预订</span>}
             </div>
             <div className="flex gap-2 mt-0.5">
-              {(() => {
-                const real = !!n.poi?.image
-                const src = n.poi?.image || poiImage(n.title, n.poi?.tags, n.category).url
-                return (
-                  <div className="relative w-16 h-16 shrink-0">
-                    <img
-                      src={src}
-                      alt={n.title}
-                      loading="lazy"
-                      className="w-16 h-16 rounded-lg object-cover border border-neutral-200 bg-neutral-100"
-                      onError={(e) => (e.currentTarget.src = CAT_IMG[n.category === 'dining' ? 'dining' : 'activity'])}
-                    />
-                    {!real && <span className="absolute bottom-0 left-0 right-0 text-[8px] text-center text-white bg-black/40 rounded-b-lg">示意图</span>}
-                  </div>
-                )
-              })()}
+              <PoiImage src={n.poi?.image} name={n.title} className="w-20 h-20 shrink-0 border border-[var(--line)]" />
               <div className="min-w-0 flex-1">
                 <div className="font-medium text-sm">{n.title}</div>
                 <div className="text-[11px] text-neutral-500 mt-0.5 flex items-center gap-1 flex-wrap">
@@ -412,7 +392,7 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
                   {n.poi && <SourceBadge source={n.poi.source} />}
               {n.poi?.lng && n.poi?.lat && (
                 <button
-                  onClick={() => openRoute({ origin: coords || undefined, dest: `${n.poi!.lng},${n.poi!.lat}`, destName: n.title, city })}
+                  onClick={() => openRoute({ origin: plan.origin ? `${plan.origin.longitude},${plan.origin.latitude}` : coords || undefined, originName: plan.origin?.name, originGranularity: plan.origin ? 'unknown' : undefined, initialMode: plan.travel_mode, dest: `${n.poi!.lng},${n.poi!.lat}`, destName: n.title, city })}
                   className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-neutral-100 hover:bg-brand/20 text-neutral-600"
                   title="页内查看路线（驾车/公交地铁/步行），打车再跳转"
                 >
@@ -585,7 +565,7 @@ function GroupBuyCard({ shopName, packages, source }: { shopName: string; packag
             {p.includes?.length ? <div className="mt-1 text-[11px] text-neutral-500">含：{p.includes.join('、')}</div> : null}
             <button
               onClick={() => void send(`买「${shopName}」的「${p.name}」团购套餐，帮我下单`)}
-              className="mt-2 w-full py-1.5 rounded-lg bg-brand text-brand-ink text-xs font-medium hover:brightness-95"
+              className="mt-2 w-full py-1.5 rounded-lg bg-brand-strong text-white text-xs font-medium hover:brightness-95"
             >
               买这个套餐
             </button>
@@ -617,19 +597,15 @@ function DiscoverCard({ city, groups, source }: { city: string; groups: Discover
             </div>
             <div className="grid grid-cols-2 gap-2">
               {g.items.map((p) => {
-                const img = p.image || poiImage(p.name, p.tags, /咖啡|甜品|美食|餐/.test(g.label) ? 'dining' : 'activity').url
                 return (
                   <div key={p.poi_id} className="rounded-xl border border-neutral-200 overflow-hidden bg-white">
-                    <div className="relative h-20 bg-neutral-100">
-                      <img src={img} alt={p.name} loading="lazy" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.src = CAT_IMG.dining)} />
-                      {!p.image && <span className="absolute bottom-0 right-0 text-[8px] text-white bg-black/40 px-1 rounded-tl">示意图</span>}
-                    </div>
+                    <PoiImage src={p.image} name={p.name} className="h-24 rounded-none" />
                     <div className="p-2">
                       <div className="text-xs font-medium truncate">{p.name}</div>
                       <div className="text-[11px] text-neutral-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
                         {(p.filtered_score ?? p.raw_score) ? <span className="text-amber-600">★{p.filtered_score ?? p.raw_score}</span> : null}
                         {p.price_per_person ? <span>¥{p.price_per_person}</span> : null}
-                        {p.distance_m ? <span>{(p.distance_m / 1000).toFixed(1)}km</span> : null}
+                        {p.distance_m ? <span>{p.distance_m < 1000 ? `${Math.round(p.distance_m)} 米` : `${(p.distance_m / 1000).toFixed(1)} 公里`}</span> : null}
                       </div>
                       <div className="mt-1.5 flex gap-1">
                         <button
@@ -718,7 +694,7 @@ function TakeoutCard({
         <span className="text-red-500 font-semibold text-sm">合计 ¥{total}</span>
       </div>
       <button onClick={() => void send(`就按这份外卖清单下单，送到「${deliverTo}」`)} className="mt-2 w-full py-1.5 text-xs rounded-lg bg-brand text-brand-ink font-medium">
-        确认下单（两步确认）
+        继续下单准备（需确认）
       </button>
     </Card>
   )
@@ -833,15 +809,15 @@ function ManualResolution({ item }: { item: ReceiptItem }): JSX.Element {
   const [reference, setReference] = useState('')
   const current = !!item.run_id && !!item.action_id && canResolveAction(run, item.run_id, item.action_id)
   const disabled = !current || busy || !ready
-  return <form className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 space-y-2" onSubmit={event => {
+  return <form className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3" onSubmit={event => {
     event.preventDefault()
     if (!disabled && checked && note.trim()) void resolve(item.run_id!, item.action_id!, status, note, reference)
   }}>
     <label className="flex items-start gap-1.5"><input type="checkbox" required checked={checked} onChange={event => setChecked(event.target.checked)} disabled={disabled} /><span>我已在网站核对本次任务结果</span></label>
     <div className="text-[11px] text-neutral-500">这里只记录你的核对结论；记录会标为「用户确认」。页面按钮已点击不代表业务已完成。</div>
-    <label className="block">核对结果<select value={status} onChange={event => setStatus(event.target.value as 'SUCCEEDED' | 'FAILED')} disabled={disabled} className="ml-2 rounded border border-neutral-200 bg-white px-2 py-1"><option value="FAILED">任务未完成</option><option value="SUCCEEDED">任务已完成</option></select></label>
-    <label className="block">核对说明（必填）<textarea value={note} onChange={event => setNote(event.target.value)} required maxLength={500} disabled={disabled} rows={2} placeholder="说明核对了哪个订单、预约或取号记录，以及实际结果" className="mt-1 w-full rounded border border-neutral-200 bg-white p-2" /></label>
-    <label className="block">业务编号（可选）<input value={reference} onChange={event => setReference(event.target.value)} maxLength={200} disabled={disabled} className="mt-1 w-full rounded border border-neutral-200 bg-white px-2 py-1" /></label>
+    <label className="block">核对结果<select value={status} onChange={event => setStatus(event.target.value as 'SUCCEEDED' | 'FAILED')} disabled={disabled} className="plango-field mt-2 bg-white"><option value="FAILED">任务未完成</option><option value="SUCCEEDED">任务已完成</option></select></label>
+    <label className="block">核对说明（必填）<textarea value={note} onChange={event => setNote(event.target.value)} required maxLength={500} disabled={disabled} rows={2} placeholder="说明核对了哪个订单、预约或取号记录，以及实际结果" className="plango-field mt-2 bg-white" /></label>
+    <label className="block">业务编号（可选）<input value={reference} onChange={event => setReference(event.target.value)} maxLength={200} disabled={disabled} className="plango-field mt-2 bg-white" /></label>
     <button disabled={disabled || !checked || !note.trim()} className="rounded bg-brand text-brand-ink px-3 py-1 disabled:opacity-40">记录核对结果</button>
   </form>
 }
@@ -853,21 +829,26 @@ function ConfirmCard({ token, title, detail, danger }: { token: string; title: s
     <Card accent>
       <div className="flex items-center gap-1.5 mb-1 font-semibold text-sm">
         {danger ? <AlertTriangle size={15} className="text-amber-500" /> : <CheckCircle2 size={15} className="text-brand-ink" />}
-        两步确认
+        确认下一步
       </div>
       <div className="text-sm font-medium">{title}</div>
       <div className="text-xs text-neutral-500 mt-0.5 mb-2.5 whitespace-pre-wrap break-words">{detail}</div>
       <div className="text-[11px] text-neutral-400 mb-2">确认仅授权这里列出的操作。页面或关键参数变化时会重新确认；未取得业务回执会标为待核验。</div>
       <div className="flex gap-2">
-        <button disabled={busy} onClick={() => void confirm(token, true)} className="flex-1 py-1.5 text-sm rounded-lg bg-brand text-brand-ink font-medium disabled:opacity-50">
+        <button disabled={busy} onClick={() => void confirm(token, true)} className="flex-1 py-2.5 text-sm rounded-xl bg-brand-strong text-white font-medium disabled:opacity-50">
           确认执行
         </button>
-        <button disabled={busy} onClick={() => void confirm(token, false)} className="px-4 py-1.5 text-sm rounded-lg bg-neutral-100 text-neutral-600 disabled:opacity-50">
+        <button disabled={busy} onClick={() => void confirm(token, false)} className="px-5 py-2.5 text-sm rounded-xl border border-[var(--line)] bg-white text-neutral-600 disabled:opacity-50">
           取消
         </button>
       </div>
     </Card>
   )
+}
+
+function distanceLabel(km: number, lowerBound = false): string {
+  if (km < 1) return `${lowerBound ? Math.floor(km * 1000) : Math.round(km * 1000)} 米`
+  return `${(lowerBound ? Math.floor(km * 10) / 10 : km).toFixed(1)} 公里`
 }
 
 function styleLabel(s: string): string {
@@ -878,7 +859,7 @@ function EvidenceCard({ items }: { items: HarnessEvidence[] }): JSX.Element {
   const navigate = useStore((s) => s.navigateInApp)
   return <Card><details><summary className="cursor-pointer text-sm font-semibold">来源与页面证据 · {items.length} 条</summary>
     <div className="mt-2 space-y-2">{items.map(item => <div key={item.evidence_id} className="text-xs border-t border-neutral-100 pt-2">
-      <div className="flex items-center gap-2"><SourceBadge source={item.source} /><span className="text-neutral-400">{item.observed_at ? new Date(item.observed_at).toLocaleString() : '观测时间未知'}</span>{item.expires_at && new Date(item.expires_at).getTime() < Date.now() && <span className="text-amber-700">已过期，需重新核验</span>}</div>
+      <div className="flex items-center gap-2"><SourceBadge source={item.source} /><span className="text-neutral-400">{item.observed_at ? new Date(item.observed_at).toLocaleString('zh-CN') : '观测时间未知'}</span>{item.expires_at && new Date(item.expires_at).getTime() < Date.now() && <span className="text-amber-700">已过期，需重新核验</span>}</div>
       <div className="mt-1 whitespace-pre-wrap break-words text-neutral-600">{item.claim || item.evidence_id}</div>
       {/^https?:\/\//i.test(item.source_ref) && <button onClick={() => navigate(item.source_ref)} className="mt-1 text-brand-ink underline break-all">打开原始页面</button>}
     </div>)}</div>

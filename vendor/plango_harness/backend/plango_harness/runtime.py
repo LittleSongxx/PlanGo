@@ -4,6 +4,7 @@ import asyncio
 import time
 import uuid
 from contextlib import AsyncExitStack
+from datetime import datetime, timezone
 from typing import Any
 
 import aiosqlite
@@ -16,12 +17,11 @@ from sqlalchemy.exc import DBAPIError
 from plango_harness.agent.contracts import RunPhase
 from plango_harness.agent.graph import (
     GraphDeps,
-    _replan_refreshes_supply,
     build_graph,
     checkpoint_serializer,
 )
 from plango_harness.agent.model_adapter import ModelAdapter
-from plango_harness.agent.state import initial_state
+from plango_harness.agent.state import initial_state, planning_reset
 from plango_harness.domain.planning import PlanEngine
 from plango_harness.memory.embedding import EmbeddingService
 from plango_harness.memory.repository import MemoryRepository
@@ -237,6 +237,8 @@ class PlanGoRuntime:
         row = await self.runs.get(run_id)
         if not row:
             raise KeyError(run_id)
+        if row.get("phase") == RunPhase.REPLANNING.value and (row.get("state_json") or {}).get("pending_message") == reason:
+            return self.snapshot(row)
         if row.get("phase") == RunPhase.WAITING_APPROVAL.value:
             await self.send_message(run_id, reason)
             return self.snapshot(await self.runs.get(run_id))
@@ -253,7 +255,6 @@ class PlanGoRuntime:
         state = dict(row.get("state_json") or {})
         messages = list(state.get("messages", []))
         messages.append(HumanMessage(content=reason))
-        refresh_supply = _replan_refreshes_supply(reason)
         state.update(
             {
                 "pending_message": reason,
@@ -264,30 +265,17 @@ class PlanGoRuntime:
                 "turn_count": 0,
                 "turn_id": int(state.get("turn_id", 1)) + 1,
                 "plan_version": int(state.get("plan_version", 0)),
-                "previous_spec": state.get("trip_spec"),
-                "trip_spec": None,
-                "plan_draft": None,
-                "draft_errors": [],
-                "place_candidates": [] if refresh_supply else state.get("place_candidates", []),
-                "candidate_plans": [] if refresh_supply else ([state["selected_plan"]] if state.get("selected_plan") else []),
-                "advocate_reports": [],
-                "selected_plan": None,
-                "verifier": None,
-                "critique": None,
-                "action_proposal": None,
-                "action_results": [],
-                "memory_delta": [],
-                "approval_decision": None,
-                "interrupt_id": None,
-                "evidence": [] if refresh_supply else state.get("evidence", []),
-                "weather": None if refresh_supply else state.get("weather"),
-                "execution_started": False,
-                "reflection_done": False,
+                **planning_reset(state),
+                "requirement_reference_at": utc_now().isoformat(),
+                "turn_budget": {"id": "replan:" + uuid.uuid4().hex,
+                                "grant_seq": int(row.get("last_event_seq") or 0) + 1,
+                                "model_baseline": int(state.get("model_token_count", 0)),
+                                "tool_baseline": int(state.get("tool_call_count", 0))},
                 "repair_applied": False,
                 "started_at": time.time(),
                 "last_observation": {
                     "weather_changed": "雨" in reason or "天气" in reason,
-                    "refresh_discovery": refresh_supply,
+                    "refresh_discovery": False,
                 },
             }
         )
@@ -307,6 +295,18 @@ class PlanGoRuntime:
         )
         await self._enqueue_run(run_id)
         return self.snapshot(await self.runs.get(run_id))
+
+    async def _requirement_reference(self, row, command=None) -> str:
+        """Use the persisted acceptance event, never a retry's wall clock or payload timestamp."""
+        seq = int((command or {}).get("event_seq") or 0)
+        events = await self.runs.events(row["run_id"], after=max(0, seq - 1) if seq else max(0, int(row.get("last_event_seq") or 0) - 200), limit=1 if seq else 200)
+        accepted = next((event for event in reversed(events) if event.event_type in {"RUN_CREATED", "USER_MESSAGE", "REPLAN_REQUESTED", "RESUME_REQUESTED"}), None)
+        value = accepted.created_at if accepted else row.get("created_at")
+        if isinstance(value, str):
+            value = datetime.fromisoformat(value)
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.isoformat()
 
     async def enqueue_resume(
         self,
@@ -636,6 +636,38 @@ class PlanGoRuntime:
                 if task is not None and self._tasks.get(item.run_id) is task and task.done():
                     self._tasks.pop(item.run_id, None)
 
+    async def _execution_budget(self, row, previous_state, *, resume: bool):
+        """One durable grant per accepted user command; pauses only restore remaining work time."""
+        projection = row.get("state_json") or {}
+        now = time.time()
+        budget = dict(projection.get("turn_budget") or previous_state.get("turn_budget") or {})
+        fresh = bool(budget.get("id") and not budget.get("started_at"))
+        if fresh:
+            budget.update(started_at=now, deadline_at=now + self.settings.max_run_seconds,
+                          model_baseline=max(int(budget.get("model_baseline", 0)), int(previous_state.get("model_token_count", 0))),
+                          tool_baseline=max(int(budget.get("tool_baseline", 0)), int(previous_state.get("tool_call_count", 0))))
+        elif not budget:
+            budget = {"id": "initial", "grant_seq": 1, "model_baseline": 0, "tool_baseline": 0,
+                      "started_at": previous_state.get("started_at") or now,
+                      "deadline_at": previous_state.get("deadline_at") or (previous_state.get("started_at") or now) + self.settings.max_run_seconds}
+        pause = projection.get("budget_pause")
+        if resume and not fresh and "budget_pause" not in projection and projection.get("interrupt_id"):
+            # Compatibility for already-paused checkpoints, using the durable
+            # interrupt event's time instead of granting a new execution window.
+            paused_at = (projection.get("browser_wait") or {}).get("paused_at")
+            if not paused_at:
+                events = await self.runs.events(row["run_id"], after=max(0, int(row.get("last_event_seq") or 0) - 200), limit=200)
+                event = next((item for item in reversed(events) if item.event_type == "GRAPH_INTERRUPTED"), None)
+                if event:
+                    created = event.created_at
+                    paused_at = (created if created.tzinfo else created.replace(tzinfo=timezone.utc)).timestamp()
+            if paused_at:
+                pause = {"remaining_seconds": max(0.0, float(budget["deadline_at"]) - float(paused_at))}
+        if resume and not fresh and pause:
+            budget["deadline_at"] = now + min(self.settings.max_run_seconds, max(0.0, float(pause["remaining_seconds"])))
+            budget["resumed_at"] = now
+        return budget, fresh
+
     async def _run_graph(self, run_id: str, resume: dict[str, Any] | None = None, command_id: str | None = None) -> dict[str, Any]:
         self._ensure_started()
         assert self.graph is not None
@@ -670,7 +702,7 @@ class PlanGoRuntime:
                     raise RuntimeError("run command target changed")
             paused_for_clarification = bool(
                 projection.get("clarification")
-                or str(projection.get("interrupt_id", "")).startswith("clarification:")
+                or projection.get("interrupt_id")
             )
             if resume is None and (
                 row.get("phase") == RunPhase.WAITING_APPROVAL.value
@@ -701,6 +733,24 @@ class PlanGoRuntime:
             previous_state = projection if fresh_replan else (checkpoint_values or projection)
             if int(projection.get("model_call_count", 0)) >= int(previous_state.get("model_call_count", 0)):
                 previous_state = {**previous_state, **{k:v for k,v in projection.items() if k.startswith("model_")}}
+            previous_state = {**previous_state, **{key: max(int(projection.get(key, 0)), int(previous_state.get(key, 0))) for key in ("tool_call_count", "model_token_count")}}
+            budget, fresh_budget = await self._execution_budget(row, previous_state, resume=resume is not None)
+            deadline_at = float(budget["deadline_at"])
+            budget_updates = {"turn_budget": budget, "deadline_at": deadline_at,
+                              "tool_call_count": previous_state["tool_call_count"],
+                              **({"browser_steps": 0, "turn_count": 0} if fresh_budget else {})}
+            if budget != projection.get("turn_budget") or projection.get("budget_pause") or "budget_pause" not in projection:
+                # Persist consumption before invoking any graph node. A crash
+                # or duplicate delivery cannot apply the same pause/grant twice.
+                await self.runs.save_state_and_events(
+                    {**projection, **budget_updates, "budget_pause": None}, expected_version=int(row["version"]), lease_owner=lease_owner,
+                    events=[{"phase": RunPhase(row["phase"]), "event_type": "TURN_BUDGET_STARTED" if fresh_budget else "EXECUTION_BUDGET_RESTORED",
+                             "payload": {"budget_id": budget["id"], "model_baseline": budget["model_baseline"], "tool_baseline": budget["tool_baseline"], "remaining_seconds": max(0.0, deadline_at - time.time())}}],
+                )
+                row = await self.runs.get(run_id)
+                if row is None:
+                    raise KeyError(run_id)
+                projection = row.get("state_json") or {}
             self.model.reset_run(
                 int(previous_state.get("model_token_count", 0) or 0),
                 call_count=int(previous_state.get("model_call_count", 0) or 0),
@@ -710,15 +760,9 @@ class PlanGoRuntime:
                 last_usage=previous_state.get("model_last_usage") or {},
                 call_records=previous_state.get("model_calls") or [],
             )
-            deadline_at = float(
-                previous_state.get("deadline_at")
-                or (previous_state.get("started_at") or time.time()) + self.settings.max_run_seconds
-            )
-            browser_pause = projection.get("browser_wait") or previous_state.get("browser_wait") or {}
-            if resume is not None and browser_pause.get("paused_at"):
-                deadline_at += max(0.0, time.time() - float(browser_pause["paused_at"]))
             self.model.set_run_budget(
                 deadline_at,
+                token_baseline=int(budget["model_baseline"]),
                 cleanup_reserve_seconds=min(5.0, max(1.0, self.settings.max_run_seconds / 20)),
             )
             # The projection is the durable cursor for audit rows. If a
@@ -744,6 +788,8 @@ class PlanGoRuntime:
                         thread_id=run_id,
                     )
                     input_state["deadline_at"] = deadline_at
+                    input_state["requirement_reference_at"] = await self._requirement_reference(row, command)
+                    input_state["selected_poi"] = projection.get("selected_poi")
                 else:
                     pending = row["input_text"]
                     messages: list[Any] = []
@@ -754,17 +800,22 @@ class PlanGoRuntime:
                             messages.append(HumanMessage(content=str(message["content"])))
                     if not messages or getattr(messages[-1], "content", "") != pending:
                         messages.append(HumanMessage(content=pending))
-                    reuse_supply = not bool((previous_state.get("last_observation") or {}).get("refresh_discovery"))
                     input_state = {
                         "input_text": pending,
                         "messages": messages,
                         "previous_spec": previous_state.get("previous_spec")
                         or previous_state.get("trip_spec"),
+                        "requirement_reference_at": await self._requirement_reference(row, command),
+                        "previous_plan": previous_state.get("selected_plan") or previous_state.get("previous_plan") or next(iter(previous_state.get("candidate_plans") or []), None),
+                        "selected_poi": previous_state.get("selected_poi") or projection.get("selected_poi"),
+                        "requirement_patch": [], "requirement_refresh": {},
+                        "execution_goal": None, "execution_outcome": None,
+                        "preparation_restart": previous_state.get("preparation_restart"),
                         "trip_spec": None,
                         "plan_draft": None,
                         "draft_errors": [],
-                        "place_candidates": previous_state.get("place_candidates", []) if reuse_supply else [],
-                        "candidate_plans": previous_state.get("candidate_plans", []) if reuse_supply else [],
+                        "place_candidates": previous_state.get("place_candidates", []),
+                        "candidate_plans": [],
                         "advocate_reports": [],
                         "delegated_roles": [],
                         "selected_plan": None,
@@ -777,8 +828,8 @@ class PlanGoRuntime:
                         "action_results": [],
                         "memory_delta": [],
                         "interrupt_id": None,
-                        "evidence": previous_state.get("evidence", []) if reuse_supply else [],
-                        "weather": previous_state.get("weather") if reuse_supply else None,
+                        "evidence": previous_state.get("evidence", []),
+                        "weather": previous_state.get("weather"),
                         "outcome": None,
                         "reason": "",
                         "last_observation": previous_state.get("last_observation"),
@@ -808,7 +859,16 @@ class PlanGoRuntime:
                 if command_id and checkpoint_values.get("consumed_command_id") == command_id:
                     input_state = None  # Resume after the already-applied interrupt, never answer it twice.
                 else:
-                    input_state = Command(resume={**resume, "_command_id": command_id}, update={"deadline_at": deadline_at} if browser_pause else None)
+                    updates: dict[str, Any] = {}
+                    if resume.get("decision") in {"edit", "resume"} and str(resume.get("text") or "").strip():
+                        updates["requirement_reference_at"] = await self._requirement_reference(row, command)
+                    input_state = Command(resume={**resume, "_command_id": command_id}, update=updates or None)
+            if isinstance(input_state, Command):
+                input_state = Command(resume=input_state.resume, update={**(input_state.update or {}), **budget_updates})
+            elif input_state is None:
+                input_state = Command(update=budget_updates)
+            else:
+                input_state.update(budget_updates)
             async with agent_span(
                 "plan", run_id=run_id, phase=row.get("phase"), model=self.model.metadata.model
             ):
@@ -831,6 +891,7 @@ class PlanGoRuntime:
             state.pop("pending_message", None)
             interrupt_payload = self._jsonable(result.get("__interrupt__"))
             interrupt_phase = None
+            state["budget_pause"] = None
             if interrupt_payload:
                 first = (
                     interrupt_payload[0]
@@ -843,6 +904,8 @@ class PlanGoRuntime:
                     else RunPhase.REQUIREMENTS_READY
                 )
                 state["phase"] = interrupt_phase
+                state["budget_pause"] = {"budget_id": budget["id"], "paused_at": time.time(),
+                                         "remaining_seconds": max(0.0, deadline_at - time.time())}
                 if isinstance(first, dict):
                     interrupt_id = first.get("id")
                     if interrupt_id:

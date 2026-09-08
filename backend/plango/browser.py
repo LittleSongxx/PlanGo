@@ -16,10 +16,12 @@ from urllib.parse import urlsplit
 from langgraph.config import get_config
 from langgraph.types import interrupt
 from plango_harness.agent.contracts import RunPhase
-from plango_harness.persistence.database import agent_action, metadata
+from plango_harness.persistence.database import agent_action, agent_run, metadata, run_event
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
-from sqlalchemy import JSON, Column, Float, Integer, String, Table, insert, select, update
+from sqlalchemy import JSON, Column, Float, Integer, String, Table, func, insert, select, update
 from sqlalchemy.exc import IntegrityError
+
+from .outcomes import preparation_click_forbidden
 
 run_context: ContextVar[dict[str, Any]] = ContextVar("plango_browser_run")
 
@@ -105,10 +107,12 @@ class BrowserScreenshot(BaseModel):
             raise ValueError("screenshot_image_dimensions_mismatch")
         return self
 
-    def check_binding(self, observation, command, before, *, created_at=0, now=None):
+    def check_binding(self, observation, command, before, *, created_at=0, now=None, max_age_seconds=30):
         captured = self.captured_at.timestamp()
         current = time.time() if now is None else now
-        if not -2 <= current - captured <= 30 or captured < created_at - 2:
+        if captured > current + 2 or captured < created_at - 2 or (
+            max_age_seconds is not None and current - captured > max_age_seconds
+        ):
             raise ValueError("stale_screenshot")
         if (command.get("operation") != "screenshot" or not command.get("expected_snapshot_id")
                 or self.snapshot_id != command["expected_snapshot_id"]
@@ -227,6 +231,24 @@ class BrowserBridge:
                 meta.get("langgraph_step"),
             )
         )
+        if tab_id and not approved_action_id and operation in {"extract", "snapshot", "read_page", "extract_tables"} and not str(slot or "").startswith("receipt:"):
+            # A user retry advances generation. Preserve that choice across checkpoint replay:
+            # a closed tab from this exact read is replaced by the current visible session,
+            # while writes, screenshots and business-receipt checks keep their original binding.
+            async with self.database.session() as session:
+                closed = (await session.execute(select(commands.c.command_id).where(
+                    commands.c.run_id == run_id, commands.c.browser_session_id == binding["browser_session_id"],
+                    commands.c.payload["_interrupt_scope"].as_string() == scope,
+                    commands.c.payload["_turn_key"].as_string() == context["turn_key"],
+                    commands.c.payload["operation"].as_string() == operation,
+                    commands.c.payload["tab_id"].as_string() == tab_id,
+                    commands.c.payload["approved_action_id"].as_string().is_(None),
+                    func.coalesce(commands.c.payload["_generation"].as_integer(), 0) < binding["generation"],
+                    commands.c.result["outcome"].as_string().in_(["blocked", "failed"]),
+                    commands.c.result["error_kind"].as_string() == "tab_closed",
+                ).limit(1))).first()
+            if closed:
+                tab_id, expected_snapshot_id = None, None
         # A replay requests the same durable operation. A new user turn changes its scope.
         key = json.dumps(
             [
@@ -279,6 +301,7 @@ class BrowserBridge:
                 _interrupt_scope=scope,
                 _turn_key=context["turn_key"],
                 _turn_id=context.get("turn_id", 1),
+                _budget_id=context.get("budget_id", "initial"),
                 _generation=binding["generation"],
             )
             if operation == "screenshot":
@@ -368,12 +391,27 @@ class BrowserBridge:
                 and payload.get("_generation") != binding["generation"]
             ):
                 continue
+            state = run.get("state_json") or {}
+            approved = await self.runtime.runs.get_action(row["run_id"], payload["approved_action_id"]) if payload.get("approved_action_id") else None
+            target = ((approved or {}).get("arguments_json") or {}).get("target")
+            if preparation_click_forbidden(state, payload.get("operation"), target):
+                # The command may already have executed before its receipt was lost. Only stop dispatch;
+                # never fabricate a result or change the ledger while awaiting the real receipt.
+                async with self.runtime.runs.event_transaction() as session:
+                    await session.execute(select(agent_run.c.run_id).where(agent_run.c.run_id == row["run_id"]).with_for_update())
+                    present = (await session.execute(select(run_event.c.seq).where(
+                        run_event.c.run_id == row["run_id"], run_event.c.event_type == "BROWSER_COMMAND_BLOCKED",
+                        run_event.c.payload_json["command_id"].as_string() == row["command_id"],
+                    ).limit(1))).first()
+                    result = (await session.execute(select(commands.c.result).where(commands.c.command_id == row["command_id"]))).scalar_one()
+                    if not present and result is None:
+                        await self.runtime.runs.append_event_in_transaction(session, run_id=row["run_id"], phase=RunPhase(run["phase"]),
+                            event_type="BROWSER_COMMAND_BLOCKED", agent_id="browser",
+                            payload={"command_id": row["command_id"], "operation": "click", "scope": "preparation_only",
+                                     "reason": "准备范围不允许自动提交，请人工核对"})
+                continue
             if payload.get("approved_action_id"):
-                state = run.get("state_json") or {}
                 proposal = state.get("action_proposal") or {}
-                approved = await self.runtime.runs.get_action(
-                    row["run_id"], payload["approved_action_id"]
-                )
                 if (
                     not approved
                     or approved["status"] != "RUNNING"
@@ -405,13 +443,14 @@ class BrowserBridge:
         if row["result"] is not None:
             if row["result"] != result:
                 raise ValueError("browser_result_already_recorded")
-            await self.runtime.resume_browser(row["run_id"], command_id)
-            return {"accepted": True, "replayed": True}
         if observation.screenshot is not None or row["payload"]["operation"] == "screenshot":
             if observation.ok:
                 if observation.outcome != "observed" or observation.screenshot is None:
                     raise ValueError("screenshot_requires_readonly_capture")
-                observation.screenshot.check_binding(result, row["payload"], row["payload"].get("_expected_page") or {}, created_at=row["created_at"])
+                if row["result"] is None:
+                    # Receipt delivery can lag capture. Store the immutable
+                    # observation; Vision independently requires a fresh image.
+                    observation.screenshot.check_binding(result, row["payload"], row["payload"].get("_expected_page") or {}, created_at=row["created_at"], max_age_seconds=None)
             elif observation.screenshot is not None:
                 raise ValueError("failed_observation_must_not_supply_screenshot")
         if observation.ok and observation.outcome == "observed" and not observation.url:
@@ -423,26 +462,24 @@ class BrowserBridge:
             and not observation.snapshot_id
         ):
             raise ValueError("page_observation_requires_snapshot")
-        async with self.database.session() as session:
-            async with session.begin():
-                await session.execute(
-                    update(commands)
-                    .where(commands.c.command_id == command_id, commands.c.result.is_(None))
-                    .values(result=result)
-                )
-        await self.runtime.runs.append_event(
-            run_id=row["run_id"],
-            phase=RunPhase.REQUIREMENTS_READY,
-            event_type="BROWSER_OBSERVATION",
-            payload={
-                "command_id": command_id,
-                "outcome": observation.outcome,
-                "url": observation.url,
-            },
-            agent_id="browser",
-        )
+        async with self.runtime.runs.event_transaction() as session:
+            written = (await session.execute(update(commands)
+                .where(commands.c.command_id == command_id, commands.c.result.is_(None))
+                .values(result=result).returning(commands.c.command_id))).scalar_one_or_none()
+            if written is None:
+                saved = (await session.execute(select(commands.c.result).where(commands.c.command_id == command_id))).scalar_one()
+                if {**result, "observed_at": saved.get("observed_at")} != saved:
+                    raise ValueError("browser_result_already_recorded")
+            # A legacy receipt may predate atomic event writes. Repair only its missing audit fact.
+            present = (await session.execute(select(run_event.c.seq).where(
+                run_event.c.run_id == row["run_id"], run_event.c.event_type == "BROWSER_OBSERVATION",
+                run_event.c.payload_json["command_id"].as_string() == command_id).limit(1))).first()
+            if not present:
+                await self.runtime.runs.append_event_in_transaction(session, run_id=row["run_id"],
+                    phase=RunPhase.REQUIREMENTS_READY, event_type="BROWSER_OBSERVATION",
+                    payload={"command_id": command_id, "outcome": observation.outcome, "url": observation.url}, agent_id="browser")
         await self.runtime.resume_browser(row["run_id"], command_id)
-        return {"accepted": True, "replayed": False}
+        return {"accepted": True, "replayed": written is None}
 
     async def observations(self, run_id):
         async with self.database.session() as session:

@@ -41,9 +41,9 @@ AMAP_JS_SECURITY=填写高德JavaScript安全码
 
 高德 JS 配置获取：登录[高德控制台](https://console.amap.com/)，在「应用管理 → 我的应用」创建或选择应用，再添加服务平台为 **Web端（JS API）** 的 Key。把该 Key 填入 `AMAP_JS_KEY`，对应安全密钥 `securityJsCode` 填入 `AMAP_JS_SECURITY`；它们和 Web 服务 Key 是不同的平台凭证。参见[官方申请步骤](https://lbs.amap.com/api/javascript-api-v2/prerequisites)。个人认证开发者可用于个人研究学习；获取这两个值不要求先升级企业认证。商业用途的技术服务许可和配额应另按[官方规则](https://lbs.amap.com/faq/advisory/authorization/43168)确认。
 
-「重庆·附近发现」使用 `AMAP_WEBSERVICE_KEY` 调用高德 `/v5/place/text`，按城市与关键词搜索，并非 mock。目前没有传入当前位置或搜索半径，因此实际上是同城发现；同一桌面进程还会缓存相同查询，刷新不保证重新请求高德。该功能不依赖 JS Key，也不代表已核验商家的实时营业、库存或预约能力。
+「附近发现」统一请求本项目后端高德服务。明确地址/设备坐标使用 `/v5/place/around` 和 5 公里半径；城市、区级或 IP 参考位置使用 `/v5/place/text` 并标为同城发现。界面显示来源时间，缓存保留原时间，刷新明确绕过缓存。选店时后端按 POI ID 重新核对详情，保留用户起点。这不依赖 JS Key，也不证明实时库存、排队或可预约。
 
-数据来源的实际调用核验见 [discovery_source_check.json](eval/discovery_source_check.json)，报告保留去掉 Key 的请求信息与少量公开 POI 样本。
+本轮真实界面验收见 [实施进度](docs/实施进度.md) 与 `eval/plango-live-ui/`；旧 `discovery_source_check.json` 仅保留当时版本的来源证据。
 
 然后启动服务与桌面：
 
@@ -75,6 +75,10 @@ npm run dev
 | `PLANGO_PYTHON` | `plango` 环境解释器绝对路径，由安装脚本写入 |
 | `PLANGO_DATA_DIR` | 本地模式数据目录；桌面默认 `app userData/harness`，容器为 `/data` |
 | `PLANGO_RUNTIME_PROFILE` | 本地为 `desktop`；Compose 固定为 `service` |
+| `PLANGO_AGENT_MODE` | `multi`/`single` 视角策略，默认 multi；不改变审批权限 |
+| `PLANGO_MAX_MODEL_TOKENS` / `PLANGO_MAX_TOOL_CALLS` / `PLANGO_MAX_RUN_SECONDS` | 每次明确用户输入的有界预算，默认 12000 / 48 / 300；累计用量保留，人工等待另存剩余时间 |
+| `PLANGO_EMBEDDING_API_KEY` / `PLANGO_EMBEDDING_BASE_URL` / `PLANGO_EMBEDDING_MODEL` | 可选独立向量接口；不配置独立 Key 时保持关闭，不借用聊天 Key |
+| `PLANGO_BROWSER_VISION_ENABLED` | 显式启用按需只读截图理解，示例默认 false；需已验证模型读图能力 |
 
 不使用 Docker 时，可以让 Electron 启动 SQLite 后端与本地消费者。使用空闲端口，避免连接到仍在运行的 Docker API：
 
@@ -93,7 +97,7 @@ PLANGO_BACKEND_AUTOSTART=true PLANGO_RUNTIME_PROFILE=desktop PLANGO_BACKEND_URL=
 - 网页、菜单和优惠标记来源；缺价保持未知，套餐总价不当人均，邻店报价不归给目标店。复杂饮食等未完整验证的条件可保持部分完成。
 - 页面步骤完成后另行读取结果；通用“成功”文案不能证明商家、人数、金额和外部履约都正确。未确认结果保持 `UNKNOWN`，不会自动重复下单；用户核实后的说明与编号始终标为 `user` 来源。
 - 分享固定方案版本，投票与意见在桌面本地持久化；手机需能访问电脑的局域网分享地址，电脑需保持运行。
-- 记忆、收藏、Skill 与显式提醒经统一后端处理；提醒支持恢复后补发。首启不生成虚构偏好、足迹或随机关怀。
+- 明确偏好、收藏、任务经历和显式反馈保存在运行服务，可查看与删除；提醒支持恢复后补发。Skills 是本地任务指导，启用列表在新任务创建时固定，开关跨桌面重启保存。首启不生成虚构偏好、足迹或随机关怀。
 - 微信渠道、具体网站交易适配、账号流程、支付和外部对账仍需单独接入与验收；正常运行不会用模拟二维码、排队号或订单成功补齐流程。
 
 Cookie 留在 Electron 持久会话分区，不直接发送给模型或后端。使用远程模型时，对话、相关记忆、网页片段和提交的截图可能发送到所配置的模型服务；高德也会接收查询与位置信息。默认本机 Docker 数据在本机数据卷，部署到其他机器时后端任务和记忆随部署端存储。分享链接会向持有链接且网络可达的人提供选定方案，不能概括为“所有数据绝不出电脑”。
@@ -128,11 +132,11 @@ env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop-storage-browser
 
 ```bash
 conda run --no-capture-output -n plango python scripts/check_deployment.py
-env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed
-env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed -- --vision
+PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plango-e2e env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed
+PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plango-e2e env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed -- --vision
 ```
 
-`test:deployed` 调用已配置真实模型并重启本项目 API/worker，页面分别为受控菜单和 Canvas，保留任务与恢复证据；不进行真实商家交易。`scripts/check_vision_capability.py` 是单独的有界真实图像能力检查，输入为仓库中的受控浏览器截图。各阶段新证据写入 `eval/plango-r0/`、`eval/plango-p0/`、`eval/plango-p1/`，不覆盖历史。
+`test:deployed` 必须连接独立 `plango-e2e` 服务（先用 `PLANGO_SERVICE_PORT=18011 docker compose -p plango-e2e up --build -d --wait` 启动），脚本核对容器归属和端口，拒绝主用户服务。它调用真实模型并仅重启测试 API/worker，页面分别为受控菜单和 Canvas，保留任务与恢复证据；不进行真实商家交易。`scripts/check_vision_capability.py` 是单独的有界真实图像能力检查，输入为仓库中的受控浏览器截图。各阶段已审查证据保存在 `eval/plango-r0/`、`eval/plango-p0/`、`eval/plango-p1/` 和 `eval/plango-live-*/`；今后的完整链路脚本默认写入带时间目录的 `output/full-stack-smoke/`，不覆盖历史。
 
 测试中的 `--no-sandbox` 仅用于隔离 Linux 测试；正常应用保留浏览器沙箱。真实商家履约、任意网站表单和支付均不能由这些受控检查推断。
 
@@ -149,7 +153,9 @@ npm run services:down
 
 ## 模块与上游维护
 
-已确认路线见 [架构决策](docs/架构决策.md)；当前角色、流程断点与成熟实现替换机会见 [模块替换与 Agent 工作流审计](docs/模块替换与Agent工作流审计.md)。[迁移前工作流记录](figures/yoyu-current-workflow.md) 与[目标工作流建议](figures/yoyu-target-workflow.md) 分开记录，建议不代表已实现。
+当前实现见 [Agent架构与选型](docs/Agent架构与选型.md)、[架构图](figures/plango-agent-architecture.md) 与 [任务闭环图](figures/plango-task-lifecycle.md)。外层是集中式 Plan-and-Execute 工作流，页面内是受控 ReAct 循环；确定性协调器、LLM专业节点和领域服务职责分开。single/multi 表示是否启用额外视角，并非两套运行架构。产品当前不集成 MCP，Skills 不授予工具权限。
+
+固定决策见 [架构决策](docs/架构决策.md)。[迁移前审计](docs/模块替换与Agent工作流审计.md)、[旧工作流](figures/yoyu-current-workflow.md) 和 [历史目标建议](figures/yoyu-target-workflow.md) 保留作历史证据，不代表当前缺口或已实现功能。
 
 ```text
 src/renderer/            产品界面与展示投影

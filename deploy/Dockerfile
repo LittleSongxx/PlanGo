@@ -1,11 +1,12 @@
 FROM condaforge/miniforge3:26.5.3-0
 COPY --from=ghcr.io/astral-sh/uv:0.11.31 /uv /usr/local/bin/uv
 WORKDIR /app
-COPY pyproject.toml uv.lock README.md ./
+COPY pyproject.toml uv.lock ./
 RUN conda create --yes --name plango python=3.12 && conda clean --all --yes
 RUN uv export --frozen --no-dev --no-hashes --no-emit-project --output-file /tmp/plango-requirements.txt \
     && uv pip install --no-cache --python /opt/conda/envs/plango/bin/python --requirements /tmp/plango-requirements.txt \
     && rm /tmp/plango-requirements.txt
+COPY README.md ./
 COPY backend/plango ./backend/plango
 COPY vendor/plango_harness/backend/plango_harness ./vendor/plango_harness/backend/plango_harness
 COPY skills ./skills

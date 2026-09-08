@@ -82,7 +82,8 @@ export function startShareServer(preferredPort = 8799, storageDir?: string): Pro
     if (!stored) return res.status(404).json({ error: 'not_found' })
     const rec = { ...stored, votes: [...stored.votes] }
     const voter = String(req.body?.voter || '朋友').slice(0, 12)
-    const vote = ['up', 'meh', 'down'].includes(req.body?.vote) ? req.body.vote : 'up'
+    if (!['up', 'meh', 'down'].includes(req.body?.vote)) return res.status(400).json({ error: 'invalid_vote' })
+    const vote = req.body.vote
     rec.votes = rec.votes.filter((v) => v.voter !== voter) // 一人一票，可改
     rec.votes.push({ voter, vote, ts: Date.now() })
     saveRecord(rec)
@@ -96,7 +97,10 @@ export function startShareServer(preferredPort = 8799, storageDir?: string): Pro
     const rec = { ...stored, prefs: [...stored.prefs] }
     const member = String(req.body?.member || '朋友').slice(0, 12)
     const idea = String(req.body?.idea || '').slice(0, 200).trim()
-    const budget = Number(req.body?.budget) || undefined
+    const rawBudget = req.body?.budget
+    const budget = rawBudget === undefined || rawBudget === '' ? undefined : Number(rawBudget)
+    if (budget !== undefined && (!Number.isFinite(budget) || budget <= 0)) return res.status(400).json({ error: 'invalid_budget' })
+    if (!idea && budget === undefined) return res.status(400).json({ error: 'empty_feedback' })
     if (idea || budget) {
       rec.prefs.push({ member, idea, budget, ts: Date.now() })
       saveRecord(rec)

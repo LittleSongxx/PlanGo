@@ -5,9 +5,10 @@ import random
 import re
 import time
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import Any, Literal, cast
+from zoneinfo import ZoneInfo
 
 from plango_harness.agent.contracts import (
     ConstraintCheck,
@@ -59,7 +60,8 @@ class PlanEvaluation:
 
 def goal_errors(spec: TripSpec, stops: list[Any]) -> list[str]:
     categories = [stop.category for stop in stops]
-    errors = [f"activity:{category}" for category in spec.required_activities if category not in categories]
+    errors = [f"required_place:{place_id}" for place_id in spec.must_visit_place_ids if place_id not in {stop.place_id for stop in stops}]
+    errors += [f"activity:{category}" for category in spec.required_activities if category not in categories]
     errors.extend(f"activity_excluded:{category}" for category in spec.excluded_activities if category in categories)
     cursor = 0
     for category in spec.activity_order:
@@ -254,6 +256,7 @@ class FallbackPlanBuilder:
                     PlanStop(
                         place_id=place.place_id,
                         name=place.name,
+                        address=getattr(place, "address", None),
                         category=place.category,
                         start_minute=stop_start,
                         end_minute=stop_end,
@@ -366,6 +369,7 @@ def compile_plan_draft(
             PlanStop(
                 place_id=item.place_id,
                 name=item.name,
+                address=item.address,
                 category=item.category,
                 start_minute=0,
                 end_minute=1,
@@ -472,6 +476,24 @@ def compile_plan_draft(
     )
 
 
+def visit_payload(payload: dict[str, Any], spec: TripSpec, observed_at: datetime | None = None) -> dict[str, Any]:
+    """A newly fetched today fact is not proof of a different service date."""
+    if spec.visit_date is None:
+        return payload
+    if payload.get("visit_date") == spec.visit_date.isoformat() and payload.get("timezone", "Asia/Shanghai") == spec.timezone:
+        return payload
+    weekly = payload.get("weekly_schedule")
+    if isinstance(weekly, dict) and isinstance(weekly.get(str(spec.visit_date.isoweekday())), dict) and payload.get("timezone", "Asia/Shanghai") == spec.timezone:
+        hours = weekly[str(spec.visit_date.isoweekday())]
+        return {key: hours[key] for key in ("open_minute", "close_minute") if key in hours}
+    if observed_at is not None and spec.timezone == "Asia/Shanghai":
+        if observed_at.tzinfo is None:
+            observed_at = observed_at.replace(tzinfo=timezone.utc)
+        if observed_at.astimezone(ZoneInfo("Asia/Shanghai")).date() == spec.visit_date:
+            return payload
+    return {}
+
+
 class PlanEngine:
     def __init__(self, world: WorldProvider, seed: int = 20260903) -> None:
         self.world = world
@@ -485,6 +507,7 @@ class PlanEngine:
         plan: PlanCandidate,
         *,
         on_tool_call: Callable[[str], None] | None = None,
+        evidence: list[Evidence] | None = None,
     ) -> PlanCandidate:
         updated: list[PlanStop] = []
         evidence_ids: set[str] = set()
@@ -492,6 +515,8 @@ class PlanEngine:
         cursor = parse_minute(spec.time_window_start)
         window_end = min(1440, cursor + spec.duration_minutes)
         origin = spec.location
+        dated_evidence = [Evidence.model_validate(item) for item in (evidence or [])]
+        scope = (spec.visit_date.isoformat() if spec.visit_date else None, spec.timezone, spec.time_window_start, spec.party_size, tuple(sorted(spec.party_counts.items())), spec.travel_mode)
         party_size = spec.party_size or 1
 
         def call(name: str) -> None:
@@ -499,7 +524,7 @@ class PlanEngine:
                 on_tool_call(name)
 
         async def read(name: str, key: tuple[Any, ...], fetch):
-            cached = self._read_cache.get((name, *key))
+            cached = self._read_cache.get((name, *scope, *key))
             if cached and cached[0] > time.monotonic():
                 return cached[1]
             call(name)
@@ -510,7 +535,7 @@ class PlanEngine:
             if value is not None and ttl > 0 and getattr(evidence, "confidence", 1) > 0:
                 if len(self._read_cache) >= 512:
                     self._read_cache.pop(next(iter(self._read_cache)))
-                self._read_cache[(name, *key)] = (time.monotonic() + ttl, value)
+                self._read_cache[(name, *scope, *key)] = (time.monotonic() + ttl, value)
             return value
 
         def route_minutes(route: dict[str, Any]) -> int:
@@ -545,6 +570,7 @@ class PlanEngine:
             route_evidence = route_evidence.model_copy(update={
                 "evidence_id": route_evidence.evidence_id + ":" + hashlib.sha1(f"{origin.latitude},{origin.longitude}".encode()).hexdigest()[:8],
                 "payload": {**route_evidence.payload, "destination_place_id": place.place_id,
+                            "requested_visit_date": scope[0], "requested_timezone": spec.timezone,
                             "origin": [origin.latitude, origin.longitude]},
             })
             evidence_ids.add(route_evidence.evidence_id)
@@ -557,6 +583,15 @@ class PlanEngine:
             supply = await read("get_supply", (stop.place_id, min(1439, arrival)), lambda: self.world.get_supply(stop.place_id, min(1439, arrival)))
             if isinstance(supply, dict):
                 supply = Supply(**supply)
+            applicable = [visit_payload(item.payload, spec, item.observed_at) for item in dated_evidence if item.evidence_id in stop.evidence_ids and item.payload.get("place_id") == stop.place_id and not item.expired and item.confidence > 0]
+            dated = [payload for payload in applicable if payload]
+            source_scope = visit_payload({"open_now": supply.open_now}, spec, supply.observed_at)
+            if spec.visit_date is not None and not source_scope:
+                exact = next((payload for payload in reversed(dated) if payload.get("visit_date") == spec.visit_date.isoformat() and payload.get("at_minute") == min(1439, arrival)), {})
+                hours = next((payload for payload in reversed(dated) if payload.get("open_minute") is not None or payload.get("close_minute") is not None), {})
+                place = place.model_copy(update={"open_minute": hours.get("open_minute"), "close_minute": hours.get("close_minute")})
+                scheduled_open = (hours["open_minute"] <= arrival < hours["close_minute"]) if hours.get("open_minute") is not None and hours.get("close_minute") is not None else None
+                supply = replace(supply, open_now=exact.get("open_now", scheduled_open), reservable=exact.get("reservable"), seats_left=exact.get("seats_left"), estimated_wait_min=exact.get("estimated_wait_min"))
             visit_start = arrival + max(0, int(supply.estimated_wait_min or 0))  # Provisional timing; missing waits are explicitly unverified below.
             if stop.locked:
                 visit_start = max(visit_start, stop.start_minute)
@@ -564,7 +599,7 @@ class PlanEngine:
             # A known wait-cap violation already rejects this stop; a second
             # restaurant-availability read cannot make it executable.
             wait_rejected = spec.max_queue_minutes is not None and supply.estimated_wait_min is not None and supply.estimated_wait_min > spec.max_queue_minutes
-            if place.category == "餐厅" and visit_start != arrival and not wait_rejected:
+            if place.category == "餐厅" and visit_start != arrival and not wait_rejected and (spec.visit_date is None or bool(source_scope)):
                 service_supply = await read("get_supply", (stop.place_id, min(1439, visit_start)), lambda: self.world.get_supply(stop.place_id, min(1439, visit_start)))
                 if isinstance(service_supply, dict):
                     service_supply = Supply(**service_supply)
@@ -601,6 +636,8 @@ class PlanEngine:
                 ),
                 payload={
                     "place_id": stop.place_id,
+                    "requested_visit_date": scope[0], "requested_timezone": spec.timezone,
+                    "date_verified": spec.visit_date is None or bool(source_scope) or bool(dated),
                     "open_now": getattr(service_supply, "open_now", None),
                     "reservable": getattr(service_supply, "reservable", None),
                     "seats_left": getattr(supply, "seats_left", None),
@@ -616,7 +653,7 @@ class PlanEngine:
             self.last_evidence.append(supply_evidence)
             evidence_ids.add(supply_evidence.evidence_id)
             fresh_cost = round(float(place.average_price) * party_size, 2)
-            active_stop_ids = [ref for ref in place.evidence_ids if ref in stop.evidence_ids]
+            active_stop_ids = [ref for ref in stop.evidence_ids if ref in place.evidence_ids or any(item.evidence_id == ref and not item.expired and item.confidence > 0 and item.payload.get("place_id") == stop.place_id for item in dated_evidence)]
             active_stop_ids += [route_evidence.evidence_id, supply_evidence.evidence_id]
             evidence_ids.update(active_stop_ids)
             tags = list(
@@ -653,11 +690,13 @@ class PlanEngine:
                         "estimated_cost": fresh_cost,
                         "unit_price": place.average_price if place.price_known else None,
                         "category": place.category,
+                        "address": getattr(place, "address", None) or stop.address,
                         "estimated_wait_min": supply.estimated_wait_min,
                         "supply_source": supply_source,
                         "supply_observed_at": supply_observed,
                         "supply_expires_at": supply_expires,
-                        "distance_km": float(route["distance_km"] if route.get("distance_km") is not None else place.distance_km),
+                        "distance_km": float(route["distance_km"] if route.get("distance_km") is not None else _distance_km(origin, place.latitude, place.longitude)),
+                        "distance_kind": route.get("distance_kind") or ("route" if route_evidence.confidence > 0 else "straight_line_lower_bound"),
                         "travel_min": travel,
                         "requested_dwell_min": dwell,
                         "tags": tags,
@@ -691,7 +730,7 @@ class PlanEngine:
         weather: dict[str, Any] | None = None,
         on_tool_call: Callable[[str], None] | None = None,
     ) -> PlanEvaluation:
-        enriched = await self.enrich(spec, plan, on_tool_call=on_tool_call)
+        enriched = await self.enrich(spec, plan, on_tool_call=on_tool_call, evidence=evidence)
         evidence_rows = [
             Evidence.model_validate(item) if isinstance(item, dict) else item
             for item in [*(evidence or []), *self.last_evidence]
@@ -842,7 +881,9 @@ async def verify_plan(
                     detail=f"{stop.name} 早于时间窗口 {format_minute(window_start)}",
                 )
             )
-        venue_hours = [evidence_by_id[ref].payload for ref in stop.evidence_ids if ref in evidence_by_id and evidence_by_id[ref].payload.get("place_id") == stop.place_id]
+        venue_hours = [visit_payload(evidence_by_id[ref].payload, spec, evidence_by_id[ref].observed_at) for ref in stop.evidence_ids if ref in evidence_by_id and evidence_by_id[ref].payload.get("place_id") == stop.place_id]
+        if spec.visit_date is not None and not any(hours.get("open_minute") is not None or hours.get("close_minute") is not None or hours.get("visit_date") == spec.visit_date.isoformat() for hours in venue_hours):
+            unknown.append(ConstraintCheck(name=f"visit_date:{stop.place_id}", kind="unknown", passed=None, detail=f"尚无适用于 {spec.visit_date.isoformat()}（{spec.timezone}）的营业或预约证据"))
         if any(
             (hours.get("open_minute") is not None and stop.start_minute < hours["open_minute"])
             or (hours.get("close_minute") is not None and stop.end_minute > hours["close_minute"])
@@ -876,7 +917,8 @@ async def verify_plan(
             elif check.passed is False:
                 hard.append(check)
         if distance_limit is not None and stop.distance_km > distance_limit:
-            hard.append(ConstraintCheck(name=f"distance:{stop.place_id}", kind="hard", passed=False, detail=f"路线 {stop.distance_km:g} 公里超过 {distance_limit:g} 公里上限"))
+            distance_label = "直线距离下界" if stop.distance_kind == "straight_line_lower_bound" else "路线"
+            hard.append(ConstraintCheck(name=f"distance:{stop.place_id}", kind="hard", passed=False, detail=f"{distance_label} {stop.distance_km:g} 公里超过 {distance_limit:g} 公里上限"))
         if stop.estimated_wait_min is None or "supply_unknown" in stop.tags:
             unknown.append(ConstraintCheck(name=f"supply:{stop.place_id}",kind="unknown",passed=None,detail=f"{stop.name} 的营业或排队信息尚未完整核实；当前时间安排为待核验草案"))
         if stop.estimated_wait_min is not None and ((strict_queue and stop.estimated_wait_min > 0) or (spec.max_queue_minutes is not None and stop.estimated_wait_min > spec.max_queue_minutes) or (low_queue and spec.max_queue_minutes is None and stop.estimated_wait_min >= 30)):

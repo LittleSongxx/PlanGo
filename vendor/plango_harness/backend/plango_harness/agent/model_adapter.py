@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from typing import Any, TypeVar
 
 import httpx
+from langchain_core.exceptions import OutputParserException
+from openai import APIConnectionError, APITimeoutError
 from plango_harness.observability import agent_span
 from plango_harness.settings import Settings
 from pydantic import BaseModel, ValidationError
@@ -16,10 +18,49 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class ModelProviderUnavailable(RuntimeError):
-    """A provider account failure must not become a successful local fallback."""
+    """A failed provider request must not become a successful local fallback."""
+
+    def __init__(self, category: str) -> None:
+        self.category = category
+        message = {
+            "quota": "模型服务额度不足，请检查运行服务的账户余额或配额。",
+            "authentication": "模型鉴权失败，请检查运行服务中的模型密钥。",
+            "permission": "模型服务拒绝访问，请检查所选模型与账户权限。",
+            "rate_limit": "模型服务请求过于频繁，请稍后重试。",
+            "timeout": "模型请求超时，本轮未取得可用回复。",
+            "connection": "无法连接模型服务，请检查运行服务的网络与接口地址。",
+            "provider": "模型服务暂时异常，请稍后重试。",
+            "request": "模型服务不接受当前请求，请核对模型及接口能力配置。",
+            "internal": "模型调用遇到内部错误，请根据任务记录检查运行服务。",
+        }.get(category, "模型服务不可用，请检查运行服务中的配置。")
+        super().__init__(message)
+
+
+class StructuredOutputError(ValueError):
+    """The provider replied, but did not produce the requested structure."""
 
 
 ACCOUNT_ERRORS = {"Arrearage", "InsufficientBalance", "insufficient_quota"}
+
+
+def _error_category(error: Exception, code: Any, status: Any) -> str:
+    if code in ACCOUNT_ERRORS:
+        return "quota"
+    if status == 401:
+        return "authentication"
+    if status == 403:
+        return "permission"
+    if status == 429:
+        return "rate_limit"
+    if isinstance(error, (TimeoutError, httpx.TimeoutException, APITimeoutError)):
+        return "timeout"
+    if isinstance(error, (httpx.TransportError, APIConnectionError)):
+        return "connection"
+    if isinstance(status, int):
+        return "provider" if status >= 500 else "request"
+    if isinstance(error, (ValidationError, OutputParserException, json.JSONDecodeError, StructuredOutputError)):
+        return "structured_output"
+    return "internal"
 
 
 def _validation_hint(error: Exception) -> dict[str, Any]:
@@ -70,6 +111,7 @@ class ModelAdapter:
         self.fallback_count = 0
         self.last_usage: dict[str, int] = {}
         self.total_tokens = 0
+        self.token_baseline = 0
         self.total_latency_ms = 0.0
         self.last_latency_ms = 0.0
         self.last_error: str | None = None
@@ -86,9 +128,11 @@ class ModelAdapter:
         *,
         cleanup_reserve_seconds: float = 5.0,
         token_reserve: int | None = None,
+        token_baseline: int = 0,
     ) -> None:
         """Set the shared run deadline without storing prompt/response text."""
         self.deadline_at = deadline_at
+        self.token_baseline = max(0, int(token_baseline))
         self.cleanup_reserve_seconds = max(0.0, float(cleanup_reserve_seconds))
         if token_reserve is not None:
             self.token_reserve = max(0, int(token_reserve))
@@ -99,7 +143,11 @@ class ModelAdapter:
         return self.deadline_at - time.time() - self.cleanup_reserve_seconds
 
     def _remaining_tokens(self) -> int:
-        return max(0, self.settings.max_model_tokens - self.total_tokens - self.token_reserve)
+        return max(0, self.token_limit - self.total_tokens - self.token_reserve)
+
+    @property
+    def token_limit(self) -> int:
+        return self.token_baseline + self.settings.max_model_tokens
 
     @staticmethod
     def _input_token_estimate(system: str, user: str, definitions: str = "") -> int:
@@ -135,6 +183,7 @@ class ModelAdapter:
         call_records: list[dict[str, Any]] | None = None,
     ) -> None:
         """Restore the run counters before replaying a graph checkpoint."""
+        self.token_baseline = 0
         self.call_count = max(0, int(call_count))
         self.fallback_count = max(0, int(fallback_count))
         self.last_usage = dict(last_usage or {})
@@ -179,6 +228,7 @@ class ModelAdapter:
                 record["http_status"] = http_status
             if isinstance(code, str) and re.fullmatch(r"[A-Za-z0-9_.-]{1,100}", code):
                 record["provider_error_code"] = code
+            record["error_category"] = _error_category(provider_error, record.get("provider_error_code"), http_status)
         # Keep only numeric usage metadata; never persist request/response text.
         usage = self.last_usage
         input_tokens = usage.get("input_tokens", usage.get("prompt_tokens"))
@@ -203,6 +253,7 @@ class ModelAdapter:
             "call_count": self.call_count,
             "fallback_count": self.fallback_count,
             "total_tokens": self.total_tokens,
+            "token_baseline": self.token_baseline,
             "total_latency_ms": round(self.total_latency_ms, 2),
             "last_latency_ms": self.last_latency_ms,
             "last_error": self.last_error,
@@ -262,8 +313,6 @@ class ModelAdapter:
         image: str | None = None,
     ) -> T:
         system = self.system_prefix + system
-        if self.settings.agent_mode == "single":
-            system = "你是 PlanGo 唯一的规划 Agent，按当前阶段完成需求、查询和计划，遵守确定性审批与事实边界。" + system.split("。", 1)[-1]
         started = time.perf_counter()
         self.last_usage = {}
         remaining_tokens = self._remaining_tokens()
@@ -318,14 +367,14 @@ class ModelAdapter:
             parsing_error = result.get("parsing_error") if isinstance(result, dict) else None
             if isinstance(result, dict) and "parsed" in result:
                 result = result.get("parsed")
-            if self.total_tokens > self.settings.max_model_tokens:
+            if self.total_tokens > self.token_limit:
                 self.fallback_count += 1
                 self._record("structured", "fallback", started, "model_token_budget")
                 return fallback
             if isinstance(parsing_error, Exception):
                 raise parsing_error
             if parsing_error is not None:
-                raise TypeError("structured_parsing_error")
+                raise StructuredOutputError("structured_parsing_error")
             if isinstance(result, schema):
                 self._record("structured", "success", started)
                 return result
@@ -333,12 +382,14 @@ class ModelAdapter:
                 parsed = schema.model_validate(result)
                 self._record("structured", "success", started)
                 return parsed
-            raise TypeError("structured_output_invalid")
+            raise StructuredOutputError("structured_output_invalid")
         except Exception as exc:
             self._record("structured", "retry", started, type(exc).__name__, provider_error=exc)
-            if self.call_records[-1].get("provider_error_code") in ACCOUNT_ERRORS:
+            if self.call_records[-1].get("error_category") != "structured_output":
                 self.call_records[-1]["status"] = "error"
-                raise ModelProviderUnavailable(str(self.call_records[-1]["provider_error_code"])) from None
+                # The SDK owns bounded transport retries. JSON repair is only
+                # meaningful after a response failed schema/parsing validation.
+                raise ModelProviderUnavailable(str(self.call_records[-1]["error_category"])) from None
             retry_started = time.perf_counter()
             self.last_usage = {}
             remaining_tokens = self._remaining_tokens()
@@ -378,7 +429,7 @@ class ModelAdapter:
                     ),
                 )
                 self._capture_usage(message)
-                if self.total_tokens > self.settings.max_model_tokens:
+                if self.total_tokens > self.token_limit:
                     self.fallback_count += 1
                     self._record("structured_retry", "fallback", retry_started, "model_token_budget")
                     return fallback
@@ -396,10 +447,10 @@ class ModelAdapter:
                 retry_provider_error = retry_exc
             self.fallback_count += 1
             self._record("structured_retry", "fallback", retry_started, retry_error, provider_error=retry_provider_error)
-            if self.call_records[-1].get("provider_error_code") in ACCOUNT_ERRORS:
+            if retry_provider_error is not None and self.call_records[-1].get("error_category") != "structured_output":
                 self.fallback_count -= 1
                 self.call_records[-1]["status"] = "error"
-                raise ModelProviderUnavailable(str(self.call_records[-1]["provider_error_code"])) from None
+                raise ModelProviderUnavailable(str(self.call_records[-1]["error_category"])) from None
         return fallback
 
     async def tool_calls(
@@ -417,8 +468,6 @@ class ModelAdapter:
     ) -> list[dict[str, Any]]:
         """Normalize OpenAI-compatible tool calls before registry validation."""
         system = self.system_prefix + system
-        if self.settings.agent_mode == "single":
-            system = "你是 PlanGo 唯一的规划 Agent，按当前阶段完成需求、查询和计划，遵守确定性审批与事实边界。" + system.split("。", 1)[-1]
         started = time.perf_counter()
         self.last_usage = {}
         remaining_tokens = self._remaining_tokens()
@@ -464,7 +513,7 @@ class ModelAdapter:
                     ),
                 )
             self._capture_usage(response)
-            if self.total_tokens > self.settings.max_model_tokens:
+            if self.total_tokens > self.token_limit:
                 self.fallback_count += 1
                 self._record("tool_call", "fallback", started, "model_token_budget")
                 return []
@@ -492,10 +541,10 @@ class ModelAdapter:
         except Exception as exc:
             self.fallback_count += 1
             self._record("tool_call", "fallback", started, type(exc).__name__, provider_error=exc)
-            if self.call_records[-1].get("provider_error_code") in ACCOUNT_ERRORS:
+            if self.call_records[-1].get("error_category") != "structured_output":
                 self.fallback_count -= 1
                 self.call_records[-1]["status"] = "error"
-                raise ModelProviderUnavailable(str(self.call_records[-1]["provider_error_code"])) from None
+                raise ModelProviderUnavailable(str(self.call_records[-1]["error_category"])) from None
             return []
 
     def _capture_usage(self, response: Any) -> None:

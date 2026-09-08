@@ -1,5 +1,6 @@
 // 附近发现直接读取高德实时供给。
-import { getConfig } from './config'
+import type { HarnessClient } from './harnessClient'
+import type { LocationInfo } from '../shared/location'
 import * as amap from './data/amap'
 import type { SourceTag, DiscoverGroup } from '@shared/types'
 
@@ -13,17 +14,23 @@ export interface DiscoverResult {
   city: string
   groups: DiscoverGroup[]
   source: SourceTag
+  scope: 'around' | 'city'
+  observed_at: string
+  expires_at: string
+  cache_hit: boolean
 }
 
-// Desktop discovery reads the live API directly.
-export async function computeLiveDiscover(cityArg?: string): Promise<DiscoverResult> {
-  const cfg = getConfig()
-  const city = cityArg || cfg.city
-  if (!cfg.amap.key) throw new Error('请配置高德 Key，或在对话中读取当前商家网页。')
+// Each group uses the same captured location; no request can borrow a later city's coordinates.
+export async function computeLiveDiscover(client: Pick<HarnessClient, 'request'>, location: LocationInfo, refresh = false): Promise<DiscoverResult> {
   const groups: DiscoverGroup[] = []
+  const responses = []
   for (const spec of SPECS) {
-    const items = await amap.searchPoi(spec.keywords[0], city, spec.category === '到餐' ? { types: '050000' } : {})
-    if (items.length) groups.push({ label: spec.label, emoji: spec.emoji, items: items.slice(0, 4) })
+    const result = await amap.searchPoi(client, spec.keywords[0], location, { ...(spec.category === '到餐' ? { types: '050000' } : {}), refresh })
+    responses.push(result)
+    if (result.items.length) groups.push({ label: result.scope === 'city' ? spec.label.replace('附近', '同城') : spec.label, emoji: spec.emoji, items: result.items.slice(0, 4) })
   }
-  return { city, groups, source: 'real' }
+  const result = { city: location.city, groups, source: 'amap' as const, scope: responses[0].scope,
+    observed_at: responses.map(result => result.observed_at).sort()[0], expires_at: responses.map(result => result.expires_at).sort()[0], cache_hit: responses.some(result => result.cache_hit) }
+  amap.requireFresh(result)
+  return result
 }

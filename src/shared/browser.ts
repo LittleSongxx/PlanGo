@@ -28,7 +28,7 @@ export interface BrowserObservation {
   url?: string
   title?: string
   text?: string
-  elements?: { idx: number; tag: string; role: string; name: string; text: string; href?: string }[]
+  elements?: { idx: number; tag: string; role: string; name: string; text: string; href?: string; input_type?: string; disabled?: boolean }[]
   tables?: { headers: string[]; rows: string[][] }[]
   fields?: Record<string, unknown>
   receipt?: Record<string, unknown>

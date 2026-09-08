@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store'
 import { installBrowserBridge } from './lib/browserBridge'
 import { BrowserPane } from './components/BrowserPane'
@@ -10,9 +10,12 @@ import { IconRail } from './components/IconRail'
 import { HistoryDrawer } from './components/HistoryDrawer'
 import { SidePanel } from './components/SidePanel'
 import { DiscoverPanel } from './components/DiscoverPanel'
+import { ShareModal } from './components/ShareModal'
+import { RouteSheet } from './components/RouteSheet'
 import { AiBrowsingBar } from './components/AiBrowsingBar'
 import { detectViaAMap } from './lib/amap'
 import { locationPriority, type LocationInfo } from '@shared/location'
+import { ArrowRight, Circle, Globe2, LayoutDashboard } from 'lucide-react'
 
 export default function App(): JSX.Element {
   const addProactive = useStore((s) => s.addProactive)
@@ -22,11 +25,17 @@ export default function App(): JSX.Element {
   const chatWidth = useStore((s) => s.chatWidth)
   const setChatWidth = useStore((s) => s.setChatWidth)
   const dragging = useRef(false)
+  const workspace = useRef<HTMLDivElement>(null)
+  const [resizing, setResizing] = useState(false)
+  const [chatMax, setChatMax] = useState(760)
+  const backendReady = useStore(state => state.backendReady)
+  const backendError = useStore(state => state.backendError)
+  const routeTarget = useStore(state => state.routeTarget)
+  const closeRoute = useStore(state => state.closeRoute)
   useEffect(() => {
     const stopBrowser = installBrowserBridge()
     const unHarness = window.plango.onHarnessEvent((event) => useStore.getState().receiveHarnessEvent(event))
     void useStore.getState().hydrateHarness()
-    const poll = window.setInterval(() => { void useStore.getState().refreshRun() }, 2000)
     const un3 = window.plango.onProactive((p) => addProactive(p))
     const un4 = window.plango.onImIncoming((m) => addProactive({ id: 'im' + m.ts, ts: m.ts, text: `【微信·${m.from}】${m.text}`, kind: 'im' }))
     const applyLocation = (location: LocationInfo): void => {
@@ -53,7 +62,6 @@ export default function App(): JSX.Element {
     return () => {
       unHarness()
       stopBrowser()
-      window.clearInterval(poll)
       un3?.()
       un4?.()
       un5?.()
@@ -64,12 +72,13 @@ export default function App(): JSX.Element {
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!dragging.current) return
-      const w = window.innerWidth - e.clientX
-      setChatWidth(w)
+      const w = (workspace.current?.getBoundingClientRect().right || window.innerWidth) - e.clientX - 8
+      setChatWidth(Math.min(chatMax, w))
       e.preventDefault()
     }
     const onUp = () => {
       dragging.current = false
+      setResizing(false)
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
     }
@@ -79,49 +88,54 @@ export default function App(): JSX.Element {
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
+  }, [setChatWidth, chatMax])
+
+  useEffect(() => {
+    if (!workspace.current) return
+    const observe = new ResizeObserver(([entry]) => {
+      const maximum = Math.max(320, Math.min(760, entry.contentRect.width - 456))
+      setChatMax(maximum)
+      if (useStore.getState().chatWidth > maximum) setChatWidth(maximum)
+    })
+    observe.observe(workspace.current)
+    return () => observe.disconnect()
   }, [setChatWidth])
 
   return (
-    <div className="h-full flex flex-col">
-      {/* 顶栏（可拖动窗口） */}
-      <header className="h-8 shrink-0 flex items-center bg-neutral-900 text-neutral-400 text-xs select-none" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
-        <div className="pl-20">PlanGo · AI 本地生活浏览器</div>
+    <div className="h-full flex flex-col gap-4 p-4 bg-[var(--canvas)]">
+      <header className="h-11 shrink-0 flex items-center justify-between gap-5 px-2 select-none" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
+        <div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white border border-[var(--line)] text-brand-strong"><LayoutDashboard size={16} /></span><div><p className="plango-kicker">PLANGO WORKSPACE</p><p className="text-[13px] font-semibold mt-0.5">把想法，安排好。</p></div></div>
+        <div className="hidden xl:flex items-center gap-3 text-[11px] text-[var(--muted)]" aria-label="工作流程">需求<ArrowRight size={12} />查资料<ArrowRight size={12} />方案与结果<ArrowRight size={12} />确认继续</div>
+        <div role="status" className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] ${backendReady ? 'border-[#d7e8dc] bg-white text-brand-strong' : 'border-amber-200 bg-amber-50 text-amber-800'}`}><Circle size={7} fill="currentColor" />{backendReady ? '运行服务已连接' : backendError ? '运行服务未连接' : '正在连接运行服务'}</div>
       </header>
-
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex min-h-0 gap-4">
         <IconRail />
-
-        {/* 中间主工作区：浏览器 / 成果区 切换 */}
-        <section className="flex-1 flex flex-col min-w-0 bg-neutral-50 relative">
-          <AiBrowsingBar />
-          <div className={`flex-1 min-h-0 flex flex-col ${view === 'browser' ? '' : 'hidden'}`} aria-hidden={view !== 'browser'}>
-            <TabBar />
-            <BrowserPane />
-          </div>
-          {view === 'outcome' && <div className="flex-1 min-h-0"><OutcomeCanvas /></div>}
-        </section>
-
-        {/* 可拖拽分隔条 */}
-        <div
-          onMouseDown={() => {
-            dragging.current = true
-            document.body.style.cursor = 'col-resize'
-            document.body.style.userSelect = 'none'
-          }}
-          className="w-1 shrink-0 cursor-col-resize bg-neutral-200 hover:bg-brand transition-colors"
-          title="拖动调整宽度"
-        />
-
-        {/* 右侧PlanGo对话（宽度可调） */}
-        <section className="shrink-0 flex flex-col min-w-0 bg-white" style={{ width: chatWidth }}>
-          <ChatPanel />
-        </section>
+        <div ref={workspace} className="flex-1 flex min-w-0 min-h-0">
+          <main className="plango-surface flex-1 flex flex-col min-w-0 overflow-hidden relative" aria-label="主工作区">
+            <div className="plango-panel-header relative shrink-0 h-[74px]">
+              <div><div className="plango-kicker">{view === 'browser' ? 'BROWSER' : 'YOUR WORKSPACE'}</div><div className="mt-1 flex items-center gap-2 text-[15px] font-semibold">{view === 'browser' ? <Globe2 size={16} className="text-brand-strong" /> : <LayoutDashboard size={16} className="text-brand-strong" />}{view === 'browser' ? '浏览器' : '方案与结果'}</div></div>
+              <AiBrowsingBar />
+            </div>
+            <div className={`flex-1 min-h-0 flex flex-col ${view === 'browser' ? '' : 'hidden'}`} aria-hidden={view !== 'browser'}>
+              <TabBar />
+              <BrowserPane />
+            </div>
+            {view === 'outcome' && <div className="flex-1 min-h-0"><OutcomeCanvas /></div>}
+          </main>
+          <div role="separator" aria-label="调整对话面板宽度" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={chatMax} aria-valuenow={Math.round(chatWidth)} tabIndex={0}
+            onKeyDown={event => { const next = event.key === 'ArrowLeft' ? chatWidth + 20 : event.key === 'ArrowRight' ? chatWidth - 20 : event.key === 'Home' ? 320 : event.key === 'End' ? chatMax : null; if (next !== null) { event.preventDefault(); setChatWidth(Math.min(chatMax, next)) } }}
+            onMouseDown={() => { dragging.current = true; setResizing(true); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none' }}
+            className="group w-4 shrink-0 cursor-col-resize flex items-center justify-center rounded-lg outline-offset-0" title="拖动调整宽度"><div className="h-10 w-1 rounded-full bg-[#d6e0d8] group-hover:bg-brand-strong transition-colors" /></div>
+          <aside className="plango-surface shrink-0 flex flex-col min-w-0 overflow-hidden" style={{ width: chatWidth }} aria-label="对话助手"><ChatPanel /></aside>
+        </div>
       </div>
-
+      {resizing && <div data-browser-overlay className="fixed inset-0 z-40 cursor-col-resize" />}
       <SettingsDrawer />
       <HistoryDrawer />
       <SidePanel />
       <DiscoverPanel />
+      <ShareModal />
+      {routeTarget && <RouteSheet target={routeTarget} onClose={closeRoute} />}
     </div>
   )
 }

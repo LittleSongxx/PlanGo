@@ -37,6 +37,7 @@ export const IPC = {
   memoryGet: 'memory:get',
   memoryGreeting: 'memory:greeting',
   memoryDelete: 'memory:delete',
+  memorySave: 'memory:save',
   memoryClear: 'memory:clear',
 
   // 分享协作（局域网 + 二维码）

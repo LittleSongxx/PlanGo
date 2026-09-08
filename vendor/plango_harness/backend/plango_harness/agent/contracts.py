@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -67,7 +68,9 @@ class TripSpec(ContractModel):
     )
     hard_constraints: list[str] = Field(default_factory=list, max_length=32)
     soft_preferences: list[str] = Field(default_factory=list, max_length=32)
-    time_window_start: str = "14:00"
+    visit_date: date | None = None
+    timezone: str = "Asia/Shanghai"
+    time_window_start: str | None = None
     duration_minutes: int = Field(default=360, ge=30, le=1440)
     time_window: dict[str, Any] | None = None
     budget: float | None = Field(default=400, ge=0, le=1_000_000)
@@ -79,11 +82,23 @@ class TripSpec(ContractModel):
     excluded_activities: list[Activity] = Field(default_factory=list, max_length=8)
     activity_order: list[Activity] = Field(default_factory=list, max_length=8)
     location: Location = Field(default_factory=lambda: Location(latitude=39.997, longitude=116.482))
+    search_location: Location | None = None
+    must_visit_place_ids: list[str] = Field(default_factory=list, max_length=8)
     weather_sensitive: bool = True
     indoor_required: bool = False
     outdoor_required: bool = False
     max_queue_minutes: int | None = Field(default=None, ge=0, le=1440)
     max_distance_km: float | None = Field(default=None, ge=0, le=1000)
+    travel_mode: Literal["driving", "walking", "transit"] = "driving"
+
+    @field_validator("timezone")
+    @classmethod
+    def known_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError) as error:
+            raise ValueError("timezone must be a valid IANA timezone") from error
+        return value
 
     @model_validator(mode="before")
     @classmethod
@@ -104,7 +119,8 @@ class TripSpec(ContractModel):
     @model_validator(mode="after")
     def normalize_time_window(self):
         if self.time_window:
-            self.time_window_start = str(self.time_window.get("start", self.time_window_start))
+            start = self.time_window.get("start", self.time_window_start)
+            self.time_window_start = str(start) if start is not None else None
             self.duration_minutes = int(
                 self.time_window.get("duration_minutes", self.duration_minutes)
             )
@@ -141,6 +157,7 @@ class Evidence(ContractModel):
 class PlaceCandidate(ContractModel):
     place_id: str
     name: str
+    address: str | None = Field(default=None, max_length=1000)
     category: str
     latitude: float
     longitude: float
@@ -158,6 +175,7 @@ class PlaceCandidate(ContractModel):
 class PlanStop(ContractModel):
     place_id: str
     name: str
+    address: str | None = Field(default=None, max_length=1000)
     category: str
     start_minute: int = Field(ge=0, le=1439)
     end_minute: int = Field(ge=1, le=1440)
@@ -168,6 +186,7 @@ class PlanStop(ContractModel):
     supply_observed_at: datetime | None = None
     supply_expires_at: datetime | None = None
     distance_km: float = Field(default=0, ge=0)
+    distance_kind: Literal["route", "straight_line_lower_bound"] | None = None
     travel_min: int = Field(default=0, ge=0, le=1440)
     requested_dwell_min: int | None = Field(default=None, ge=1, le=1440)
     tags: list[str] = Field(default_factory=list)
@@ -271,6 +290,7 @@ class AgentArtifact(ContractModel):
 
 
 class AdvocateReport(ContractModel):
+    run_id: str | None = None
     turn_id: int = Field(default=1, ge=1)
     role: str
     verdict: Literal["accept", "revise", "reject"]

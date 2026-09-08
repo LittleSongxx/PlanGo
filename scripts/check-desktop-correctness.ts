@@ -26,9 +26,7 @@ check('connection errors preserve the actual reason', () => assert.equal(project
 
 const values = new Map<string, string>()
 Object.defineProperty(globalThis, 'localStorage', { value: { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key) } })
-Object.defineProperty(globalThis, 'window', { value: { AMap: { Geocoder: class {
-  getLocation(_address: string, callback: (status: string, result: unknown) => void): void { callback('complete', { geocodes: [{ location: { lng: 106.57, lat: 29.56 }, addressComponent: { city: '重庆市', district: '渝中区' } }] }) }
-} } } })
+Object.defineProperty(globalThis, 'window', { value: { plango: { geo: { geocode: async () => ({ source: 'amap', location: { longitude: 106.57, latitude: 29.56, city: '重庆市', district: '渝中区', granularity: 'address' }, observed_at: '2026-09-09T00:00:00Z', expires_at: '2030-01-01T00:00:00Z' }) } } } })
 const { geocodeAddress } = await import('../src/renderer/src/lib/amap')
 const address = await geocodeAddress('重庆解放碑', '重庆')
 check('manual address is not a GPS observation', () => assert.equal(address?.source, 'address'))

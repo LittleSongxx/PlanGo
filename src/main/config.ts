@@ -5,15 +5,16 @@ import { join } from 'path'
 // 用默认导入以兼容 headless（tsx）：electron 非运行时下 module.exports 是字符串路径，app 取到 undefined。
 import electron from 'electron'
 import { migrateConfigFile } from './storageMigration'
-import type { LocationSource } from '../shared/location'
+import type { LocationSource, LocationGranularity } from '../shared/location'
 const app = (electron as unknown as { app?: { getPath: (n: string) => string } })?.app
 
 export interface AppConfig {
+  skillEnabled: Record<string, boolean>
   llm: { apiKey: string; baseURL: string; model: string }
   amap: { key: string; jsKey: string; jsSecurity: string }
   city: string
   coords: string // 用户当前坐标 "lng,lat"（GCJ02），作为周边搜索圆心/行程起点
-  location: { source: LocationSource; accuracy: number; district: string }
+  location: { source: LocationSource; accuracy: number; district: string; granularity: LocationGranularity; observed_at: string }
 }
 
 export function parseEnv(text: string): Record<string, string> {
@@ -111,6 +112,7 @@ export function getConfig(): AppConfig {
     llm = { apiKey: env.OPENAI_API_KEY || '', baseURL: env.OPENAI_BASE_URL || 'https://api.openai.com/v1', model: env.OPENAI_MODEL || '' }
   }
   const base: AppConfig = {
+    skillEnabled: {},
     llm,
     amap: {
       key: env.AMAP_WEBSERVICE_KEY || '',
@@ -119,7 +121,7 @@ export function getConfig(): AppConfig {
     },
     city: env.PLANGO_CITY || '重庆',
     coords: env.PLANGO_COORDS || '',
-    location: { source: 'config', accuracy: 0, district: '' }
+    location: { source: 'config', accuracy: 0, district: '', granularity: env.PLANGO_COORDS ? 'point' : 'city', observed_at: '' }
   }
   const ov = loadOverride()
   cache = deepMerge(base, ov)
@@ -158,6 +160,10 @@ function deepMerge<T>(a: T, b: Partial<T>): T {
     if (!Object.hasOwn(out, k)) continue // Drop obsolete persisted settings and unknown keys.
     const bv = (b as Record<string, unknown>)[k]
     const av = out[k]
+    if (k === 'skillEnabled' && bv && typeof bv === 'object' && !Array.isArray(bv)) {
+      if (Object.values(bv).some(value => typeof value !== 'boolean')) throw new Error('Invalid saved skill settings; configuration was preserved')
+      out[k] = { ...(av as object), ...bv }; continue
+    }
     if (bv && typeof bv === 'object' && !Array.isArray(bv) && av && typeof av === 'object') {
       out[k] = deepMerge(av, bv as Record<string, unknown>)
     } else if (bv !== undefined) {

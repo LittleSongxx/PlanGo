@@ -2,7 +2,6 @@
 
 import unittest
 from datetime import datetime, timedelta, timezone
-from types import SimpleNamespace
 
 from plango.planning import BrowserPlanEngine, preserve_locks, variants
 from plango_harness.agent.contracts import (
@@ -15,9 +14,9 @@ from plango_harness.agent.contracts import (
     PlanStop,
     TripSpec,
 )
+from plango_harness.agent.graph import GraphDeps
 from plango_harness.domain.planning import compile_plan_draft
 from plango_harness.providers.world import Supply
-from plango_harness.tools.registry import ToolContext
 
 
 class AlternativesCheck(unittest.IsolatedAsyncioTestCase):
@@ -134,28 +133,25 @@ class AlternativesCheck(unittest.IsolatedAsyncioTestCase):
         checked = await planner.evaluate(spec, selected, evidence=evidence)
         self.assertTrue(checked.verifier.executable, checked.verifier)
         evidence += planner.last_evidence
-        context = ToolContext(
+        deps = GraphDeps(
+            model=None,
+            tools=None,
             world=world,
             planner=planner,
             memory=None,
             runs=None,
             action_provider=None,
-            run_id="fixture",
-            user_id="fixture",
-            tool_call_count=6,
             max_tool_calls=48,
         )
         state = {
+            "run_id": "fixture", "user_id": "fixture", "tool_call_count": 6,
             "selected_plan": checked.plan,
             "trip_spec": spec,
             "verifier": checked.verifier,
             "evidence": evidence,
             "place_candidates": places,
         }
-        result = await variants(
-            state,
-            SimpleNamespace(planner=planner, max_tool_calls=48, tool_context=lambda _: context),
-        )
+        result = await variants(state, deps)
         self.assertEqual(len(result["candidate_plans"]), 2)
         alternative = result["candidate_plans"][1]
         self.assertEqual(

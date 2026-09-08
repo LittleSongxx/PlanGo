@@ -3,7 +3,7 @@
 const { app, BrowserWindow, session } = require('electron')
 const assert = require('node:assert/strict')
 const { createServer } = require('node:http')
-const { mkdtempSync, rmSync, writeFileSync } = require('node:fs')
+const { mkdirSync, mkdtempSync, rmSync, writeFileSync, cpSync } = require('node:fs')
 const { tmpdir } = require('node:os')
 const { join, resolve } = require('node:path')
 const { pathToFileURL } = require('node:url')
@@ -11,6 +11,7 @@ const { pathToFileURL } = require('node:url')
 const root = process.cwd()
 const work = mkdtempSync(join(tmpdir(), 'plango-ui-smoke-'))
 app.setPath('userData', join(work, 'electron'))
+cpSync(join(root, 'skills'), join(work, 'skills'), { recursive: true })
 app.commandLine.appendSwitch('remote-debugging-address', '127.0.0.1')
 app.commandLine.appendSwitch('remote-debugging-port', '0')
 app.commandLine.appendSwitch('disable-gpu')
@@ -29,6 +30,8 @@ const server = createServer(async (req, res) => {
   const data = body ? JSON.parse(body) : {}
   let result = {}
   if (/health\/(live|ready)$/.test(url.pathname)) result = { ready: true, status: 'ready', app: 'PlanGo', world_provider: 'browser' }
+  else if (url.pathname === '/api/v1/geo/search') result = { source: 'amap', scope: 'around', pois: [], observed_at: new Date().toISOString(), expires_at: new Date(Date.now() + 60000).toISOString(), cache_hit: false }
+  else if (url.pathname === '/api/v1/reminders') result = { reminders: [], history: [] }
   else if (url.pathname === '/api/v1/memory/profile') result = { summaries: [], preferences: [], favorites: [] }
   else if (url.pathname === '/api/v1/runs' && req.method === 'GET') result = { runs: snapshot ? [snapshot] : [] }
   else if (url.pathname === '/api/v1/runs' && req.method === 'POST') {
@@ -46,7 +49,8 @@ const server = createServer(async (req, res) => {
     observation = data
     snapshot = { ...snapshot, phase: 'SUCCEEDED', outcome: 'SUCCEEDED', version: 2, event_seq: 2, interrupt_id: null, state: {
       messages: [{ type: 'human', content: input }], reason: '页面观测已保存', browser_wait: null,
-      browser_artifacts: [{ artifact_id: 'fixture-page', type: 'menu', source: 'browser', url: data.url, title: data.title, snapshot_id: data.snapshot_id,
+      execution_outcome: { status: 'satisfied', data: { scope: 'read_only', business_completed: false } },
+      browser_artifacts: [{ artifact_id: 'fixture-page', type: 'menu', source: 'browser', url: data.url, title: data.title, snapshot_id: data.snapshot_id, observed_at: data.observed_at,
         data: { text: data.text, tables: data.tables, menu: data.tables[0].rows.map(([name, raw]) => ({ name, price: raw === '128 元' ? 128 : null, quote: name + ' ' + raw })) } }]
     } }
     result = { accepted: true }
@@ -82,6 +86,14 @@ async function main() {
   await import(pathToFileURL(resolve(root, 'out/main/index.js')).href)
   await waitFor('application window', () => { window = BrowserWindow.getAllWindows()[0]; return !!window })
   await waitFor('renderer hydration', () => js("!!document.querySelector('textarea') && !document.body.innerText.includes('未连接服务')"))
+  const uiEvidence = join(root, 'eval/plango-ui')
+  mkdirSync(uiEvidence, { recursive: true })
+  await sleep(250)
+  writeFileSync(join(uiEvidence, '01-workspace-empty.png'), (await window.webContents.capturePage()).toPNG())
+  await js("document.querySelector('button[title=\"成果区\"]').click()")
+  await sleep(250)
+  writeFileSync(join(uiEvidence, '02-outcome-empty.png'), (await window.webContents.capturePage()).toPNG())
+  await js("document.querySelector('button[title=\"浏览器\"]').click()")
   assert.equal(await js("navigator.permissions.query({name:'geolocation'}).then(value=>value.state)"), 'granted', 'The actual host has its own geolocation permission')
   const addressLocation = await js("window.plango.reportLocation({city:'重庆',coords:'106.57,29.56',source:'address',userInitiated:true})")
   assert.equal(addressLocation.source, 'address')
@@ -99,8 +111,38 @@ async function main() {
   await waitFor('valid-address recovery', async () => !await js("!!document.querySelector('[role=alert]')") && await guest.executeJavaScript('document.visibilityState') === 'visible')
   await js("document.querySelector('button[title=\"设置\"]').click()")
   await waitFor('drawer hides native view', async () => await guest.executeJavaScript('document.visibilityState') === 'hidden')
-  await js("document.querySelector('.fixed.inset-0.z-50').click()")
+  await sleep(200)
+  writeFileSync(join(uiEvidence, '04-settings.png'), (await window.webContents.capturePage()).toPNG())
+  await js("document.querySelector('button[aria-label=\"关闭设置\"]').click()")
   await waitFor('drawer close restores native view', async () => await guest.executeJavaScript('document.visibilityState') === 'visible')
+  await js("document.querySelector('button[title=\"连接\"]').click()")
+  await waitFor('connection dialog', () => js("!!document.querySelector('dialog[aria-label=\"连接与能力\"]')"))
+  await sleep(200)
+  writeFileSync(join(uiEvidence, '05-connection-model.png'), (await window.webContents.capturePage()).toPNG())
+  await js("[...document.querySelectorAll('[role=tab]')].find(el=>el.innerText==='技能').click()")
+  await waitFor('installed skills', () => js("!!document.querySelector('[role=switch]')"))
+  const skillBefore = await js("({name:document.querySelector('[role=switch]').getAttribute('aria-label'), checked:document.querySelector('[role=switch]').getAttribute('aria-checked')})")
+  await js("document.querySelector('[role=switch]').click()")
+  await waitFor('skill toggle saves through IPC', async () => (await js("document.querySelector('[role=switch]').getAttribute('aria-checked')")) !== skillBefore.checked)
+  assert.equal((await js('window.plango.listSkills()')).find(skill => skill.name === skillBefore.name).enabled, skillBefore.checked !== 'true')
+  await js("document.querySelector('[role=switch]').click()")
+  await waitFor('skill restored', async () => (await js("document.querySelector('[role=switch]').getAttribute('aria-checked')")) === skillBefore.checked)
+  writeFileSync(join(uiEvidence, '06-connection-skills.png'), (await window.webContents.capturePage()).toPNG())
+  for (const [tab, filename] of [['记忆','07-connection-memory.png'],['提醒','08-connection-reminders.png'],['微信/飞书','09-connection-social.png']]) {
+    await js(`[...document.querySelectorAll('[role=tab]')].find(el=>el.innerText===${JSON.stringify(tab)}).click()`)
+    await sleep(250)
+    writeFileSync(join(uiEvidence, filename), (await window.webContents.capturePage()).toPNG())
+  }
+  await js("document.querySelector('button[aria-label=\"关闭连接与能力\"]').click()")
+  await waitFor('connection close restores guest', async () => await guest.executeJavaScript('document.visibilityState') === 'visible')
+  await js("document.querySelector('button[title=\"附近发现\"]').click()")
+  await waitFor('discovery ready empty', () => js("document.body.innerText.includes('当前范围未返回地点')"))
+  writeFileSync(join(uiEvidence, '10-discover-empty.png'), (await window.webContents.capturePage()).toPNG())
+  await js("[...document.querySelectorAll('dialog button')].find(el=>el.innerText.trim()==='优惠发现').click()")
+  await waitFor('deals ready empty', () => js("document.body.innerText.includes('还没有已读取的优惠')"))
+  writeFileSync(join(uiEvidence, '11-deals-empty.png'), (await window.webContents.capturePage()).toPNG())
+  await js("document.querySelector('button[aria-label=\"关闭地点与优惠发现\"]').click()")
+  await waitFor('discovery close restores guest', async () => await guest.executeJavaScript('document.visibilityState') === 'visible')
   await fill('textarea', input)
   await waitFor('real browser observation', () => !!observation)
   await waitFor('projected menu in full UI', () => js("document.body.innerText.includes('菜单摘录') && document.body.innerText.includes('价格待核验') && document.body.innerText.includes('¥128')"))
@@ -113,14 +155,16 @@ async function main() {
   const reads = snapshotReads
   await js("document.querySelector('button[title=\"新建对话\"]').click()")
   await js("document.querySelector('button[title=\"历史会话\"]').click()")
-  await waitFor('history entry', () => js(`!![...document.querySelectorAll('div')].find(el=>el.className.includes('truncate pr-6')&&el.textContent===${JSON.stringify(input)})`))
-  await js(`[...document.querySelectorAll('div')].find(el=>el.className.includes('truncate pr-6')&&el.textContent===${JSON.stringify(input)}).click()`)
+  await waitFor('history entry', () => js(`!![...document.querySelectorAll('[data-history-entry]')].find(el=>el.getAttribute('aria-label')==='打开会话：'+${JSON.stringify(input)})`))
+  writeFileSync(join(uiEvidence, '12-history.png'), (await window.webContents.capturePage()).toPNG())
+  await js(`[...document.querySelectorAll('[data-history-entry]')].find(el=>el.getAttribute('aria-label')==='打开会话：'+${JSON.stringify(input)}).click()`)
   await waitFor('durable history refetch', () => snapshotReads > reads)
   await waitFor('restored canonical cards', () => js("document.body.innerText.includes('菜单摘录') && document.body.innerText.includes('价格待核验')"))
   // capturePage observes Chromium's compositor, which can lag the DOM commit.
   await sleep(500)
   const screenshot = join(tmpdir(), 'plango-desktop-ui-smoke.png')
   writeFileSync(screenshot, (await window.webContents.capturePage()).toPNG())
+  writeFileSync(join(uiEvidence, '03-outcome-observed.png'), (await window.webContents.capturePage()).toPNG())
   const hostUrl = window.webContents.getURL()
   await js(`location.href=${JSON.stringify(fixtureUrl)}`)
   await sleep(100)

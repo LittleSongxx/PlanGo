@@ -25,6 +25,16 @@ from typing_extensions import TypedDict
 
 
 class RequirementState(TypedDict, total=False):
+    turn_budget: dict[str, Any]
+    browser_task_context: dict[str, Any]
+    requirement_reference_at: str | None
+    requirement_patch: list[dict[str, Any]]
+    requirement_refresh: dict[str, bool]
+    previous_plan: PlanCandidate | None
+    selected_poi: dict[str, Any] | None
+    evidence: list[Evidence]
+    weather: dict[str, Any] | None
+    candidate_plans: list[PlanCandidate]
     location_origin: dict[str, Any]
     run_id: str
     turn_id: int
@@ -45,6 +55,16 @@ class RequirementState(TypedDict, total=False):
 
 
 class RequirementInput(TypedDict, total=False):
+    turn_budget: dict[str, Any]
+    browser_task_context: dict[str, Any]
+    requirement_reference_at: str | None
+    requirement_patch: list[dict[str, Any]]
+    requirement_refresh: dict[str, bool]
+    previous_plan: PlanCandidate | None
+    selected_poi: dict[str, Any] | None
+    evidence: list[Evidence]
+    weather: dict[str, Any] | None
+    candidate_plans: list[PlanCandidate]
     location_origin: dict[str, Any]
     run_id: str
     turn_id: int
@@ -59,6 +79,11 @@ class RequirementInput(TypedDict, total=False):
 
 
 class RequirementOutput(TypedDict, total=False):
+    place_candidates: list[PlaceCandidate]
+    requirement_patch: list[dict[str, Any]]
+    requirement_refresh: dict[str, bool]
+    evidence: list[Evidence]
+    weather: dict[str, Any] | None
     location_origin: dict[str, Any]
     trip_spec: TripSpec | None
     clarification: dict[str, Any] | None
@@ -72,6 +97,11 @@ class RequirementOutput(TypedDict, total=False):
 
 
 class DiscoveryState(TypedDict, total=False):
+    turn_budget: dict[str, Any]
+    browser_task_context: dict[str, Any]
+    previous_spec: TripSpec | None
+    requirement_refresh: dict[str, bool]
+    selected_poi: dict[str, Any] | None
     turn_id: int
     run_id: str
     user_id: str
@@ -90,6 +120,14 @@ class DiscoveryState(TypedDict, total=False):
 
 
 class DiscoveryInput(TypedDict, total=False):
+    turn_budget: dict[str, Any]
+    browser_task_context: dict[str, Any]
+    previous_spec: TripSpec | None
+    requirement_refresh: dict[str, bool]
+    selected_poi: dict[str, Any] | None
+    place_candidates: list[PlaceCandidate]
+    evidence: list[Evidence]
+    weather: dict[str, Any] | None
     turn_id: int
     run_id: str
     user_id: str
@@ -113,6 +151,8 @@ class DiscoveryOutput(TypedDict, total=False):
 
 
 class AdvocateState(TypedDict, total=False):
+    turn_budget: dict[str, Any]
+    evidence: list[Evidence]
     run_id: str
     user_id: str
     turn_id: int
@@ -126,6 +166,8 @@ class AdvocateState(TypedDict, total=False):
 
 
 class AdvocateInput(TypedDict, total=False):
+    turn_budget: dict[str, Any]
+    evidence: list[Evidence]
     run_id: str
     user_id: str
     turn_id: int
@@ -142,6 +184,9 @@ class AdvocateOutput(TypedDict, total=False):
 
 
 class CriticState(TypedDict, total=False):
+    turn_budget: dict[str, Any]
+    browser_task_context: dict[str, Any]
+    previous_spec: TripSpec | None
     turn_id: int
     run_id: str
     user_id: str
@@ -164,6 +209,9 @@ class CriticState(TypedDict, total=False):
 
 
 class CriticInput(TypedDict, total=False):
+    turn_budget: dict[str, Any]
+    browser_task_context: dict[str, Any]
+    previous_spec: TripSpec | None
     turn_id: int
     run_id: str
     user_id: str
@@ -197,6 +245,12 @@ class CriticOutput(TypedDict, total=False):
 
 
 class ReflectionState(TypedDict, total=False):
+    turn_budget: dict[str, Any]
+    turn_id: int
+    phase: RunPhase
+    approval_decision: str | None
+    requirement_reference_at: str | None
+    started_at: float
     run_id: str
     user_id: str
     trip_spec: TripSpec
@@ -209,6 +263,13 @@ class ReflectionState(TypedDict, total=False):
 
 
 class ReflectionInput(TypedDict, total=False):
+    turn_budget: dict[str, Any]
+    turn_id: int
+    phase: RunPhase
+    approval_decision: str | None
+    reflection_done: bool
+    requirement_reference_at: str | None
+    started_at: float
     run_id: str
     user_id: str
     trip_spec: TripSpec

@@ -16,6 +16,8 @@ export interface BrowserDriverContext {
   epoch: number
 }
 type ElementInfo = NonNullable<BrowserObservation['elements']>[number] & { input_type?: string; editable?: boolean; disabled?: boolean }
+type FormControl = { idx: number; input_type: string; name: string; label: string; value: string | boolean | string[]; disabled: boolean }
+type DomForm = { form_id: string; action_url: string; context_text: string; controls: FormControl[]; submit_indices: number[]; truncated: boolean }
 type FrameSnapshot = { frame: Frame; url: string; version: string }
 type Snapshot = {
   id: string; owner: string; epoch: number; url: string; page: Page; consumed: boolean; manualGate: 'login' | 'captcha' | null
@@ -100,6 +102,46 @@ const selectorSource = `(() => {
     if(/^(安全验证|人机验证|验证码|Just a moment[.]*|Checking your browser|Verify (you are|you're) human)(\\s*[|–-].*)?$/i.test(document.title.trim())||/^(请完成(人机|安全|身份)验证|请验证您是真人)/.test(text))gate='captcha';
     return gate;
   }
+  function visible(el){const r=el.getBoundingClientRect();return r.width>=3&&r.height>=3&&el.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});}
+  function formData(rs,refs){
+    const found=rs.flatMap(root=>Array.from(root.querySelectorAll('form'))),out=[];
+    for(let ordinal=0;ordinal<Math.min(20,found.length);ordinal++){
+      const form=found[ordinal],controls=[],submit_indices=[];
+      let truncated=found.length>20,context_text='';
+      const walker=document.createTreeWalker(form,NodeFilter.SHOW_TEXT);
+      for(let node=walker.nextNode();node;node=walker.nextNode()){
+        const parent=node.parentElement;
+        if(!parent||parent.closest('script,style,noscript,textarea,select')||!parent.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}))continue;
+        context_text+=(context_text?' ':'')+(node.textContent||'').trim();
+        if(context_text.length>6000){context_text=context_text.slice(0,6000);truncated=true;break;}
+      }
+      const members=Array.from(new Set([...Array.from(form.elements),...Array.from(form.querySelectorAll('[contenteditable=true]'))]));
+      for(const el of members){
+        if(!['INPUT','TEXTAREA','SELECT','BUTTON'].includes(el.tagName)&&!el.isContentEditable)continue;
+        if(!visible(el)||['password','file','hidden'].includes(el.type))continue;
+        const idx=refs.indexOf(el);
+        if(idx<0){truncated=true;continue;}
+        if(['BUTTON','INPUT'].includes(el.tagName)&&['submit','image'].includes(el.type)){
+          if(el.form===form&&!el.disabled&&(!el.hasAttribute('formaction')||el.formAction===form.action))submit_indices.push(idx);
+        }
+        if(!['INPUT','TEXTAREA','SELECT'].includes(el.tagName)&&!el.isContentEditable)continue;
+        if(controls.length>=80){truncated=true;continue;}
+        let value=['checkbox','radio'].includes(el.type)?el.checked:el.tagName==='SELECT'&&el.multiple?Array.from(el.selectedOptions,option=>option.value):el.isContentEditable?el.innerText:el.value;
+        if(typeof value==='string'&&value.length>2000){value=value.slice(0,2000);truncated=true;}
+        if(Array.isArray(value)&&(value.length>20||value.some(item=>item.length>2000))){value=value.slice(0,20).map(item=>item.slice(0,2000));truncated=true;}
+        const label=[el.getAttribute('aria-label')||'',...Array.from(el.labels||[],label=>label.innerText)].filter(Boolean).join(' / ');
+        const name=el.getAttribute('name')||'';
+        if(label.length>500||name.length>200)truncated=true;
+        controls.push({idx,input_type:el.isContentEditable?'contenteditable':el.type||el.tagName.toLowerCase(),name:name.slice(0,200),label:label.slice(0,500),value,disabled:!!el.disabled});
+      }
+      if(!controls.length&&!submit_indices.length)continue;
+      let action_url='';try{const action=new URL(form.action);if(['http:','https:'].includes(action.protocol)&&!action.username&&!action.password&&action.href.length<=8192)action_url=action.href;else truncated=true;}catch{truncated=true;}
+      const result={form_id:'form-'+ordinal,action_url,context_text,controls,submit_indices,truncated};
+      if(JSON.stringify(result).length>48000){result.controls=[];result.submit_indices=[];result.truncated=true;}
+      out.push(result);
+    }
+    return out;
+  }
   function capture(p){
     if(current)for(const observer of current.observers)observer.disconnect();
     const rs=roots(),refs=[],elements=[],tables=[];
@@ -125,7 +167,7 @@ const selectorSource = `(() => {
     const s={id:p.id,owner:p.owner,epoch:p.epoch,doc:document,url:location.href,version:p.version,refs,elements,meanings:refs.map(meaning),viewport:viewport(),roots:rs,fingerprint:fingerprint(rs),dirty:false,observers:[],armed:null,dispatched:false,prevented:false};
     for(const root of rs){const observer=new MutationObserver(()=>{s.dirty=true});observer.observe(root,{subtree:true,childList:true,characterData:true,attributes:true});s.observers.push(observer);}
     current=s;
-    return metadata({url:s.url,title:document.title,text,elements,tables,version:s.version,manual_gate:manualGate(rs),canvas_count:rs.reduce((count,root)=>count+root.querySelectorAll('canvas').length,0)});
+    return metadata({url:s.url,title:document.title,text,elements,tables,forms:formData(rs,refs),version:s.version,manual_gate:manualGate(rs),canvas_count:rs.reduce((count,root)=>count+root.querySelectorAll('canvas').length,0)});
   }
   // This guard also catches mutations during Playwright's actionability waits.
   // Once an input event has begun, any uncertainty is reported as UNKNOWN upstream.
@@ -310,6 +352,7 @@ export async function executeBrowserOperation(contents: WebContents, raw: Browse
     if (['snapshot', 'read_page', 'extract', 'extract_tables'].includes(command.operation)) {
       const snapshot: Snapshot = { id: command.command_id, owner: ctx.owner, epoch: ctx.epoch, url: page.url(), page, frames: [], refs: [], consumed: false, manualGate: null }
       const elements: NonNullable<BrowserObservation['elements']> = [], tables: NonNullable<BrowserObservation['tables']> = [], texts: string[] = []
+      const forms: DomForm[] = []
       let canvasCount = 0
       const frames = page.frames()
       if (frames.length > 32) throw new Error('page_too_complex')
@@ -318,22 +361,31 @@ export async function executeBrowserOperation(contents: WebContents, raw: Browse
           const element = await step(() => frame.frameElement())
           try { if (!(await step(() => element.isVisible()))) continue } finally { await element.dispose() }
         }
-        const observed = await step(() => data<{ url: string; version: string; manual_gate: 'login' | 'captcha' | null; canvas_count: number; text: string; elements: ElementInfo[]; tables: NonNullable<BrowserObservation['tables']> }>(frame, selector('capture', snapshot, { version: randomUUID(), extract: command.operation === 'extract' || command.operation === 'extract_tables' }), signal))
+        const observed = await step(() => data<{ url: string; version: string; manual_gate: 'login' | 'captcha' | null; canvas_count: number; text: string; elements: ElementInfo[]; tables: NonNullable<BrowserObservation['tables']>; forms: DomForm[] }>(frame, selector('capture', snapshot, { version: randomUUID(), extract: command.operation === 'extract' || command.operation === 'extract_tables' }), signal))
         snapshot.frames.push({ frame, url: observed.url, version: observed.version })
         texts.push(observed.text); tables.push(...observed.tables); canvasCount += observed.canvas_count
         if (observed.manual_gate === 'captcha' || !snapshot.manualGate) snapshot.manualGate = observed.manual_gate
+        const indices = new Map<number, number>()
         for (const info of observed.elements) {
           if (elements.length >= 180) break
           const idx = elements.length
           snapshot.refs.push({ frame, index: info.idx, info })
-          elements.push({ idx, tag: info.tag, role: info.role, name: info.name, text: info.text, ...(info.href ? { href: info.href } : {}) })
+          indices.set(info.idx, idx)
+          elements.push({ idx, tag: info.tag, role: info.role, name: info.name, text: info.text, input_type: info.input_type, disabled: info.disabled, ...(info.href ? { href: info.href } : {}) })
+        }
+        for (const form of observed.forms) {
+          if (forms.length >= 20) { for (const saved of forms) saved.truncated = true; break }
+          const controls = form.controls.filter(control => indices.has(control.idx)).map(control => ({ ...control, idx: indices.get(control.idx)! }))
+          const submit_indices = form.submit_indices.filter(index => indices.has(index)).map(index => indices.get(index)!)
+          forms.push({ ...form, form_id: `${snapshot.id}:frame-${snapshot.frames.length - 1}:${form.form_id}`, controls, submit_indices,
+            truncated: form.truncated || controls.length !== form.controls.length || submit_indices.length !== form.submit_indices.length })
         }
       }
       await step(() => validateSnapshot(snapshot, ctx, signal))
       snapshots.set(contents, snapshot)
       // ponytail: retain 64 tab snapshots; an evicted tab must be read again before action.
       if (snapshots.size > 64) snapshots.delete(snapshots.keys().next().value!)
-      return { ...base, ok: true, outcome: 'observed', snapshot_id: snapshot.id, page_version: pageVersion(snapshot), fields: { dom: { canvas_count: canvasCount, manual_gate: snapshot.manualGate } }, elements, text: texts.join('\n\n').slice(0,9000), ...(['extract', 'extract_tables'].includes(command.operation) ? { tables: tables.slice(0,6) } : {}) }
+      return { ...base, ok: true, outcome: 'observed', snapshot_id: snapshot.id, page_version: pageVersion(snapshot), fields: { dom: { canvas_count: canvasCount, manual_gate: snapshot.manualGate, forms } }, elements, text: texts.join('\n\n').slice(0,9000), ...(['extract', 'extract_tables'].includes(command.operation) ? { tables: tables.slice(0,6) } : {}) }
     }
     const snapshot = snapshots.get(contents)
     if (command.operation === 'scroll') {

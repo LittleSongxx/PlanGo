@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import re
+from datetime import date
 from typing import Any, Literal
 
 from pydantic import Field
 
 from .contracts import Activity, ContractModel, Location, PartyCounts, PartyMember, TripSpec
+from .requirements import preservation_instruction
 
 
 class SupervisorDecision(ContractModel):
+    """Typed deterministic coordinator transition; name retained for import compatibility."""
+
     next_action: Literal[
         "requirements",
         "discover",
@@ -33,6 +37,10 @@ class RequirementOutput(ContractModel):
     soft_preferences: list[str] | None = None
     remove_hard_constraints: list[str] | None = None
     remove_soft_preferences: list[str] | None = None
+    visit_date: date | None = None
+    visit_date_unknown: bool = False
+    timezone: str | None = None
+    time_window_start_unknown: bool = False
     time_window_start: str | None = None
     duration_minutes: int | None = Field(default=None, ge=30, le=1440)
     budget: float | None = Field(default=None, ge=0)
@@ -47,6 +55,9 @@ class RequirementOutput(ContractModel):
     remove_activities: list[Activity] | None = None
     activity_order: list[Activity] | None = None
     location_name: str | None = None
+    search_location_name: str | None = None
+    location_reference: Literal["current_origin", "selected_place"] | None = None
+    search_location_reference: Literal["current_origin", "selected_place", "generic_activity"] | None = None
     clarification_needed: bool = False
     clarification_fields: list[str] = Field(default_factory=list)
     clarification_question: str = ""
@@ -54,6 +65,7 @@ class RequirementOutput(ContractModel):
     outdoor_required: bool | None = None
     max_queue_minutes: int | None = Field(default=None, ge=0, le=1440)
     max_distance_km: float | None = Field(default=None, ge=0, le=1000)
+    travel_mode: Literal["driving", "walking", "transit"] | None = None
 
     def to_trip_spec(self, fallback_goal: str, base: TripSpec | None = None) -> TripSpec:
         """Apply a validated requirement patch without dropping prior constraints."""
@@ -64,7 +76,7 @@ class RequirementOutput(ContractModel):
             "party_counts": {"用户": 1},
             "hard_constraints": [],
             "soft_preferences": [],
-            "time_window_start": "14:00",
+            "time_window_start": None,
             "duration_minutes": 360,
             "budget": 400.0,
             "location": Location(latitude=39.997, longitude=116.482),
@@ -132,6 +144,14 @@ class RequirementOutput(ContractModel):
             values["soft_preferences"] = [
                 item for item in current_soft if str(item).strip() not in removed
             ]
+        if self.visit_date_unknown or self.visit_date is not None:
+            values["visit_date"] = None if self.visit_date_unknown else self.visit_date
+        if self.timezone is not None:
+            values["timezone"] = self.timezone
+        if self.travel_mode is not None:
+            values["travel_mode"] = self.travel_mode
+        if self.time_window_start_unknown:
+            values["time_window_start"] = None
         if self.time_window_start is not None:
             values["time_window_start"] = self.time_window_start
         if self.duration_minutes is not None:
@@ -155,9 +175,9 @@ class RequirementOutput(ContractModel):
             values["max_queue_minutes"] = None
         if "距离优先" in (self.remove_hard_constraints or []):
             values["max_distance_km"] = None
-        time_start = str(values.get("time_window_start") or "14:00")
-        if not re.fullmatch(r"(?:[01]?\d|2[0-3]):[0-5]\d", time_start or ""):
-            time_start = "14:00"
+        time_start = values.get("time_window_start")
+        if time_start is not None and not re.fullmatch(r"(?:[01]?\d|2[0-3]):[0-5]\d", str(time_start)):
+            time_start = None
         values["time_window_start"] = time_start
         values["goal"] = str(values.get("goal") or fallback_goal)
         hard_values = values.get("hard_constraints")
@@ -167,7 +187,7 @@ class RequirementOutput(ContractModel):
         values["hard_constraints"] = [
             str(item).strip()
             for item in hard_values
-            if str(item).strip() not in {":00", "00", "None"}
+            if str(item).strip() not in {":00", "00", "None"} and not preservation_instruction(str(item))
         ]
         values["soft_preferences"] = [
             str(item).strip() for item in soft_values if str(item).strip()

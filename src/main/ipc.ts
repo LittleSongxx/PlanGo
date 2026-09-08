@@ -11,7 +11,8 @@ import { getConfig, getConfigMasked, getHarnessEnvironment, setConfig } from './
 import { pingLlm } from './llm'
 import { listSkills, toggleSkill } from './skills/loader'
 import { detectLocation, getLocation, setManualCity, setReportedLocation } from './location'
-import { locationSources } from '../shared/location'
+import { locationSources, locationGranularities } from '../shared/location'
+import { geocode, reverse } from './data/amap'
 import { createShare, getShareFeedback } from './share/server'
 import { computeLiveDiscover } from './discover'
 import { projectHarness } from '../renderer/src/lib/harnessProjection'
@@ -20,6 +21,8 @@ import type { AgentReply, DealRow, HarnessSnapshot, Plan, POISummary, UserProfil
 const id = z.string().min(1).max(512)
 const text = z.string().trim().min(1).max(4000)
 const image = z.string().max(12_000_000).regex(/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/).optional()
+const selectedPoi = z.object({ poi_id: id, name: z.string().min(1).max(200), address: z.string().max(500), longitude: z.number().finite().min(-180).max(180),
+  latitude: z.number().finite().min(-90).max(90), source: z.literal('amap'), observed_at: z.string().datetime({ offset: true }).optional() }).strict().optional()
 let guideImage: string | undefined
 
 function trusted(event: IpcMainInvokeEvent): void {
@@ -35,8 +38,10 @@ async function memoryProfile(): Promise<UserProfile> {
   const data = await (await getHarness()).request<Record<string, any>>('/api/v1/memory/profile?user_id=desktop')
   return {
     user_id: 'desktop', summary: (data.summaries || []).map((s: any) => typeof s === 'string' ? s : String(s.text || '')).filter(Boolean).join('；'),
-    preferences: (data.preferences || []).map((p: any) => ({ text: String(p.text || p.value?.text || p.value || ''), polarity: ['negative', 'dislike'].includes(p.polarity) ? 'negative' : 'positive', strength: typeof p.strength === 'number' ? p.strength : p.confidence ?? 0.6, evidence_count: p.evidence_count ?? 1, source: 'conversation' })),
+    episodes: (data.summaries || []).filter((item: any) => item && typeof item.id === 'string').map((item: any) => ({ id: item.id, text: String(item.text || ''), scope: item.scope, createdAt: item.createdAt })),
+    preferences: (data.preferences || []).map((p: any) => ({ text: String(p.text || p.value?.text || p.value || ''), polarity: ['negative', 'dislike'].includes(p.polarity) ? 'negative' : 'positive', strength: typeof p.strength === 'number' ? p.strength : p.confidence ?? 0.6, evidence_count: p.evidence_count ?? 1, source: 'conversation', explicit: p.explicit === true, provenance: String(p.source || '') })),
     favorite_shops: (data.favorites || []).map((p: any) => typeof p === 'string' ? p : String(p.name || p.value?.name || p.value || '')),
+    favorite_provenance: Object.fromEntries((data.favorites || []).filter((p: any) => p && typeof p === 'object').map((p: any) => [String(p.name || p.value?.name || p.value || ''), { explicit: p.explicit === true, source: String(p.source || '') }])),
     avoid_shops: [], home_city: getConfig().city, footprints: data.footprints || []
   }
 }
@@ -75,10 +80,10 @@ export function registerIpc(): void {
     const client = await getHarness()
     switch (operation) {
       case 'createRun': {
-        const p = z.object({ text, image }).parse(raw)
+        const p = z.object({ text, image, selectedPoi }).parse(raw)
         const attached = p.image || guideImage
         guideImage = undefined
-        return client.createRun(p.text, attached)
+        return client.createRun(p.text, attached, p.selectedPoi)
       }
       case 'getRun': return client.getRun(z.object({ runId: id }).parse(raw).runId)
       case 'listRuns': return client.listRuns()
@@ -96,6 +101,18 @@ export function registerIpc(): void {
         const p = z.object({ runId: id, planId: id, planVersion: z.number().int().min(1) }).parse(raw)
         return client.selectPlan(p.runId, p.planId, p.planVersion)
       }
+      case 'resumePreparation': {
+        const p = z.object({ runId: id, planId: id, planVersion: z.number().int().min(1), approvalId: id }).strict().parse(raw)
+        return client.resumePreparation(p.runId, p.planId, p.planVersion, p.approvalId)
+      }
+      case 'decideDraft': {
+        const p = z.object({ runId: id, interruptId: id, planId: id, planVersion: z.number().int().min(1), decision: z.enum(['save', 'prepare']) }).strict().parse(raw)
+        return client.decideDraft(p.runId, p.interruptId, p.planId, p.planVersion, p.decision)
+      }
+      case 'feedback': {
+        const p = z.object({ runId: id, value: z.object({ feedback_id: z.string().uuid(), turn_id: z.number().int().min(1), rating: z.enum(['helpful', 'unhelpful']), text: z.string().max(1000).optional() }).strict() }).strict().parse(raw)
+        return client.feedback(p.runId, p.value)
+      }
       case 'resolveAction': {
         const p = z.object({ runId: id, actionId: id, status: z.enum(['SUCCEEDED', 'FAILED']), note: z.string().trim().min(1).max(500), reference: z.string().max(200).optional() }).parse(raw)
         return client.resolveAction(p.runId, p.actionId, p.status, p.note, p.reference)
@@ -108,10 +125,6 @@ export function registerIpc(): void {
       case 'resume': {
         const p = z.object({ runId: id, interruptId: id, decision: z.enum(['approve', 'reject', 'edit', 'resume']), text: z.string().max(4000).optional() }).parse(raw)
         return client.resume(p.runId, p.interruptId, p.decision, p.text)
-      }
-      case 'events': {
-        const p = z.object({ runId: id, after: z.number().int().min(0) }).parse(raw)
-        return client.events(p.runId, p.after)
       }
       default: throw new Error('Unknown Harness operation')
     }
@@ -151,9 +164,14 @@ export function registerIpc(): void {
     return { text: profile.preferences.length ? `记得你的偏好：${profile.preferences.slice(0, 2).map(p => p.text).join('；')}。` : '' }
   })
   handle(IPC.memoryDelete, async (raw: unknown) => {
-    const p = z.object({ kind: z.enum(['pref', 'fav']), value: text }).parse(raw)
-    const path = p.kind === 'pref' ? 'preferences?text=' : 'favorites?name='
+    const p = z.object({ kind: z.enum(['pref', 'fav', 'episode']), value: text }).parse(raw)
+    const path = p.kind === 'episode' ? 'episodes/' : p.kind === 'pref' ? 'preferences?text=' : 'favorites?name='
     await (await getHarness()).request('/api/v1/memory/' + path + encodeURIComponent(p.value), 'DELETE')
+    return memoryProfile()
+  })
+  handle(IPC.memorySave, async (raw: unknown) => {
+    const value = z.object({ text: z.string().trim().min(1).max(1000), polarity: z.enum(['like', 'dislike']) }).strict().parse(raw)
+    await (await getHarness()).request('/api/v1/memory/preferences', 'POST', { ...value, user_id: 'desktop' })
     return memoryProfile()
   })
   handle(IPC.memoryClear, async () => { await (await getHarness()).request('/api/v1/memory/profile?user_id=desktop', 'DELETE'); return memoryProfile() })
@@ -163,7 +181,8 @@ export function registerIpc(): void {
   handle(IPC.locationSet, (city: string) => setManualCity(z.string().min(1).max(80).parse(city)))
   handle('location:report', (raw: unknown) => {
     const p = z.object({ city: z.string().min(1).max(80), coords: z.string().regex(/^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/).optional(),
-      source: z.enum(locationSources), district: z.string().max(80).optional(), accuracy: z.number().finite().nonnegative().optional(), userInitiated: z.boolean().optional()
+      source: z.enum(locationSources), district: z.string().max(80).optional(), accuracy: z.number().finite().nonnegative().max(1_000_000).optional(), userInitiated: z.boolean().optional(),
+      coordinate_system: z.literal('GCJ02').optional(), granularity: z.enum(locationGranularities).optional(), observed_at: z.string().datetime({ offset: true }).optional()
     }).parse(raw)
     if (p.coords) {
       const [lng, lat] = p.coords.split(',').map(Number)
@@ -172,7 +191,9 @@ export function registerIpc(): void {
     const { userInitiated, ...location } = p
     return setReportedLocation(location, userInitiated)
   })
-  handle('amap:jsConfig', () => { const a = getConfig().amap; return { jsKey: a.jsKey, jsSecurity: a.jsSecurity, webKey: a.key } })
+  handle('geo:geocode', async (raw: unknown) => { const p = z.object({ address: z.string().trim().min(1).max(200), city: z.string().trim().min(1).max(100).optional() }).strict().parse(raw); return geocode(await getHarness(), p.address, p.city) })
+  handle('geo:reverse', async (raw: unknown) => { const p = z.object({ longitude: z.number().finite().min(-180).max(180), latitude: z.number().finite().min(-90).max(90) }).strict().parse(raw); return reverse(await getHarness(), p.longitude, p.latitude) })
+  handle('amap:jsConfig', () => { const a = getConfig().amap; return { jsKey: a.jsKey, jsSecurity: a.jsSecurity } })
   handle('shell:openExternal', async (raw: unknown) => {
     const url = z.string().max(4000).parse(raw)
     const parsed = new URL(url)
@@ -193,7 +214,12 @@ export function registerIpc(): void {
   })
   handle(IPC.shareFeedback, (shareId: string) => getShareFeedback(id.parse(shareId)))
   handle(IPC.guideSetImage, (raw: string) => { guideImage = image.parse(raw); return { ok: !!guideImage } })
-  handle(IPC.discoverFetch, (city?: string) => computeLiveDiscover(city ? z.string().max(80).parse(city) : undefined))
+  handle(IPC.discoverFetch, async (raw: unknown) => {
+    const p = z.object({ city: z.string().trim().min(1).max(100).optional(), refresh: z.boolean().optional() }).strict().parse(raw || {})
+    const current = getLocation()
+    const location = p.city && p.city.replace(/市$/, '') !== current.city.replace(/市$/, '') ? { city: p.city, source: 'manual' as const, granularity: 'city' as const } : current
+    return computeLiveDiscover(await getHarness(), location, p.refresh)
+  })
   handle(IPC.dealsFetch, async (city?: string) => {
     const runs = await (await getHarness()).listRuns()
     const items: { poi: POISummary; deal: DealRow }[] = []

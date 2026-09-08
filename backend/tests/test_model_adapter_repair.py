@@ -4,6 +4,8 @@ import json
 import unittest
 from types import SimpleNamespace
 
+import httpx
+from openai import APIConnectionError, APIStatusError, APITimeoutError
 from plango.settings import DesktopSettings
 from plango_harness.agent.model_adapter import ModelAdapter, ModelProviderUnavailable
 from pydantic import BaseModel, Field, ValidationError
@@ -73,6 +75,55 @@ class RepairProvider:
 
 
 class ModelRepairCheck(unittest.IsolatedAsyncioTestCase):
+    async def test_new_turn_budget_keeps_cumulative_usage_and_its_own_cap(self):
+        provider = RepairProvider(usage=2100)
+        adapter = ModelAdapter(DesktopSettings(max_model_tokens=2000), model=provider)
+        adapter.reset_run(1900, call_count=4)
+        adapter.set_run_budget(None, token_baseline=1900)
+        fallback = Choice(merchant_id="none", total=0)
+        self.assertIs(await adapter.structured(Choice, system="报价", user="128元", fallback=fallback), fallback)
+        self.assertEqual(adapter.total_tokens, 4025)
+        self.assertEqual(adapter.call_count, 6)
+        self.assertEqual(adapter.token_limit, 3900)
+        self.assertEqual(adapter.last_error, "model_token_budget")
+        adapter.reset_run()
+        self.assertEqual(adapter.token_baseline, 0)
+
+    async def test_transport_auth_and_internal_errors_never_use_json_repair(self):
+        request = httpx.Request("POST", "https://provider.invalid/v1/chat/completions")
+        failures = [
+            (APITimeoutError(request=request), "timeout"),
+            (APIConnectionError(request=request), "connection"),
+            (TypeError("private-programming-detail"), "internal"),
+            *[(APIStatusError("private-provider-detail", response=httpx.Response(status, request=request), body=None), category)
+              for status, category in [(401, "authentication"), (403, "permission"), (429, "rate_limit"), (503, "provider"), (400, "request")]],
+        ]
+        for error, category in failures:
+            with self.subTest(category=category):
+                class FailedProvider:
+                    calls = 0
+
+                    def with_structured_output(self, *args, **kwargs):
+                        return self
+
+                    def bind(self, **kwargs):
+                        return self
+
+                    async def ainvoke(self, messages):
+                        self.calls += 1
+                        raise error
+
+                provider = FailedProvider()
+                adapter = ModelAdapter(DesktopSettings(), model=provider)
+                with self.assertRaises(ModelProviderUnavailable) as caught:
+                    await adapter.structured(Choice, system="读取", user="报价128元", fallback=Choice(merchant_id="none", total=0))
+                self.assertEqual(caught.exception.category, category)
+                self.assertEqual(provider.calls, 1)
+                self.assertEqual(adapter.fallback_count, 0)
+                self.assertEqual(adapter.call_records[-1]["error_category"], category)
+                self.assertEqual(adapter.call_records[-1]["status"], "error")
+                self.assertNotIn("private-", json.dumps(adapter.call_records))
+
     async def test_repair_receives_schema_and_safe_field_feedback(self):
         provider = RepairProvider()
         adapter = ModelAdapter(DesktopSettings(), model=provider)

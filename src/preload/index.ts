@@ -1,7 +1,8 @@
 // preload：一能力一方法，contextBridge 暴露给渲染层。
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
-import type { LocationInfo } from '../shared/location'
+import type { HarnessFeedbackInput } from '../shared/types'
+import type { LocationInfo, SelectedPoi } from '../shared/location'
 import type { BrowserIntent, BrowserLayout, BrowserViewState, BrowserActivity } from '../shared/browserView'
 
 const api = {
@@ -12,7 +13,10 @@ const api = {
     remove: (id: string) => ipcRenderer.invoke(IPC.reminderRequest, 'remove', { id })
   },
   harness: {
-    createRun: (text: string, image?: string) => ipcRenderer.invoke(IPC.harnessRequest, 'createRun', { text, image }),
+    resumePreparation: (runId: string, planId: string, planVersion: number, approvalId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'resumePreparation', { runId, planId, planVersion, approvalId }),
+    decideDraft: (runId: string, interruptId: string, planId: string, planVersion: number, decision: 'save' | 'prepare') => ipcRenderer.invoke(IPC.harnessRequest, 'decideDraft', { runId, interruptId, planId, planVersion, decision }),
+    feedback: (runId: string, value: HarnessFeedbackInput) => ipcRenderer.invoke(IPC.harnessRequest, 'feedback', { runId, value }),
+    createRun: (text: string, image?: string, selectedPoi?: SelectedPoi) => ipcRenderer.invoke(IPC.harnessRequest, 'createRun', { text, image, selectedPoi }),
     getRun: (runId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'getRun', { runId }),
     sendMessage: (runId: string, text: string, image?: string) => ipcRenderer.invoke(IPC.harnessRequest, 'sendMessage', { runId, text, image }),
     replan: (runId: string, reason: string) => ipcRenderer.invoke(IPC.harnessRequest, 'replan', { runId, reason }),
@@ -20,7 +24,6 @@ const api = {
     resolveAction: (runId: string, actionId: string, status: string, note: string, reference?: string) => ipcRenderer.invoke(IPC.harnessRequest, 'resolveAction', { runId, actionId, status, note, reference }),
     cancel: (runId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'cancel', { runId }),
     resume: (runId: string, interruptId: string, decision: string, text?: string) => ipcRenderer.invoke(IPC.harnessRequest, 'resume', { runId, interruptId, decision, text }),
-    events: (runId: string, after: number) => ipcRenderer.invoke(IPC.harnessRequest, 'events', { runId, after }),
     listRuns: () => ipcRenderer.invoke(IPC.harnessRequest, 'listRuns', {}),
     status: () => ipcRenderer.invoke(IPC.harnessRequest, 'status', {})
   },
@@ -50,7 +53,7 @@ const api = {
 
   // 技能
   listSkills: () => ipcRenderer.invoke(IPC.listSkills),
-  toggleSkill: (id: string, enabled: boolean) => ipcRenderer.invoke(IPC.toggleSkill, { id, enabled }),
+  toggleSkill: (id: string, enabled: boolean) => ipcRenderer.invoke(IPC.toggleSkill, id, enabled),
 
   // IM
   imStatus: () => ipcRenderer.invoke(IPC.imStatus),
@@ -64,7 +67,8 @@ const api = {
   // 记忆
   getMemory: () => ipcRenderer.invoke(IPC.memoryGet),
   memoryGreeting: () => ipcRenderer.invoke(IPC.memoryGreeting),
-  memoryDelete: (payload: { kind: 'pref' | 'fav'; value: string }) => ipcRenderer.invoke(IPC.memoryDelete, payload),
+  memoryDelete: (payload: { kind: 'pref' | 'fav' | 'episode'; value: string }) => ipcRenderer.invoke(IPC.memoryDelete, payload),
+  memorySave: (text: string, polarity: 'like' | 'dislike') => ipcRenderer.invoke(IPC.memorySave, { text, polarity }),
   memoryClear: () => ipcRenderer.invoke(IPC.memoryClear),
 
   // 分享协作
@@ -75,7 +79,7 @@ const api = {
   guideSetImage: (dataUrl: string) => ipcRenderer.invoke(IPC.guideSetImage, dataUrl),
 
   // 附近发现 / 优惠发现
-  discoverFetch: (city?: string) => ipcRenderer.invoke(IPC.discoverFetch, city),
+  discoverFetch: (request?: { city?: string; refresh?: boolean }) => ipcRenderer.invoke(IPC.discoverFetch, request),
   dealsFetch: (city?: string) => ipcRenderer.invoke(IPC.dealsFetch, city),
 
   // 定位
@@ -84,6 +88,10 @@ const api = {
   setCity: (city: string) => ipcRenderer.invoke(IPC.locationSet, city),
   onLocation: (cb: (l: unknown) => void) => sub(IPC.locationUpdate, cb),
   reportLocation: (p: LocationInfo & { userInitiated?: boolean }) => ipcRenderer.invoke('location:report', p),
+  geo: {
+    geocode: (request: { address: string; city?: string }) => ipcRenderer.invoke('geo:geocode', request),
+    reverse: (request: { longitude: number; latitude: number }) => ipcRenderer.invoke('geo:reverse', request)
+  },
 
   // 高德 JS SDK + 外链
   getAmapJsConfig: () => ipcRenderer.invoke('amap:jsConfig'),

@@ -1,0 +1,54 @@
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#edf7f1','primaryTextColor':'#183e32','primaryBorderColor':'#70a68b','lineColor':'#55776a','fontFamily':'sans-serif','fontSize':'16px'},'sequence':{'actorMargin':45,'messageMargin':28,'noteMargin':12,'wrap':true}}}%%
+sequenceDiagram
+  actor U as 用户
+  participant UI as PlanGo 桌面
+  participant G as 持久工作流
+  participant M as LLM 专业节点
+  participant T as 真实数据与浏览器工具
+  U->>UI: 输入需求、地点或图片
+  UI->>G: 保存命令、来源、时间锚点和本轮预算
+  G->>G: 读取同用户记忆，合并规范需求
+  alt 行程规划
+    G->>T: 高德查询，或明确指定的网页来源
+    T-->>G: 返回实际事实；缺失信息保持未知
+    G->>M: 组织候选、方案及可选视角
+    M-->>G: 结构化草稿
+    G->>G: 确定性编译、三态验证
+    G-->>UI: 方案、版本、已知冲突与未核验事项
+    alt 存在已知冲突
+      U->>UI: 修改要求后重新处理
+      UI->>G: 新用户命令进入同一入口
+    else 仅有未核验事项
+      U->>UI: 保存草案，或仅准备表单
+      UI->>G: 绑定确切方案版本与草案决策
+      Note over UI,G: 保存仅交付草案；准备保留未知项，禁止提交和付款
+    else 已通过执行前验证
+      U->>UI: 批准确切方案版本
+      UI->>G: 验证审批后绑定执行目标
+    end
+  else 网页或用户图片读取
+    Note over G,T: 网页观察与用户图片分别标记来源，不能相互冒充
+  end
+  opt 目标需要浏览器处理
+    loop 有界 ReAct：观察、决策、执行、再核对
+      G->>T: 在同一可见会话读取 DOM；按需只读截图
+      T-->>G: 绑定页面身份与时间的观察
+      G->>M: 当前目标、观察与权限边界
+      M-->>G: 下一步操作建议或完成建议
+      opt 操作需要用户授权
+        G-->>UI: 展示具体对象、参数和动作
+        U->>UI: 批准、拒绝或人工接管
+        UI->>G: 当前操作的明确决策
+      end
+      G->>T: 校验所有者、页面版本与权限后执行固定操作
+      T-->>G: 实际回执
+      G->>G: 回执与观测事件同事务保存
+      Note over G,T: UNKNOWN 停止自动推进，不重放不确定提交
+    end
+  end
+  G->>G: 按目标与来源验收结果范围
+  G-->>UI: 读取完成／草案已保存／准备待核对／待人工处理
+  G->>G: 幂等保存有范围和有效期的任务经历
+  U->>UI: 明确反馈，或查看、删除记忆
+  UI->>G: 同用户持久更新；删除后不自动复生
+  Note over UI,G: 历史、checkpoint 和审批保留；重连按事件序号追平

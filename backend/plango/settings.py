@@ -82,6 +82,7 @@ def settings_from_env():
         "embedding_api_key": "PLANGO_EMBEDDING_API_KEY",
         "embedding_base_url": "PLANGO_EMBEDDING_BASE_URL",
         "embedding_model": "PLANGO_EMBEDDING_MODEL",
+        "agent_mode": "PLANGO_AGENT_MODE",  # Perspective strategy; topology remains one central workflow.
         "max_turns": "PLANGO_MAX_TURNS",
         "max_tool_calls": "PLANGO_MAX_TOOL_CALLS",
         "max_model_tokens": "PLANGO_MAX_MODEL_TOKENS",

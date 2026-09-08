@@ -1,3 +1,4 @@
+import { DialogShell } from './DialogShell'
 import { useEffect, useRef, useState } from 'react'
 import { loadAMap } from '../lib/amap'
 import { cityCenter } from '../lib/cityCenter'
@@ -23,12 +24,13 @@ export function RouteSheet({ target, onClose }: { target: RouteTarget; onClose: 
   const mapEl = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
   const routerRef = useRef<any>(null)
-  const [mode, setMode] = useState<Mode>('driving')
+  const [mode, setMode] = useState<Mode>(target.initialMode || 'driving')
   const [stats, setStats] = useState<Stats | null>(null)
   const [err, setErr] = useState('')
 
   // 照抄 weplan originFallback：起点缺失时用城市中心兜底，永远能画路线（诚实标注估算）
   const hasRealOrigin = !!(target.origin && target.origin.includes(','))
+  const coarseOrigin = !hasRealOrigin || ['city', 'district', 'unknown'].includes(target.originGranularity || 'unknown')
   const effectiveOrigin = hasRealOrigin ? target.origin! : cityCenter(target.city)
   const hasDest = !!(target.dest && target.dest.includes(','))
 
@@ -91,32 +93,33 @@ export function RouteSheet({ target, onClose }: { target: RouteTarget; onClose: 
 
   const openExternalNav = (): void => {
     const [lng, lat] = target.dest.split(',')
-    const url = `https://uri.amap.com/navigation?to=${lng},${lat},${encodeURIComponent(target.destName)}&mode=car&policy=1&src=xiaoyou&coordinate=gaode&callnative=1`
+    const navMode = { driving: 'car', walking: 'walk', transit: 'bus' }[mode]
+    const from = target.origin ? `&from=${target.origin},${encodeURIComponent(target.originName || '设定起点')}` : ''
+    const url = `https://uri.amap.com/navigation?to=${lng},${lat},${encodeURIComponent(target.destName)}${from}&mode=${navMode}&policy=1&src=plango&coordinate=gaode&callnative=1`
     window.plango.openExternal(url)
   }
   const hailTaxi = (): void => {
     // 只有打车才跳转（唤起高德打车）
     const [lng, lat] = target.dest.split(',')
-    const url = `https://uri.amap.com/marker?position=${lng},${lat}&name=${encodeURIComponent(target.destName)}&src=xiaoyou&coordinate=gaode&callnative=1`
+    const url = `https://uri.amap.com/marker?position=${lng},${lat}&name=${encodeURIComponent(target.destName)}&src=plango&coordinate=gaode&callnative=1`
     window.plango.openExternal(url)
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="w-[560px] max-w-[92vw] max-h-[88vh] bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="h-11 shrink-0 flex items-center gap-2 px-3 border-b border-neutral-200">
+    <DialogShell label={`路线 · ${target.destName}`} onClose={onClose} className="w-[720px]">
+        <div className="plango-panel-header shrink-0 gap-3">
           <Navigation size={16} className="text-brand-ink" />
           <span className="font-semibold text-sm">怎么去 · {target.destName}</span>
-          <button onClick={onClose} className="ml-auto p-1 rounded-lg hover:bg-neutral-100">
+          <button onClick={onClose} aria-label="关闭路线" className="ml-auto plango-icon-button">
             <X size={16} />
           </button>
         </div>
 
-        <div className="flex gap-1.5 px-3 py-2 border-b border-neutral-100">
+        <div className="flex gap-1.5 px-5 py-3 border-b border-[var(--line)]" role="tablist" aria-label="交通方式">
           {MODES.map((m) => (
             <button
               key={m.key}
-              onClick={() => setMode(m.key)}
+              onClick={() => setMode(m.key)} role="tab" aria-selected={mode === m.key}
               className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border transition-colors ${
                 mode === m.key ? 'border-brand bg-brand/10 text-brand-ink font-medium' : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'
               }`}
@@ -126,9 +129,9 @@ export function RouteSheet({ target, onClose }: { target: RouteTarget; onClose: 
           ))}
         </div>
 
-        <div ref={mapEl} className="w-full h-72 bg-neutral-100" />
+        <div ref={mapEl} className="w-full h-[340px] bg-[#edf3ee]" />
 
-        <div className="p-3 space-y-2">
+        <div className="p-5 space-y-3 overflow-y-auto">
           {err ? (
             <div className="text-xs text-amber-600">{err}</div>
           ) : stats ? (
@@ -140,17 +143,16 @@ export function RouteSheet({ target, onClose }: { target: RouteTarget; onClose: 
           ) : (
             <div className="text-xs text-neutral-400">正在规划路线…</div>
           )}
-          {!hasRealOrigin && !err && (
-            <div className="text-[11px] text-amber-600">起点按「{target.city}市中心」估算（定位后更准，可在左下角重新定位/手动指定我的位置）。</div>
+          {target.originName ? <div className="text-[11px] text-neutral-500">使用计划记录的起点：{target.originName}，不代表设备当前位置。</div> : coarseOrigin && (
+            <div className="text-[11px] text-amber-600">起点按「{target.city}」地区参考点估算；可在设置中指定出发地址。</div>
           )}
-          <div className="text-[11px] text-neutral-400">距离/时长来自高德实时路线，页内查看；需要实时 turn-by-turn 或打车时再交接高德。</div>
+          <div className="text-[11px] text-neutral-400">路线结果来自高德，实际路况和费用以出发时为准。</div>
           <div className="flex gap-2">
             <button onClick={openExternalNav} className="flex-1 text-xs py-1.5 rounded-lg bg-brand text-brand-ink font-medium">🧭 高德实时导航</button>
             <button onClick={hailTaxi} className="flex-1 text-xs py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 border border-neutral-200">🚕 打车前往（跳转）</button>
           </div>
         </div>
-      </div>
-    </div>
+    </DialogShell>
   )
 }
 
@@ -169,6 +171,7 @@ function fmtDist(m?: number): string {
 }
 function fmtDur(s?: number): string {
   if (!s) return '—'
+  if (s > 0 && s < 60) return '不足1分钟'
   const min = Math.round(s / 60)
   return min >= 60 ? `${Math.floor(min / 60)}h${min % 60}m` : `${min}分钟`
 }

@@ -1,5 +1,6 @@
 // 领域模型（防腐层落点）：所有外部数据（VitaBench / 高德 / Mock API）先转成这里的对象，再进 Agent/UI。
 // 术语与 yoyu common/models.py 对齐，移植到 TS。
+import type { SelectedPoi } from './location'
 
 export type SourceTag = 'real' | 'browser' | 'amap' | 'user' | 'unknown' | 'dataset' | 'simulated' | 'cache' | 'fallback'
 
@@ -29,6 +30,8 @@ export interface PreferenceChunk {
   strength: number
   evidence_count: number
   source: 'conversation' | 'order' | 'review' | 'import'
+  explicit?: boolean
+  provenance?: string
 }
 
 // 周末足迹（越懂你的可视化素材：PlanGo陪你去过哪些地方）
@@ -42,8 +45,10 @@ export interface Footprint {
 export interface UserProfile {
   user_id: string
   summary: string
+  episodes?: { id: string; text: string; scope?: string; createdAt?: string }[]
   preferences: PreferenceChunk[]
   favorite_shops: string[]
+  favorite_provenance?: Record<string, { explicit: boolean; source: string }>
   avoid_shops: string[]
   home_city: string
   since?: number // 首次使用时间戳（"陪你 N 天"）
@@ -78,6 +83,7 @@ export interface POISummary {
   open_now?: boolean
   tel?: string
   is_distraction: boolean
+  observed_at?: string
 }
 
 export interface ProductItem {
@@ -106,7 +112,9 @@ export interface PlanNode {
   poi?: POISummary
   reason: string
   locked: boolean
-  transit_from_prev_min: number
+  transit_from_prev_min: number | null
+  distance_km?: number | null
+  distance_kind?: 'route' | 'straight_line_lower_bound'
   wait_min?: number | null
   route_from_prev?: RouteInfo
   verify_state: 'suggested' | 'verified' | 'booked'
@@ -114,10 +122,15 @@ export interface PlanNode {
 
 export interface Plan {
   plan_id: string
+  origin?: { name: string; latitude: number; longitude: number }
+  travel_mode?: 'driving' | 'walking' | 'transit'
+  visit_date?: string
+  timezone?: string
   style: 'economic' | 'balanced' | 'premium' | 'special'
   title: string
   nodes: PlanNode[]
   total_cost: number | null
+  budget_limit?: number | null // null means explicitly no spending cap, never zero.
   radar: Record<string, number> // 省钱/好玩/便捷/合适/特色，0-100（移植 weplan 确定性五维打分）
   radar_reasons?: Record<string, string> // 每一维的自然语言理由（与雷达图严格对齐）
   total_travel_min?: number // 全程通勤分钟
@@ -170,9 +183,15 @@ export interface ChatMessage {
 }
 
 // 成果卡片（渲染到成果区画布）
+export interface DraftReviewCardDetails { runId: string; interruptId: string; planId: string; planVersion: number; unknowns: string[]; canPrepare: boolean; blockedReason?: string }
+
 export type OutcomeCard =
+  | { kind: 'draft_review'; draft: DraftReviewCardDetails }
+  | { kind: 'preparation'; ready: boolean; current?: boolean; summary: string; observedAt?: string; pendingChecks?: string[]; resume?: HarnessPreparationResume & { run_id: string };
+      entries: { name: string; address: string; partySize?: number; date: string; time: string; timezone: string }[];
+      issues: { name: string; detail: string; mismatch: boolean }[] }
   | { kind: 'evidence'; items: HarnessEvidence[] }
-  | { kind: 'browser_page'; title: string; url: string; text: string; observedAt?: string; scope?: 'visual_observation'; limitations?: string[] }
+  | { kind: 'browser_page'; title: string; url: string; text: string; source?: SourceTag; observedAt?: string; scope?: 'visual_observation' | 'image_text'; limitations?: string[] }
   | { kind: 'plan'; plan: Plan }
   | { kind: 'plans'; variants: { plan: Plan; styleLabel: string; per: number | null; overBudget?: number }[]; city: string; budget?: number }
   | { kind: 'deal'; title: string; rows: DealRow[] }
@@ -258,6 +277,30 @@ export interface HarnessEvidence {
   expires_at?: string
 }
 
+export interface HarnessFeedback {
+  feedback_id: string
+  run_id: string
+  turn_id: number
+  rating: 'helpful' | 'unhelpful'
+  text: string
+  created_at: string
+}
+export type HarnessFeedbackInput = Pick<HarnessFeedback, 'feedback_id' | 'turn_id' | 'rating'> & { text?: string }
+export interface HarnessFeedbackReply { accepted: true; replayed: boolean; feedback: HarnessFeedback }
+
+export interface HarnessDraftReview {
+  interrupt_id: string
+  plan_id: string
+  plan_version: number
+  can_prepare: boolean
+  preparation_blockers: string[]
+  unknowns: { name: string; detail?: string; passed?: boolean | null }[]
+  conflicts: { name: string; detail?: string; passed?: boolean | null }[]
+  scope: 'draft_ready'
+}
+
+export interface HarnessPreparationResume { plan_id: string; plan_version: number; approval_id: string; can_resume: boolean; blockers: string[] }
+
 export interface HarnessSnapshot {
   run_id: string
   thread_id?: string
@@ -270,6 +313,10 @@ export interface HarnessSnapshot {
   interrupt_id?: string | null
   command_pending?: boolean
   cancel_requested?: boolean
+  preparation_resume?: HarnessPreparationResume | null
+  draft_review?: HarnessDraftReview | null
+  feedback?: HarnessFeedback[]
+  events?: HarnessEvent[] // Main-process canonical event projection.
   state: Record<string, unknown>
 }
 
@@ -284,15 +331,17 @@ export interface HarnessEvent {
 }
 
 export interface HarnessApi {
+  resumePreparation: (runId: string, planId: string, planVersion: number, approvalId: string) => Promise<HarnessSnapshot>
+  decideDraft: (runId: string, interruptId: string, planId: string, planVersion: number, decision: 'save' | 'prepare') => Promise<HarnessSnapshot>
+  feedback: (runId: string, value: HarnessFeedbackInput) => Promise<HarnessFeedbackReply>
   resolveAction: (runId: string, actionId: string, status: 'SUCCEEDED' | 'FAILED', note: string, reference?: string) => Promise<HarnessSnapshot>
-  createRun: (text: string, image?: string) => Promise<HarnessSnapshot>
+  createRun: (text: string, image?: string, selectedPoi?: SelectedPoi) => Promise<HarnessSnapshot>
   getRun: (runId: string) => Promise<HarnessSnapshot>
   sendMessage: (runId: string, text: string, image?: string) => Promise<HarnessSnapshot>
   selectPlan: (runId: string, planId: string, planVersion: number) => Promise<HarnessSnapshot>
   replan: (runId: string, reason: string) => Promise<HarnessSnapshot>
   cancel: (runId: string) => Promise<HarnessSnapshot>
   resume: (runId: string, interruptId: string, decision: 'approve' | 'reject' | 'edit' | 'resume', text?: string) => Promise<HarnessSnapshot>
-  events: (runId: string, after: number) => Promise<{ events: HarnessEvent[] }>
   listRuns: () => Promise<HarnessSnapshot[]>
   status: () => Promise<{ ready: boolean; error?: string }>
 }

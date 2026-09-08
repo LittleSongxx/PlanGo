@@ -21,6 +21,23 @@ function deploymentConfig() {
   return JSON.parse(result.stdout)
 }
 const deployment = deployed ? deploymentConfig() : {}
+const testProject = process.env.PLANGO_TEST_COMPOSE_PROJECT || 'plango-e2e'
+const testBackend = process.env.PLANGO_TEST_BACKEND_URL
+if (deployed) {
+  try {
+  assert(testBackend && /^plango-[a-z0-9-]+$/.test(testProject), 'Deployed smoke requires an isolated PLANGO_TEST_BACKEND_URL and plango-* test Compose project; never use the main user service')
+  const inspected = spawnSync('docker', ['inspect', testProject + '-api-1'], { cwd: root, encoding: 'utf8', timeout: 5000 })
+  assert.equal(inspected.status, 0, 'Start the isolated test Compose project before this smoke')
+  const container = JSON.parse(inspected.stdout)[0], address = new URL(testBackend)
+  assert.equal(container.Config.Labels['com.docker.compose.project'], testProject)
+  assert.equal(container.Config.Labels['com.docker.compose.project.working_dir'], root)
+  assert(address.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(address.hostname) && !address.username && !address.password && address.pathname === '/', 'Test backend must be the isolated local HTTP service')
+  assert(container.NetworkSettings.Ports['8011/tcp']?.some(port => port.HostIp === '127.0.0.1' && port.HostPort === address.port), 'Test URL does not match the isolated Compose API port')
+  } catch (error) {
+    console.error('[full-stack preflight] ' + error.message)
+    app.exit(2)
+  }
+}
 const token = deployed ? deployment.PLANGO_BACKEND_TOKEN : 'isolated-full-stack-smoke-only'
 assert(token, 'Deployed smoke requires the configured PlanGo control token')
 const canvasNonce = 'PLANGO-CANVAS-4829'
@@ -69,7 +86,7 @@ async function api(path) {
 function visionLedger() {
   assert(/^[a-f0-9]{32}$/.test(runId || ''), 'A persisted run ID is required to audit Vision commands')
   const sql = `SELECT COALESCE(json_agg(json_build_object('command_id',command_id,'operation',payload->>'operation','ok',result->'ok','outcome',result->>'outcome','text',result->>'text','screenshot_id',result->'screenshot'->>'screenshot_id') ORDER BY seq),'[]'::json) FROM plango_browser_command WHERE run_id='${runId}';`
-  const result = spawnSync('docker', ['compose', 'exec', '-T', 'postgres', 'psql', '-U', 'plango', '-d', 'plango', '-At', '-c', sql], { cwd: root, encoding: 'utf8', timeout: 5000 })
+  const result = spawnSync('docker', ['compose', '-p', testProject, 'exec', '-T', 'postgres', 'psql', '-U', 'plango', '-d', 'plango', '-At', '-c', sql], { cwd: root, encoding: 'utf8', timeout: 5000 })
   assert.equal(result.status, 0, 'Cannot audit the persisted Vision command ledger')
   return JSON.parse(result.stdout.trim())
 }
@@ -126,7 +143,7 @@ async function main() {
   await new Promise(resolve => reservation.listen(0, '127.0.0.1', resolve))
   const port = reservation.address().port
   await new Promise(resolve => reservation.close(resolve))
-  backendUrl = deployed ? deployment.PLANGO_BACKEND_URL || 'http://127.0.0.1:8011' : `http://127.0.0.1:${port}`
+  backendUrl = deployed ? testBackend.replace(/\/$/, '') : `http://127.0.0.1:${port}`
   process.env.PLANGO_BACKEND_URL = backendUrl
   stage(deployed ? 'connecting deployed Docker backend' : 'starting owned Python backend')
   await startBackend(port)
@@ -194,7 +211,7 @@ async function main() {
   // Restart only the owned backend, retaining its independent SQLite/checkpoint files.
   stage('restarting owned backend with persisted state')
   if (deployed) {
-    const restarted = spawnSync('docker', ['compose', 'restart', 'api', 'worker'], { cwd: root, encoding: 'utf8', timeout: 25000 })
+    const restarted = spawnSync('docker', ['compose', '-p', testProject, 'restart', 'api', 'worker'], { cwd: root, encoding: 'utf8', timeout: 25000 })
     assert.equal(restarted.status, 0, 'PlanGo API/worker restart failed')
   } else await stopBackend()
   await startBackend(port)
@@ -205,8 +222,8 @@ async function main() {
   stage('restoring canonical history after backend restart')
   await js("document.querySelector('button[title=\"新建对话\"]').click()")
   await js("document.querySelector('button[title=\"历史会话\"]').click()")
-  await waitFor('history entry', () => js(`!![...document.querySelectorAll('div')].find(el=>el.className.includes('truncate pr-6')&&el.textContent===${JSON.stringify(historyTitle)})`))
-  await js(`[...document.querySelectorAll('div')].find(el=>el.className.includes('truncate pr-6')&&el.textContent===${JSON.stringify(historyTitle)}).click()`)
+  await waitFor('history entry', () => js(`!![...document.querySelectorAll('[data-history-entry]')].find(el=>el.getAttribute('aria-label')==='打开会话：'+${JSON.stringify(historyTitle)})`))
+  await js(`[...document.querySelectorAll('[data-history-entry]')].find(el=>el.getAttribute('aria-label')==='打开会话：'+${JSON.stringify(historyTitle)}).click()`)
   await waitFor('UI recovery after Python restart', () => js(`(${visibleResult})&&!document.body.innerText.includes('未连接服务')`))
   let commands = (await api('/api/v1/runs/' + runId + '/events')).events.filter(e => e.event_type === 'BROWSER_OBSERVATION').length
   let ledger
@@ -224,7 +241,7 @@ async function main() {
     commands = Number(databaseCheck.stdout.trim())
   }
   await sleep(300)
-  const evidenceDirectory = join(root, 'eval/plango-p1')
+  const evidenceDirectory = join(root, 'output/full-stack-smoke', new Date().toISOString().replace(/[:.]/g, '-'))
   mkdirSync(evidenceDirectory, { recursive: true })
   const screenshot = join(evidenceDirectory, vision ? 'deployed-vision-desktop.png' : deployed ? 'deployed-desktop.png' : 'full-stack-desktop.png')
   writeFileSync(screenshot, (await bounded(window.webContents.capturePage(), 'final screenshot')).toPNG())
@@ -241,7 +258,7 @@ async function finish(code) {
   if (deployed && /^[a-f0-9]{32}$/.test(runId || '')) {
     // Retain this run as deployment evidence without mixing it into the real desktop user's history.
     const inputGuard = vision ? "input_text='读取当前浏览器画面中显示的文字'" : "input_text LIKE '部署验收%'"
-    const archived = spawnSync('docker', ['compose', 'exec', '-T', 'postgres', 'psql', '-U', 'plango', '-d', 'plango', '-c', `UPDATE agent_run SET user_id='plango-deployment-checks' WHERE run_id='${runId}' AND ${inputGuard} AND EXISTS (SELECT 1 FROM plango_browser_binding b WHERE b.run_id=agent_run.run_id AND b.browser_session_id='${desktopIdentity.browserSessionId}');`], { cwd: root, encoding: 'utf8', timeout: 5000 })
+    const archived = spawnSync('docker', ['compose', '-p', testProject, 'exec', '-T', 'postgres', 'psql', '-U', 'plango', '-d', 'plango', '-c', `UPDATE agent_run SET user_id='plango-deployment-checks' WHERE run_id='${runId}' AND ${inputGuard} AND EXISTS (SELECT 1 FROM plango_browser_binding b WHERE b.run_id=agent_run.run_id AND b.browser_session_id='${desktopIdentity.browserSessionId}');`], { cwd: root, encoding: 'utf8', timeout: 5000 })
     if (archived.status !== 0 || !/UPDATE 1\b/.test(archived.stdout)) { console.error('Could not isolate the deployment test run'); code = 1 }
   }
   server.close()

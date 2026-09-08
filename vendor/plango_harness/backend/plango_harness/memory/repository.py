@@ -7,6 +7,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
 
 from sqlalchemy import and_, delete, desc, or_, select, text, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.exc import IntegrityError
 
 from plango_harness.agent.contracts import MemoryProposal
@@ -204,7 +206,7 @@ class MemoryRepository:
             # Native pgvector retrieval is an optional acceleration. The JSON
             # copy and lexical path below keep the same behavior on SQLite or
             # when the extension/provider is unavailable.
-            if query and self.database.vector_available and self.embedding_service is not None:
+            if query and self.database.vector_available and self.embedding_available and self.embedding_service is not None:
                 try:
                     vectors = await self.embedding_service.embed([query])
                     if vectors:
@@ -361,6 +363,58 @@ class MemoryRepository:
             used += cost
         return result
 
+    async def _user_control(self, session, user_id, now):
+        """Serialize memory writes and erasure so a late projector cannot resurrect erased data."""
+        assert self.database.engine is not None
+        insert_row = pg_insert if self.database.engine.dialect.name == "postgresql" else sqlite_insert
+        identity = _id("memory-control", user_id)
+        # ponytail: one write gate per user; split by namespace only if memory write throughput requires it.
+        await session.execute(insert_row(memory_event).values(
+            id=identity, user_id=user_id, event_kind="control", payload_json={}, created_at=now,
+        ).on_conflict_do_nothing(index_elements=["id"]))
+        row = (await session.execute(select(memory_event.c.payload_json).where(memory_event.c.id == identity).with_for_update())).scalar_one()
+        return identity, row or {}
+
+    async def _scrub_events(self, session, user_id, *conditions):
+        rows = (await session.execute(select(memory_event.c.id, memory_event.c.payload_json).where(
+            memory_event.c.user_id == user_id, memory_event.c.event_kind != "control", *conditions,
+        ))).all()
+        for identity, payload in rows:
+            # Keep only an opaque source receipt; erase the remembered text/value itself.
+            await session.execute(update(memory_event).where(memory_event.c.id == identity).values(
+                payload_json={"forgotten": True, "source_event_id": (payload or {}).get("source_event_id")},
+            ))
+
+    async def events_for_source(self, user_id: str, source_id: str) -> list[dict[str, Any]]:
+        async with self.database.session() as session:
+            rows = (await session.execute(select(memory_event).where(
+                memory_event.c.user_id == user_id, memory_event.c.payload_json["source_event_id"].as_string() == source_id,
+            ).order_by(memory_event.c.created_at))).mappings().all()
+        return [dict(row) for row in rows]
+
+    async def feedback_events(self, user_id: str, run_id: str) -> list[dict[str, Any]]:
+        async with self.database.session() as session:
+            rows = (await session.execute(select(memory_event).where(
+                memory_event.c.user_id == user_id, memory_event.c.event_kind == "episode",
+                memory_event.c.payload_json["value"]["scope"].as_string() == "user_feedback",
+                memory_event.c.payload_json["value"]["run_id"].as_string() == run_id,
+            ).order_by(memory_event.c.created_at.desc()))).mappings().all()
+        return [dict(row) for row in rows]
+
+    async def forget_episode(self, user_id: str, episode_id: str) -> bool:
+        async with self.database.session() as session:
+            async with session.begin():
+                await self._user_control(session, user_id, utc_now())
+                row = (await session.execute(select(memory_episode.c.source_event_id).where(
+                    memory_episode.c.id == episode_id, memory_episode.c.user_id == user_id,
+                ))).first()
+                if row is None:
+                    return False
+                await session.execute(delete(memory_document).where(memory_document.c.user_id == user_id, memory_document.c.episode_id == episode_id))
+                await session.execute(delete(memory_episode).where(memory_episode.c.id == episode_id, memory_episode.c.user_id == user_id))
+                await self._scrub_events(session, user_id, memory_event.c.event_kind == "episode", memory_event.c.payload_json["source_event_id"].as_string() == row[0])
+        return True
+
     async def commit(
         self, user_id: str, proposals: Iterable[MemoryProposal]
     ) -> list[dict[str, Any]]:
@@ -371,15 +425,28 @@ class MemoryRepository:
         committed: list[dict[str, Any]] = []
         async with self.database.session() as session:
             async with session.begin():
+                _, control = await self._user_control(session, user_id, now)
                 for proposal in proposals:
+                    if control.get("forget_before") and not proposal.source_event_id.startswith(("user:", "explicit:", "user-confirmed:", "user-correction:")):
+                        try:
+                            observed = datetime.fromisoformat(str(proposal.value.get("observed_at") or "").replace("Z", "+00:00"))
+                            if observed.tzinfo is None or observed <= datetime.fromisoformat(control["forget_before"]):
+                                continue
+                        except ValueError:
+                            continue
                     event_id = _id(
                         "event", user_id, proposal.kind, proposal.key, proposal.source_event_id
                     )
                     existing_event = (
                         await session.execute(
-                            select(memory_event.c.id).where(memory_event.c.id == event_id)
+                            select(memory_event.c.payload_json).where(memory_event.c.id == event_id)
                         )
                     ).first()
+                    if existing_event:
+                        previous = existing_event[0] or {}
+                        if not previous.get("forgotten") and previous != proposal.model_dump(mode="json"):
+                            raise ValueError("memory_event_payload_conflict")
+                        continue
                     if not existing_event:
                         try:
                             async with session.begin_nested():
@@ -393,7 +460,9 @@ class MemoryRepository:
                                     )
                                 )
                         except IntegrityError:
-                            pass
+                            continue
+                    if proposal.operation == "forget" or proposal.value.get("forget"):
+                        await self._scrub_events(session, user_id, memory_event.c.event_kind == proposal.kind, memory_event.c.payload_json["key"].as_string() == proposal.key)
                     if proposal.kind == "fact":
                         if proposal.operation == "forget" or proposal.value.get("forget"):
                             await session.execute(
@@ -990,11 +1059,9 @@ class MemoryRepository:
     async def forget_user(self, user_id: str) -> None:
         async with self.database.session() as session:
             async with session.begin():
-                for table in (
-                    memory_fact,
-                    memory_episode,
-                    procedural_rule,
-                    memory_document,
-                    memory_event,
-                ):
+                now = utc_now()
+                identity, _ = await self._user_control(session, user_id, now)
+                for table in (memory_fact, memory_episode, procedural_rule, memory_document):
                     await session.execute(table.delete().where(table.c.user_id == user_id))
+                await self._scrub_events(session, user_id)
+                await session.execute(update(memory_event).where(memory_event.c.id == identity).values(payload_json={"forget_before": now.isoformat()}))

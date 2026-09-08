@@ -110,7 +110,8 @@ async function main() {
   const beforePopupClose = manager.getBrowserTabSignal(popupId)
   await manager.handleBrowserIntent({ kind: 'close', id: popupId })
   check(beforePopupClose.aborted && manager.getBrowserTabSignal(popupId).aborted, 'Closing cannot revive a lifecycle signal before destruction')
-  await waitFor(() => !manager.getBrowserTab(popupId))
+  // getBrowserTab becomes unavailable as soon as closing starts; native destruction is asynchronous.
+  await waitFor(() => !manager.getBrowserState().tabs.some(tab => tab.id === popupId))
   check(!manager.getBrowserState().tabs.some(tab => tab.id === popupId), 'Closing popup removes canonical tab metadata')
   manager.setBrowserLayout({ x: 30, y: 80, width: 700, height: 450, visible: true })
   manager.activateBrowserTab(first.id)
