@@ -2,6 +2,8 @@
 
 已确认的项目决策见 [docs/架构决策.md](docs/架构决策.md)。开始设计或改动前先读该文件；其中的目标架构不代表已经实现。
 
+接续本轮实施时先读 [docs/CODEX_实施交接.md](docs/CODEX_实施交接.md)，按其中阶段、证据边界与验证要求继续；不要把历史审查发现当成已经修复。
+
 - 项目独立运行，不依赖兄弟 Planora 仓库、环境配置或服务；上游仅通过本仓库固定源码与显式维护操作参考。
 - 后端 Python 使用名为 `planora` 的 conda 环境；该名称不代表依赖 Planora 项目。
 - 保留 Electron 桌面与真实可见浏览器。浏览器演进方向已确认：WebContentsView、经适配验证的 Playwright/CDP、DOM-first 与按需 Vision，共用同一会话及 Harness 授权/回执边界。
