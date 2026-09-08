@@ -158,6 +158,8 @@ npm run services:down
 
 ## 模块与上游维护
 
+已确认路线见 [架构决策](docs/架构决策.md)；当前角色、流程断点与成熟实现替换机会见 [模块替换与 Agent 工作流审计](docs/模块替换与Agent工作流审计.md)。[当前工作流](figures/yoyu-current-workflow.md) 与[目标工作流建议](figures/yoyu-target-workflow.md) 分开记录，建议不代表已实现。
+
 ```text
 src/renderer/            产品界面与展示投影
 src/main/harness*.ts     后端启动、认证、任务与回执传输
