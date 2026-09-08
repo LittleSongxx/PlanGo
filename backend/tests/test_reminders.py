@@ -9,8 +9,8 @@ from unittest.mock import patch
 
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.testclient import TestClient
-from planora.persistence.database import Database
-from yoyu.reminders import install_reminder_routes, now_ms, setup_reminders
+from plango.reminders import install_reminder_routes, now_ms, setup_reminders
+from plango_harness.persistence.database import Database
 
 
 def reminder_app(directory):
@@ -66,13 +66,13 @@ class ReminderCheck(unittest.TestCase):
                 self.assertEqual(
                     client.post(f"/api/v1/reminders/{reminder['id']}/ack").status_code, 409
                 )
-                with patch("yoyu.reminders.now_ms", return_value=start + 120000):
+                with patch("plango.reminders.now_ms", return_value=start + 120000):
                     due = client.get("/api/v1/reminders/due").json()["reminders"]
                     self.assertEqual([r["id"] for r in due], [reminder["id"]])
                     fired = client.post(f"/api/v1/reminders/{reminder['id']}/ack").json()
                     self.assertTrue(fired["reminders"][0]["fired"])
                     self.assertEqual(client.get("/api/v1/reminders/due").json()["reminders"], [])
-                with patch("yoyu.reminders.now_ms", return_value=start + 180000):
+                with patch("plango.reminders.now_ms", return_value=start + 180000):
                     repeated = client.post(f"/api/v1/reminders/{reminder['id']}/ack").json()
                     self.assertEqual(repeated["history"], fired["history"])
             with TestClient(reminder_app(directory), headers=headers) as restarted:

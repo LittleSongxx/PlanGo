@@ -13,7 +13,7 @@ export const IPC = {
   browserExec: 'browser:exec',
   browserExecResult: 'browser:exec-result',
 
-  // 标签页管理（renderer 内部，但小悠可请求开标签）
+  // 标签页管理（renderer 内部，但PlanGo可请求开标签）
   openTab: 'app:open-tab',
 
   // 设置 / 数据源 / LLM

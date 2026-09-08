@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prepare or execute a frozen, bounded live-model pilot with synthetic DOM observations.
 
-Preflight (no credentials/network): conda run -n planora python scripts/check_live_task_quality.py
+Preflight (no credentials/network): conda run -n plango python scripts/check_live_task_quality.py
 Run only after the owner freezes sources: add --run --source-sha <preflight SHA>.
 The real model sees ordinary runtime prompts; this runner never replaces model
 outputs, never approves writes and never loads a live business webpage.
@@ -25,7 +25,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path[:0] = [str(ROOT / "backend"), str(ROOT / "vendor/planora/backend")]
+sys.path[:0] = [str(ROOT / "backend"), str(ROOT / "vendor/plango_harness/backend")]
 FIXTURE = ROOT / "eval/fixtures/task_quality_pilot_v1.json"
 MAX_REQUESTS = 16
 MAX_CASE_REQUESTS = 4
@@ -34,14 +34,14 @@ TERMINAL = {"SUCCEEDED", "PARTIAL_FAILED", "FAILED", "INFEASIBLE", "CANCELLED"}
 from check_live_services import ProbeStop, account_or_quota, safe_error  # noqa: E402
 from dotenv import dotenv_values  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
-from yoyu.app import create_app  # noqa: E402
-from yoyu.settings import DesktopSettings  # noqa: E402
+from plango.app import create_app  # noqa: E402
+from plango.settings import DesktopSettings  # noqa: E402
 
 
 def source_manifest():
     paths = [
-        *sorted((ROOT / "backend/yoyu").rglob("*.py")),
-        *sorted((ROOT / "vendor/planora/backend/planora").rglob("*.py")),
+        *sorted((ROOT / "backend/plango").rglob("*.py")),
+        *sorted((ROOT / "vendor/plango_harness/backend/plango_harness").rglob("*.py")),
         Path(__file__).resolve(),
         ROOT / "scripts/check_live_services.py",
         FIXTURE,
@@ -407,7 +407,7 @@ def drive_turn(client, run_id, case_id, turn_index, turn, case_control, prior_co
 
 def run_case(case, settings_values, control, manifest, result):
     started = time.perf_counter()
-    with tempfile.TemporaryDirectory(prefix="yoyu-live-quality-") as directory:
+    with tempfile.TemporaryDirectory(prefix="plango-live-quality-") as directory:
         settings = DesktopSettings.model_validate(
             {
                 **settings_values,

@@ -9,9 +9,9 @@ import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from plango.runtime import DesktopRuntime
+from plango.settings import DesktopSettings
 from pydantic import BaseModel
-from yoyu.runtime import DesktopRuntime
-from yoyu.settings import DesktopSettings
 
 
 class ProbeReply(BaseModel):

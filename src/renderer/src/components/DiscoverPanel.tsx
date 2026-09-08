@@ -34,10 +34,10 @@ export function DiscoverPanel(): JSX.Element | null {
       setError('')
       try {
         if (which === 'discover') {
-          const r = await window.xiaonian.discoverFetch(city)
+          const r = await window.plango.discoverFetch(city)
           setGroups(r.groups || [])
         } else {
-          const r = await window.xiaonian.dealsFetch(city)
+          const r = await window.plango.dealsFetch(city)
           setDeals(r.items || [])
         }
       } catch (e) {

@@ -4,11 +4,11 @@ import tempfile
 import unittest
 
 from fastapi.testclient import TestClient
+from plango.app import create_app
+from plango.graph import BrowserDecision, ImageReading
+from plango.world import ObservedPlace, PageData
 from test_browser_harness import TOKEN, fixture, settings, wait_for
 from test_task_quality import TERMINAL
-from yoyu.app import create_app
-from yoyu.graph import BrowserDecision, ImageReading
-from yoyu.world import ObservedPlace, PageData
 
 PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j/a0AAAAASUVORK5CYII="
 QUOTES = "雾岚餐厅 人均68元\n杉木餐厅 人均82元"

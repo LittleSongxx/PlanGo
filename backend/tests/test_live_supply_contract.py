@@ -4,7 +4,12 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
-from planora.agent.contracts import (
+from plango.browser import run_context
+from plango.planning import BrowserPlanEngine
+from plango.settings import DesktopSettings
+from plango.supply import literal_supply
+from plango.world import BrowserWorld
+from plango_harness.agent.contracts import (
     Evidence,
     Location,
     PlaceCandidate,
@@ -12,11 +17,6 @@ from planora.agent.contracts import (
     PlanStop,
     TripSpec,
 )
-from yoyu.browser import run_context
-from yoyu.planning import BrowserPlanEngine
-from yoyu.settings import DesktopSettings
-from yoyu.supply import literal_supply
-from yoyu.world import BrowserWorld
 
 
 class LiveSupplyContractCheck(unittest.IsolatedAsyncioTestCase):

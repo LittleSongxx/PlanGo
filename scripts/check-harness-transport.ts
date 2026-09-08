@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { HarnessClient } from '../src/main/harnessClient'
 import type { BrowserCommand, BrowserObservation } from '../src/shared/browser'
 
-const root = mkdtempSync(join(tmpdir(), 'yoyu-transport-'))
+const root = mkdtempSync(join(tmpdir(), 'plango-transport-'))
 const received: BrowserObservation[] = []
 const events: unknown[] = []
 let commands: BrowserCommand[] = []

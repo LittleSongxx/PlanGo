@@ -1,6 +1,6 @@
-"""Check the running YOYU Docker service without models, websites, or real-user edits.
+"""Check the running PlanGo Docker service without models, websites, or real-user edits.
 
-Run: conda run --no-capture-output -n planora python scripts/check_deployment.py
+Run: conda run --no-capture-output -n plango python scripts/check_deployment.py
 The PostgreSQL checks verify committed rows from a separate connection, not a restart.
 """
 
@@ -18,14 +18,14 @@ from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = "http://127.0.0.1:8011"
-COMPOSE = ["docker", "compose", "--project-name", "yoyu", "-f", str(ROOT / "docker-compose.yml")]
+COMPOSE = ["docker", "compose", "--project-name", "plango", "-f", str(ROOT / "docker-compose.yml")]
 
 
 def main():
-    token = dotenv_values(ROOT / ".env").get("YOYU_BACKEND_TOKEN")
+    token = dotenv_values(ROOT / ".env").get("PLANGO_BACKEND_TOKEN")
     if not token:
-        raise SystemExit("YOYU_BACKEND_TOKEN is required in this project's .env")
-    user = "yoyu-deployment-check-" + uuid.uuid4().hex
+        raise SystemExit("PLANGO_BACKEND_TOKEN is required in this project's .env")
+    user = "plango-deployment-check-" + uuid.uuid4().hex
     preference = user + "-preference"
     favorite = user + "-favorite"
     reminder_text = user + "-reminder"
@@ -75,9 +75,9 @@ def main():
                 "psql",
                 "-X",
                 "-U",
-                "yoyu",
+                "plango",
                 "-d",
-                "yoyu",
+                "plango",
                 "-tA",
                 "-v",
                 "ON_ERROR_STOP=1",
@@ -94,7 +94,7 @@ def main():
             check(
                 path,
                 live["status"] == "ok"
-                and live["app"] == "YOYU"
+                and live["app"] == "PlanGo"
                 and live["world_provider"] == "browser",
             )
         ready = request("GET", "/api/v1/health/ready")
@@ -144,8 +144,8 @@ def main():
             """
 import hashlib, json, os
 from pathlib import Path
-from yoyu.skills import MAX_ADVERT_BYTES, MAX_SKILL_BYTES, list_skill_adverts, read_skill
-root = Path(os.environ['YOYU_SKILLS_DIR'])
+from plango.skills import MAX_ADVERT_BYTES, MAX_SKILL_BYTES, list_skill_adverts, read_skill
+root = Path(os.environ['PLANGO_SKILLS_DIR'])
 files = sorted(root.glob('*/SKILL.md'))
 before = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
 advert = list_skill_adverts()
@@ -203,7 +203,7 @@ print(json.dumps({'count': len(rows)}))
             'facts', (SELECT count(*) FROM user_fact WHERE user_id = '{user}'),
             'events', (SELECT count(*) FROM memory_event WHERE user_id = '{user}'),
             'persistent', (SELECT count(*) = 3 AND bool_and(relpersistence = 'p') FROM pg_class
-                          WHERE relname IN ('user_fact', 'memory_event', 'yoyu_reminder')));
+                          WHERE relname IN ('user_fact', 'memory_event', 'plango_reminder')));
         """)
         check(
             "postgres_committed_memory",
@@ -258,7 +258,7 @@ print(json.dumps({'count': len(rows)}))
         due = request("GET", "/api/v1/reminders/due")["reminders"]
         check("acknowledged_reminder_no_longer_due", all(r["id"] != reminder_id for r in due))
         counts = sql(f"""SELECT json_build_object('count', count(*),
-                        'fired', count(fired_at_ms)) FROM yoyu_reminder
+                        'fired', count(fired_at_ms)) FROM plango_reminder
                         WHERE text = '{reminder_text}';""")
         check(
             "postgres_committed_reminder_ack",
@@ -302,7 +302,7 @@ print(json.dumps({'count': len(rows)}))
             counts = sql(f"""SELECT json_build_object('count',
                 (SELECT count(*) FROM user_fact WHERE user_id = '{user}') +
                 (SELECT count(*) FROM memory_event WHERE user_id = '{user}') +
-                (SELECT count(*) FROM yoyu_reminder WHERE text = '{reminder_text}'));
+                (SELECT count(*) FROM plango_reminder WHERE text = '{reminder_text}'));
             """)
             check("postgres_test_data_removed", counts["count"] == 0, counts["count"])
 
@@ -316,7 +316,7 @@ print(json.dumps({'count': len(rows)}))
             "failed": failed,
             "checks": checks,
         }
-        target = ROOT / "eval/deployment_api_checks.json"
+        target = ROOT / "eval/plango-r0/deployment_api_checks.json"
         target.parent.mkdir(exist_ok=True)
         target.write_text(json.dumps(report, indent=2) + "\n")
         print(

@@ -2,7 +2,7 @@
 
 import unittest
 
-from yoyu.outcomes import price_comparison, update_task_context
+from plango.outcomes import price_comparison, update_task_context
 
 
 def offline_state(text, prices):

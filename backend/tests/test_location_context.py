@@ -6,9 +6,9 @@ import unittest
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from planora.agent.contracts import Location
-from yoyu.app import create_app
-from yoyu.settings import DesktopSettings
+from plango.app import create_app
+from plango.settings import DesktopSettings
+from plango_harness.agent.contracts import Location
 
 
 def settings(directory):

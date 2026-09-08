@@ -42,7 +42,7 @@ export function HistoryDrawer(): JSX.Element | null {
 
         <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
           {sessions.length === 0 ? (
-            <div className="text-center text-neutral-400 text-xs mt-10">还没有历史，跟小悠聊一句就会自动存这儿。</div>
+            <div className="text-center text-neutral-400 text-xs mt-10">还没有历史，跟PlanGo聊一句就会自动存这儿。</div>
           ) : (
             sessions.map((s) => (
               <div

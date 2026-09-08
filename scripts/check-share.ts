@@ -6,7 +6,7 @@ import { createServer } from 'node:http'
 import { createShare, getShareFeedback, startShareServer, stopShareServer } from '../src/main/share/server'
 import type { Plan } from '../src/shared/types'
 
-const dir = mkdtempSync(join(tmpdir(), 'yoyu-share-'))
+const dir = mkdtempSync(join(tmpdir(), 'plango-share-'))
 const occupied = createServer()
 await new Promise<void>(resolve => occupied.listen(0, '0.0.0.0', resolve))
 try {

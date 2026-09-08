@@ -4,9 +4,9 @@ import json
 import unittest
 from types import SimpleNamespace
 
-from planora.agent.model_adapter import ModelAdapter, ModelProviderUnavailable
+from plango.settings import DesktopSettings
+from plango_harness.agent.model_adapter import ModelAdapter, ModelProviderUnavailable
 from pydantic import BaseModel, Field, ValidationError
-from yoyu.settings import DesktopSettings
 
 
 class Choice(BaseModel):

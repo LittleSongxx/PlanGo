@@ -2,7 +2,7 @@
 
 import unittest
 
-from yoyu.receipts import verify_receipt
+from plango.receipts import verify_receipt
 
 
 def page(text, *, snapshot="before", timestamp="2026-09-08T10:00:00+00:00", **changes):

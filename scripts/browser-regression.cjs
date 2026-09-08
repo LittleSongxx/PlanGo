@@ -31,7 +31,7 @@ globalThis.__browserTestResult = (async () => {
   const assert = (ok, label) => { if (!ok) throw new Error(label); checks++ }
   const st = { tabs: [], activeTabId: null, aiBrowsing: {}, setView() {}, setAiBrowsing() {}, setActiveTab(id) { this.activeTabId = id } }
   globalThis.__browserTestStore = st
-  window.xiaonian = { browserEval: (id, code) => require('electron').ipcRenderer.invoke('fixture:browser-eval', id, code) }
+  window.plango = { browserEval: (id, code) => require('electron').ipcRenderer.invoke('fixture:browser-eval', id, code) }
   const makeTab = async (id) => {
     const frame = document.createElement('webview'); frame.style.cssText = 'width:700px;height:500px';
     frame.partition = 'fixture-browser';
@@ -73,10 +73,10 @@ globalThis.__browserTestResult = (async () => {
   setActiveWebview(b.wv, 'tab-b')
   const readPinned = await execute(command('extract_tables', {}, { tab_id: 'tab-a' }))
   assert(readPinned.ok && readPinned.tab_id === 'tab-a' && readPinned.tables[0].rows[0][1] === '128 元', 'tab switching preserves command target')
-  assert(await a.page("typeof window.__yoyuSnapshot === 'undefined' && typeof require === 'undefined'"), 'remote page cannot access isolated snapshot or Node')
+  assert(await a.page("typeof window.__plangoSnapshot === 'undefined' && typeof require === 'undefined'"), 'remote page cannot access isolated snapshot or Node')
   const conflict = await execute(command('snapshot', {}, { run_id: 'run-b', tab_id: 'tab-a' }))
   assert(conflict.error_kind === 'tab_session_mismatch', 'other run cannot steal tab')
-  await a.page("window.__yoyuSnapshot={dirty:false,refs:[document.querySelector('#search')],observer:{disconnect(){},takeRecords(){return []}}};window.__yoyuSnapshot.observer.disconnect();document.querySelector('#submit').textContent = '支付';window.__yoyuSnapshot.dirty=false")
+  await a.page("window.__plangoSnapshot={dirty:false,refs:[document.querySelector('#search')],observer:{disconnect(){},takeRecords(){return []}}};window.__plangoSnapshot.observer.disconnect();document.querySelector('#submit').textContent = '支付';window.__plangoSnapshot.dirty=false")
   await Promise.resolve()
   const stale = await execute(command('click', { idx: 0 }, { ...pin, expected_snapshot_id: readPinned.snapshot_id, approved_action_id: 'approved' }))
   assert(stale.error_kind === 'stale_snapshot' && !(await a.page('window.submits')), 'remote snapshot forgery cannot hide DOM mutation')

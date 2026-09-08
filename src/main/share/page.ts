@@ -7,7 +7,7 @@ export function renderSharePage(id: string): string {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>小悠 · 给你的周末安排</title>
+<title>PlanGo · 给你的周末安排</title>
 <style>
   :root { --brand:#ffb800; --ink:#1a1a1a; --ink2:#8a8a8a; --bg:#f6f6f7; --card:#fff; --line:#ececec; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -66,7 +66,7 @@ async function load() {
   app.innerHTML =
     '<div class="banner"><div class="tag">有人给你分享了一套周末方案 🎁</div><h1>'+esc(p.title||'周末安排')+'</h1>'+
     '<div class="meta">'+esc(data.city||'')+' · '+(typeof p.total_cost==='number'?'合计约¥'+p.total_cost:'费用待核验')+' · '+(p.nodes||[]).length+' 站'+(p.total_travel_min?(' · 通勤约'+p.total_travel_min+'分钟'):'')+'</div></div>'+
-    '<div class="readonly">👀 只读分享页：看看行程，投个票，或写句想法给 TA，小悠会据此改方案。</div>'+
+    '<div class="readonly">👀 只读分享页：看看行程，投个票，或写句想法给 TA，PlanGo会据此改方案。</div>'+
     '<div class="card">'+nodes+'</div>'+
     '<div class="cta">'+
       '<button class="btn up" onclick="vote(\\'up\\',this)">👍 可以</button>'+
@@ -79,7 +79,7 @@ async function load() {
       '<div class="row"><button class="send" style="flex:1" onclick="sendIdea(this)">发送给 TA</button></div>'+
       '<div id="ideadone"></div>'+
     '</div>'+
-    '<div class="foot">由「小悠 · AI 本地生活浏览器」生成 · 仅同一 WiFi 可见</div>';
+    '<div class="foot">由「PlanGo · AI 本地生活浏览器」生成 · 仅同一 WiFi 可见</div>';
 }
 async function vote(v, btn) {
   myVote = v;
@@ -95,7 +95,7 @@ async function sendIdea(btn) {
   if (!idea && !budget) { document.getElementById('ideadone').innerHTML='<div class="done">写点想法或期望预算再发哦～</div>'; return; }
   btn.disabled = true;
   try { await fetch('/api/s/'+ID+'/pref',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({member:who,idea:idea,budget:budget})}); } catch(e){}
-  document.getElementById('ideadone').innerHTML='<div class="done">已发给 TA ✅ 小悠会参考你的意见改方案</div>';
+  document.getElementById('ideadone').innerHTML='<div class="done">已发给 TA ✅ PlanGo会参考你的意见改方案</div>';
 }
 load();
 </script>

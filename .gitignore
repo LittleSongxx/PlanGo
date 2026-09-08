@@ -18,3 +18,9 @@ __pycache__/
 output/
 .xiaonian-config.json
 .xiaonian-memory.json
+
+.plango/
+.plango-config.json
+.plango-memory.json
+.env.before-plango
+.env.migrating

@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent } from '@shared/types'
 import { projectHarness, projectEvents, runBusy, canResolveAction } from './lib/harnessProjection'
 import { originFallback as computeOrigin } from './lib/cityCenter'
+import { migrateLocalStorage } from './lib/storageMigration'
+
+migrateLocalStorage(localStorage)
 
 export interface Tab {
   id: string
@@ -29,8 +32,8 @@ export interface SavedSession {
   runId?: string
 }
 
-const SESS_KEY = 'xy_sessions'
-const HIDDEN_KEY = 'xy_hidden_sessions'
+const SESS_KEY = 'plango_sessions'
+const HIDDEN_KEY = 'plango_hidden_sessions'
 function hiddenSessionIds(): Set<string> {
   try {
     const ids = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]')
@@ -100,7 +103,7 @@ interface State {
   historyOpen: boolean
   sidePanelOpen: boolean
   discoverOpen: false | 'discover' | 'deals'
-  aiBrowsing: { active: boolean; site: string; action: string } // 顶部浮条：小悠正在浏览
+  aiBrowsing: { active: boolean; site: string; action: string } // 顶部浮条：PlanGo正在浏览
 
   addTab: (url: string) => string
   closeTab: (id: string) => void
@@ -147,7 +150,7 @@ export const useStore = create<State>((set, get) => ({
     {
       role: 'assistant',
       content:
-        '你好，我是小悠 👋 你的 AI 本地生活管家。\n告诉我人数、预算和想去的地方，我会结合真实地图与浏览器信息规划行程。菜单、团购和执行结果会保留来源；登录或网站操作需要你接管时，我会停下来等你。'
+        '你好，我是PlanGo 👋 你的 AI 本地生活管家。\n告诉我人数、预算和想去的地方，我会结合真实地图与浏览器信息规划行程。菜单、团购和执行结果会保留来源；登录或网站操作需要你接管时，我会停下来等你。'
     }
   ],
   steps: [],
@@ -212,7 +215,7 @@ export const useStore = create<State>((set, get) => ({
     if (!run || refreshingRun === run.run_id) return
     refreshingRun = run.run_id
     try {
-      const [snapshot, result] = await Promise.all([window.xiaonian.harness.getRun(run.run_id), window.xiaonian.harness.events(run.run_id, get().events.at(-1)?.seq || 0)])
+      const [snapshot, result] = await Promise.all([window.plango.harness.getRun(run.run_id), window.plango.harness.events(run.run_id, get().events.at(-1)?.seq || 0)])
       if (get().activeSessionId !== activeSessionId || get().run?.run_id !== run.run_id) return
       const events = [...new Map([...get().events, ...result.events].map(e => [e.seq, { ...e, run_id: run.run_id }])).values()].sort((a, b) => a.seq - b.seq)
       set({ events, steps: projectEvents(events) })
@@ -225,11 +228,11 @@ export const useStore = create<State>((set, get) => ({
   hydrateHarness: async () => {
     const activeSessionId = get().activeSessionId
     try {
-      const status = await window.xiaonian.harness.status()
+      const status = await window.plango.harness.status()
       set({ backendReady: status.ready, backendError: status.error || '' })
       if (!status.ready) return
       if (get().run) { await get().refreshRun(); return }
-      const runs = await window.xiaonian.harness.listRuns()
+      const runs = await window.plango.harness.listRuns()
       if (get().activeSessionId !== activeSessionId || get().run) return
       const sessions = visibleSessions(get().sessions)
       const hidden = hiddenSessionIds()
@@ -241,7 +244,7 @@ export const useStore = create<State>((set, get) => ({
       saveSessions(sessions)
       // The history stores references only; opening a run always fetches its
       // current plan and approval rather than trusting cached outcome cards.
-      const savedId = localStorage.getItem('xy_active_run')
+      const savedId = localStorage.getItem('plango_active_run')
       const saved = sessions.find(s => s.runId === savedId)
       if (saved) get().restoreSession(saved.id)
     } catch (e) { set({ backendReady: false, backendError: String(e) }) }
@@ -260,7 +263,7 @@ export const useStore = create<State>((set, get) => ({
     const { run, activeSessionId } = get()
     set((s) => ({ busy: true, requestBusy: true, backendError: '', messages: [...s.messages, { role: 'user', content: text }] }))
     try {
-      const snapshot = run ? await window.xiaonian.harness.sendMessage(run.run_id, text, image) : await window.xiaonian.harness.createRun(text, image)
+      const snapshot = run ? await window.plango.harness.sendMessage(run.run_id, text, image) : await window.plango.harness.createRun(text, image)
       if (get().activeSessionId !== activeSessionId) return
       get().applyHarness(snapshot)
       await get().refreshRun()
@@ -276,7 +279,7 @@ export const useStore = create<State>((set, get) => ({
     if (!run || get().busy || token !== (run.interrupt_id || run.state.interrupt_id)) return
     set({ requestBusy: true, busy: true, backendError: '' })
     try {
-      const snapshot = await window.xiaonian.harness.resume(run.run_id, token, ok ? 'approve' : 'reject')
+      const snapshot = await window.plango.harness.resume(run.run_id, token, ok ? 'approve' : 'reject')
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
     } catch (e) {
       if (get().activeSessionId === activeSessionId) set({ backendError: String(e) })
@@ -290,7 +293,7 @@ export const useStore = create<State>((set, get) => ({
     if (!canResolveAction(run, runId, actionId) || get().busy || !get().backendReady || !note.trim()) return
     set({ requestBusy: true, busy: true, backendError: '' })
     try {
-      const snapshot = await window.xiaonian.harness.resolveAction(runId, actionId, status, note.trim(), reference?.trim() || undefined)
+      const snapshot = await window.plango.harness.resolveAction(runId, actionId, status, note.trim(), reference?.trim() || undefined)
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
     } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
@@ -301,7 +304,7 @@ export const useStore = create<State>((set, get) => ({
     if (!run || plan.run_id !== run.run_id || !plan.version || get().busy || !get().backendReady) return
     set({ requestBusy: true, busy: true, backendError: '' })
     try {
-      const snapshot = await window.xiaonian.harness.selectPlan(run.run_id, plan.plan_id, plan.version)
+      const snapshot = await window.plango.harness.selectPlan(run.run_id, plan.plan_id, plan.version)
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
     } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
@@ -311,7 +314,7 @@ export const useStore = create<State>((set, get) => ({
     const { run, activeSessionId } = get()
     if (!run) return
     try {
-      const snapshot = await window.xiaonian.harness.cancel(run.run_id)
+      const snapshot = await window.plango.harness.cancel(run.run_id)
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
     } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
   },
@@ -322,7 +325,7 @@ export const useStore = create<State>((set, get) => ({
     if (!run || typeof interruptId !== 'string' || get().requestBusy) return
     set({ requestBusy: true, busy: true })
     try {
-      const snapshot = await window.xiaonian.harness.resume(run.run_id, interruptId, 'resume')
+      const snapshot = await window.plango.harness.resume(run.run_id, interruptId, 'resume')
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
     } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
@@ -344,7 +347,7 @@ export const useStore = create<State>((set, get) => ({
       const cards = SINGLETON.has(c.kind) ? [...s.cards.filter((x) => x.kind !== c.kind), c] : [...s.cards, c]
       return {
         cards,
-        // 小悠一产出成果卡片，主工作区自动切到"成果区"大视图（confirm 卡除外，避免打断浏览）
+        // PlanGo一产出成果卡片，主工作区自动切到"成果区"大视图（confirm 卡除外，避免打断浏览）
         view: c.kind === 'confirm' ? s.view : 'outcome'
       }
     }),
@@ -382,7 +385,7 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({ sessions: upsertSession(s), activeSessionId: 'sess_' + crypto.randomUUID(),
       messages: [{ role: 'assistant', content: '开始新的安排吧。告诉我地点、人数和预算。' }], cards: [], steps: [], events: [], run: null,
       busy: false, requestBusy: false, backendError: '', historyOpen: false }))
-    localStorage.removeItem('xy_active_run')
+    localStorage.removeItem('plango_active_run')
   },
   restoreSession: (id) => {
     const list = upsertSession(get())
@@ -391,8 +394,8 @@ export const useStore = create<State>((set, get) => ({
     set({ sessions: list, activeSessionId: id, messages: target.messages, cards: [], steps: [], events: [], run: null,
       busy: !!target.runId, requestBusy: !!target.runId, backendError: target.runId ? '' : '这是旧版会话的只读记录。发送消息会建立新的后端任务。', historyOpen: false })
     if (!target.runId) return
-    localStorage.setItem('xy_active_run', target.runId)
-    void window.xiaonian.harness.getRun(target.runId).then(async snapshot => {
+    localStorage.setItem('plango_active_run', target.runId)
+    void window.plango.harness.getRun(target.runId).then(async snapshot => {
       if (get().activeSessionId !== id) return
       set({ requestBusy: false })
       get().applyHarness(snapshot)
@@ -444,6 +447,6 @@ function upsertSession(s: State): SavedSession[] {
   const rest = sessions.filter((x) => x.id !== s.activeSessionId)
   const list = [snap, ...rest].sort((a, b) => b.updatedAt - a.updatedAt)
   saveSessions(list)
-  if (s.run) localStorage.setItem('xy_active_run', s.run.run_id)
+  if (s.run) localStorage.setItem('plango_active_run', s.run.run_id)
   return list
 }

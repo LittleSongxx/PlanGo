@@ -2,22 +2,22 @@ FROM condaforge/miniforge3:26.5.3-0
 COPY --from=ghcr.io/astral-sh/uv:0.11.31 /uv /usr/local/bin/uv
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
-RUN conda create --yes --name planora python=3.12 && conda clean --all --yes
-RUN uv export --frozen --no-dev --no-hashes --no-emit-project --output-file /tmp/yoyu-requirements.txt \
-    && uv pip install --no-cache --python /opt/conda/envs/planora/bin/python --requirements /tmp/yoyu-requirements.txt \
-    && rm /tmp/yoyu-requirements.txt
-COPY backend/yoyu ./backend/yoyu
-COPY vendor/planora/backend/planora ./vendor/planora/backend/planora
+RUN conda create --yes --name plango python=3.12 && conda clean --all --yes
+RUN uv export --frozen --no-dev --no-hashes --no-emit-project --output-file /tmp/plango-requirements.txt \
+    && uv pip install --no-cache --python /opt/conda/envs/plango/bin/python --requirements /tmp/plango-requirements.txt \
+    && rm /tmp/plango-requirements.txt
+COPY backend/plango ./backend/plango
+COPY vendor/plango_harness/backend/plango_harness ./vendor/plango_harness/backend/plango_harness
 COPY skills ./skills
 COPY alembic.ini ./
-RUN useradd --uid 10001 --create-home yoyu && mkdir /data && chown yoyu:yoyu /data
-USER yoyu
-ENV PATH="/opt/conda/envs/planora/bin:$PATH" \
-    CONDA_DEFAULT_ENV=planora \
-    CONDA_PREFIX=/opt/conda/envs/planora \
-    PYTHONPATH="/app/backend:/app/vendor/planora/backend" \
+RUN useradd --uid 10001 --create-home plango && mkdir /data && chown plango:plango /data
+USER plango
+ENV PATH="/opt/conda/envs/plango/bin:$PATH" \
+    CONDA_DEFAULT_ENV=plango \
+    CONDA_PREFIX=/opt/conda/envs/plango \
+    PYTHONPATH="/app/backend:/app/vendor/plango_harness/backend" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    YOYU_DATA_DIR=/data
+    PLANGO_DATA_DIR=/data
 EXPOSE 8011
-CMD ["python", "-m", "uvicorn", "yoyu.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8011"]
+CMD ["python", "-m", "uvicorn", "plango.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8011"]

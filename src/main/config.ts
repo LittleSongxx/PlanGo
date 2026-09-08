@@ -1,9 +1,10 @@
 // 配置层：读取 .env（轻量自解析，无需 dotenv 依赖）+ 运行时覆盖。
 // key 只从环境/本地 .env 读取，绝不硬编码进仓库源码。
-import { readFileSync, existsSync, writeFileSync } from 'fs'
+import { readFileSync, existsSync, writeFileSync, renameSync } from 'fs'
 import { join } from 'path'
 // 用默认导入以兼容 headless（tsx）：electron 非运行时下 module.exports 是字符串路径，app 取到 undefined。
 import electron from 'electron'
+import { migrateConfigFile } from './storageMigration'
 const app = (electron as unknown as { app?: { getPath: (n: string) => string } })?.app
 
 export interface AppConfig {
@@ -13,14 +14,25 @@ export interface AppConfig {
   coords: string // 用户当前坐标 "lng,lat"（GCJ02），作为周边搜索圆心/行程起点
 }
 
-function parseEnv(text: string): Record<string, string> {
+export function parseEnv(text: string): Record<string, string> {
   const out: Record<string, string> = {}
   for (const line of text.split(/\r?\n/)) {
-    const t = line.trim()
-    if (!t || t.startsWith('#')) continue
-    const i = t.indexOf('=')
-    if (i < 0) continue
-    out[t.slice(0, i).trim()] = t.slice(i + 1).trim()
+    if (!line.trim() || line.trimStart().startsWith('#')) continue
+    const assignment = /^[ \t]*(?:export[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)[ \t]*=(.*)$/.exec(line)
+    if (!assignment) throw new Error('Unsupported configuration line; existing configuration was preserved')
+    const key = assignment[1]
+    let value = assignment[2].trim()
+    if (value.startsWith('"') || value.startsWith("'")) {
+      const single = value.startsWith("'")
+      const quoted = (single ? /^'((?:\\.|[^'])*)'[ \t]*(?:#.*)?$/ : /^"((?:\\.|[^"])*)"[ \t]*(?:#.*)?$/).exec(value)
+      if (!quoted) throw new Error('Malformed quoted configuration value; existing configuration was preserved')
+      const escapes: Record<string, string> = single ? { '\\': '\\', "'": "'" } : {
+        '\\': '\\', '"': '"', "'": "'", a: '\x07', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t', v: '\v'
+      }
+      value = quoted[1].replace(/\\(.)/g, (sequence, escaped: string) => escapes[escaped] ?? sequence)
+    } else value = value.replace(/[ \t]+#.*$/, '').trimEnd()
+    if (Object.hasOwn(out, key) && out[key] !== value) throw new Error(`Conflicting configuration values for ${key}; existing configuration was preserved`)
+    out[key] = value
   }
   return out
 }
@@ -41,31 +53,28 @@ function projectRoot(): string {
 function loadEnvFile(): Record<string, string> {
   const candidates = [join(projectRoot(), '.env'), join(projectRoot(), '.env.example')]
   for (const p of candidates) {
-    if (existsSync(p)) {
-      try {
-        return parseEnv(readFileSync(p, 'utf-8'))
-      } catch {
-        /* ignore */
-      }
-    }
+    if (existsSync(p)) return parseEnv(readFileSync(p, 'utf-8'))
   }
   return {}
 }
 
 // Main-process only. Never expose this object through IPC: it may contain credentials.
-export function getHarnessEnvironment(): Record<string, string> {
+function currentEnvironment(): Record<string, string | undefined> {
   const values = { ...loadEnvFile(), ...process.env }
-  return Object.fromEntries(Object.entries(values).filter(([key, value]) => key.startsWith('YOYU_') && typeof value === 'string')) as Record<string, string>
+  const legacy = Object.keys(values).filter(key => /^(?:YOYU_|XIAONIAN_)/.test(key) || ['LLM_PROVIDER', 'DATA_SOURCE'].includes(key))
+  if (legacy.length) throw new Error(`Legacy configuration keys require one-time migration: ${legacy.join(', ')}`)
+  return values
 }
 
-// 运行时覆盖（设置页写入），落 userData/xiaonian-config.json
+export function getHarnessEnvironment(): Record<string, string> {
+  const values = currentEnvironment()
+  return Object.fromEntries(Object.entries(values).filter(([key, value]) => key.startsWith('PLANGO_') && typeof value === 'string')) as Record<string, string>
+}
+
+// 运行时覆盖（设置页写入），落 userData/plango-config.json
 function overridePath(): string {
-  try {
-    if (app) return join(app.getPath('userData'), 'xiaonian-config.json')
-  } catch {
-    /* ignore */
-  }
-  return join(projectRoot(), '.xiaonian-config.json')
+  if (app) return migrateConfigFile(app.getPath('userData'))
+  return migrateConfigFile(projectRoot(), '.')
 }
 
 function loadOverride(): Partial<AppConfig> {
@@ -73,18 +82,16 @@ function loadOverride(): Partial<AppConfig> {
   if (existsSync(p)) {
     try {
       return JSON.parse(readFileSync(p, 'utf-8'))
-    } catch {
-      /* ignore */
-    }
+    } catch { throw new Error('PlanGo settings could not be read; existing configuration was preserved') }
   }
   return {}
 }
 
 export function getConfig(): AppConfig {
   if (cache) return cache
-  const env = { ...loadEnvFile(), ...process.env } as Record<string, string>
+  const env = currentEnvironment()
   // LLM provider 可切换：longcat（默认）/ minimax。MiniMax 为 OpenAI 兼容端点。
-  const provider = (env.LLM_PROVIDER || 'longcat').toLowerCase()
+  const provider = (env.PLANGO_LLM_PROVIDER || 'longcat').toLowerCase()
   const longcat = {
     apiKey: env.LONGCAT_API_KEY || '',
     baseURL: env.LONGCAT_BASE_URL || 'https://api.longcat.chat/openai/v1',
@@ -108,13 +115,13 @@ export function getConfig(): AppConfig {
       jsKey: env.AMAP_JS_KEY || '',
       jsSecurity: env.AMAP_JS_SECURITY || ''
     },
-    city: env.XIAONIAN_CITY || '上海',
-    coords: env.XIAONIAN_COORDS || ''
+    city: env.PLANGO_CITY || '重庆',
+    coords: env.PLANGO_COORDS || ''
   }
   const ov = loadOverride()
   cache = deepMerge(base, ov)
   // 兜底净化：历史 override 里可能残留 city="本地" 等非法值，覆盖回 .env/默认，防止全国乱串
-  if (!isValidCity(cache.city)) cache.city = isValidCity(base.city) ? base.city : '上海'
+  if (!isValidCity(cache.city)) cache.city = isValidCity(base.city) ? base.city : '重庆'
   return cache
 }
 
@@ -122,12 +129,10 @@ export function setConfig(patch: Partial<AppConfig>): AppConfig {
   // 丢弃非法城市写入（占位/兜底），避免污染持久化配置
   if (patch.city !== undefined && !isValidCity(patch.city)) delete patch.city
   const next = deepMerge(getConfig(), patch)
+  const file = overridePath()
+  writeFileSync(`${file}.tmp`, JSON.stringify(next, null, 2), { mode: 0o600 })
+  renameSync(`${file}.tmp`, file)
   cache = next
-  try {
-    writeFileSync(overridePath(), JSON.stringify(next, null, 2), 'utf-8')
-  } catch {
-    /* ignore */
-  }
   return next
 }
 

@@ -119,7 +119,7 @@ export function ChatPanel(): JSX.Element {
   return (
     <div className="h-full flex flex-col bg-white">
       <div className="h-9 shrink-0 flex items-center px-3 border-b border-neutral-100">
-        <span className="text-sm font-semibold">小悠 · 对话</span>
+        <span className="text-sm font-semibold">PlanGo · 对话</span>
         <span className="ml-2 text-xs text-brand-ink/70" role="status">{backendReady ? phaseLabel(run) : '未连接服务'}</span>
         {run && !run.outcome && <button onClick={() => void cancelRun()} className="ml-2 text-xs text-neutral-500 hover:text-red-600">停止任务</button>}
         <div className="ml-auto flex items-center gap-1">
@@ -148,11 +148,11 @@ export function ChatPanel(): JSX.Element {
         <div className="mx-3 mt-2 p-2.5 rounded-lg bg-brand-soft border border-brand/40 flex items-start gap-2 animate-in">
           <Bell size={15} className="text-brand-ink mt-0.5 shrink-0" />
           <div className="flex-1 text-xs text-neutral-700">
-            <div className="font-medium text-brand-ink mb-0.5">小悠主动关心</div>
+            <div className="font-medium text-brand-ink mb-0.5">PlanGo主动关心</div>
             {latestProactive.text}
             <div className="mt-1.5">
               <button onClick={() => void send(latestProactive.text)} className="text-[11px] px-2 py-0.5 rounded bg-brand text-brand-ink font-medium mr-2">
-                让小悠安排
+                让PlanGo安排
               </button>
             </div>
           </div>
@@ -193,7 +193,7 @@ export function ChatPanel(): JSX.Element {
           <button
             onClick={() => fileRef.current?.click()}
             disabled={busy}
-            title="导入攻略截图（小红书/大众点评），小悠用视觉识别→规划"
+            title="导入攻略截图（小红书/大众点评），PlanGo用视觉识别→规划"
             className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-200 disabled:opacity-40"
           >
             <ImagePlus size={16} />
@@ -218,7 +218,7 @@ export function ChatPanel(): JSX.Element {
               }
             }}
             rows={1}
-            placeholder="跟小悠说一句…也可贴小红书/点评攻略链接，或点左侧📷传攻略截图"
+            placeholder="跟PlanGo说一句…也可贴小红书/点评攻略链接，或点左侧📷传攻略截图"
             className="flex-1 bg-transparent outline-none text-sm resize-none max-h-24"
           />
           <button onClick={submit} disabled={busy || !backendReady || !text.trim()} className="p-1.5 rounded-lg bg-brand text-brand-ink disabled:opacity-40">

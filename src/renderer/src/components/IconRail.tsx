@@ -45,7 +45,7 @@ export function IconRail(): JSX.Element {
 
   return (
     <aside className="w-[68px] shrink-0 flex flex-col items-center bg-neutral-900 text-neutral-300 py-3 gap-1 select-none">
-      <div className="w-9 h-9 rounded-xl bg-brand flex items-center justify-center mb-2" title="小悠">
+      <div className="w-9 h-9 rounded-xl bg-brand flex items-center justify-center mb-2" title="PlanGo">
         <Sparkles size={18} className="text-brand-ink" />
       </div>
 

@@ -4,7 +4,8 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
-from planora.agent.contracts import (
+from plango.planning import BrowserPlanEngine, preserve_locks, variants
+from plango_harness.agent.contracts import (
     Evidence,
     Location,
     PlaceCandidate,
@@ -14,10 +15,9 @@ from planora.agent.contracts import (
     PlanStop,
     TripSpec,
 )
-from planora.domain.planning import compile_plan_draft
-from planora.providers.world import Supply
-from planora.tools.registry import ToolContext
-from yoyu.planning import BrowserPlanEngine, preserve_locks, variants
+from plango_harness.domain.planning import compile_plan_draft
+from plango_harness.providers.world import Supply
+from plango_harness.tools.registry import ToolContext
 
 
 class AlternativesCheck(unittest.IsolatedAsyncioTestCase):

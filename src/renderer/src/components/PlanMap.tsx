@@ -141,7 +141,7 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
     const last = [...plan.nodes].reverse().find((n) => n.poi?.lng && n.poi?.lat)
     const openHref =
       last?.poi?.lng && last.poi.lat
-        ? `https://uri.amap.com/marker?position=${last.poi.lng},${last.poi.lat}&name=${encodeURIComponent(last.title)}&src=xiaonian&coordinate=gaode`
+        ? `https://uri.amap.com/marker?position=${last.poi.lng},${last.poi.lat}&name=${encodeURIComponent(last.title)}&src=plango&coordinate=gaode`
         : ''
     return (
       <div className="w-full h-52 rounded-xl border border-neutral-200 mb-3 bg-neutral-50 flex flex-col items-center justify-center gap-2 text-sm text-neutral-500">
@@ -149,7 +149,7 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
         {openHref && (
           <button
             className="px-3 py-1 rounded-lg bg-brand text-white text-xs"
-            onClick={() => window.xiaonian.openExternal(openHref)}
+            onClick={() => window.plango.openExternal(openHref)}
           >
             在高德地图中打开
           </button>

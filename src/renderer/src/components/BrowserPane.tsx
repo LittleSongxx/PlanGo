@@ -116,7 +116,7 @@ export function BrowserPane(): JSX.Element {
             <div>
               <div className="text-lg font-semibold">内置浏览器 · 登录你的真实账号</div>
               <div className="text-sm text-neutral-500 mt-1 max-w-md">
-                打开大众点评/美团并登录后，小悠就能读到真实门店、团购、菜单、排队信息（登录态持久保存）。也可以让小悠自己开页面。
+                打开大众点评/美团并登录后，PlanGo就能读到真实门店、团购、菜单、排队信息（登录态持久保存）。也可以让PlanGo自己开页面。
               </div>
             </div>
             <div className="flex flex-wrap gap-2 justify-center">
@@ -147,7 +147,7 @@ export function BrowserPane(): JSX.Element {
               }
             }) as any}
             src={t.url}
-            partition="persist:xiaonian"
+            partition="persist:plango"
             className="absolute inset-0 w-full h-full bg-white"
             style={{ display: activeTabId === t.id ? 'flex' : 'none' }}
           />

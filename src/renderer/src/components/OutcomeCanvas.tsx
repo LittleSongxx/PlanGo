@@ -65,7 +65,7 @@ export function OutcomeCanvas(): JSX.Element {
               <ListChecks size={30} className="text-brand-ink" />
             </div>
             <div className="text-sm max-w-xs">
-              让小悠规划一下，行程、比价、点菜、排号、执行回执都会以精美卡片出现在这块大画布里。
+              让PlanGo规划一下，行程、比价、点菜、排号、执行回执都会以精美卡片出现在这块大画布里。
             </div>
           </div>
         ) : (
@@ -738,7 +738,7 @@ function QueueCard({ shopName, number, ahead, etaMin, source }: { shopName: stri
         <div className="text-xs text-neutral-600 space-y-1">
           <div>前面还有 <b className="text-red-500">{ahead}</b> 桌</div>
           <div>预计等待 <b>{etaMin}</b> 分钟</div>
-          <div className="text-neutral-400">建议先去逛，到点小悠提醒你</div>
+          <div className="text-neutral-400">建议先去逛，到点PlanGo提醒你</div>
         </div>
       </div>
     </Card>

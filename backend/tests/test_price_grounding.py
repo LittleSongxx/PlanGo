@@ -3,9 +3,9 @@
 import unittest
 from types import SimpleNamespace
 
-from yoyu.browser import run_context
-from yoyu.settings import DesktopSettings
-from yoyu.world import BrowserWorld, Item, ObservedPlace, PageData, table_data
+from plango.browser import run_context
+from plango.settings import DesktopSettings
+from plango.world import BrowserWorld, Item, ObservedPlace, PageData, table_data
 
 
 class PriceGroundingCheck(unittest.IsolatedAsyncioTestCase):

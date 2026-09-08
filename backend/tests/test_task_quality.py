@@ -1,7 +1,7 @@
 """Independent user-outcome acceptance cases; all model, DOM and world inputs are TEST fixtures.
 
 No network, credentials, sibling checkout, or imported Planora evaluation answers.
-Run: conda run -n planora python -m pytest backend/tests/test_task_quality.py -q
+Run: conda run -n plango python -m pytest backend/tests/test_task_quality.py -q
 """
 
 import tempfile
@@ -10,7 +10,13 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
-from planora.agent.contracts import (
+from plango.app import create_app
+from plango.browser import run_context
+from plango.graph import BrowserDecision
+from plango.planning import BrowserPlanEngine
+from plango.supply import literal_supply
+from plango.world import BrowserWorld, Item, ObservedPlace, PageData
+from plango_harness.agent.contracts import (
     Evidence,
     PartyMember,
     PlaceCandidate,
@@ -18,15 +24,9 @@ from planora.agent.contracts import (
     PlanStop,
     TripSpec,
 )
-from planora.agent.subagents.requirement import RequirementAgent
-from planora.providers.world import Supply
+from plango_harness.agent.subagents.requirement import RequirementAgent
+from plango_harness.providers.world import Supply
 from test_browser_harness import TOKEN, fixture, settings, wait_for
-from yoyu.app import create_app
-from yoyu.browser import run_context
-from yoyu.graph import BrowserDecision
-from yoyu.planning import BrowserPlanEngine
-from yoyu.supply import literal_supply
-from yoyu.world import BrowserWorld, Item, ObservedPlace, PageData
 
 TERMINAL = {"SUCCEEDED", "PARTIAL_FAILED", "FAILED", "INFEASIBLE", "CANCELLED"}
 

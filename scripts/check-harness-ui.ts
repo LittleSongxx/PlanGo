@@ -39,7 +39,7 @@ const cache = new Map<string, string>()
 Object.defineProperty(globalThis, 'localStorage', { value: { getItem: (k: string) => cache.get(k) ?? null, setItem: (k: string, v: string) => cache.set(k, v), removeItem: (k: string) => cache.delete(k) } })
 let resolveCreate!: (value: HarnessSnapshot) => void
 const calls: string[] = []
-Object.defineProperty(globalThis, 'window', { value: { xiaonian: { harness: {
+Object.defineProperty(globalThis, 'window', { value: { plango: { harness: {
   createRun: () => new Promise<HarnessSnapshot>(resolve => { resolveCreate = resolve }),
   getRun: async (id: string) => { calls.push(`get:${id}`); return snapshot },
   events: async () => ({ events: [] }),
@@ -57,7 +57,7 @@ const session = useStore.getState().sessions[0]
 assert.equal(session.runId, snapshot.run_id)
 assert.deepEqual(session.cards, [], 'History must not persist executable approval cards')
 useStore.getState().newSession()
-assert.equal(cache.get('xy_active_run'), undefined)
+assert.equal(cache.get('plango_active_run'), undefined)
 const pending = useStore.getState().send('新的安排')
 useStore.getState().newSession()
 resolveCreate(snapshot)
@@ -80,7 +80,7 @@ const changedPage = { ...browserApproval, state: { ...browserApproval.state, bro
 assert.equal(projectHarness(changedPage).cards.some(c => c.kind === 'confirm'), false)
 console.log('Standalone browser approval checks passed')
 
-;(window.xiaonian.harness as any).selectPlan = async (runId: string, planId: string, version: number) => {
+;(window.plango.harness as any).selectPlan = async (runId: string, planId: string, version: number) => {
   calls.push(`select:${runId}:${planId}:${version}`)
   return snapshot
 }
@@ -105,7 +105,7 @@ assert.match(manualReceipt.items[0].detail, /已在订单页核对/)
 assert.equal(manualReceipt.items[0].resolution_required, false)
 assert(!canResolveAction(userConfirmed, 'run-1', 'write-1'))
 let manualCalls = 0
-;(window.xiaonian.harness as any).resolveAction = async (runId: string, actionId: string, status: string, note: string) => {
+;(window.plango.harness as any).resolveAction = async (runId: string, actionId: string, status: string, note: string) => {
   manualCalls++
   assert.equal(runId, 'run-1'); assert.equal(actionId, 'write-1'); assert.equal(status, 'SUCCEEDED'); assert(note.trim())
   return userConfirmed
@@ -163,12 +163,12 @@ useStore.getState().deleteSession(hiddenRunSession.id)
 assert.equal(useStore.getState().run, null, 'Hiding the active history item resets only the local view')
 assert.equal(useStore.getState().cards.length, 0)
 assert.equal(useStore.getState().view, 'browser')
-assert.equal(cache.get('xy_active_run'), undefined)
+assert.equal(cache.get('plango_active_run'), undefined)
 assert(!useStore.getState().sessions.some(session => session.runId === 'run-1'))
 useStore.getState().persistSession()
 assert(!useStore.getState().sessions.some(session => session.runId === 'run-1'), 'Active upserts cannot resurrect hidden runs')
-;(window.xiaonian.harness as any).status = async () => ({ ready: true })
-;(window.xiaonian.harness as any).listRuns = async () => [snapshot]
+;(window.plango.harness as any).status = async () => ({ ready: true })
+;(window.plango.harness as any).listRuns = async () => [snapshot]
 await useStore.getState().hydrateHarness()
 assert(!useStore.getState().sessions.some(session => session.runId === 'run-1'), 'Backend list refresh cannot resurrect hidden runs')
 useStore.getState().applyHarness(snapshot)
@@ -179,7 +179,7 @@ useStore.getState().deleteSession(legacySession.id)
 useStore.getState().persistSession()
 await useStore.getState().hydrateHarness()
 assert(!useStore.getState().sessions.some(session => session.id === legacySession.id))
-cache.set('xy_sessions', JSON.stringify([hiddenRunSession, { ...hiddenRunSession, id: 'different-local-alias' }, legacySession]))
+cache.set('plango_sessions', JSON.stringify([hiddenRunSession, { ...hiddenRunSession, id: 'different-local-alias' }, legacySession]))
 assert.deepEqual(loadSessions(), [], 'Reload filters hidden backend run aliases and legacy session IDs')
 assert.deepEqual(calls, priorCalls, 'Local hiding must not issue backend business mutations')
 assert.equal(manualCalls, priorManualCalls)

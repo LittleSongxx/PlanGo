@@ -6,6 +6,18 @@ import { startShareServer, stopShareServer } from './share/server'
 import { harnessStatus, stopHarness } from './harness'
 import { allowedBrowserSite } from '../shared/browser'
 import { getHarnessEnvironment } from './config'
+import { prepareDesktopStorage } from './storageMigration'
+
+try {
+  const desktopData = prepareDesktopStorage(app.getPath('appData'), app.getPath('userData'))
+  app.setPath('userData', desktopData)
+  app.setPath('sessionData', desktopData)
+  app.setName('PlanGo')
+  app.setAppUserModelId('plango')
+} catch (error) {
+  console.error('[plango] Desktop initialization failed:', (error as Error).message)
+  app.exit(1)
+}
 
 let mainWindow: BrowserWindow | null = null
 const browserContents = new Set<number>()
@@ -20,7 +32,7 @@ function createWindow(): void {
     minHeight: 740,
     show: false,
     autoHideMenuBar: true,
-    title: '小悠 · AI 本地生活浏览器',
+    title: 'PlanGo · AI 本地生活浏览器',
     backgroundColor: '#faf9f7',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: {
@@ -40,7 +52,7 @@ function createWindow(): void {
     return { action: 'deny' }
   })
   mainWindow.webContents.on('will-attach-webview', (event, preferences, params) => {
-    if (!/^https?:\/\//i.test(params.src || '') || params.partition !== 'persist:xiaonian') {
+    if (!/^https?:\/\//i.test(params.src || '') || params.partition !== 'persist:plango') {
       event.preventDefault()
       return
     }
@@ -64,7 +76,7 @@ function createWindow(): void {
 
 // Apply permissions to the actual persistent browser partition, not just the host window.
 function hardenSession(): void {
-  for (const session of [electronSession.defaultSession, electronSession.fromPartition('persist:xiaonian')]) {
+  for (const session of [electronSession.defaultSession, electronSession.fromPartition('persist:plango')]) {
     session.setPermissionRequestHandler((wc, permission, cb, details) => {
       const origin = details.requestingUrl || wc.getURL()
       cb(permission === 'geolocation' && allowedBrowserSite(origin))
@@ -76,7 +88,7 @@ function hardenSession(): void {
     contents.on('will-navigate', (event, url) => { if (!/^https?:\/\//i.test(url)) event.preventDefault() })
     contents.setWindowOpenHandler(({ url }) => {
       if (!allowedBrowserSite(url)) return { action: 'deny' }
-      return { action: 'allow', overrideBrowserWindowOptions: { webPreferences: { partition: 'persist:xiaonian', sandbox: true, contextIsolation: true, nodeIntegration: false } } }
+      return { action: 'allow', overrideBrowserWindowOptions: { webPreferences: { partition: 'persist:plango', sandbox: true, contextIsolation: true, nodeIntegration: false } } }
     })
   })
 }
@@ -95,7 +107,7 @@ app.whenReady().then(() => {
     .catch(() => {})
 
   // 局域网分享协作服务（同 WiFi 手机扫码看方案/投票/留评语）
-  Promise.resolve().then(() => startShareServer(8799, getHarnessEnvironment().YOYU_DATA_DIR || join(app.getPath('userData'), 'harness'))).then((p) => console.log(p ? `[share] 局域网分享服务已启动 :${p}` : '[share] 启动失败')).catch(() => {})
+  Promise.resolve().then(() => startShareServer(8799, getHarnessEnvironment().PLANGO_DATA_DIR || join(app.getPath('userData'), 'harness'))).then((p) => console.log(p ? `[share] 局域网分享服务已启动 :${p}` : '[share] 启动失败')).catch(() => {})
 
   // The renderer reports configuration errors; startup never seeds fabricated user history.
   void harnessStatus()
@@ -103,7 +115,7 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
-})
+}).catch((error) => { console.error('[plango] Desktop startup failed:', (error as Error).message); app.exit(1) })
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()

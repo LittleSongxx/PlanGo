@@ -1,11 +1,12 @@
-# YOYU 项目约定
+# PlanGo 项目约定（当前仓库名 PlanGo）
 
 已确认的项目决策见 [docs/架构决策.md](docs/架构决策.md)。开始设计或改动前先读该文件；其中的目标架构不代表已经实现。
 
 接续本轮实施时先读 [docs/CODEX_实施交接.md](docs/CODEX_实施交接.md)，按其中阶段、证据边界与验证要求继续；不要把历史审查发现当成已经修复。
 
 - 项目独立运行，不依赖兄弟 Planora 仓库、环境配置或服务；上游仅通过本仓库固定源码与显式维护操作参考。
-- 后端 Python 使用名为 `planora` 的 conda 环境；该名称不代表依赖 Planora 项目。
+- 用户于 2026-09-09 确认全面更名为 **PlanGo**；产品展示名使用 `PlanGo`，技术标识统一为 `plango` / `PLANGO_`。UI、源码包、Docker、conda、配置、脚本和文档都在迁移范围，不能只改展示文案。具体迁移与验收见交接文档 R0。
+- 后端 Python 已迁入本项目独立 `plango` conda 环境，全部启动入口使用该环境。不得重命名、删除或改坏可能被兄弟项目使用的原 `planora` 环境。
 - 保留 Electron 桌面与真实可见浏览器。浏览器演进方向已确认：WebContentsView、经适配验证的 Playwright/CDP、DOM-first 与按需 Vision，共用同一会话及 Harness 授权/回执边界。
 - 不用 mock 补齐正常运行的商家事实或业务结果。测试样本与真实业务验收必须明确区分。
 - 本项目 `.env` 中的密钥不输出、不提交；不要修改兄弟 Planora 正在进行的工作。

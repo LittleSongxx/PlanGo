@@ -28,7 +28,7 @@ export function ShareModal(): JSX.Element | null {
     setState(null)
     setError('')
     setFb(null)
-    window.xiaonian
+    window.plango
       .shareCreate({ plan, city })
       .then((r) => {
         if (!alive) return
@@ -38,7 +38,7 @@ export function ShareModal(): JSX.Element | null {
         }
         setState({ id: r.id, url: r.url, qr: r.qr || '' })
         timer.current = setInterval(async () => {
-          const f = await window.xiaonian.shareFeedback(r.id!)
+          const f = await window.plango.shareFeedback(r.id!)
           if (alive) setFb(f)
         }, 3000)
       })

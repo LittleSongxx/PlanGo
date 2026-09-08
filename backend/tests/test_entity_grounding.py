@@ -3,10 +3,10 @@
 import unittest
 from types import SimpleNamespace
 
-from yoyu.browser import run_context
-from yoyu.settings import DesktopSettings
-from yoyu.supply import entity_spans, literal_supply
-from yoyu.world import BrowserWorld, Item, ObservedPlace, PageData
+from plango.browser import run_context
+from plango.settings import DesktopSettings
+from plango.supply import entity_spans, literal_supply
+from plango.world import BrowserWorld, Item, ObservedPlace, PageData
 
 
 class EntityGroundingCheck(unittest.IsolatedAsyncioTestCase):

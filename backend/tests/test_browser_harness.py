@@ -6,8 +6,8 @@ import unittest
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from yoyu.app import create_app
-from yoyu.settings import DesktopSettings
+from plango.app import create_app
+from plango.settings import DesktopSettings
 
 TOKEN = "isolated-test-token"
 
@@ -219,7 +219,7 @@ class BrowserHarnessCheck(unittest.TestCase):
 
 class ActionAndPlanningCheck(unittest.TestCase):
     def test_browser_write_requires_exact_approval_and_receipt(self):
-        from yoyu.graph import BrowserDecision
+        from plango.graph import BrowserDecision
 
         with tempfile.TemporaryDirectory() as directory:
             app = create_app(settings(directory), token=TOKEN)
@@ -524,13 +524,13 @@ class ActionAndPlanningCheck(unittest.TestCase):
 
 
 class BoundaryCheck(unittest.TestCase):
-    def test_settings_ignore_planora_environment_and_image_uses_budgeted_adapter(self):
+    def test_settings_ignore_foreign_environment_and_image_uses_budgeted_adapter(self):
         import os
         from types import SimpleNamespace
         from unittest.mock import patch
 
-        from yoyu.graph import ImageReading
-        from yoyu.settings import settings_from_env
+        from plango.graph import ImageReading
+        from plango.settings import settings_from_env
 
         with tempfile.TemporaryDirectory() as directory:
             with patch.dict(
@@ -540,7 +540,7 @@ class BoundaryCheck(unittest.TestCase):
                     "DATABASE_URL": "sqlite+aiosqlite:////tmp/unrelated.sqlite",
                     "PLANORA_CHECKPOINT_PATH": "/tmp/unrelated-cp",
                     "PLANORA_WORLD_PROVIDER": "sandbox",
-                    "YOYU_DATA_DIR": directory,
+                    "PLANGO_DATA_DIR": directory,
                 },
             ):
                 config = settings_from_env()
@@ -623,8 +623,8 @@ class BoundaryCheck(unittest.TestCase):
                 )
 
     def test_repeated_identical_read_gets_new_command_and_cancelled_rows_do_not_starve(self):
+        from plango.browser import commands
         from sqlalchemy import insert
-        from yoyu.browser import commands
 
         with tempfile.TemporaryDirectory() as directory:
             app = create_app(settings(directory), token=TOKEN)
@@ -715,7 +715,7 @@ class BoundaryCheck(unittest.TestCase):
 
 class ReceiptIntegrationCheck(unittest.TestCase):
     def test_page_confirmation_is_observed_but_business_identity_remains_unknown(self):
-        from yoyu.graph import BrowserDecision
+        from plango.graph import BrowserDecision
 
         with tempfile.TemporaryDirectory() as directory:
             config = settings(directory)
@@ -811,7 +811,7 @@ class ReceiptIntegrationCheck(unittest.TestCase):
 
 class BrowserTurnRegressionCheck(unittest.TestCase):
     def test_approval_edit_replans_and_cancelled_run_accepts_followup(self):
-        from yoyu.graph import BrowserDecision
+        from plango.graph import BrowserDecision
 
         with tempfile.TemporaryDirectory() as directory:
             app = create_app(settings(directory), token=TOKEN)
@@ -890,7 +890,7 @@ class BrowserTurnRegressionCheck(unittest.TestCase):
                 )
 
     def test_unknown_type_ack_cannot_become_success_from_unchanged_page(self):
-        from yoyu.graph import BrowserDecision
+        from plango.graph import BrowserDecision
 
         with tempfile.TemporaryDirectory() as directory:
             app = create_app(settings(directory), token=TOKEN)

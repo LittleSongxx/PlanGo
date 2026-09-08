@@ -45,11 +45,12 @@ function projectedReply(run: HarnessSnapshot): AgentReply {
 }
 
 export function registerIpc(): void {
+  handle('desktop:ready', () => { console.log('[plango] Desktop ready') })
   handle('browser:eval', (contentsId: number, code: string) => {
     z.number().int().positive().parse(contentsId)
     z.string().max(250_000).parse(code)
     const target = webContents.fromId(contentsId)
-    if (!target || !ownsBrowserContents(contentsId) || target.getType() !== 'webview' || target.session !== electronSession.fromPartition('persist:xiaonian')) throw new Error('Untrusted browser target')
+    if (!target || !ownsBrowserContents(contentsId) || target.getType() !== 'webview' || target.session !== electronSession.fromPartition('persist:plango')) throw new Error('Untrusted browser target')
     return target.executeJavaScriptInIsolatedWorld(1001, [{ code }])
   })
   handle(IPC.reminderRequest, async (operation: string, raw: unknown) => {
@@ -116,7 +117,7 @@ export function registerIpc(): void {
     resolveBrowserAction(payload.id, payload.result)
   })
 
-  handle(IPC.getConfig, () => ({ config: { ...getConfigMasked(), harness: { baseURL: getHarnessEnvironment().YOYU_BACKEND_URL || 'http://127.0.0.1:8011', autoStart: getHarnessEnvironment().YOYU_BACKEND_AUTOSTART !== 'false' } }, cities: [] }))
+  handle(IPC.getConfig, () => ({ config: { ...getConfigMasked(), harness: { baseURL: getHarnessEnvironment().PLANGO_BACKEND_URL || 'http://127.0.0.1:8011', autoStart: getHarnessEnvironment().PLANGO_BACKEND_AUTOSTART !== 'false' } }, cities: [] }))
   handle(IPC.setConfig, async (raw: unknown) => {
     const patch = z.object({
       llm: z.object({ apiKey: z.string().max(2048), baseURL: z.string().url(), model: z.string().min(1).max(200) }).partial().optional(),

@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
-sys.path[:0] = [str(root / "backend"), str(root / "vendor" / "planora" / "backend")]
+sys.path[:0] = [str(root / "backend"), str(root / "vendor" / "plango_harness" / "backend")]
 
 if __name__ == "__main__":
     from dotenv import dotenv_values
@@ -13,6 +13,6 @@ if __name__ == "__main__":
     for key, value in dotenv_values(root / ".env").items():
         if value is not None:
             os.environ.setdefault(key, value)
-    from yoyu.app import main
+    from plango.app import main
 
     main()

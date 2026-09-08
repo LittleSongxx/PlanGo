@@ -1,16 +1,18 @@
-# YOYU 后续实施交接
+# PlanGo 后续实施交接（原 YOYU）
 
-交接日期：2026-09-08。交接前基线：`82f2325`，分支 `feat/planora-browser-harness`。后续若 HEAD/工作区已变化，以新会话实际检查结果为准。本文件汇总前序对话，供新 Codex 会话直接实施，而不是重新开始一轮泛化选型讨论。
+首次交接：2026-09-08；更新：2026-09-09。原交接提交：`6b52d6c`，分支 `feat/planora-browser-harness`。后续若 HEAD/工作区已变化，以新会话实际检查结果为准。本文件汇总前序对话，供新 Codex 会话直接实施，而不是重新开始一轮泛化选型讨论。
+
+**最新要求：全面更名为 PlanGo。** R0 源码、环境、数据库/Redis与桌面状态已实施迁移，详细本轮验证和后续工作见 [实施进度](实施进度.md)。下文旧路径表格是迁移前定位与兼容依据。展示名用 `PlanGo`，技术标识用 `plango` / `PLANGO_`；先完成 R0，再继续 P0→P3。旧文件名、路径和测试证据在下文作为迁移前定位依据保留，不能据此继续要求新项目使用旧名称。可直接复制的启动提示词见 [CODEX_接手提示词.md](CODEX_接手提示词.md)。
 
 ## 用户要求与授权范围
 
-用户希望将 YOYU 丰富的本地生活功能、真实可见浏览器操作，与有持久化、审批、证据和恢复能力的 Harness 融合；项目必须完全独立。用户明确要求不要盲目复制 Planora，需边实施边验证和优化。用户已要求综合全部分析路线，另开 Codex 会话继续实施。
+用户希望将 YOYU 丰富的本地生活功能、真实可见浏览器操作，与有持久化、审批、证据和恢复能力的 Harness 融合；最终项目命名为 PlanGo，必须完全独立。用户明确要求不要盲目复制 Planora，需边实施边验证和优化。用户将自行新开 Codex 对话并粘贴提示词接手，无需代为启动其他会话。
 
-- 工作区：`/home/song/code/Agent/multi-agent/YOYU`。先读根目录 `AGENTS.md` 和 `docs/架构决策.md`。
+- 当前工作区：`/home/song/code/Agent/multi-agent/PlanGo`；由同级 `YOYU` 迁入。若已迁移，使用实际目录并核实 Git 历史，不新建空项目覆盖。先读根目录 `AGENTS.md` 和 `docs/架构决策.md`。
 - 允许修改本仓库中的 `vendor/planora` 固定副本；禁止修改或运行依赖兄弟 `../Planora` 仓库、配置、服务，避免干扰其测评。
-- 后端 Python 使用 conda `planora`。不要恢复旧 `.venv`；不要向共享 conda 环境无差别 sync/卸载或无必要升级既有包。当前运行依赖已与本仓库锁核对过。
+- 迁移前后端使用 conda `planora`；现使用独立 conda `plango`，本地与 Docker 内都要切换。新建环境并按本项目锁安装验证，不重命名/删除或无差别修改原环境，不恢复旧 `.venv`。
 - 本项目 `.env` 已配置真实 OpenAI-compatible 模型、高德 Web Key、JS Key、安全密钥和默认重庆；读取本项目文件即可，不再向用户索要这些已配置值。不输出、复制到公共报告或提交任何密钥。
-- 可对 YOYU 进行必要的代码、测试、依赖、构建、专属 Docker 服务和文档修改。先检查运行任务再重启自己的服务；不触碰其他项目容器/进程。
+- 可对本项目进行必要的更名、代码、测试、依赖、构建、专属 Docker 服务和文档修改。先检查运行任务再重启自己的服务；不触碰其他项目容器/进程。更名不能丢失已有用户数据。
 - 不因为常规可逆实施反复请求确认。真实商家预约、下单、支付、发送消息等外部业务写入，仍须具体授权；不能以“实施授权”代替业务操作授权。
 - 保留用户已有未跟踪文件 `docs/YOYU_Planora_融合方案.md`，不要覆盖、删除或顺手提交。不要恢复已清理的旧 mock Agent、假订单/取号、演示资料。
 - 可以本地提交可验证改动；用户未要求 push、发布 PR 或操作远端分支。
@@ -43,6 +45,25 @@ DOM 和 Vision 共用命令身份、快照、授权、幂等、回执和后验�
 本次交接前 Docker `yoyu` 的 API、PostgreSQL、Redis 健康，worker 运行；实际执行前再次确认。API 默认 `http://127.0.0.1:8011`，桌面独立运行。`start.sh`/`stop.sh` 已有安全归属与数据卷保留逻辑。不要在新会话里误停其他同机项目。
 
 ## 实施阶段与验收
+
+### R0：全面更名与无损迁移
+
+这是新增的先行阶段，不取消 P0→P3。先记录当前可用基线、工作区、资源归属和数据位置，再将机械更名与功能修复分开提交和验证。
+
+| 范围 | 迁移目标与必要检查 |
+| --- | --- |
+| 品牌与桌面 | UI、HTML/窗口标题、菜单、设置、分享页面、错误提示、托盘/通知、应用标识和构建产物统一 PlanGo；带文字的资源也需检查。当前还有“小悠”、`window.xiaonian` / `XiaonianApi` 等旧品牌/桥接名称，不能只搜索 YOYU。`package.author = Xiaonian` 是作者署名，不当产品名替换。 |
+| 源码与包 | `backend/yoyu` → `backend/plango`，主包 `plango`；本仓库 `vendor/planora/backend/planora` 等 Harness 自有运行时命名也要迁移（可用 `vendor/plango_harness/backend/plango_harness`）。同步导入、模块字符串、入口、测试、类型检查、Alembic 路径、项目元数据和锁文件，不能只改文件夹。保留许可证、版权、上游固定提交和来源记录。 |
+| Python 环境 | 本机和 Docker 都使用 conda `plango`，同步解释器路径、`package.json`、`scripts/setup_backend.py`、后端启动器和 `deploy/Dockerfile`。按本项目依赖创建独立环境，不克隆含其他项目状态的整个环境，也不卸载原 `planora`。 |
+| Docker 与存储 | Compose 项目 `plango`、镜像 `plango-harness:local`，由 Compose 生成 `plango-*` 容器/网络；不必逐个硬编码 container_name。同步归属标签、启停检查、健康检查、服务内部模块名，以及自有数据库/用户/队列/数据卷命名。先备份并验证迁移，不能只改 Compose name 后得到空数据卷；既有 PG 数据目录不会因改 POSTGRES_DB/USER 自动迁移。 |
+| 配置与持久状态 | 自有 `YOYU_*`、`XIAONIAN_CITY/COORDS` 及承担本项目配置的旧前缀迁往 `PLANGO_*`；更新自有 `.env`、示例、读取与注入逻辑，保持密钥值和权限且不打印。保留 OPENAI_*、AMAP_* 等供应商标准变量。明确新旧键冲突优先级，不自动换 token 导致桌面/服务失联。迁移 Electron userData、`persist:xiaonian`、`xiaonian-config.json`、`xy_*` localStorage、SQLite/回执、Redis 消费组/待处理任务、checkpoint/审批/幂等记录及日志路径；先核实实际使用，不新造并不存在的存储。旧键兼容仅限有记录的一次性迁移或有退出条件的过渡。 |
+| 脚本、文档与目录 | 更新 start.sh/stop.sh 依赖的归属判断、PID/锁文件路径、开发/测试/部署命令、图及文档链接。目标目录 `/home/song/code/Agent/multi-agent/PlanGo`；在源码迁移及会话文件操作安全收尾后改目录，检查目标是否已存在、绝对路径引用与 Compose 旧目录标签。用户原融合方案和历史证据原文不做批量替换。 |
+
+迁移需保持浏览器真实登录态和已持久化任务的一致性；不可通过复制状态将既有审批错误绑定到新命令。持久化的模块路径、服务身份或摘要若受更名影响，应正确迁移或明确要求重新审批；结果 UNKNOWN 的提交禁止重放。迁移旧服务时先停止其消费者，防止旧/新 worker 同时消费；数据验证前不删除旧卷或备份。原 Planora 项目及原 conda 环境不属于清理范围。
+
+已发现的具体恢复入口：`desktop-identity.json` 和 `browser-receipts.json` 要保留 browserSessionId/未完成回执；Redis 的 `yoyu:runs`、`yoyu:memory-embed`、`yoyu-workers` 涉及 stream、消费组、PEL、重试和死信，不能因新组从头读取而重复副作用。`yoyu_browser_binding` / `yoyu_browser_command` / `yoyu_reminder` 等表若更名，应新增数据库迁移，不改写已应用的 `0010_yoyu_extensions`、`0001_planora_base` 等 revision ID。LangGraph `allowed_msgpack_modules` 当前硬编码 `planora.agent.contracts`，历史 checkpoint 可能携带旧模块名；迁移包名时需要明确的兼容/转换与恢复测试，不能放开反序列化白名单来省事。保留 vendor 的 SNAPSHOT 来源信息、上游基线归档和许可原文，必要旧名逐项记录。
+
+验收：全新安装和已有数据升级两条路径均可启动；UI、源码包、容器、解释器及启动日志使用新名称；读取迁移前的真实数据与会话；审批/幂等/UNKNOWN 行为无退化；start.sh/stop.sh 重复执行安全且只影响本项目。检查跟踪文件中的旧命名残留，逐项区分运行时遗漏、迁移兼容、上游署名和历史证据，不追求破坏来源记录的“零匹配”。失败时能够恢复备份与原服务，不能以清空数据库、丢弃登录态或跳过测试完成更名。
 
 ### P0：先修正确性与安全边界
 
@@ -89,13 +110,15 @@ DOM 路径稳定后加入按需截图理解/核验与视觉定位，校验 viewp
 
 ## 统一验证与完成标准
 
-常规命令：
+下面是迁移前可用的命令基线，供 R0 前核实与定位；R0 后须将环境名改为 `plango`，主包路径改为 `backend/plango`，Harness 路径按实际迁移结果同步，并把本节替换为已运行验证的新命令。不能在更名后继续依赖旧环境或旧包完成验收。
+
+当前常规命令（新环境/新包）：
 
 ```bash
 npm run check
-conda run --no-capture-output -n planora python -m ruff check backend/yoyu backend/tests
-MYPYPATH=backend:vendor/planora/backend conda run --no-capture-output -n planora python -m mypy backend/yoyu vendor/planora/backend/planora
-conda run --no-capture-output -n planora python backend/yoyu/migrations/check.py
+conda run --no-capture-output -n plango python -m ruff check backend/plango backend/tests
+MYPYPATH=backend:vendor/plango_harness/backend conda run --no-capture-output -n plango python -m mypy backend/plango vendor/plango_harness/backend/plango_harness
+conda run --no-capture-output -n plango python backend/plango/migrations/check.py
 npm run test:independent
 python3 scripts/check_lifecycle.py
 env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:browser
@@ -107,11 +130,11 @@ env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:full-stack
 
 ```bash
 npm run services:up
-conda run --no-capture-output -n planora python scripts/check_deployment.py
+conda run --no-capture-output -n plango python scripts/check_deployment.py
 env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed
 ```
 
-`test:deployed` 会调用真实模型并重启 YOYU API/worker。密钥已授权用于有界验证，但不要无限重跑，也不执行真实订单/支付。先用受控页面回归，再用公共真实站点的只读任务验证泛化；具体业务写入保持用户授权。
+`test:deployed` 会调用真实模型并重启本项目 API/worker（当前 YOYU，迁移后 PlanGo）。密钥已授权用于有界验证，但不要无限重跑，也不执行真实订单/支付。先用受控页面回归，再用公共真实站点的只读任务验证泛化；具体业务写入保持用户授权。
 
 交接前证据：47 Python 函数测试+35 subtests、39 Chromium 断言、23部署 API 检查；真实模型+真实 Electron菜单/重启链已验证；重庆JS配置、在线SDK、公共地标解析、诊断底图已验证。测试数不是任务成功率，历史模型两批各3/4、首批usage不完整，全部保留；不能覆盖失败或改变分母后宣称提升。
 
@@ -122,7 +145,7 @@ env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed
 ## 新会话开始时直接做什么
 
 1. 检查 git status、当前分支、服务与进行中任务；只读理解现有改动，保护用户文件。
-2. 读本交接和指定材料，建立 `docs/实施进度.md`，按 P0→P3 记录实现、测试、提交及剩余问题。
-3. 直接从 P0 已复现反例进入实现，不再仅输出另一份分析或询问是否开始。可以并行委派互不冲突的小任务。
+2. 读本交接和指定材料，建立 `docs/实施进度.md`，按 R0→P0→P1→P2→P3 记录实现、数据迁移、测试、提交及剩余问题；保存历史证据与迁移后新证据的区别。
+3. 从 R0 资源与数据盘点进入更名实施，随后修 P0 已复现反例，不再仅输出另一份分析或询问是否开始。可以并行委派互不冲突的小任务；全局命名变更须统一协调，避免与其他 Agent 交叉修改同一文件。
 4. 每阶段做适当回归和独立 review，修完问题再推进；完成一阶段后继续后续核心实施，不把阶段性进展当全部完成。
 5. 若有阻碍，保存可复现证据与具体缺失条件，继续不受影响的工作。普通实现选择自主判断；不能假造批准、成功或评测成绩。

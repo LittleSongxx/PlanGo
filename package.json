@@ -1,7 +1,7 @@
 {
-  "name": "yoyu",
+  "name": "plango",
   "version": "0.1.0",
-  "description": "YOYU · 独立运行的真实浏览器 Agent 与可恢复 Harness",
+  "description": "PlanGo · 独立运行的真实浏览器 Agent 与可恢复 Harness",
   "main": "./out/main/index.js",
   "author": "Xiaonian",
   "license": "MIT",
@@ -14,21 +14,23 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "setup:backend": "python3 scripts/setup_backend.py",
-    "backend": "conda run --no-capture-output -n planora python scripts/backend.py",
-    "test:backend": "conda run --no-capture-output -n planora python -m pytest -q",
+    "backend": "conda run --no-capture-output -n plango python scripts/backend.py",
+    "test:backend": "conda run --no-capture-output -n plango python -m pytest -q",
     "test:ui": "tsx scripts/check-harness-ui.ts",
     "test:transport": "tsx scripts/check-harness-transport.ts",
     "test:browser": "electron --no-sandbox scripts/browser-regression.cjs",
     "test:desktop": "electron --no-sandbox scripts/desktop-ui-smoke.cjs",
-    "test:full-stack": "conda run --no-capture-output -n planora electron --no-sandbox scripts/full-stack-smoke.cjs",
-    "test:deployed": "conda run --no-capture-output -n planora electron --no-sandbox scripts/full-stack-smoke.cjs --deployed",
+    "test:full-stack": "conda run --no-capture-output -n plango electron --no-sandbox scripts/full-stack-smoke.cjs",
+    "test:deployed": "conda run --no-capture-output -n plango electron --no-sandbox scripts/full-stack-smoke.cjs --deployed",
     "test:llm": "tsx scripts/check-llm.ts",
-    "check": "npm run typecheck && npm run test:ui && npm run test:llm && npm run test:transport && npm run test:share && npm run test:backend && npm run build",
-    "upstream:check": "conda run --no-capture-output -n planora python scripts/sync_planora.py check",
+    "check": "npm run typecheck && npm run test:desktop-storage && npm run test:ui && npm run test:llm && npm run test:transport && npm run test:share && npm run test:backend && npm run build",
+    "upstream:check": "conda run --no-capture-output -n plango python scripts/sync_planora.py check",
     "test:share": "tsx scripts/check-share.ts",
-    "test:independent": "conda run --no-capture-output -n planora python scripts/check_independent.py",
+    "test:independent": "conda run --no-capture-output -n plango python scripts/check_independent.py",
     "services:up": "docker compose up --build -d --wait",
-    "services:down": "docker compose down"
+    "services:down": "docker compose down",
+    "test:desktop-storage": "tsx scripts/check-desktop-storage.ts",
+    "test:desktop-storage-browser": "node scripts/desktop-storage-regression.cjs"
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
@@ -61,5 +63,6 @@
   },
   "engines": {
     "node": ">=20.11"
-  }
+  },
+  "productName": "PlanGo"
 }

@@ -15,11 +15,11 @@ export function SettingsDrawer(): JSX.Element | null {
 
   useEffect(() => {
     if (!open) return
-    window.xiaonian.getConfig().then((r) => {
+    window.plango.getConfig().then((r) => {
       setConfig(r.config)
     })
-    window.xiaonian.listSkills().then(setSkills)
-    window.xiaonian.imStatus().then(setIm)
+    window.plango.listSkills().then(setSkills)
+    window.plango.imStatus().then(setIm)
   }, [open])
 
   if (!open) return null
@@ -51,7 +51,7 @@ export function SettingsDrawer(): JSX.Element | null {
             <button
               onClick={async () => {
                 setPing('测试中…')
-                const r = await window.xiaonian.pingLlm()
+                const r = await window.plango.pingLlm()
                 setPing(r.ok ? '连通 ✅ ' + r.message : '失败 ❌ ' + r.message)
               }}
               className="mt-2 text-xs px-3 py-1 rounded-lg bg-neutral-100 hover:bg-neutral-200"
@@ -70,7 +70,7 @@ export function SettingsDrawer(): JSX.Element | null {
                     type="checkbox"
                     checked={s.enabled}
                     onChange={async (e) => {
-                      const next = await window.xiaonian.toggleSkill(s.id, e.target.checked)
+                      const next = await window.plango.toggleSkill(s.id, e.target.checked)
                       setSkills(next)
                     }}
                     className="mt-0.5"
@@ -123,7 +123,7 @@ function LocationSection(): JSX.Element {
       const l = await detectViaAMap()
       if (l?.coords || l?.city) {
         setLocationInfo({ city: l.city, district: l.district, coords: l.coords, source: l.source, accuracy: l.accuracy })
-        window.xiaonian.reportLocation({ city: l.city, coords: l.coords })
+        window.plango.reportLocation({ city: l.city, coords: l.coords })
         setMsg(l.source === 'gps' || l.source === 'amap-gps' ? `已精确定位到 ${l.city}${l.district ? '·' + l.district : ''}` : `仅取到城市级：${l.city}（GPS 不可用，可在下方手动指定我的位置）`)
       } else setMsg('定位失败，请检查网络或在下方手动指定')
     } finally {
@@ -139,12 +139,12 @@ function LocationSection(): JSX.Element {
       const l = await geocodeAddress(c, city && city !== '定位中…' ? city : undefined)
       if (l?.coords) {
         setLocationInfo({ city: l.city || city, district: l.district, coords: l.coords, source: 'gps', accuracy: 30 })
-        window.xiaonian.reportLocation({ city: l.city || city, coords: l.coords })
+        window.plango.reportLocation({ city: l.city || city, coords: l.coords })
         setMsg(`已把「${c}」设为我的位置`)
         setInput('')
       } else {
         // 兜底：仅当城市名处理
-        const r = await window.xiaonian.setCity(c)
+        const r = await window.plango.setCity(c)
         setLocationInfo({ city: r.city, source: 'manual' })
         setMsg(`已设为城市：${r.city}`)
         setInput('')
@@ -190,12 +190,12 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
 function MemoryView(): JSX.Element {
   const [mem, setMem] = useState<any>(null)
   useEffect(() => {
-    window.xiaonian.getMemory().then(setMem)
+    window.plango.getMemory().then(setMem)
   }, [])
   if (!mem) return <div className="text-xs text-neutral-400">加载中…</div>
   return (
     <div className="text-xs text-neutral-600 space-y-1">
-      {mem.summary ? <div>画像：{mem.summary}</div> : <div className="text-neutral-400">还没积累画像，多用几次小悠就懂你了。</div>}
+      {mem.summary ? <div>画像：{mem.summary}</div> : <div className="text-neutral-400">还没积累画像，多用几次PlanGo就懂你了。</div>}
       {mem.preferences?.length ? <div>偏好：{mem.preferences.map((p: any) => (p.polarity === 'negative' ? '不喜欢' : '喜欢') + p.text).join('；')}</div> : null}
       {mem.favorite_shops?.length ? <div>常去：{mem.favorite_shops.join('、')}</div> : null}
     </div>

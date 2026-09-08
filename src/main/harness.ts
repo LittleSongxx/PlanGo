@@ -17,7 +17,7 @@ let child: ChildProcess | undefined
 let shuttingDown = false
 
 function dataDir(): string {
-  return getHarnessEnvironment().YOYU_DATA_DIR || join(app.getPath('userData'), 'harness')
+  return getHarnessEnvironment().PLANGO_DATA_DIR || join(app.getPath('userData'), 'harness')
 }
 
 function identity(): { token: string; browserSessionId: string } {
@@ -27,20 +27,21 @@ function identity(): { token: string; browserSessionId: string } {
   if (existsSync(file)) {
     const saved = JSON.parse(readFileSync(file, 'utf8'))
     if (typeof saved.token !== 'string' || typeof saved.browserSessionId !== 'string') throw new Error('Invalid desktop identity')
-    return { ...saved, token: getHarnessEnvironment().YOYU_BACKEND_TOKEN || saved.token }
+    return { ...saved, token: getHarnessEnvironment().PLANGO_BACKEND_TOKEN || saved.token }
   }
-  const saved = { token: getHarnessEnvironment().YOYU_BACKEND_TOKEN || randomBytes(32).toString('hex'), browserSessionId: randomUUID() }
+  if (['browser-receipts.json', 'runs.sqlite'].some(name => existsSync(join(dir, name)))) throw new Error('Desktop identity is missing for existing state; restore its backup before connecting')
+  const saved = { token: getHarnessEnvironment().PLANGO_BACKEND_TOKEN || randomBytes(32).toString('hex'), browserSessionId: randomUUID() }
   writeFileSync(file, JSON.stringify(saved), { mode: 0o600 })
   return saved
 }
 
 function pythonPath(): string {
-  const configured = getHarnessEnvironment().YOYU_PYTHON
+  const configured = getHarnessEnvironment().PLANGO_PYTHON
   if (configured) return configured
-  if (process.env.CONDA_DEFAULT_ENV === 'planora' && process.env.CONDA_PREFIX) {
+  if (process.env.CONDA_DEFAULT_ENV === 'plango' && process.env.CONDA_PREFIX) {
     return join(process.env.CONDA_PREFIX, ...(process.platform === 'win32' ? ['python.exe'] : ['bin', 'python']))
   }
-  throw new Error('请执行 npm run setup:backend 配置 planora conda 环境，或设置 YOYU_PYTHON。')
+  throw new Error('请执行 npm run setup:backend 配置 plango conda 环境，或设置 PLANGO_PYTHON。')
 }
 
 export async function getHarness(): Promise<HarnessClient> {
@@ -55,7 +56,7 @@ async function connect(): Promise<HarnessClient> {
   const root = app.isPackaged ? join(process.resourcesPath, 'backend') : resolve(process.cwd())
   const id = identity()
   const environment = getHarnessEnvironment()
-  const baseURL = environment.YOYU_BACKEND_URL || 'http://127.0.0.1:8011'
+  const baseURL = environment.PLANGO_BACKEND_URL || 'http://127.0.0.1:8011'
   const candidate = new HarnessClient({
     baseURL, ...id, dataDir: dataDir(), execute: executeBrowserCommand,
     onTerminal: releaseBrowserRun,
@@ -79,28 +80,28 @@ async function connect(): Promise<HarnessClient> {
     }
   })
   // Liveness is transport readiness; a missing model key should remain configurable in the UI.
-  const isYoyuService = () => candidate.request<Record<string, unknown>>('/api/v1/health/live')
-    .then(value => value.app === 'YOYU' && value.world_provider === 'browser').catch(() => false)
-  let live = await isYoyuService()
-  if (!live && environment.YOYU_BACKEND_AUTOSTART !== 'false') {
+  const isPlangoService = () => candidate.request<Record<string, unknown>>('/api/v1/health/live')
+    .then(value => value.app === 'PlanGo' && value.world_provider === 'browser').catch(() => false)
+  let live = await isPlangoService()
+  if (!live && environment.PLANGO_BACKEND_AUTOSTART !== 'false') {
     const url = new URL(baseURL)
     if (!['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)) throw new Error('Remote Harness must be started separately')
     const cfg = getConfig()
     const moduleRoot = join(root, 'backend')
-    const vendorRoot = join(root, 'vendor', 'planora', 'backend')
-    if (!existsSync(join(moduleRoot, 'yoyu', 'app.py'))) throw new Error('YOYU backend source is missing')
+    const vendorRoot = join(root, 'vendor', 'plango_harness', 'backend')
+    if (!existsSync(join(moduleRoot, 'plango', 'app.py'))) throw new Error('PlanGo backend source is missing')
     let launchError = ''
-    child = spawn(pythonPath(), ['-m', 'uvicorn', 'yoyu.app:create_app', '--factory', '--host', '127.0.0.1', '--port', url.port || '8011', '--no-access-log'], {
+    child = spawn(pythonPath(), ['-m', 'uvicorn', 'plango.app:create_app', '--factory', '--host', '127.0.0.1', '--port', url.port || '8011', '--no-access-log'], {
       cwd: root,
       env: {
         ...process.env,
         ...environment,
         PYTHONPATH: [moduleRoot, vendorRoot].join(delimiter),
         PYTHONDONTWRITEBYTECODE: '1',
-        YOYU_BACKEND_TOKEN: id.token,
-        YOYU_DATA_DIR: dataDir(),
-        YOYU_RUNTIME_PROFILE: environment.YOYU_RUNTIME_PROFILE || 'desktop',
-        YOYU_SKILLS_DIR: join(root, 'skills'),
+        PLANGO_BACKEND_TOKEN: id.token,
+        PLANGO_DATA_DIR: dataDir(),
+        PLANGO_RUNTIME_PROFILE: environment.PLANGO_RUNTIME_PROFILE || 'desktop',
+        PLANGO_SKILLS_DIR: join(root, 'skills'),
         OPENAI_API_KEY: cfg.llm.apiKey,
         OPENAI_BASE_URL: cfg.llm.baseURL,
         OPENAI_MODEL: cfg.llm.model,
@@ -115,7 +116,7 @@ async function connect(): Promise<HarnessClient> {
     for (let attempt = 0; attempt < 30 && !shuttingDown; attempt++) {
       if (launchError) break
       await new Promise((r) => setTimeout(r, 500))
-      live = await isYoyuService()
+      live = await isPlangoService()
       if (live) break
     }
     if (!live) {
@@ -125,7 +126,7 @@ async function connect(): Promise<HarnessClient> {
       throw new Error(launchError || 'Harness startup timed out; install the Python dependencies first')
     }
   }
-  if (!live) { candidate.stop(); throw new Error('Harness unavailable; check YOYU_BACKEND_URL and authentication') }
+  if (!live) { candidate.stop(); throw new Error('Harness unavailable; check PLANGO_BACKEND_URL and authentication') }
   if (shuttingDown) { candidate.stop(); child?.kill('SIGTERM'); throw new Error('Application is closing') }
   client = candidate
   client.startBrowserPolling()

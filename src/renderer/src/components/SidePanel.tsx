@@ -75,7 +75,7 @@ function ModelSection(): JSX.Element {
   const [ping, setPing] = useState('')
 
   useEffect(() => {
-    window.xiaonian.getConfig().then((r) => {
+    window.plango.getConfig().then((r) => {
       setCfg(r.config)
       setBaseURL(r.config?.llm?.baseURL || '')
       setModel(r.config?.llm?.model || '')
@@ -92,11 +92,11 @@ function ModelSection(): JSX.Element {
     const patch: any = { llm: { baseURL, model } }
     if (apiKey.trim()) patch.llm.apiKey = apiKey.trim()
     try {
-      await window.xiaonian.setConfig(patch)
-      const r = await window.xiaonian.pingLlm()
+      await window.plango.setConfig(patch)
+      const r = await window.plango.pingLlm()
       setPing(r.ok ? '连通正常 ✓ ' + r.message : '连接失败：' + r.message)
       setApiKey('')
-      const config = await window.xiaonian.getConfig()
+      const config = await window.plango.getConfig()
       setCfg(config.config)
       await useStore.getState().hydrateHarness()
     } catch (e) { setPing('保存失败：' + String(e)) }
@@ -147,7 +147,7 @@ function ModelSection(): JSX.Element {
 
 function SocialSection(): JSX.Element {
   const [im, setIm] = useState<{ connected: boolean; note: string } | null>(null)
-  useEffect(() => { window.xiaonian.imStatus().then(setIm).catch(() => setIm({ connected: false, note: '连接状态获取失败' })) }, [])
+  useEffect(() => { window.plango.imStatus().then(setIm).catch(() => setIm({ connected: false, note: '连接状态获取失败' })) }, [])
   return <div className="space-y-3 text-xs text-neutral-600">
     <div className="rounded-xl border border-neutral-200 p-3"><div className="font-semibold text-sm mb-2">微信 / 飞书 · 尚未接入</div>{im?.note || '当前未连接消息平台。'}</div>
     <div>打开行程卡的「分享给同行人」，复制链接或使用二维码，让同行人投票和留下意见；意见可以继续并入当前方案。</div>
@@ -157,15 +157,15 @@ function SocialSection(): JSX.Element {
 function SkillsSection(): JSX.Element {
   const [skills, setSkills] = useState<any[]>([])
   useEffect(() => {
-    window.xiaonian.listSkills().then(setSkills)
+    window.plango.listSkills().then(setSkills)
   }, [])
   const toggle = async (id: string, enabled: boolean): Promise<void> => {
-    const next = await window.xiaonian.toggleSkill(id, enabled)
+    const next = await window.plango.toggleSkill(id, enabled)
     setSkills(next)
   }
   return (
     <div className="space-y-2">
-      <div className="text-xs text-neutral-500">已装技能（命中意图时小悠自动展开）。企业/个人可加装自定义 Skill。</div>
+      <div className="text-xs text-neutral-500">已装技能（命中意图时PlanGo自动展开）。企业/个人可加装自定义 Skill。</div>
       {skills.length === 0 ? (
         <div className="text-xs text-neutral-400 text-center py-6">暂无技能</div>
       ) : (
@@ -193,16 +193,16 @@ function SkillsSection(): JSX.Element {
 function MemorySection(): JSX.Element {
   const [prof, setProf] = useState<any>(null)
   useEffect(() => {
-    window.xiaonian.getMemory().then(setProf)
+    window.plango.getMemory().then(setProf)
   }, [])
   const prefs = prof?.preferences || []
   const del = async (kind: 'pref' | 'fav', value: string): Promise<void> => {
-    const next = await window.xiaonian.memoryDelete({ kind, value })
+    const next = await window.plango.memoryDelete({ kind, value })
     setProf(next)
   }
   const clearAll = async (): Promise<void> => {
-    if (!confirm('清空小悠记住的所有偏好？此操作不可撤销。')) return
-    const next = await window.xiaonian.memoryClear()
+    if (!confirm('清空PlanGo记住的所有偏好？此操作不可撤销。')) return
+    const next = await window.plango.memoryClear()
     setProf(next)
   }
   const footprints = prof?.footprints || []
@@ -210,7 +210,7 @@ function MemorySection(): JSX.Element {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-1.5 text-sm font-medium">
-        <Heart size={14} className="text-red-400" /> 小悠记住的你
+        <Heart size={14} className="text-red-400" /> PlanGo记住的你
         {(prefs.length > 0 || (prof?.favorite_shops?.length || 0) > 0) && (
           <button onClick={clearAll} className="ml-auto text-[11px] text-neutral-400 hover:text-red-500">清空</button>
         )}
@@ -228,7 +228,7 @@ function MemorySection(): JSX.Element {
 
       {(days > 0 || footprints.length > 0) && (
         <div className="text-[11px] text-neutral-500">
-          小悠已经<span className="text-brand-ink font-medium">陪你 {days} 天</span>，一起去过 <span className="text-brand-ink font-medium">{footprints.length}</span> 个地方。
+          PlanGo已经<span className="text-brand-ink font-medium">陪你 {days} 天</span>，一起去过 <span className="text-brand-ink font-medium">{footprints.length}</span> 个地方。
         </div>
       )}
 
@@ -236,7 +236,7 @@ function MemorySection(): JSX.Element {
       {prof?.summary && <div className="text-xs text-neutral-600 bg-neutral-50 rounded-lg p-2.5 border border-neutral-200">{prof.summary}</div>}
       <div className="text-xs text-neutral-500">偏好（越用越懂，来自你的每次选择）：</div>
       {prefs.length === 0 ? (
-        <div className="text-xs text-neutral-400 text-center py-6">还没攒下偏好，多聊几次小悠就懂你了。</div>
+        <div className="text-xs text-neutral-400 text-center py-6">还没攒下偏好，多聊几次PlanGo就懂你了。</div>
       ) : (
         <div className="space-y-1.5">
           {prefs.map((c: any, i: number) => (
@@ -272,7 +272,7 @@ function MemorySection(): JSX.Element {
       {footprints.length > 0 && (
         <div>
           <div className="text-xs text-neutral-500 mb-1.5 flex items-center gap-1">
-            <MapPin size={12} className="text-brand-ink" /> 周末足迹（小悠陪你走过的）
+            <MapPin size={12} className="text-brand-ink" /> 周末足迹（PlanGo陪你走过的）
           </div>
           <div className="relative pl-3.5">
             <div className="absolute left-1 top-1 bottom-1 w-px bg-neutral-200" />
@@ -312,7 +312,7 @@ function ReminderSection(): JSX.Element {
   useEffect(() => {
     let active = true
     const refresh = async (): Promise<void> => {
-      try { const value = await window.xiaonian.reminders.list(); if (active) setData(value) }
+      try { const value = await window.plango.reminders.list(); if (active) setData(value) }
       catch (e) { if (active) setError(String(e)) }
     }
     void refresh()
@@ -325,14 +325,14 @@ function ReminderSection(): JSX.Element {
     if (!text.trim() || !Number.isFinite(date.getTime()) || date.getTime() <= Date.now()) { setError('请输入提醒内容和未来的时间。'); return }
     setBusy(true)
     setError('')
-    try { setData(await window.xiaonian.reminders.create(text.trim(), date.toISOString())); setText('') }
+    try { setData(await window.plango.reminders.create(text.trim(), date.toISOString())); setText('') }
     catch (e) { setError(String(e)) }
     finally { setBusy(false) }
   }
   const remove = async (id: string): Promise<void> => {
     setBusy(true)
     setError('')
-    try { setData(await window.xiaonian.reminders.remove(id)) }
+    try { setData(await window.plango.reminders.remove(id)) }
     catch (e) { setError(String(e)) }
     finally { setBusy(false) }
   }

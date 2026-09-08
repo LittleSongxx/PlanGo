@@ -15,7 +15,7 @@ def main():
     source = Path(__file__).resolve().parents[1]
     node = shutil.which("node")
     assert node, "Node is required for the disposable desktop process"
-    with tempfile.TemporaryDirectory(prefix="yoyu lifecycle ") as directory:
+    with tempfile.TemporaryDirectory(prefix="plango lifecycle ") as directory:
         root = Path(directory) / "checkout"
         root.mkdir()
         (root / "scripts").mkdir()
@@ -23,7 +23,7 @@ def main():
             shutil.copy2(source / path, root / path)
         (root / "package.json").write_text('{"main":"desktop.cjs"}')
         (root / "package-lock.json").write_text("{}")
-        (root / "docker-compose.yml").write_text("name: yoyu\n")
+        (root / "docker-compose.yml").write_text("name: plango\n")
         (root / "scripts/setup_backend.py").write_text(
             "import pathlib,subprocess\n"
             "subprocess.run(['conda','env','list'],check=True)\n"
@@ -33,7 +33,7 @@ def main():
         vite = root / "node_modules/.bin/electron-vite"
         vite.parent.mkdir(parents=True)
         vite.write_text("const cp=require('node:child_process'); const path=require('node:path'); "
-                        "cp.spawn(path.resolve('node_modules/electron/dist/electron'), ['.','--test-flag'], {stdio:'ignore'}); "
+                        "cp.spawn(path.resolve('node_modules/electron/dist/electron'), ['.','--test-flag'], {stdio:'inherit'}); "
                         "setInterval(()=>{},1000);")
         electron = root / "node_modules/electron/dist/electron"
         electron.parent.mkdir(parents=True)
@@ -42,6 +42,8 @@ def main():
             "const cp=require('node:child_process'); const fs=require('node:fs'); "
             "const child=cp.spawn('/bin/sleep',['600'],{cwd:'/tmp',stdio:'ignore'}); "
             "fs.writeFileSync('test-pids.json',JSON.stringify([process.pid,child.pid])); "
+            "process.title=require('node:path').resolve('node_modules/electron/dist/electron')+' .'; "
+            "console.log('[plango] Desktop ready'); "
             "setInterval(()=>{},1000);"
         )
         binaries = Path(directory) / "bin"
@@ -56,17 +58,17 @@ def main():
                 "    if pathlib.Path('fail-docker').exists(): sys.exit(1)\n"
                 "    print(json.dumps({'root':'/another-checkout' if pathlib.Path('conflict').exists() else str(pathlib.Path.cwd()),'files':str(pathlib.Path.cwd()/'docker-compose.yml')}))\n"
                 "elif name=='docker':\n"
-                "    assert sys.argv[1:4]==['compose','--project-name','yoyu']\n"
+                "    assert sys.argv[1:4]==['compose','--project-name','plango']\n"
                 "    assert sys.argv[sys.argv.index('--file')+1]==str(pathlib.Path.cwd()/'docker-compose.yml')\n"
                 "    assert '--volumes' not in sys.argv and '-v' not in sys.argv\n"
                 "    if 'up' in sys.argv and pathlib.Path('fail-services').exists(): sys.exit(1)\n"
-                "    if 'config' in sys.argv: print(json.dumps({'services':{'api':{'ports':[{'published':'18011'}],'environment':{'YOYU_BACKEND_TOKEN':'test-secret'}}}}))\n"
+                "    if 'config' in sys.argv: print(json.dumps({'services':{'api':{'ports':[{'published':'18011'}],'environment':{'PLANGO_BACKEND_TOKEN':'test-secret'}}}}))\n"
                 "if name=='npm' and sys.argv[1:]==['run','dev']:\n"
                 "    if pathlib.Path('fail-desktop').exists(): sys.exit(1)\n"
                 "    assert 'ELECTRON_RUN_AS_NODE' not in os.environ\n"
-                "    assert os.environ['YOYU_BACKEND_AUTOSTART']=='false'\n"
-                "    assert os.environ['YOYU_BACKEND_URL']=='http://127.0.0.1:18011'\n"
-                "    assert os.environ['YOYU_BACKEND_TOKEN']=='test-secret'\n"
+                "    assert os.environ['PLANGO_BACKEND_AUTOSTART']=='false'\n"
+                "    assert os.environ['PLANGO_BACKEND_URL']=='http://127.0.0.1:18011'\n"
+                "    assert os.environ['PLANGO_BACKEND_TOKEN']=='test-secret'\n"
                 f"    os.execv({node!r},[{node!r},str(pathlib.Path.cwd()/'node_modules/.bin/electron-vite'),'dev'])\n"
             )
             binary.chmod(0o755)

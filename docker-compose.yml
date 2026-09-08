@@ -1,17 +1,17 @@
-name: yoyu
+name: plango
 
-x-yoyu: &yoyu
-  image: yoyu-harness:local
+x-plango: &plango
+  image: plango-harness:local
   build:
     context: .
     dockerfile: deploy/Dockerfile
   environment:
-    YOYU_RUNTIME_PROFILE: service
-    YOYU_BACKEND_TOKEN: ${YOYU_BACKEND_TOKEN:?Set YOYU_BACKEND_TOKEN before starting YOYU}
-    YOYU_DATABASE_URL: postgresql+asyncpg://yoyu:${YOYU_POSTGRES_PASSWORD:?Set a URL-safe YOYU_POSTGRES_PASSWORD}@postgres:5432/yoyu
-    YOYU_REDIS_URL: redis://redis:6379/0
-    YOYU_DATA_DIR: /data
-    YOYU_SKILLS_DIR: /app/skills
+    PLANGO_RUNTIME_PROFILE: service
+    PLANGO_BACKEND_TOKEN: ${PLANGO_BACKEND_TOKEN:?Set PLANGO_BACKEND_TOKEN before starting PlanGo}
+    PLANGO_DATABASE_URL: postgresql+asyncpg://plango:${PLANGO_POSTGRES_PASSWORD:?Set a URL-safe PLANGO_POSTGRES_PASSWORD}@postgres:5432/plango
+    PLANGO_REDIS_URL: redis://redis:6379/0
+    PLANGO_DATA_DIR: /data
+    PLANGO_SKILLS_DIR: /app/skills
     OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
     OPENAI_MODEL: ${OPENAI_MODEL:-}
@@ -24,13 +24,13 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_DB: yoyu
-      POSTGRES_USER: yoyu
-      POSTGRES_PASSWORD: ${YOYU_POSTGRES_PASSWORD:?Set a URL-safe YOYU_POSTGRES_PASSWORD}
+      POSTGRES_DB: plango
+      POSTGRES_USER: plango
+      POSTGRES_PASSWORD: ${PLANGO_POSTGRES_PASSWORD:?Set a URL-safe PLANGO_POSTGRES_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: [CMD-SHELL, 'pg_isready -U yoyu -d yoyu']
+      test: [CMD-SHELL, 'pg_isready -U plango -d plango']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -49,7 +49,7 @@ services:
     restart: unless-stopped
 
   migrate:
-    <<: *yoyu
+    <<: *plango
     command: [alembic, -c, alembic.ini, upgrade, head]
     depends_on:
       postgres:
@@ -57,25 +57,25 @@ services:
     restart: 'no'
 
   api:
-    <<: *yoyu
-    command: [python, -m, uvicorn, 'yoyu.app:create_app', --factory, --host, 0.0.0.0, --port, '8011', --no-access-log]
+    <<: *plango
+    command: [python, -m, uvicorn, 'plango.app:create_app', --factory, --host, 0.0.0.0, --port, '8011', --no-access-log]
     ports:
-      - '127.0.0.1:${YOYU_SERVICE_PORT:-8011}:8011'
+      - '127.0.0.1:${PLANGO_SERVICE_PORT:-8011}:8011'
     depends_on:
       migrate:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
     healthcheck:
-      test: [CMD, python, -c, "import os,urllib.request; r=urllib.request.Request('http://127.0.0.1:8011/api/v1/health/ready',headers={'Authorization':'Bearer '+os.environ['YOYU_BACKEND_TOKEN']}); urllib.request.urlopen(r,timeout=3).close()"]
+      test: [CMD, python, -c, "import os,urllib.request; r=urllib.request.Request('http://127.0.0.1:8011/api/v1/health/ready',headers={'Authorization':'Bearer '+os.environ['PLANGO_BACKEND_TOKEN']}); urllib.request.urlopen(r,timeout=3).close()"]
       interval: 5s
       timeout: 4s
       retries: 20
       start_period: 10s
 
   worker:
-    <<: *yoyu
-    command: [python, -m, yoyu.worker]
+    <<: *plango
+    command: [python, -m, plango.worker]
     depends_on:
       api:
         condition: service_healthy

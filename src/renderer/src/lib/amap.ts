@@ -11,7 +11,7 @@ export function loadAMap(): Promise<any> {
   if (window.AMap) return Promise.resolve(window.AMap)
   if (loading) return loading
   loading = (async () => {
-    const cfg = await window.xiaonian.getAmapJsConfig()
+    const cfg = await window.plango.getAmapJsConfig()
     if (!cfg?.jsKey) throw new Error('未配置高德 JS Key')
     if (cfg.jsSecurity) window._AMapSecurityConfig = { securityJsCode: cfg.jsSecurity }
     const AMap = await AMapLoader.load({ key: cfg.jsKey, version: '2.0', plugins: PLUGINS })

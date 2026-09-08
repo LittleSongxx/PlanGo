@@ -4,7 +4,7 @@ import readabilitySrc from '@mozilla/readability/Readability.js?raw'
 import { useStore } from '../store'
 import { allowedBrowserSite, browserCommandGuard, isBrowserWrite, validateBrowserCommand, type BrowserCommand, type BrowserObservation } from '@shared/browser'
 
-// 站点友好名（顶部浮条显示"小悠正在浏览 大众点评…"）
+// 站点友好名（顶部浮条显示"PlanGo正在浏览 大众点评…"）
 function siteName(url: string): string {
   const u = url || ''
   if (/dianping/.test(u)) return '大众点评'
@@ -20,7 +20,7 @@ function siteName(url: string): string {
   }
 }
 
-// 顶部浮条 + 自动切到浏览器视图（让用户"看着小悠操作"）。空闲一段时间后自动收起。
+// 顶部浮条 + 自动切到浏览器视图（让用户"看着PlanGo操作"）。空闲一段时间后自动收起。
 let bannerTimer: ReturnType<typeof setTimeout> | null = null
 function markBrowsing(action: string, site?: string): void {
   try {
@@ -43,7 +43,7 @@ export type WebviewEl = {
 }
 
 function executeInBrowser(wv: WebviewEl, code: string): Promise<unknown> {
-  return window.xiaonian.browserEval(wv.getWebContentsId(), code)
+  return window.plango.browserEval(wv.getWebContentsId(), code)
 }
 
 const webviews = new Map<string, WebviewEl>()
@@ -98,7 +98,7 @@ async function waitForTab(id: string): Promise<WebviewEl> {
 function distillScript(snapshotId: string, owner: string, epoch: number): string {
   return `(function(){
     try {
-      if(window.__yoyuSnapshot) window.__yoyuSnapshot.observer.disconnect();
+      if(window.__plangoSnapshot) window.__plangoSnapshot.observer.disconnect();
       document.querySelectorAll('[data-ai-idx]').forEach(function(el){el.removeAttribute('data-ai-idx');});
       var sel='a,button,input,textarea,select,[role=button],[role=link],[role=tab],[onclick],[contenteditable=true]';
       var els=Array.prototype.slice.call(document.querySelectorAll(sel));
@@ -126,10 +126,10 @@ function distillScript(snapshotId: string, owner: string, epoch: number): string
       var state={id:${JSON.stringify(snapshotId)},owner:${JSON.stringify(owner)},epoch:${epoch},url:location.href,refs:refs,dirty:false,formFingerprint:formFingerprint(),fingerprint:formFingerprint};
       state.observer=new MutationObserver(function(){state.dirty=true;});
       state.observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true});
-      window.__yoyuSnapshot=state;
-      if(!window.__yoyuInputGuard){
-        window.__yoyuInputGuard=true;
-        ['input','change','pointerdown','keydown'].forEach(function(event){document.addEventListener(event,function(){if(window.__yoyuSnapshot)window.__yoyuSnapshot.dirty=true;},true);});
+      window.__plangoSnapshot=state;
+      if(!window.__plangoInputGuard){
+        window.__plangoInputGuard=true;
+        ['input','change','pointerdown','keydown'].forEach(function(event){document.addEventListener(event,function(){if(window.__plangoSnapshot)window.__plangoSnapshot.dirty=true;},true);});
       }
       return {ok:true,url:location.href,title:document.title,elements:out,text:(document.body?document.body.innerText:'').slice(0,8000)};
     }catch(e){return {ok:false,error:String(e)};}
@@ -178,7 +178,7 @@ const READABILITY = `${readabilitySrc}
 // 学习 Browser Use / Opticlick / 微软 SoM：按钮绿 / 链接蓝 / 输入紫 / 其它橙。
 const SOM_DRAW = `(function(){
   try{
-    var ID='__xy_som__';
+    var ID='__plango_som__';
     var old=document.getElementById(ID); if(old) old.remove();
     var layer=document.createElement('div'); layer.id=ID;
     layer.style.cssText='position:fixed;left:0;top:0;width:0;height:0;z-index:2147483646;pointer-events:none;';
@@ -213,7 +213,7 @@ function failure(command: BrowserCommand, kind: string, text = kind, outcome: Br
 // All model input is data. These fixed scripts are the only JavaScript that reaches a page.
 function elementActionScript(command: BrowserCommand, epoch: number): string {
   const idx = command.arguments.idx as number
-  const preamble = `var state=window.__yoyuSnapshot;
+  const preamble = `var state=window.__plangoSnapshot;
     if(!state||state.id!==${JSON.stringify(command.expected_snapshot_id)}||state.owner!==${JSON.stringify(JSON.stringify([command.browser_session_id, command.run_id]))}||state.epoch!==${epoch}||state.url!==location.href||state.dirty||state.observer.takeRecords().length||state.formFingerprint!==state.fingerprint())
       return {ok:false,error_kind:'stale_snapshot',error:'页面已变化，请重新读取并确认目标'};
     var el=state.refs[${idx}];
@@ -321,7 +321,7 @@ export async function executeRendererBrowserCommand(raw: BrowserCommand, command
         return { ...base, ...result, command_id: command.command_id, ok: true, outcome: 'executed' }
       }
       case 'scroll':
-        await executeInBrowser(wv, `(function(){if(window.__yoyuSnapshot)window.__yoyuSnapshot.dirty=true;window.scrollBy(0,${command.arguments.dir === 'up' ? -700 : 700});return true;})()`)
+        await executeInBrowser(wv, `(function(){if(window.__plangoSnapshot)window.__plangoSnapshot.dirty=true;window.scrollBy(0,${command.arguments.dir === 'up' ? -700 : 700});return true;})()`)
         return { ...base, ok: true, outcome: 'executed' }
     }
   } catch (error) {
@@ -334,7 +334,7 @@ let execution: Promise<unknown> = Promise.resolve()
 export function installBrowserBridge(): void {
   if (installed) return
   installed = true
-  window.xiaonian.onBrowserExec(({ id, action, args }) => {
+  window.plango.onBrowserExec(({ id, action, args }) => {
     if (action === 'cancel_run' && typeof args.run_id === 'string') {
       cancelRendererBrowserRun(args.run_id, args.epoch as number | undefined)
       return
@@ -354,7 +354,7 @@ export function installBrowserBridge(): void {
       const result = action === 'harness'
         ? await executeRendererBrowserCommand(command as BrowserCommand, epoch)
         : { ok: false, outcome: 'blocked', error_kind: 'unsupported_command', error: '浏览器命令必须经过 Harness 验证' }
-      window.xiaonian.browserExecResult(id, result)
+      window.plango.browserExecResult(id, result)
     })
   })
 }

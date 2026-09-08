@@ -7,7 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from yoyu.skills import MAX_ADVERT_BYTES, MAX_SKILL_BYTES, list_skill_adverts, read_skill
+from plango.skills import MAX_ADVERT_BYTES, MAX_SKILL_BYTES, list_skill_adverts, read_skill
 
 
 class SkillLoaderTest(unittest.TestCase):
@@ -26,7 +26,7 @@ class SkillLoaderTest(unittest.TestCase):
             (outside / "SKILL.md").write_text("private secret")
             (root / "directory-link").symlink_to(outside, target_is_directory=True)
             (root / "file-link" / "SKILL.md").symlink_to(outside / "SKILL.md")
-            with patch.dict(os.environ, {"YOYU_SKILLS_DIR": str(root)}):
+            with patch.dict(os.environ, {"PLANGO_SKILLS_DIR": str(root)}):
                 adverts = json.loads(list_skill_adverts(["citywalk"]))
                 self.assertEqual(
                     adverts,

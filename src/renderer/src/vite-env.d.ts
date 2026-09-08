@@ -1,7 +1,8 @@
 /// <reference types="vite/client" />
 import type { AgentReply, OutcomeCard, AgentStep, HarnessApi, HarnessEvent, ReminderApi } from '@shared/types'
 
-interface XiaonianApi {
+interface PlangoApi {
+  desktopReady: () => Promise<void>
   harness: HarnessApi
   reminders: ReminderApi
   onHarnessEvent: (cb: (event: HarnessEvent) => void) => () => void
@@ -45,7 +46,7 @@ interface XiaonianApi {
 
 declare global {
   interface Window {
-    xiaonian: XiaonianApi
+    plango: PlangoApi
     AMap?: any
     _AMapSecurityConfig?: { securityJsCode: string }
   }

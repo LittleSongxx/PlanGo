@@ -1,4 +1,4 @@
-"""Verify a copied YOYU backend starts outside both original project directories."""
+"""Verify a copied PlanGo backend starts outside both original project directories."""
 
 import os
 import shutil
@@ -8,11 +8,11 @@ import tempfile
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
-with tempfile.TemporaryDirectory(prefix="yoyu-independent-") as directory:
+with tempfile.TemporaryDirectory(prefix="plango-independent-") as directory:
     target = Path(directory)
-    for name in ["pyproject.toml", "uv.lock", "README.md"]:
+    for name in ["pyproject.toml", "uv.lock", "README.md", "alembic.ini"]:
         shutil.copy2(root / name, target / name)
-    for name in ["backend", "vendor/planora"]:
+    for name in ["backend", "vendor/plango_harness"]:
         shutil.copytree(
             root / name,
             target / name,
@@ -22,16 +22,16 @@ with tempfile.TemporaryDirectory(prefix="yoyu-independent-") as directory:
         key: value
         for key, value in os.environ.items()
         if not key.startswith(
-            ("PLANORA_", "YOYU_", "OPENAI_", "AMAP_", "EMBEDDING_", "LONGCAT_", "MINIMAX_")
+            ("PLANORA_", "PLANGO_", "OPENAI_", "AMAP_", "EMBEDDING_", "LONGCAT_", "MINIMAX_")
         )
         and key not in {"DATABASE_URL", "REDIS_URL", "PYTHONPATH"}
     }
     # Use the selected conda interpreter; Docker separately checks a clean environment from our lock.
     env.update(
         PYTHONPATH=os.pathsep.join(
-            [str(target / "backend"), str(target / "vendor/planora/backend")]
+            [str(target / "backend"), str(target / "vendor/plango_harness/backend")]
         ),
-        YOYU_DATA_DIR=str(target / "owned-data"),
+        PLANGO_DATA_DIR=str(target / "owned-data"),
         PLANORA_RUNTIME_PROFILE="service",
         DATABASE_URL="postgresql://unrelated-upstream/forbidden",
         REDIS_URL="redis://unrelated-upstream:6379",
@@ -40,13 +40,13 @@ with tempfile.TemporaryDirectory(prefix="yoyu-independent-") as directory:
     probe = """
 from pathlib import Path
 from fastapi.testclient import TestClient
-import planora
-import yoyu
-from yoyu.settings import settings_from_env
-from yoyu.app import create_app
+import plango_harness
+import plango
+from plango.settings import settings_from_env
+from plango.app import create_app
 root = Path.cwd()
-assert Path(planora.__file__).resolve().is_relative_to(root / 'vendor/planora')
-assert Path(yoyu.__file__).resolve().is_relative_to(root / 'backend/yoyu')
+assert Path(plango_harness.__file__).resolve().is_relative_to(root / 'vendor/plango_harness')
+assert Path(plango.__file__).resolve().is_relative_to(root / 'backend/plango')
 s = settings_from_env()
 assert s.runtime_profile == 'desktop'
 assert s.world_provider == 'browser'
@@ -57,7 +57,7 @@ with TestClient(create_app(s, token='independent-fixture-only')) as client:
     assert client.get('/api/v1/health/ready', headers=headers).json()['ready']
     assert client.get('/api/v1/runs', headers=headers).json()['runs'] == []
     assert client.get('/api/v1/reminders', headers=headers).json()['reminders'] == []
-print('Copied YOYU code passed independent startup using the selected conda Python and its own data')
+print('Copied PlanGo code passed independent startup using the selected conda Python and its own data')
 """
     result = subprocess.run(
         [str(executable), "-c", probe],

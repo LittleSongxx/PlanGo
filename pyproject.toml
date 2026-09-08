@@ -1,7 +1,7 @@
 [project]
-name = "yoyu-harness"
+name = "plango-harness"
 version = "0.1.0"
-description = "YOYU standalone browser Agent Harness"
+description = "PlanGo standalone browser Agent Harness"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
@@ -38,7 +38,7 @@ dev = [
 package = false
 
 [tool.pytest.ini_options]
-pythonpath = ["backend", "vendor/planora/backend"]
+pythonpath = ["backend", "vendor/plango_harness/backend"]
 asyncio_mode = "auto"
 testpaths = ["backend/tests"]
 
@@ -53,7 +53,7 @@ ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"
-files = ["backend/yoyu"]
+files = ["backend/plango"]
 exclude = "(^|/)(backend/tests|backend/app\\.py|scripts/)"
 ignore_missing_imports = true
 check_untyped_defs = true

@@ -92,13 +92,13 @@ export function RouteSheet({ target, onClose }: { target: RouteTarget; onClose: 
   const openExternalNav = (): void => {
     const [lng, lat] = target.dest.split(',')
     const url = `https://uri.amap.com/navigation?to=${lng},${lat},${encodeURIComponent(target.destName)}&mode=car&policy=1&src=xiaoyou&coordinate=gaode&callnative=1`
-    window.xiaonian.openExternal(url)
+    window.plango.openExternal(url)
   }
   const hailTaxi = (): void => {
     // 只有打车才跳转（唤起高德打车）
     const [lng, lat] = target.dest.split(',')
     const url = `https://uri.amap.com/marker?position=${lng},${lat}&name=${encodeURIComponent(target.destName)}&src=xiaoyou&coordinate=gaode&callnative=1`
-    window.xiaonian.openExternal(url)
+    window.plango.openExternal(url)
   }
 
   return (

@@ -31,7 +31,7 @@ export interface PreferenceChunk {
   source: 'conversation' | 'order' | 'review' | 'import'
 }
 
-// 周末足迹（越懂你的可视化素材：小悠陪你去过哪些地方）
+// 周末足迹（越懂你的可视化素材：PlanGo陪你去过哪些地方）
 export interface Footprint {
   date: string // 展示用日期，如 "6/21 周六"
   place: string

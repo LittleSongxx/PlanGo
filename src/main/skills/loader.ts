@@ -13,7 +13,7 @@ export interface SkillMeta {
 let cache: SkillMeta[] | null = null
 
 function skillsDirs(): string[] {
-  return [join(process.cwd(), 'skills'), join(process.cwd(), 'xiaonian', 'skills'), join(__dirname, '..', '..', '..', 'skills')]
+  return [join(process.cwd(), 'skills'), join(process.cwd(), 'plango', 'skills'), join(__dirname, '..', '..', '..', 'skills')]
 }
 
 function parseFrontmatter(text: string): { name?: string; description?: string } {

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Bounded, read-only live checks using only this checkout's ignored .env.
 
-Run: conda run --no-capture-output -n planora python scripts/check_live_services.py
+Run: conda run --no-capture-output -n plango python scripts/check_live_services.py
 Two model requests at most (one structured request and its optional repair), one
 public Amap geocode, no browser execution or business side effects. The model
 input is synthetic test data. Reports never contain keys, prompts or raw replies.
@@ -23,17 +23,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path[:0] = [str(ROOT / "backend"), str(ROOT / "vendor/planora/backend")]
+sys.path[:0] = [str(ROOT / "backend"), str(ROOT / "vendor/plango_harness/backend")]
 
 from dotenv import dotenv_values  # noqa: E402
-from planora.agent.model_adapter import (  # noqa: E402
+from plango_harness.agent.model_adapter import (  # noqa: E402
     ACCOUNT_ERRORS,
     ModelAdapter,
     ModelProviderUnavailable,
 )
-from planora.providers.world import AmapWorldProvider  # noqa: E402
+from plango_harness.providers.world import AmapWorldProvider  # noqa: E402
 from pydantic import BaseModel, ConfigDict, Field  # noqa: E402
-from yoyu.settings import DesktopSettings  # noqa: E402
+from plango.settings import DesktopSettings  # noqa: E402
 
 
 class MenuItem(BaseModel):
@@ -299,7 +299,7 @@ async def main():
         "amap": amap,
         "warning_classes": sorted({type(w.message).__name__ for w in captured}),
     }
-    directory = ROOT / "eval"
+    directory = ROOT / "eval/plango-r0"
     directory.mkdir(exist_ok=True)
     path = (
         directory / f"live_service_{created.strftime('%Y%m%dT%H%M%SZ')}_{uuid.uuid4().hex[:8]}.json"

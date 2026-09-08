@@ -20,7 +20,9 @@ SETUP_LOG = RUN / "setup.log"
 
 
 def is_electron(p):
-    return p["args"][:2] == [str(ROOT / "node_modules/electron/dist/electron"), "."]
+    executable = str(ROOT / "node_modules/electron/dist/electron")
+    # Electron can collapse its process title into one /proc cmdline entry.
+    return p["args"][:2] == [executable, "."] or p["args"] == [executable + " ."]
 
 
 def is_launcher(p):
@@ -112,7 +114,7 @@ def stop_desktop():
 
 
 def compose():
-    return ["docker", "compose", "--project-name", "yoyu", "--project-directory", str(ROOT),
+    return ["docker", "compose", "--project-name", "plango", "--project-directory", str(ROOT),
             "--env-file", str(ROOT / ".env") if (ROOT / ".env").exists() else "/dev/null",
             "--file", str(ROOT / "docker-compose.yml")]
 
@@ -122,7 +124,7 @@ def check_compose_owner():
                 '"files":{{json (.Label "com.docker.compose.project.config_files")}}}')
     with SETUP_LOG.open("a") as log:
         result = subprocess.run(["docker", "ps", "--all", "--filter",
-                                 "label=com.docker.compose.project=yoyu", "--format", template],
+                                 "label=com.docker.compose.project=plango", "--format", template],
                                 stdout=subprocess.PIPE, stderr=log, text=True)
     if result.returncode:
         raise ConnectionError(f"无法检查 Docker；请确认 Docker 已运行，详见 {SETUP_LOG}")
@@ -130,7 +132,7 @@ def check_compose_owner():
         labels = json.loads(line)
         if (not labels.get("root") or Path(labels["root"]).resolve() != ROOT
                 or labels.get("files") != str(ROOT / "docker-compose.yml")):
-            raise RuntimeError("Compose 项目 yoyu 已被其他目录使用或无法确认归属；未修改容器。")
+            raise RuntimeError("Compose 项目 plango 已被其他目录使用或无法确认归属；未修改容器。")
 
 
 def run_setup(command, label, **kwargs):
@@ -145,11 +147,11 @@ def start():
     existing = desktop_processes()
     check_compose_owner()
     if any(is_launcher(p) for p in existing.values()):
-        run_setup([*compose(), "up", "--detach", "--wait", "--wait-timeout", "180"], "检查并准备已有桌面的 YOYU Docker 服务…")
+        run_setup([*compose(), "up", "--detach", "--wait", "--wait-timeout", "180"], "检查并准备已有桌面的 PlanGo Docker 服务…")
         existing = desktop_processes()
         if any(is_launcher(p) for p in existing.values()):
             remember(existing)
-            print(f"YOYU 桌面已运行，已纳管（PID {min(existing)}），未重复启动。")
+            print(f"PlanGo 桌面已运行，已纳管（PID {min(existing)}），未重复启动。")
             return
     if existing:
         stop_desktop()
@@ -166,7 +168,7 @@ def start():
             or not (ROOT / "node_modules/electron/dist/electron").exists()):
         run_setup(["npm", "ci"], "安装本仓库 Node 依赖…")
         stamp.write_text(lock_hash)
-    run_setup([sys.executable, str(ROOT / "scripts/setup_backend.py")], "准备 planora Python 环境与本项目配置…")
+    run_setup([sys.executable, str(ROOT / "scripts/setup_backend.py")], "准备 plango Python 环境与本项目配置…")
     with SETUP_LOG.open("a") as log:
         result = subprocess.run([*compose(), "config", "--format", "json"], cwd=ROOT,
                                 stdout=subprocess.PIPE, stderr=log, text=True)
@@ -176,11 +178,12 @@ def start():
     port = api["ports"][0]["published"]
     environment = os.environ.copy()
     environment.pop("ELECTRON_RUN_AS_NODE", None)
-    environment.update(YOYU_BACKEND_AUTOSTART="false", YOYU_BACKEND_URL=f"http://127.0.0.1:{port}",
-                       YOYU_BACKEND_TOKEN=api["environment"]["YOYU_BACKEND_TOKEN"])
-    run_setup([*compose(), "up", "--build", "--detach", "--wait", "--wait-timeout", "180"], "启动 YOYU Docker 服务并等待健康检查…")
+    environment.update(PLANGO_BACKEND_AUTOSTART="false", PLANGO_BACKEND_URL=f"http://127.0.0.1:{port}",
+                       PLANGO_BACKEND_TOKEN=api["environment"]["PLANGO_BACKEND_TOKEN"])
+    run_setup([*compose(), "up", "--build", "--detach", "--wait", "--wait-timeout", "180"], "启动 PlanGo Docker 服务并等待健康检查…")
     print(f"启动桌面，日志：{LOG}", flush=True)
     with LOG.open("a") as log:
+        log_start = log.tell()
         child = subprocess.Popen(["npm", "run", "dev"], cwd=ROOT, env=environment,
                                  stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
     ready = False
@@ -192,12 +195,13 @@ def start():
         while time.monotonic() < deadline and child.poll() is None:
             owned = desktop_processes()
             remember(owned)
-            if any(is_electron(p) for p in owned.values()):
+            if (any(is_electron(p) for p in owned.values())
+                    and b"[plango] Desktop ready" in LOG.read_bytes()[log_start:]):
                 time.sleep(2)
                 if child.poll() is None and any((live := process(pid)) and is_electron(live) for pid in owned):
                     remember(desktop_processes())
                     ready = True
-                    print(f"YOYU 已启动：{environment['YOYU_BACKEND_URL']}（PID {child.pid}）。")
+                    print(f"PlanGo 已启动：{environment['PLANGO_BACKEND_URL']}（PID {child.pid}）。")
                     return
             time.sleep(0.3)
         raise RuntimeError(f"桌面启动失败；请检查 {LOG}。Docker 服务保留运行，可用 stop.sh 停止。")
@@ -219,7 +223,7 @@ def main():
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            raise RuntimeError("另一个 YOYU 启停操作正在执行，请稍后重试。") from None
+            raise RuntimeError("另一个 PlanGo 启停操作正在执行，请稍后重试。") from None
         if args.action == "start":
             start()
         else:
@@ -230,17 +234,17 @@ def main():
                 raise
             stop_desktop()
             # down only needs project identity; it must work even if .env was removed.
-            environment = dict(os.environ, YOYU_BACKEND_TOKEN="unused-for-stop", YOYU_POSTGRES_PASSWORD="unused-for-stop")
+            environment = dict(os.environ, PLANGO_BACKEND_TOKEN="unused-for-stop", PLANGO_POSTGRES_PASSWORD="unused-for-stop")
             run_setup([*compose(), "down"], "停止本项目 Docker 服务（保留数据卷）…", env=environment)
-            print("YOYU 已停止，数据卷已保留。")
+            print("PlanGo 已停止，数据卷已保留。")
 
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("YOYU 启停操作已中断；可用 stop.sh 停止本项目剩余服务。", file=sys.stderr)
+        print("PlanGo 启停操作已中断；可用 stop.sh 停止本项目剩余服务。", file=sys.stderr)
         sys.exit(130)
     except (RuntimeError, OSError, ValueError, KeyError) as error:
-        print(f"YOYU: {error}", file=sys.stderr)
+        print(f"PlanGo: {error}", file=sys.stderr)
         sys.exit(1)

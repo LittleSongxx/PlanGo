@@ -9,13 +9,13 @@ const { join, resolve } = require('node:path')
 const { pathToFileURL } = require('node:url')
 
 const root = process.cwd()
-const work = mkdtempSync(join(tmpdir(), 'yoyu-ui-smoke-'))
+const work = mkdtempSync(join(tmpdir(), 'plango-ui-smoke-'))
 app.setPath('userData', join(work, 'electron'))
 app.commandLine.appendSwitch('disable-gpu')
 app.commandLine.appendSwitch('no-proxy-server')
-process.env.YOYU_BACKEND_AUTOSTART = 'false'
-process.env.YOYU_BACKEND_TOKEN = 'offline-smoke-only'
-process.env.YOYU_DATA_DIR = join(work, 'harness')
+process.env.PLANGO_BACKEND_AUTOSTART = 'false'
+process.env.PLANGO_BACKEND_TOKEN = 'offline-smoke-only'
+process.env.PLANGO_DATA_DIR = join(work, 'harness')
 let snapshot, command, observation, snapshotReads = 0
 const input = '读取当前浏览器页面的真实菜单'
 const fixture = '<!doctype html><html><head><title>菜单界面回归样本</title></head><body><h1>菜单界面回归样本</h1><table><tr><th>菜品</th><th>价格</th></tr><tr><td>真实读取的双人套餐</td><td>128 元</td></tr><tr><td>时价菜</td><td>询价</td></tr></table><input placeholder="搜索"></body></html>'
@@ -26,7 +26,7 @@ const server = createServer(async (req, res) => {
   let body = ''; for await (const part of req) body += part
   const data = body ? JSON.parse(body) : {}
   let result = {}
-  if (/health\/(live|ready)$/.test(url.pathname)) result = { ready: true, status: 'ready', app: 'YOYU', world_provider: 'browser' }
+  if (/health\/(live|ready)$/.test(url.pathname)) result = { ready: true, status: 'ready', app: 'PlanGo', world_provider: 'browser' }
   else if (url.pathname === '/api/v1/memory/profile') result = { summaries: [], preferences: [], favorites: [] }
   else if (url.pathname === '/api/v1/runs' && req.method === 'GET') result = { runs: snapshot ? [snapshot] : [] }
   else if (url.pathname === '/api/v1/runs' && req.method === 'POST') {
@@ -66,14 +66,14 @@ async function fill(selector, value) {
 }
 async function main() {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
-  process.env.YOYU_BACKEND_URL = `http://127.0.0.1:${server.address().port}`
-  fixtureUrl = process.env.YOYU_BACKEND_URL + '/fixture'
+  process.env.PLANGO_BACKEND_URL = `http://127.0.0.1:${server.address().port}`
+  fixtureUrl = process.env.PLANGO_BACKEND_URL + '/fixture'
   // No model, location provider, remote image, or analytics calls leave this test.
   const nativeFetch = globalThis.fetch
-  globalThis.fetch = (url, options) => String(url).startsWith(process.env.YOYU_BACKEND_URL + '/') ? nativeFetch(url, options) : Promise.reject(new Error('offline smoke blocks external network'))
+  globalThis.fetch = (url, options) => String(url).startsWith(process.env.PLANGO_BACKEND_URL + '/') ? nativeFetch(url, options) : Promise.reject(new Error('offline smoke blocks external network'))
   await app.whenReady()
-  for (const current of [session.defaultSession, session.fromPartition('persist:xiaonian')]) {
-    current.webRequest.onBeforeRequest((details, callback) => callback({ cancel: /^https?:/.test(details.url) && !details.url.startsWith(process.env.YOYU_BACKEND_URL + '/') }))
+  for (const current of [session.defaultSession, session.fromPartition('persist:plango')]) {
+    current.webRequest.onBeforeRequest((details, callback) => callback({ cancel: /^https?:/.test(details.url) && !details.url.startsWith(process.env.PLANGO_BACKEND_URL + '/') }))
   }
   // Prevent loading a developer's .env/config, while loading the real built application.
   process.chdir(work)
@@ -99,7 +99,7 @@ async function main() {
   await waitFor('restored canonical cards', () => js("document.body.innerText.includes('菜单摘录') && document.body.innerText.includes('价格待核验')"))
   // capturePage observes Chromium's compositor, which can lag the DOM commit.
   await sleep(500)
-  const screenshot = join(tmpdir(), 'yoyu-desktop-ui-smoke.png')
+  const screenshot = join(tmpdir(), 'plango-desktop-ui-smoke.png')
   writeFileSync(screenshot, (await window.webContents.capturePage()).toPNG())
   console.log('Desktop UI smoke passed: real preload/IPC, browser DOM read, unknown price, persistent webview, canonical history restore. Screenshot: ' + screenshot)
 }

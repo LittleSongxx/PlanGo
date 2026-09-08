@@ -2,8 +2,8 @@
 
 import unittest
 
+from plango.outcomes import price_comparison, update_task_context
 from test_comparison_scope import offline_state
-from yoyu.outcomes import price_comparison, update_task_context
 
 PRICES = [("雾岚餐厅", 68), ("杉木餐厅", 82)]
 

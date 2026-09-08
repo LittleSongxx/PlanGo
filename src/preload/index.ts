@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
 
 const api = {
+  desktopReady: () => ipcRenderer.invoke('desktop:ready'),
   reminders: {
     list: () => ipcRenderer.invoke(IPC.reminderRequest, 'list', {}),
     create: (text: string, at: string) => ipcRenderer.invoke(IPC.reminderRequest, 'create', { text, at }),
@@ -92,6 +93,6 @@ function sub(channel: string, cb: (p: unknown) => void): () => void {
   return () => ipcRenderer.removeListener(channel, listener)
 }
 
-contextBridge.exposeInMainWorld('xiaonian', api)
+contextBridge.exposeInMainWorld('plango', api)
 
-export type XiaonianApi = typeof api
+export type PlangoApi = typeof api

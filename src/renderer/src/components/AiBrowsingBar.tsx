@@ -1,7 +1,7 @@
 import { useStore } from '../store'
 import { Globe, Hand } from 'lucide-react'
 
-// 顶部浮条：AI 操控浏览器时显示"小悠正在浏览 X…"+ 当前动作 + 人可"接管"（Manus/Fellou 式 human-in-the-loop）。
+// 顶部浮条：AI 操控浏览器时显示"PlanGo正在浏览 X…"+ 当前动作 + 人可"接管"（Manus/Fellou 式 human-in-the-loop）。
 export function AiBrowsingBar(): JSX.Element | null {
   const ai = useStore((s) => s.aiBrowsing)
   const steps = useStore((s) => s.steps)
@@ -16,7 +16,7 @@ export function AiBrowsingBar(): JSX.Element | null {
       </span>
       <Globe size={13} className="text-brand" />
       <span className="text-xs font-medium">
-        小悠正在{ai.action}{ai.site ? ` ${ai.site}` : ''}…
+        PlanGo正在{ai.action}{ai.site ? ` ${ai.site}` : ''}…
       </span>
       {running && <span className="text-[11px] text-neutral-300 max-w-[220px] truncate">{running.label}</span>}
       <button
