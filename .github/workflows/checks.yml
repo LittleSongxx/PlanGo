@@ -25,6 +25,7 @@ jobs:
       - run: npm ci
       - run: npm run setup:backend -- --dev
       - run: npm run check
+      - run: python scripts/check_lifecycle.py
       - run: python -m ruff check backend/yoyu backend/tests
       - run: MYPYPATH=backend:vendor/planora/backend python -m mypy backend/yoyu vendor/planora/backend/planora
       - run: python backend/yoyu/migrations/check.py

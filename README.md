@@ -8,6 +8,17 @@ YOYU 是独立运行的 Electron 本地生活 Agent：聊天、真实浏览器�
 
 需要 Node.js 20.11+、conda、uv、Docker Engine 与 Compose，以及能运行 Electron 的桌面环境。先安装依赖并初始化本项目配置：
 
+Linux/WSL 图形桌面可直接使用一键脚本，脚本会自动定位本仓库：
+
+```bash
+./start.sh  # 准备依赖和 planora 环境，等待 YOYU Docker 就绪，后台启动桌面
+./stop.sh   # 停止本仓库桌面和 YOYU 容器，保留数据库等数据卷
+```
+
+重复启动会复用已运行的本仓库桌面；更改 `.env` 后先停止再启动。脚本校验进程归属、PID 启动时间和容器目录标签，不按通用进程名停止其他项目。启动日志在 `output/lifecycle/setup.log` 和 `output/lifecycle/desktop.log`；并发启停会被拒绝。纯服务器没有图形显示时，请仅运行下方 Docker 服务命令。
+
+也可手动分步操作：
+
 ```bash
 npm ci
 npm run setup:backend
@@ -25,6 +36,12 @@ AMAP_WEBSERVICE_KEY=填写高德Web服务Key
 AMAP_JS_KEY=填写高德JavaScript Key
 AMAP_JS_SECURITY=填写高德JavaScript安全码
 ```
+
+高德 JS 配置获取：登录[高德控制台](https://console.amap.com/)，在「应用管理 → 我的应用」创建或选择应用，再添加服务平台为 **Web端（JS API）** 的 Key。把该 Key 填入 `AMAP_JS_KEY`，对应安全密钥 `securityJsCode` 填入 `AMAP_JS_SECURITY`；它们和 Web 服务 Key 是不同的平台凭证。参见[官方申请步骤](https://lbs.amap.com/api/javascript-api-v2/prerequisites)。个人认证开发者可用于个人研究学习；获取这两个值不要求先升级企业认证。商业用途的技术服务许可和配额应另按[官方规则](https://lbs.amap.com/faq/advisory/authorization/43168)确认。
+
+「上海·附近发现」使用 `AMAP_WEBSERVICE_KEY` 调用高德 `/v5/place/text`，按城市与关键词搜索，并非 mock。目前没有传入当前位置或搜索半径，因此实际上是同城发现；同一桌面进程还会缓存相同查询，刷新不保证重新请求高德。该功能不依赖 JS Key，也不代表已核验商家的实时营业、库存或预约能力。
+
+数据来源的实际调用核验见 [discovery_source_check.json](eval/discovery_source_check.json)，报告保留去掉 Key 的请求信息与少量公开 POI 样本。
 
 然后启动服务与桌面：
 
@@ -97,12 +114,14 @@ env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:browser
 env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop
 env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:full-stack
 npm run test:independent
+python3 scripts/check_lifecycle.py
 ```
 
 - `browser`：真实页面操作、权限、快照、取消、重复命令和轮次隔离。
 - `desktop`：真实界面、预加载与 IPC，使用明确的离线协议后端样本。
 - `full-stack`：真实 YOYU Python 后端与 Electron 本地网页样本，验证菜单、持久命令和后端重启恢复，不调用真实模型。
 - `independent`：复制公开源码与锁文件到临时目录，使用调用方的 `planora` 环境启动，验证源码、配置和数据不依赖外部仓库；从锁文件安装全新环境由 Docker 构建验证。
+- `check_lifecycle.py`：在临时目录使用替身 Docker/npm 与真实测试子进程验证启停归属、重复执行和异常清理，不停止正在运行的 YOYU 或其他服务。
 
 Docker 构建、迁移和健康检查已实测通过。已部署 API 的 23 项检查通过，覆盖认证、Skill、记忆和提醒及 PostgreSQL 提交结果，见 [部署 API 检查](eval/deployment_api_checks.json)。可复现：
 
