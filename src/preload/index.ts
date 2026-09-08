@@ -3,6 +3,25 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
 
 const api = {
+  reminders: {
+    list: () => ipcRenderer.invoke(IPC.reminderRequest, 'list', {}),
+    create: (text: string, at: string) => ipcRenderer.invoke(IPC.reminderRequest, 'create', { text, at }),
+    remove: (id: string) => ipcRenderer.invoke(IPC.reminderRequest, 'remove', { id })
+  },
+  harness: {
+    createRun: (text: string, image?: string) => ipcRenderer.invoke(IPC.harnessRequest, 'createRun', { text, image }),
+    getRun: (runId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'getRun', { runId }),
+    sendMessage: (runId: string, text: string, image?: string) => ipcRenderer.invoke(IPC.harnessRequest, 'sendMessage', { runId, text, image }),
+    replan: (runId: string, reason: string) => ipcRenderer.invoke(IPC.harnessRequest, 'replan', { runId, reason }),
+    selectPlan: (runId: string, planId: string, planVersion: number) => ipcRenderer.invoke(IPC.harnessRequest, 'selectPlan', { runId, planId, planVersion }),
+    resolveAction: (runId: string, actionId: string, status: string, note: string, reference?: string) => ipcRenderer.invoke(IPC.harnessRequest, 'resolveAction', { runId, actionId, status, note, reference }),
+    cancel: (runId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'cancel', { runId }),
+    resume: (runId: string, interruptId: string, decision: string, text?: string) => ipcRenderer.invoke(IPC.harnessRequest, 'resume', { runId, interruptId, decision, text }),
+    events: (runId: string, after: number) => ipcRenderer.invoke(IPC.harnessRequest, 'events', { runId, after }),
+    listRuns: () => ipcRenderer.invoke(IPC.harnessRequest, 'listRuns', {}),
+    status: () => ipcRenderer.invoke(IPC.harnessRequest, 'status', {})
+  },
+  onHarnessEvent: (cb: (event: unknown) => void) => sub(IPC.harnessEvent, cb),
   // 对话主线
   chat: (message: string, history: unknown[]) => ipcRenderer.invoke(IPC.agentChat, { message, history }),
   confirm: (token: string, ok: boolean) => ipcRenderer.invoke(IPC.agentConfirm, { token, ok }),
@@ -17,6 +36,7 @@ const api = {
   onBrowserExec: (cb: (p: { id: number; action: string; args: Record<string, unknown> }) => void) =>
     ipcRenderer.on(IPC.browserExec, (_e, p) => cb(p)),
   browserExecResult: (id: number, result: unknown) => ipcRenderer.send(IPC.browserExecResult, { id, result }),
+  browserEval: (contentsId: number, code: string) => ipcRenderer.invoke('browser:eval', contentsId, code),
 
   // 配置 / LLM
   getConfig: () => ipcRenderer.invoke(IPC.getConfig),

@@ -20,11 +20,11 @@ export function AiBrowsingBar(): JSX.Element | null {
       </span>
       {running && <span className="text-[11px] text-neutral-300 max-w-[220px] truncate">{running.label}</span>}
       <button
-        onClick={() => setAiBrowsing({ active: false })}
+        onClick={() => { void useStore.getState().cancelRun(); useStore.getState().setView('browser'); setAiBrowsing({ active: false }) }}
         className="ml-1 flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 hover:bg-white/25 text-[11px]"
-        title="我来接管，暂停跟随"
+        title="请求停止任务，再手动接管浏览器"
       >
-        <Hand size={11} /> 我来接管
+        <Hand size={11} /> 停止任务并接管
       </button>
     </div>
   )

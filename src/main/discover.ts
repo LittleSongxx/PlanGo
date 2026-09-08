@@ -3,6 +3,7 @@ import { getConfig } from './config'
 import { getAdapter } from './data/adapters'
 import { cleanAndRank } from './brain/antiPollution'
 import { findDeal } from './brain/dealFinder'
+import * as amap from './data/amap'
 import type { POISummary, SourceTag, DiscoverGroup, DealRow } from '@shared/types'
 
 const SPECS: { label: string; emoji: string; keywords: string[]; category?: '到餐' | '到综' }[] = [
@@ -15,6 +16,19 @@ export interface DiscoverResult {
   city: string
   groups: DiscoverGroup[]
   source: SourceTag
+}
+
+// Desktop discovery reads the live API directly; fixture adapters belong to offline evaluation.
+export async function computeLiveDiscover(cityArg?: string): Promise<DiscoverResult> {
+  const cfg = getConfig()
+  const city = cityArg || cfg.city
+  if (!cfg.amap.key) throw new Error('请配置高德 Key，或在对话中读取当前商家网页。')
+  const groups: DiscoverGroup[] = []
+  for (const spec of SPECS) {
+    const items = await amap.searchPoi(spec.keywords[0], city, spec.category === '到餐' ? { types: '050000' } : {})
+    if (items.length) groups.push({ label: spec.label, emoji: spec.emoji, items: items.slice(0, 4) })
+  }
+  return { city, groups, source: 'real' }
 }
 
 // 以用户当前定位为圆心，拉"今日附近"美食/玩乐/咖啡热点（去水分榜单，按组）。

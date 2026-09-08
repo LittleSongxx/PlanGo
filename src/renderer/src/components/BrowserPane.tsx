@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
-import { setActiveWebview, setTabOpener } from '../lib/browserBridge'
+import { registerWebview, setActiveWebview, setTabOpener } from '../lib/browserBridge'
+import { browserUrl } from '@shared/browser'
 import { FAVORITES } from '../lib/favorites'
 import { ArrowLeft, ArrowRight, RotateCw, Compass, ZoomIn, ZoomOut, Search, Star } from 'lucide-react'
 
@@ -15,11 +16,15 @@ export function BrowserPane(): JSX.Element {
 
   useEffect(() => {
     setTabOpener((url) => addTab(url))
+    return () => setTabOpener(null)
   }, [addTab])
 
   useEffect(() => {
+    for (const id of Object.keys(webviewRefs.current)) {
+      if (!tabs.some((tab) => tab.id === id)) delete webviewRefs.current[id]
+    }
     const wv = activeTabId ? webviewRefs.current[activeTabId] : null
-    setActiveWebview(wv || null)
+    setActiveWebview(wv || null, activeTabId || undefined)
     const t = tabs.find((x) => x.id === activeTabId)
     setAddr(t?.url || '')
     try {
@@ -42,9 +47,8 @@ export function BrowserPane(): JSX.Element {
   }
 
   const go = (raw: string) => {
-    let url = raw.trim()
-    if (!url) return
-    if (!/^https?:\/\//.test(url)) url = /\.[a-z]{2,}/i.test(url) && !/\s/.test(url) ? 'https://' + url : 'https://www.baidu.com/s?wd=' + encodeURIComponent(url)
+    let url: string
+    try { url = browserUrl(raw) } catch { return }
     if (activeTabId && active) active.loadURL(url)
     else addTab(url)
   }
@@ -129,10 +133,13 @@ export function BrowserPane(): JSX.Element {
           <webview
             key={t.id}
             ref={((el: any) => {
+              registerWebview(t.id, el)
+              if (!el) return
               if (el && webviewRefs.current[t.id] !== el) {
                 webviewRefs.current[t.id] = el
                 el.addEventListener('dom-ready', () => {
-                  if (activeTabId === t.id) setActiveWebview(el)
+                  registerWebview(t.id, el)
+                  if (useStore.getState().activeTabId === t.id) setActiveWebview(el, t.id)
                 })
                 el.addEventListener('page-title-updated', (e: any) => updateTab(t.id, { title: e.title }))
                 el.addEventListener('did-navigate', (e: any) => updateTab(t.id, { url: e.url }))
@@ -141,7 +148,6 @@ export function BrowserPane(): JSX.Element {
             }) as any}
             src={t.url}
             partition="persist:xiaonian"
-            {...({ allowpopups: 'true' } as any)}
             className="absolute inset-0 w-full h-full bg-white"
             style={{ display: activeTabId === t.id ? 'flex' : 'none' }}
           />

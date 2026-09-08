@@ -272,7 +272,7 @@ function computeRadar(plan: Plan, demand: SceneDemand): { scores: Record<string,
   const ratings = venues.map((n) => n.poi?.filtered_score ?? n.poi?.raw_score ?? 0).filter((r) => r > 0)
   const avgRating = ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0
   const highRating = ratings.filter((r) => r >= 4.5).length
-  const per = plan.total_cost / Math.max(demand.group_size, 1)
+  const per = plan.total_cost == null ? Infinity : plan.total_cost / Math.max(demand.group_size, 1)
   const totalTravel = plan.nodes.reduce((s, n) => s + (n.transit_from_prev_min || 0), 0)
   const categories = new Set(venues.map((n) => n.category))
   const reasons: Record<string, string> = {}

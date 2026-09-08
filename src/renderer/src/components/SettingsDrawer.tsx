@@ -7,18 +7,16 @@ export function SettingsDrawer(): JSX.Element | null {
   const open = useStore((s) => s.settingsOpen)
   const setSettings = useStore((s) => s.setSettings)
   const [config, setConfig] = useState<any>(null)
-  const [cities, setCities] = useState<{ city: string; count: number }[]>([])
   const [skills, setSkills] = useState<any[]>([])
   const [im, setIm] = useState<{ connected: boolean; note: string } | null>(null)
-  const [qr, setQr] = useState<string>('')
   const [ping, setPing] = useState<string>('')
-  const [simText, setSimText] = useState('小悠，周末想带娃出去玩，你看着安排')
+  const backendReady = useStore((s) => s.backendReady)
+  const reconnect = useStore((s) => s.hydrateHarness)
 
   useEffect(() => {
     if (!open) return
     window.xiaonian.getConfig().then((r) => {
       setConfig(r.config)
-      setCities(r.cities)
     })
     window.xiaonian.listSkills().then(setSkills)
     window.xiaonian.imStatus().then(setIm)
@@ -26,10 +24,6 @@ export function SettingsDrawer(): JSX.Element | null {
 
   if (!open) return null
 
-  const setSource = async (src: string) => {
-    await window.xiaonian.setSource(src)
-    setConfig((c: any) => ({ ...c, dataSource: src }))
-  }
   return (
     <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setSettings(false)}>
       <div className="absolute inset-0 bg-black/20" />
@@ -45,28 +39,14 @@ export function SettingsDrawer(): JSX.Element | null {
           {/* 定位 */}
           <LocationSection />
 
-          {/* 数据源 */}
-          <Section icon={<Database size={15} />} title="数据源（企业可改 API）">
-            <div className="flex gap-2">
-              {[
-                { id: 'mock', label: 'VitaBench' },
-                { id: 'amap', label: '高德实时' },
-                { id: 'enterprise', label: '企业API' }
-              ].map((o) => (
-                <button
-                  key={o.id}
-                  onClick={() => setSource(o.id)}
-                  className={`flex-1 py-1.5 text-xs rounded-lg border ${config?.dataSource === o.id ? 'bg-brand/20 border-brand text-brand-ink' : 'border-neutral-200 text-neutral-500'}`}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
-            <div className="mt-1 text-[11px] text-neutral-400">Adapter 模式：Mock/高德/企业热插拔；Agent 只认稳定 Tool Schema。数据集共 {cities.length} 城可兜底。</div>
+          <Section icon={<Database size={15} />} title="运行服务与真实数据">
+            <div className="text-xs text-neutral-500">{backendReady ? '运行服务已连接' : '运行服务未连接'} · 真实高德与浏览器页面</div>
+            <div className="text-[11px] text-neutral-400 mt-1 break-all">{config?.harness?.baseURL}</div>
+            <button onClick={() => void reconnect()} className="mt-2 px-3 py-1 text-xs rounded bg-neutral-100">检查连接</button>
           </Section>
 
           {/* LLM */}
-          <Section icon={<Wifi size={15} />} title="大模型 · LongCat-2.0">
+          <Section icon={<Wifi size={15} />} title={`大模型 · ${config?.llm?.model || '未配置'}`}>
             <div className="text-xs text-neutral-500">{config?.hasLlmKey ? `已配置 Key（${config?.llm?.apiKey}）` : '未配置 Key，请在 .env 填写'}</div>
             <button
               onClick={async () => {
@@ -104,38 +84,12 @@ export function SettingsDrawer(): JSX.Element | null {
             </div>
           </Section>
 
-          {/* IM */}
-          <Section icon={<MessageCircle size={15} />} title="微信 Bridge">
-            <div className="text-xs text-neutral-500">{im?.note}</div>
-            <div className="flex gap-2 mt-2">
-              <button
-                onClick={async () => {
-                  const r = await window.xiaonian.imLoginQr()
-                  setQr(r.dataUrl)
-                }}
-                className="text-xs px-3 py-1 rounded-lg bg-neutral-100 hover:bg-neutral-200"
-              >
-                扫码登录
-              </button>
-            </div>
-            {qr && <img src={qr} className="mt-2 w-32 h-32 border rounded" alt="登录二维码" />}
-            <div className="mt-3">
-              <div className="text-[11px] text-neutral-400 mb-1">现场演示：模拟一条微信入站消息 → 小悠自动处理</div>
-              <div className="flex gap-1.5">
-                <input value={simText} onChange={(e) => setSimText(e.target.value)} className="flex-1 text-xs border border-neutral-200 rounded px-2 py-1" />
-                <button onClick={() => window.xiaonian.imSimulate(simText, '老婆')} className="text-xs px-2 py-1 rounded bg-brand text-brand-ink">
-                  发送
-                </button>
-              </div>
-            </div>
+          <Section icon={<MessageCircle size={15} />} title="同行人协作">
+            <div className="text-xs text-neutral-500">{im?.note || '微信和飞书尚未接入。可在行程卡中生成真实分享链接，由你发送给同行人。'}</div>
           </Section>
 
-          {/* 主动关心 */}
-          <Section icon={<Bell size={15} />} title="主动关心">
-            <button onClick={() => window.xiaonian.proactiveTrigger()} className="text-xs px-3 py-1 rounded-lg bg-neutral-100 hover:bg-neutral-200">
-              立刻来一条主动关心
-            </button>
-            <div className="mt-1 text-[11px] text-neutral-400">按 DPVP 时段随机脉冲；提醒队列给未来的自己留提醒；opt-in、本地、不碰隐私。</div>
+          <Section icon={<Bell size={15} />} title="主动提醒">
+            <div className="text-xs text-neutral-500">有实际运行事件或已保存的提醒时显示通知。</div>
           </Section>
 
           {/* 记忆 */}

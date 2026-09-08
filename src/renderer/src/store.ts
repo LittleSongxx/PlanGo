@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import type { AgentStep, ChatMessage, OutcomeCard, Plan } from '@shared/types'
+import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent } from '@shared/types'
+import { projectHarness, projectEvents, runBusy, canResolveAction } from './lib/harnessProjection'
 import { originFallback as computeOrigin } from './lib/cityCenter'
 
 export interface Tab {
@@ -25,19 +26,32 @@ export interface SavedSession {
   city: string
   messages: ChatMessage[]
   cards: OutcomeCard[]
+  runId?: string
 }
 
 const SESS_KEY = 'xy_sessions'
-function loadSessions(): SavedSession[] {
+const HIDDEN_KEY = 'xy_hidden_sessions'
+function hiddenSessionIds(): Set<string> {
   try {
-    return JSON.parse(localStorage.getItem(SESS_KEY) || '[]')
+    const ids = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]')
+    return new Set(Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : [])
+  } catch { return new Set() }
+}
+function visibleSessions(list: SavedSession[]): SavedSession[] {
+  const hidden = hiddenSessionIds()
+  return list.filter(session => !hidden.has(session.id) && (!session.runId || !hidden.has(session.runId)))
+}
+export function loadSessions(): SavedSession[] {
+  try {
+    const sessions = JSON.parse(localStorage.getItem(SESS_KEY) || '[]')
+    return Array.isArray(sessions) ? visibleSessions(sessions) : []
   } catch {
     return []
   }
 }
 function saveSessions(list: SavedSession[]): void {
   try {
-    localStorage.setItem(SESS_KEY, JSON.stringify(list.slice(0, 30)))
+    localStorage.setItem(SESS_KEY, JSON.stringify(visibleSessions(list).slice(0, 30)))
   } catch {
     /* quota */
   }
@@ -57,6 +71,19 @@ interface State {
   steps: AgentStep[]
   cards: OutcomeCard[]
   busy: boolean
+  requestBusy: boolean
+  run: HarnessSnapshot | null
+  events: HarnessEvent[]
+  backendError: string
+  backendReady: boolean
+  refreshRun: () => Promise<void>
+  hydrateHarness: () => Promise<void>
+  applyHarness: (run: HarnessSnapshot) => void
+  receiveHarnessEvent: (event: HarnessEvent) => void
+  cancelRun: () => Promise<void>
+  resolveAction: (runId: string, actionId: string, status: 'SUCCEEDED' | 'FAILED', note: string, reference?: string) => Promise<void>
+  selectPlan: (plan: Plan) => Promise<void>
+  resumeBrowser: () => Promise<void>
   proactive: ProactiveMsg[]
   settingsOpen: boolean
   view: WorkView
@@ -81,7 +108,7 @@ interface State {
   updateTab: (id: string, patch: Partial<Tab>) => void
 
   pushMessage: (m: ChatMessage) => void
-  send: (text: string) => Promise<void>
+  send: (text: string, image?: string) => Promise<void>
   confirm: (token: string, ok: boolean) => Promise<void>
 
   applyStep: (s: AgentStep & { patch?: boolean }) => void
@@ -111,6 +138,7 @@ interface State {
 }
 
 let tabSeq = 0
+let refreshingRun: string | null = null
 
 export const useStore = create<State>((set, get) => ({
   tabs: [],
@@ -119,12 +147,17 @@ export const useStore = create<State>((set, get) => ({
     {
       role: 'assistant',
       content:
-        '你好，我是小悠 👋 你的 AI 本地生活管家。\n我会按你当前定位的城市，去查真实高德/美团/点评的门店，一次给你 3 套（经济/均衡/特色）周末方案，还能比价、点菜、排号、发同行人确认。\n跟我说一句就行，比如：「这周六下午带娃出去玩4小时，孩子5岁，老婆减脂，预算人均120」。'
+        '你好，我是小悠 👋 你的 AI 本地生活管家。\n告诉我人数、预算和想去的地方，我会结合真实地图与浏览器信息规划行程。菜单、团购和执行结果会保留来源；登录或网站操作需要你接管时，我会停下来等你。'
     }
   ],
   steps: [],
   cards: [],
   busy: false,
+  requestBusy: false,
+  run: null,
+  events: [],
+  backendError: '',
+  backendReady: false,
   proactive: [],
   settingsOpen: false,
   view: 'browser',
@@ -137,7 +170,7 @@ export const useStore = create<State>((set, get) => ({
   routeTarget: null,
   sharePlan: null,
   sessions: loadSessions(),
-  activeSessionId: 'sess_' + Date.now().toString(36),
+  activeSessionId: 'sess_' + crypto.randomUUID(),
   historyOpen: false,
   sidePanelOpen: false,
   discoverOpen: false,
@@ -159,32 +192,139 @@ export const useStore = create<State>((set, get) => ({
 
   pushMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
 
-  send: async (text) => {
-    const { messages } = get()
-    set({ busy: true, steps: [], messages: [...messages, { role: 'user', content: text }] })
+  applyHarness: (run) => {
+    const hidden = hiddenSessionIds()
+    if (hidden.has(run.run_id) || hidden.has(get().activeSessionId)) return
+    const current = get().run
+    if (current && current.run_id !== run.run_id) return
+    if (current && ((run.version ?? 0) < (current.version ?? 0) || (run.version === current.version && run.event_seq < current.event_seq))) return
+    const projected = projectHarness(run)
+    set((s) => ({ run, messages: projected.messages.length ? projected.messages : s.messages, cards: projected.cards,
+      backendReady: true, backendError: '', busy: s.requestBusy || runBusy(run),
+      aiBrowsing: run.outcome || run.state.browser_wait ? { active: false, site: '', action: '' } : s.aiBrowsing,
+      view: projected.cards.length && !s.cards.length ? 'outcome' : s.view }))
+    get().persistSession()
+  },
+
+  refreshRun: async () => {
+    const { run, activeSessionId } = get()
+    if (!run || refreshingRun === run.run_id) return
+    refreshingRun = run.run_id
     try {
-      const reply = await window.xiaonian.chat(text, messages.slice(-6))
-      set((s) => ({ messages: [...s.messages, { role: 'assistant', content: reply.content }] }))
+      const [snapshot, result] = await Promise.all([window.xiaonian.harness.getRun(run.run_id), window.xiaonian.harness.events(run.run_id, get().events.at(-1)?.seq || 0)])
+      if (get().activeSessionId !== activeSessionId || get().run?.run_id !== run.run_id) return
+      const events = [...new Map([...get().events, ...result.events].map(e => [e.seq, { ...e, run_id: run.run_id }])).values()].sort((a, b) => a.seq - b.seq)
+      set({ events, steps: projectEvents(events) })
+      get().applyHarness(snapshot)
     } catch (e) {
-      set((s) => ({ messages: [...s.messages, { role: 'assistant', content: '出错了：' + (e as Error).message }] }))
+      if (get().activeSessionId === activeSessionId) set({ backendError: String(e), backendReady: false })
+    } finally { if (refreshingRun === run.run_id) refreshingRun = null }
+  },
+
+  hydrateHarness: async () => {
+    const activeSessionId = get().activeSessionId
+    try {
+      const status = await window.xiaonian.harness.status()
+      set({ backendReady: status.ready, backendError: status.error || '' })
+      if (!status.ready) return
+      if (get().run) { await get().refreshRun(); return }
+      const runs = await window.xiaonian.harness.listRuns()
+      if (get().activeSessionId !== activeSessionId || get().run) return
+      const sessions = visibleSessions(get().sessions)
+      const hidden = hiddenSessionIds()
+      for (const run of runs) {
+        if (hidden.has(run.run_id) || sessions.some(s => s.runId === run.run_id)) continue
+        sessions.push({ id: run.run_id, runId: run.run_id, title: run.input_text.slice(0, 26), createdAt: Date.now(), updatedAt: Date.now(), city: '', messages: [], cards: [] })
+      }
+      set({ sessions })
+      saveSessions(sessions)
+      // The history stores references only; opening a run always fetches its
+      // current plan and approval rather than trusting cached outcome cards.
+      const savedId = localStorage.getItem('xy_active_run')
+      const saved = sessions.find(s => s.runId === savedId)
+      if (saved) get().restoreSession(saved.id)
+    } catch (e) { set({ backendReady: false, backendError: String(e) }) }
+  },
+
+  receiveHarnessEvent: (event) => {
+    if (get().run?.run_id !== event.run_id) return
+    const events = [...new Map([...get().events, event].map(e => [e.seq, e])).values()].sort((a, b) => a.seq - b.seq)
+    set({ events, steps: projectEvents(events) })
+    void get().refreshRun()
+  },
+
+  send: async (text, image) => {
+    if (!text.trim() || get().busy) return
+    if (!get().backendReady) { set({ backendError: '运行服务尚未连接，请先重新连接。' }); return }
+    const { run, activeSessionId } = get()
+    set((s) => ({ busy: true, requestBusy: true, backendError: '', messages: [...s.messages, { role: 'user', content: text }] }))
+    try {
+      const snapshot = run ? await window.xiaonian.harness.sendMessage(run.run_id, text, image) : await window.xiaonian.harness.createRun(text, image)
+      if (get().activeSessionId !== activeSessionId) return
+      get().applyHarness(snapshot)
+      await get().refreshRun()
+    } catch (e) {
+      if (get().activeSessionId === activeSessionId) set({ backendError: String(e) })
     } finally {
-      set({ busy: false })
-      get().persistSession()
+      if (get().activeSessionId === activeSessionId) { set({ requestBusy: false, busy: runBusy(get().run) }); get().persistSession() }
     }
   },
 
   confirm: async (token, ok) => {
-    set({ busy: true })
+    const { run, activeSessionId } = get()
+    if (!run || get().busy || token !== (run.interrupt_id || run.state.interrupt_id)) return
+    set({ requestBusy: true, busy: true, backendError: '' })
     try {
-      const reply = await window.xiaonian.confirm(token, ok)
-      set((s) => ({
-        messages: [...s.messages, { role: 'assistant', content: reply.content }],
-        // 移除该确认卡
-        cards: s.cards.filter((c) => c.kind !== 'confirm' || (c as { token: string }).token !== token)
-      }))
+      const snapshot = await window.xiaonian.harness.resume(run.run_id, token, ok ? 'approve' : 'reject')
+      if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
+    } catch (e) {
+      if (get().activeSessionId === activeSessionId) set({ backendError: String(e) })
     } finally {
-      set({ busy: false })
+      if (get().activeSessionId === activeSessionId) { set({ requestBusy: false, busy: runBusy(get().run) }); await get().refreshRun() }
     }
+  },
+
+  resolveAction: async (runId, actionId, status, note, reference) => {
+    const { run, activeSessionId } = get()
+    if (!canResolveAction(run, runId, actionId) || get().busy || !get().backendReady || !note.trim()) return
+    set({ requestBusy: true, busy: true, backendError: '' })
+    try {
+      const snapshot = await window.xiaonian.harness.resolveAction(runId, actionId, status, note.trim(), reference?.trim() || undefined)
+      if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
+    } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
+    finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
+  },
+
+  selectPlan: async (plan) => {
+    const { run, activeSessionId } = get()
+    if (!run || plan.run_id !== run.run_id || !plan.version || get().busy || !get().backendReady) return
+    set({ requestBusy: true, busy: true, backendError: '' })
+    try {
+      const snapshot = await window.xiaonian.harness.selectPlan(run.run_id, plan.plan_id, plan.version)
+      if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
+    } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
+    finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
+  },
+
+  cancelRun: async () => {
+    const { run, activeSessionId } = get()
+    if (!run) return
+    try {
+      const snapshot = await window.xiaonian.harness.cancel(run.run_id)
+      if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
+    } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
+  },
+
+  resumeBrowser: async () => {
+    const { run, activeSessionId } = get()
+    const interruptId = run?.interrupt_id || run?.state.interrupt_id
+    if (!run || typeof interruptId !== 'string' || get().requestBusy) return
+    set({ requestBusy: true, busy: true })
+    try {
+      const snapshot = await window.xiaonian.harness.resume(run.run_id, interruptId, 'resume')
+      if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
+    } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
+    finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 
   applyStep: (s) =>
@@ -228,7 +368,7 @@ export const useStore = create<State>((set, get) => ({
     get().addTab(url)
     set({ view: 'browser' })
   },
-  openRoute: (t) => set({ routeTarget: t }),
+  openRoute: (t) => set({ routeTarget: t, view: 'outcome' }),
   closeRoute: () => set({ routeTarget: null }),
   openShare: (p) => set({ sharePlan: p }),
   closeShare: () => set({ sharePlan: null }),
@@ -237,49 +377,59 @@ export const useStore = create<State>((set, get) => ({
   setSidePanelOpen: (open) => set({ sidePanelOpen: open }),
   setDiscoverOpen: (v) => set({ discoverOpen: v }),
   setAiBrowsing: (v) => set((s) => ({ aiBrowsing: { active: v.active, site: v.site ?? s.aiBrowsing.site, action: v.action ?? s.aiBrowsing.action } })),
-  newSession: () =>
-    set((s) => {
-      const list = upsertSession(s)
-      return {
-        sessions: list,
-        activeSessionId: 'sess_' + Date.now().toString(36),
-        messages: [s.messages[0]].filter(Boolean),
-        cards: [],
-        steps: [],
-        historyOpen: false
-      }
-    }),
-  restoreSession: (id) =>
-    set((s) => {
-      const list = upsertSession(s)
-      const target = list.find((x) => x.id === id)
-      if (!target) return { sessions: list }
-      return {
-        sessions: list,
-        activeSessionId: target.id,
-        messages: target.messages.length ? target.messages : s.messages,
-        cards: target.cards,
-        steps: [],
-        historyOpen: false,
-        view: target.cards.length ? 'outcome' : s.view
-      }
-    }),
-  deleteSession: (id) =>
-    set((s) => {
-      const sessions = s.sessions.filter((x) => x.id !== id)
-      saveSessions(sessions)
-      return { sessions }
-    }),
+  newSession: () => {
+    set((s) => ({ sessions: upsertSession(s), activeSessionId: 'sess_' + crypto.randomUUID(),
+      messages: [{ role: 'assistant', content: '开始新的安排吧。告诉我地点、人数和预算。' }], cards: [], steps: [], events: [], run: null,
+      busy: false, requestBusy: false, backendError: '', historyOpen: false }))
+    localStorage.removeItem('xy_active_run')
+  },
+  restoreSession: (id) => {
+    const list = upsertSession(get())
+    const target = list.find(x => x.id === id)
+    if (!target) return
+    set({ sessions: list, activeSessionId: id, messages: target.messages, cards: [], steps: [], events: [], run: null,
+      busy: !!target.runId, requestBusy: !!target.runId, backendError: target.runId ? '' : '这是旧版会话的只读记录。发送消息会建立新的后端任务。', historyOpen: false })
+    if (!target.runId) return
+    localStorage.setItem('xy_active_run', target.runId)
+    void window.xiaonian.harness.getRun(target.runId).then(async snapshot => {
+      if (get().activeSessionId !== id) return
+      set({ requestBusy: false })
+      get().applyHarness(snapshot)
+      await get().refreshRun()
+    }).catch(e => {
+      if (get().activeSessionId === id) set({ busy: false, requestBusy: false, backendError: String(e), backendReady: false })
+    })
+  },
+  deleteSession: (id) => {
+    const state = get()
+    const target = state.sessions.find(session => session.id === id)
+    const hidden = hiddenSessionIds()
+    hidden.add(id)
+    if (target?.runId) hidden.add(target.runId)
+    try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...hidden])) }
+    catch { set({ backendError: '无法保存历史隐藏设置，请检查本地存储后重试。' }); return }
+    const sessions = visibleSessions(state.sessions)
+    saveSessions(sessions)
+    set({ sessions })
+    // Hiding changes this desktop's list only. It never cancels or deletes a run.
+    if (id === state.activeSessionId || (target?.runId && target.runId === state.run?.run_id)) {
+      get().newSession()
+      set({ view: 'browser', sharePlan: null, routeTarget: null })
+    }
+  },
   persistSession: () => set((s) => ({ sessions: upsertSession(s) }))
 }))
 
 // 把当前会话（消息+成果卡）快照进历史列表（按 activeSessionId upsert），并落 localStorage。
 function upsertSession(s: State): SavedSession[] {
+  const sessions = visibleSessions(s.sessions)
+  const hidden = hiddenSessionIds()
+  if (hidden.has(s.activeSessionId) || (s.run && hidden.has(s.run.run_id))) return sessions
   const firstUser = s.messages.find((m) => m.role === 'user')
-  if (!firstUser && s.cards.length === 0) return s.sessions // 空会话不存
+  if (!firstUser && s.cards.length === 0) return sessions // 空会话不存
   const title = (typeof firstUser?.content === 'string' ? firstUser.content : '') || '新会话'
   const now = Date.now()
-  const existing = s.sessions.find((x) => x.id === s.activeSessionId)
+  const existing = sessions.find((x) => x.id === s.activeSessionId)
   const snap: SavedSession = {
     id: s.activeSessionId,
     title: title.length > 26 ? title.slice(0, 26) + '…' : title,
@@ -287,10 +437,12 @@ function upsertSession(s: State): SavedSession[] {
     updatedAt: now,
     city: s.city,
     messages: s.messages,
-    cards: s.cards
+    cards: s.run ? [] : s.cards,
+    runId: s.run?.run_id || existing?.runId
   }
-  const rest = s.sessions.filter((x) => x.id !== s.activeSessionId)
+  const rest = sessions.filter((x) => x.id !== s.activeSessionId)
   const list = [snap, ...rest].sort((a, b) => b.updatedAt - a.updatedAt)
   saveSessions(list)
+  if (s.run) localStorage.setItem('xy_active_run', s.run.run_id)
   return list
 }

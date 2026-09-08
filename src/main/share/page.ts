@@ -62,10 +62,10 @@ async function load() {
     const rec = (poi.recommended||[]).slice(0,3).map(r=>'<span>'+esc(r)+'</span>').join('');
     return '<div class="node"><img src="'+esc(img)+'" onerror="this.src=CAT_IMG.dining"/><div><div class="t">'+esc(n.time_start)+(n.time_end?('–'+esc(n.time_end)):'')+'</div><div class="n">'+esc(n.title)+'</div><div class="s">'+(score?('★'+score+' '):'')+(poi.price_per_person?('· 人均¥'+poi.price_per_person):'')+'</div><div class="s">💡 '+esc(n.reason||'')+'</div><div class="tags">'+rec+'</div></div></div>';
   }).join('');
-  const per = p.nodes && p.nodes.length ? Math.round((p.total_cost||0)/2) : 0;
+  const per = typeof p.total_cost==='number' && p.party_size>0 ? Math.round(p.total_cost/p.party_size) : null;
   app.innerHTML =
     '<div class="banner"><div class="tag">有人给你分享了一套周末方案 🎁</div><h1>'+esc(p.title||'周末安排')+'</h1>'+
-    '<div class="meta">'+esc(data.city||'')+' · 合计约¥'+(p.total_cost||0)+' · '+(p.nodes||[]).length+' 站'+(p.total_travel_min?(' · 通勤约'+p.total_travel_min+'分钟'):'')+'</div></div>'+
+    '<div class="meta">'+esc(data.city||'')+' · '+(typeof p.total_cost==='number'?'合计约¥'+p.total_cost:'费用待核验')+' · '+(p.nodes||[]).length+' 站'+(p.total_travel_min?(' · 通勤约'+p.total_travel_min+'分钟'):'')+'</div></div>'+
     '<div class="readonly">👀 只读分享页：看看行程，投个票，或写句想法给 TA，小悠会据此改方案。</div>'+
     '<div class="card">'+nodes+'</div>'+
     '<div class="cta">'+

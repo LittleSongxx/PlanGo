@@ -54,6 +54,12 @@ function loadEnvFile(): Record<string, string> {
   return {}
 }
 
+// Main-process only. Never expose this object through IPC: it may contain credentials.
+export function getHarnessEnvironment(): Record<string, string> {
+  const values = { ...loadEnvFile(), ...process.env }
+  return Object.fromEntries(Object.entries(values).filter(([key, value]) => key.startsWith('YOYU_') && typeof value === 'string')) as Record<string, string>
+}
+
 // 运行时覆盖（设置页写入），落 userData/xiaonian-config.json
 function overridePath(): string {
   try {
@@ -94,6 +100,9 @@ export function getConfig(): AppConfig {
   // 选定 provider；若选定的没配 key 而另一个有，则自动回退到有 key 的那个
   let llm = provider === 'minimax' ? minimax : longcat
   if (!llm.apiKey) llm = provider === 'minimax' ? longcat : minimax.apiKey ? minimax : llm
+  if (env.OPENAI_API_KEY || provider === 'openai') {
+    llm = { apiKey: env.OPENAI_API_KEY || '', baseURL: env.OPENAI_BASE_URL || 'https://api.openai.com/v1', model: env.OPENAI_MODEL || '' }
+  }
   const base: AppConfig = {
     llm,
     amap: {
@@ -101,7 +110,7 @@ export function getConfig(): AppConfig {
       jsKey: env.AMAP_JS_KEY || '',
       jsSecurity: env.AMAP_JS_SECURITY || ''
     },
-    dataSource: (env.DATA_SOURCE as AppConfig['dataSource']) || 'mock',
+    dataSource: (env.DATA_SOURCE as AppConfig['dataSource']) || 'amap',
     city: env.XIAONIAN_CITY || '上海',
     coords: env.XIAONIAN_COORDS || '',
     enterprise: { base: env.ENTERPRISE_API_BASE || '', key: env.ENTERPRISE_API_KEY || '' }
@@ -147,7 +156,7 @@ function deepMerge<T>(a: T, b: Partial<T>): T {
     const av = out[k]
     if (bv && typeof bv === 'object' && !Array.isArray(bv) && av && typeof av === 'object') {
       out[k] = deepMerge(av, bv as Record<string, unknown>)
-    } else if (bv !== undefined && bv !== '') {
+    } else if (bv !== undefined) {
       out[k] = bv
     }
   }

@@ -33,7 +33,7 @@ async function main() {
   for (const sc of SCENARIOS) {
     const { plan, demand } = await planOuting(sc.slots, process.env.XIAONIAN_CITY!)
     const cons = mergedConstraints(demand.personas)
-    const per = plan.total_cost / Math.max(demand.group_size, 1)
+    const per = plan.total_cost == null ? Infinity : plan.total_cost / Math.max(demand.group_size, 1)
     const ne = plan.nodes.length >= 2
     const hp = verifyPlan(plan, demand).passed
     const bo = !demand.budget_per_person || per <= demand.budget_per_person * 1.15
@@ -54,7 +54,7 @@ async function main() {
   console.log(`硬约束通过率： ${pct(hardPass, n)}  (${hardPass}/${n})`)
   console.log(`预算达标率：   ${pct(budgetOk, n)}  (${budgetOk}/${n})`)
   console.log(`人群硬过滤率： ${pct(personaOk, n)}  (${personaOk}/${n})`)
-  console.log(`写操作确认率： 100%  (架构强制：所有 WRITE 工具两步确认)`)
+  console.log('写操作确认：本旧版离线规划自评不覆盖，运行 Harness 回归检查审批和执行。')
   console.log('')
 }
 

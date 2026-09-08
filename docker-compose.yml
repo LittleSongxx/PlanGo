@@ -1,0 +1,86 @@
+name: yoyu
+
+x-yoyu: &yoyu
+  image: yoyu-harness:local
+  build:
+    context: .
+    dockerfile: deploy/Dockerfile
+  environment:
+    YOYU_RUNTIME_PROFILE: service
+    YOYU_BACKEND_TOKEN: ${YOYU_BACKEND_TOKEN:?Set YOYU_BACKEND_TOKEN before starting YOYU}
+    YOYU_DATABASE_URL: postgresql+asyncpg://yoyu:${YOYU_POSTGRES_PASSWORD:?Set a URL-safe YOYU_POSTGRES_PASSWORD}@postgres:5432/yoyu
+    YOYU_REDIS_URL: redis://redis:6379/0
+    YOYU_DATA_DIR: /data
+    YOYU_SKILLS_DIR: /app/skills
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.longcat.chat/openai/v1}
+    OPENAI_MODEL: ${OPENAI_MODEL:-LongCat-2.0}
+    AMAP_WEBSERVICE_KEY: ${AMAP_WEBSERVICE_KEY:-}
+  volumes:
+    - runtime-data:/data
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: yoyu
+      POSTGRES_USER: yoyu
+      POSTGRES_PASSWORD: ${YOYU_POSTGRES_PASSWORD:?Set a URL-safe YOYU_POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U yoyu -d yoyu']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, 'yes']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    <<: *yoyu
+    command: [alembic, -c, alembic.ini, upgrade, head]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  api:
+    <<: *yoyu
+    command: [python, -m, uvicorn, 'yoyu.app:create_app', --factory, --host, 0.0.0.0, --port, '8011', --no-access-log]
+    ports:
+      - '127.0.0.1:${YOYU_SERVICE_PORT:-8011}:8011'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import os,urllib.request; r=urllib.request.Request('http://127.0.0.1:8011/api/v1/health/ready',headers={'Authorization':'Bearer '+os.environ['YOYU_BACKEND_TOKEN']}); urllib.request.urlopen(r,timeout=3).close()"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 10s
+
+  worker:
+    <<: *yoyu
+    command: [python, -m, yoyu.worker]
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:
+  runtime-data:

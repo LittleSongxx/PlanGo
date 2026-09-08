@@ -1,7 +1,8 @@
-// 渲染层浏览器执行器：维护"活动 webview"，接收主进程动作，用 executeJavaScript 执行后回执。
+// 渲染层浏览器执行器：绑定真实标签，固定 DOM 脚本由主进程在隔离世界 1001 执行。
 // DOM 蒸馏(set-of-marks) + Readability 正文提取 + Horsepower 式表格提取 + 可视化(彩色编号框+合成光标)。
 import readabilitySrc from '@mozilla/readability/Readability.js?raw'
 import { useStore } from '../store'
+import { allowedBrowserSite, browserCommandGuard, isBrowserWrite, validateBrowserCommand, type BrowserCommand, type BrowserObservation } from '@shared/browser'
 
 // 站点友好名（顶部浮条显示"小悠正在浏览 大众点评…"）
 function siteName(url: string): string {
@@ -33,60 +34,107 @@ function markBrowsing(action: string, site?: string): void {
   }
 }
 
-type WebviewEl = {
-  executeJavaScript: (code: string) => Promise<unknown>
-  loadURL: (url: string) => void
+export type WebviewEl = {
+  getWebContentsId: () => number
+  loadURL: (url: string) => Promise<void> | void
   getURL: () => string
   getTitle: () => string
+  isLoading?: () => boolean
 }
 
-let activeWebview: WebviewEl | null = null
-export function setActiveWebview(wv: WebviewEl | null): void {
-  activeWebview = wv
+function executeInBrowser(wv: WebviewEl, code: string): Promise<unknown> {
+  return window.xiaonian.browserEval(wv.getWebContentsId(), code)
 }
 
-type TabOpener = (url: string) => void
-let tabOpener: TabOpener | null = null
-export function setTabOpener(fn: TabOpener): void {
-  tabOpener = fn
+const webviews = new Map<string, WebviewEl>()
+const bindings = new Map<string, string>()
+const tabOwners = new Map<string, string>()
+const cancelledRuns = new Set<string>()
+const runEpochs = new Map<string, number>()
+export function cancelRendererBrowserRun(runId: string, epoch?: number): void {
+  cancelledRuns.add(runId)
+  runEpochs.set(runId, epoch ?? (runEpochs.get(runId) || 0) + 1)
 }
-
-function delay(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms))
+export function activateRendererBrowserRun(runId: string, epoch?: number): void {
+  if (epoch !== undefined) runEpochs.set(runId, epoch)
+  cancelledRuns.delete(runId)
 }
-function waitForActive(ms = 5000): Promise<void> {
-  const start = Date.now()
-  return new Promise((resolve) => {
-    if (activeWebview) return resolve()
-    const t = setInterval(() => {
-      if (activeWebview || Date.now() - start > ms) {
-        clearInterval(t)
-        resolve()
-      }
-    }, 80)
-  })
-}
-
-const DISTILL = `(function(){
-  try {
-    var sel='a,button,input,textarea,select,[role=button],[role=link],[role=tab],[onclick],[contenteditable=true]';
-    var els=Array.prototype.slice.call(document.querySelectorAll(sel));
-    var out=[];var i=0;
-    for(var k=0;k<els.length;k++){
-      var el=els[k];var r=el.getBoundingClientRect();
-      if(r.width<3||r.height<3) continue;
-      var st=window.getComputedStyle(el);
-      if(st.visibility==='hidden'||st.display==='none'||st.opacity==='0') continue;
-      el.setAttribute('data-ai-idx',String(i));
-      var name=el.getAttribute('aria-label')||el.getAttribute('placeholder')||el.getAttribute('name')||el.getAttribute('title')||'';
-      var text=((el.innerText||el.value||'')+'').replace(/\\s+/g,' ').trim().slice(0,80);
-      out.push({idx:i,tag:el.tagName.toLowerCase(),role:el.getAttribute('role')||'',name:name,text:text});
-      i++; if(i>=180) break;
+export function releaseRendererBrowserRun(runId: string, epoch?: number): void {
+  cancelRendererBrowserRun(runId, epoch)
+  for (const [tabId, owner] of tabOwners) {
+    if (JSON.parse(owner)[1] === runId) {
+      tabOwners.delete(tabId)
+      bindings.delete(owner)
     }
-    var body=(document.body?document.body.innerText:'').replace(/\\s+\\n/g,'\\n').slice(0,6000);
-    return {url:location.href,title:document.title,elements:out,text:body};
-  } catch(e){ return {error:String(e)}; }
-})()`
+  }
+}
+let activeTabId: string | null = null
+export function registerWebview(id: string, wv: WebviewEl | null): void {
+  if (wv) webviews.set(id, wv)
+  else webviews.delete(id)
+}
+export function setActiveWebview(wv: WebviewEl | null, tabId?: string): void {
+  activeTabId = wv ? tabId || [...webviews].find(([, item]) => item === wv)?.[0] || null : null
+}
+
+type TabOpener = (url: string) => string
+let tabOpener: TabOpener | null = null
+export function setTabOpener(fn: TabOpener | null): void { tabOpener = fn }
+
+function delay(ms: number): Promise<void> { return new Promise((resolve) => setTimeout(resolve, ms)) }
+async function waitForTab(id: string): Promise<WebviewEl> {
+  const deadline = Date.now() + 12000
+  while (Date.now() < deadline) {
+    const wv = webviews.get(id)
+    if (wv) {
+      try { if (wv.getURL() && !wv.isLoading?.()) return wv } catch { /* dom-ready pending */ }
+    }
+    await delay(80)
+  }
+  throw new Error('页面尚未就绪，请处理登录或网络问题后重新读取')
+}
+
+// Snapshot state lives in the isolated world, inaccessible to page scripts; only the DOM is shared.
+function distillScript(snapshotId: string, owner: string, epoch: number): string {
+  return `(function(){
+    try {
+      if(window.__yoyuSnapshot) window.__yoyuSnapshot.observer.disconnect();
+      document.querySelectorAll('[data-ai-idx]').forEach(function(el){el.removeAttribute('data-ai-idx');});
+      var sel='a,button,input,textarea,select,[role=button],[role=link],[role=tab],[onclick],[contenteditable=true]';
+      var els=Array.prototype.slice.call(document.querySelectorAll(sel));
+      var out=[],refs=[];
+      for(var k=0;k<els.length;k++){
+        var el=els[k],r=el.getBoundingClientRect(),st=window.getComputedStyle(el);
+        if(r.width<3||r.height<3||st.visibility==='hidden'||st.display==='none'||st.opacity==='0') continue;
+        var i=refs.length;el.setAttribute('data-ai-idx',String(i));refs.push(el);
+        var name=el.getAttribute('aria-label')||el.getAttribute('placeholder')||el.getAttribute('name')||el.getAttribute('title')||'';
+        var text=((el.innerText||'')+'').replace(/\\s+/g,' ').trim().slice(0,80);
+        out.push({idx:i,tag:el.tagName.toLowerCase(),role:el.getAttribute('role')||'',name:name,text:text});
+        if(refs.length>=180) break;
+      }
+      function formFingerprint(){
+        var controls=document.querySelectorAll('input,textarea,select,[contenteditable=true]');
+        if(controls.length>2000)throw new Error('页面表单过于复杂，请人工操作');
+        var value=JSON.stringify(Array.prototype.map.call(controls,function(el){return [
+          el.tagName,el.getAttribute('name'),el.getAttribute('type'),el.value,el.checked,el.selectedIndex,
+          el.selectedOptions?Array.prototype.map.call(el.selectedOptions,function(o){return o.value;}):null,
+          el.isContentEditable?el.textContent:null
+        ];}));
+        if(value.length>100000)throw new Error('页面表单过于复杂，请人工操作');
+        return value;
+      }
+      var state={id:${JSON.stringify(snapshotId)},owner:${JSON.stringify(owner)},epoch:${epoch},url:location.href,refs:refs,dirty:false,formFingerprint:formFingerprint(),fingerprint:formFingerprint};
+      state.observer=new MutationObserver(function(){state.dirty=true;});
+      state.observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true});
+      window.__yoyuSnapshot=state;
+      if(!window.__yoyuInputGuard){
+        window.__yoyuInputGuard=true;
+        ['input','change','pointerdown','keydown'].forEach(function(event){document.addEventListener(event,function(){if(window.__yoyuSnapshot)window.__yoyuSnapshot.dirty=true;},true);});
+      }
+      return {ok:true,url:location.href,title:document.title,elements:out,text:(document.body?document.body.innerText:'').slice(0,8000)};
+    }catch(e){return {ok:false,error:String(e)};}
+  })()`
+}
 
 const EXTRACT_TABLES = `(function(){
   try{
@@ -126,10 +174,6 @@ const READABILITY = `${readabilitySrc}
   } catch(e){ return { ok:false, error:String(e) }; }
 })()`
 
-function jsFindByIdx(idx: number): string {
-  return `document.querySelector('[data-ai-idx="${idx}"]')`
-}
-
 // Set-of-Marks 可视化：给已打 data-ai-idx 的可交互元素画彩色编号框（角色配色），单个固定层承载，避免污染 DOM。
 // 学习 Browser Use / Opticlick / 微软 SoM：按钮绿 / 链接蓝 / 输入紫 / 其它橙。
 const SOM_DRAW = `(function(){
@@ -162,150 +206,155 @@ const SOM_DRAW = `(function(){
   }catch(e){return {ok:false,error:String(e)};}
 })()`
 
-const SOM_CLEAR = `(function(){var o=document.getElementById('__xy_som__');if(o)o.remove();var c=document.getElementById('__xy_cursor__');if(c)c.remove();return {ok:true};})()`
-
-// 合成光标：移动到目标元素中心并做点击脉冲，让"AI 点击"肉眼可见（Manus 式）。
-function cursorClickScript(idx: number): string {
-  return `(function(){
-    try{
-      var el=document.querySelector('[data-ai-idx="${idx}"]'); if(!el) return {error:'no el'};
-      el.scrollIntoView({block:'center',behavior:'instant'});
-      var rc=el.getBoundingClientRect();
-      var cx=rc.left+rc.width/2, cy=rc.top+rc.height/2;
-      var cur=document.getElementById('__xy_cursor__');
-      if(!cur){cur=document.createElement('div');cur.id='__xy_cursor__';
-        cur.style.cssText='position:fixed;z-index:2147483647;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;background:rgba(255,184,0,.35);border:2px solid #ffb800;transition:left .5s ease,top .5s ease;pointer-events:none;left:'+(window.innerWidth/2)+'px;top:'+(window.innerHeight-40)+'px;';
-        document.documentElement.appendChild(cur);}
-      requestAnimationFrame(function(){cur.style.left=cx+'px';cur.style.top=cy+'px';});
-      return {ok:true};
-    }catch(e){return {ok:false,error:String(e)};}
-  })()`
+function failure(command: BrowserCommand, kind: string, text = kind, outcome: BrowserObservation['outcome'] = 'blocked'): BrowserObservation {
+  return { command_id: command.command_id, tab_id: command.tab_id, ok: false, outcome, error_kind: kind, error: text }
 }
 
-function normalizeUrl(raw: string): string {
-  const url = String(raw ?? '').trim()
-  if (!url) return ''
-  if (/^https?:\/\//.test(url)) return url
-  if (/\.[a-z]{2,}/i.test(url) && !/\s/.test(url)) return 'https://' + url
-  return 'https://www.baidu.com/s?wd=' + encodeURIComponent(url)
-}
-
-async function exec(action: string, args: Record<string, unknown>): Promise<unknown> {
-  if (action === 'navigate' || action === 'open_tab') {
-    const url = normalizeUrl(String(args.url ?? ''))
-    if (!url && action === 'navigate') return { error: '缺少 url' }
-    // 自动切浏览器视图 + 顶部浮条，让用户"看着小悠打开网页"
-    markBrowsing('打开', siteName(url))
-    if (!activeWebview) {
-      if (!tabOpener) return { error: '无法打开浏览器标签' }
-      tabOpener(url || 'https://www.dianping.com/')
-      await waitForActive()
-      await delay(900)
-    } else if (url) {
-      activeWebview.loadURL(url)
-      await delay(700)
-    }
-    return { ok: true, url: url || activeWebview?.getURL?.() }
+// All model input is data. These fixed scripts are the only JavaScript that reaches a page.
+function elementActionScript(command: BrowserCommand, epoch: number): string {
+  const idx = command.arguments.idx as number
+  const preamble = `var state=window.__yoyuSnapshot;
+    if(!state||state.id!==${JSON.stringify(command.expected_snapshot_id)}||state.owner!==${JSON.stringify(JSON.stringify([command.browser_session_id, command.run_id]))}||state.epoch!==${epoch}||state.url!==location.href||state.dirty||state.observer.takeRecords().length||state.formFingerprint!==state.fingerprint())
+      return {ok:false,error_kind:'stale_snapshot',error:'页面已变化，请重新读取并确认目标'};
+    var el=state.refs[${idx}];
+    if(!el||!el.isConnected||el.getAttribute('data-ai-idx')!==${JSON.stringify(String(idx))})
+      return {ok:false,error_kind:'stale_snapshot',error:'目标元素已变化'};
+    var rect=el.getBoundingClientRect(),style=window.getComputedStyle(el);
+    if(el.disabled||rect.width<3||rect.height<3||style.visibility==='hidden'||style.display==='none')
+      return {ok:false,error_kind:'element_unavailable',error:'目标元素不可操作'};`
+  let action: string
+  if (command.operation === 'click') {
+    action = `var text=(el.innerText||'').slice(0,80);state.dirty=true;el.click();return {ok:true,text:text};`
+  } else if (command.operation === 'type') {
+    action = `if(!['INPUT','TEXTAREA','SELECT'].includes(el.tagName)&&!el.isContentEditable)return {ok:false,error_kind:'invalid_element',error:'目标不是输入框'};
+      if(el.tagName==='INPUT'&&['password','file','hidden'].includes(el.type))return {ok:false,error_kind:'manual_input_required',error:'敏感输入请由用户在页面填写'};
+      var value=${JSON.stringify(command.arguments.text)};
+      if(el.tagName==='SELECT'&&!Array.prototype.some.call(el.options,function(option){return option.value===value&&!option.disabled&&!(option.parentElement.tagName==='OPTGROUP'&&option.parentElement.disabled);}))return {ok:false,error_kind:'invalid_option',error:'目标选项不存在或不可选'};
+      state.dirty=true;el.focus();
+      if(el.isContentEditable)el.innerText=value;else {var setter=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el),'value');if(setter&&setter.set)setter.set.call(el,value);else el.value=value;}
+      el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));
+      if(!el.isConnected||(el.isContentEditable?el.innerText:el.value)!==value)return {ok:false,outcome:'unknown',error_kind:'input_not_applied',error:'页面未保留请求的输入；请核对页面，不会自动重试'};
+      return {ok:true};`
+  } else {
+    action = `el.style.outline='3px solid #ffd100';el.scrollIntoView({block:'center'});return {ok:true};`
   }
+  return `(function(){${preamble}${action}})()`
+}
 
-  const wv = activeWebview
-  if (!wv) return { error: '当前没有打开的浏览器标签。请先在左侧开一个浏览器标签。' }
+export async function executeRendererBrowserCommand(raw: BrowserCommand, commandEpoch?: number): Promise<BrowserObservation> {
+  let command: BrowserCommand
+  try { command = validateBrowserCommand(raw) }
+  catch (error) { return failure(raw, 'invalid_command', (error as Error).message) }
+  const guard = browserCommandGuard(command)
+  if (guard) return failure(command, guard)
+  const epoch = commandEpoch ?? runEpochs.get(command.run_id) ?? 0
+  if (epoch !== (runEpochs.get(command.run_id) || 0)) return failure(command, 'run_superseded', '浏览器命令所属轮次已结束')
+  if (cancelledRuns.has(command.run_id)) return failure(command, 'run_cancelled', '任务已停止')
+  const owner = JSON.stringify([command.browser_session_id, command.run_id])
+  let tabId = command.tab_id || bindings.get(owner)
+  if (tabId && tabOwners.has(tabId) && tabOwners.get(tabId) !== owner) return failure(command, 'tab_session_mismatch')
+  markBrowsing(command.operation, undefined)
   try {
-    switch (action) {
+    if (command.operation === 'open_tab') tabId = undefined
+    if (!tabId) {
+      if (command.operation === 'navigate' || command.operation === 'open_tab') {
+        if (!tabOpener) return failure(command, 'browser_unavailable')
+        tabId = tabOpener(String(command.arguments.url))
+      } else {
+        // First observation may attach to the user's current tab, once. Later commands remain pinned.
+        tabId = activeTabId || undefined
+        if (!tabId) return failure(command, 'tab_required', '请先打开一个浏览器标签')
+        if (tabOwners.has(tabId) && tabOwners.get(tabId) !== owner) return failure(command, 'tab_session_mismatch')
+      }
+      bindings.set(owner, tabId)
+      tabOwners.set(tabId, owner)
+    } else if (!tabOwners.has(tabId)) {
+      // A supplied id can only attach to an existing user tab, never create an alias.
+      if (!webviews.has(tabId)) return failure(command, 'tab_not_found')
+      bindings.set(owner, tabId)
+      tabOwners.set(tabId, owner)
+    }
+    if (!useStore.getState().tabs.some((tab) => tab.id === tabId)) return failure(command, 'tab_closed')
+    useStore.getState().setActiveTab(tabId)
+    const wv = await waitForTab(tabId)
+    const expired = browserCommandGuard(command)
+    if (expired) return failure(command, expired)
+    if (epoch !== (runEpochs.get(command.run_id) || 0)) return failure(command, 'run_superseded', '浏览器命令所属轮次已结束')
+    if (cancelledRuns.has(command.run_id)) return failure(command, 'run_cancelled', '任务已停止')
+    const base = { command_id: command.command_id, tab_id: tabId, url: wv.getURL(), title: wv.getTitle() }
+    if (isBrowserWrite(command.operation) && !allowedBrowserSite(base.url)) return { ...failure(command, 'site_not_allowed', '当前站点尚未开放自动写操作'), ...base }
+    if (command.operation === 'navigate' || command.operation === 'open_tab') {
+      const url = String(command.arguments.url)
+      if (wv.getURL() !== url) await wv.loadURL(url)
+      await waitForTab(tabId)
+      return { ...base, ok: true, outcome: 'observed', url: wv.getURL(), title: wv.getTitle() }
+    }
+    switch (command.operation) {
+      case 'snapshot':
       case 'read_page': {
-        markBrowsing('读取页面', siteName(wv.getURL?.() || ''))
-        // 先蒸馏可交互元素（决定点哪里），再用 Readability 补一份干净正文（理解内容）
-        const distilled = (await wv.executeJavaScript(DISTILL)) as Record<string, unknown>
-        // Set-of-Marks 可视化：把可交互元素画成彩色编号框，让用户看见 AI"看到了什么"
-        try {
-          await wv.executeJavaScript(SOM_DRAW)
-        } catch {
-          /* 覆盖层失败不影响读取 */
-        }
-        let mainText = ''
-        try {
-          const rd = (await wv.executeJavaScript(READABILITY)) as { ok?: boolean; text?: string; title?: string }
-          if (rd?.ok && rd.text) mainText = rd.text
-        } catch {
-          /* readability 失败则仅用蒸馏正文 */
-        }
-        if (mainText) distilled.text = mainText
-        return distilled
+        markBrowsing('读取页面', siteName(base.url))
+        const snapshotId = command.command_id
+        const result = await executeInBrowser(wv, distillScript(snapshotId, owner, epoch)) as Partial<BrowserObservation>
+        if (!result.ok) return { ...base, ...failure(command, 'page_read_failed', result.error), ...result }
+        try { await executeInBrowser(wv, SOM_DRAW) } catch { /* decoration only */ }
+        return { ...base, ...result, command_id: command.command_id, tab_id: tabId, snapshot_id: snapshotId, ok: true, outcome: 'observed' }
       }
       case 'extract':
       case 'extract_tables': {
-        // 正文优先 Readability（干净主正文），表格再用 DOM 抓
-        const tablesRes = (await wv.executeJavaScript(EXTRACT_TABLES)) as Record<string, unknown>
+        const snapshot = await executeInBrowser(wv, distillScript(command.command_id, owner, epoch)) as Partial<BrowserObservation>
+        if (!snapshot.ok) return { ...failure(command, 'page_read_failed', snapshot.error), ...base }
+        const result = await executeInBrowser(wv, EXTRACT_TABLES) as Partial<BrowserObservation>
+        if (result.error) return { ...failure(command, 'page_read_failed', result.error), ...base }
         try {
-          const rd = (await wv.executeJavaScript(READABILITY)) as { ok?: boolean; text?: string }
-          if (rd?.ok && rd.text) tablesRes.text = rd.text
-        } catch {
-          /* keep DOM body text */
-        }
-        return tablesRes
+          const article = await executeInBrowser(wv, READABILITY) as { ok?: boolean; text?: string }
+          if (article.ok && article.text) result.text = article.text
+        } catch { /* retain actual DOM text */ }
+        return { ...base, ...snapshot, ...result, snapshot_id: command.command_id, ok: true, outcome: 'observed' }
       }
-      case 'current':
-        return { url: wv.getURL(), title: wv.getTitle() }
-      case 'click': {
-        const idx = Number(args.idx)
-        markBrowsing('点击', siteName(wv.getURL?.() || ''))
-        // 合成光标先移动到目标（肉眼可见），停顿再真正点击
-        try {
-          await wv.executeJavaScript(cursorClickScript(idx))
-          await delay(650)
-        } catch {
-          /* 光标动画失败不影响点击 */
-        }
-        const code = `(function(){var el=${jsFindByIdx(idx)};if(!el)return {error:'未找到元素 ${idx}'};el.scrollIntoView({block:'center'});el.click();return {ok:true,text:((el.innerText||'')+'').slice(0,40)};})()`
-        return await wv.executeJavaScript(code)
-      }
-      case 'type': {
-        const idx = Number(args.idx)
-        markBrowsing('填写', siteName(wv.getURL?.() || ''))
-        try {
-          await wv.executeJavaScript(cursorClickScript(idx))
-          await delay(400)
-        } catch {
-          /* ignore */
-        }
-        const text = JSON.stringify(String(args.text ?? ''))
-        const code = `(function(){var el=${jsFindByIdx(idx)};if(!el)return {error:'未找到输入框 ${idx}'};el.focus();try{el.value=${text};}catch(e){};if(el.isContentEditable){el.innerText=${text};}el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));return {ok:true};})()`
-        return await wv.executeJavaScript(code)
-      }
-      case 'scroll': {
-        markBrowsing('翻页', siteName(wv.getURL?.() || ''))
-        const dir = String(args.dir ?? 'down')
-        const dy = dir === 'up' ? -700 : 700
-        // 翻页后重绘 SoM 覆盖层（元素位置变了）
-        const r = await wv.executeJavaScript(`(function(){window.scrollBy(0,${dy});return {ok:true,y:window.scrollY};})()`)
-        try {
-          await wv.executeJavaScript(SOM_DRAW)
-        } catch {
-          /* ignore */
-        }
-        return r
-      }
-      case 'clear_marks':
-        return await wv.executeJavaScript(SOM_CLEAR)
+      case 'current': return { ...base, ok: true, outcome: 'observed' }
+      case 'click':
+      case 'type':
       case 'highlight': {
-        const idx = Number(args.idx)
-        const code = `(function(){var el=${jsFindByIdx(idx)};if(!el)return {error:'no el'};el.style.outline='3px solid #ffd100';el.scrollIntoView({block:'center'});return {ok:true};})()`
-        return await wv.executeJavaScript(code)
+        const result = await executeInBrowser(wv, elementActionScript(command, epoch)) as Partial<BrowserObservation>
+        if (result.ok !== true) return { ...base, ...result, command_id: command.command_id, ok: false, outcome: result.outcome === 'unknown' ? 'unknown' : 'blocked' }
+        // A DOM acknowledgement is not an order/booking receipt. The Harness must verify business state separately.
+        return { ...base, ...result, command_id: command.command_id, ok: true, outcome: 'executed' }
       }
-      default:
-        return { error: '未知浏览器动作：' + action }
+      case 'scroll':
+        await executeInBrowser(wv, `(function(){if(window.__yoyuSnapshot)window.__yoyuSnapshot.dirty=true;window.scrollBy(0,${command.arguments.dir === 'up' ? -700 : 700});return true;})()`)
+        return { ...base, ok: true, outcome: 'executed' }
     }
-  } catch (e) {
-    return { error: (e as Error).message }
+  } catch (error) {
+    return { ...failure(command, 'browser_execution_failed', (error as Error).message, isBrowserWrite(command.operation) ? 'unknown' : 'failed'), tab_id: tabId }
   }
 }
 
 let installed = false
+let execution: Promise<unknown> = Promise.resolve()
 export function installBrowserBridge(): void {
   if (installed) return
   installed = true
-  window.xiaonian.onBrowserExec(async ({ id, action, args }) => {
-    const result = await exec(action, args ?? {})
-    window.xiaonian.browserExecResult(id, result)
+  window.xiaonian.onBrowserExec(({ id, action, args }) => {
+    if (action === 'cancel_run' && typeof args.run_id === 'string') {
+      cancelRendererBrowserRun(args.run_id, args.epoch as number | undefined)
+      return
+    }
+    if (action === 'release_run' && typeof args.run_id === 'string') {
+      releaseRendererBrowserRun(args.run_id, args.epoch as number | undefined)
+      return
+    }
+    if (action === 'activate_run' && typeof args.run_id === 'string') {
+      activateRendererBrowserRun(args.run_id, args.epoch as number | undefined)
+      return
+    }
+    const command = args.command as BrowserCommand | undefined
+    const epoch = typeof args.epoch === 'number' ? args.epoch : runEpochs.get(command?.run_id || '') || 0
+    // ponytail: one page automation at a time; use per-session queues if concurrent browsing becomes necessary.
+    execution = execution.catch(() => {}).then(async () => {
+      const result = action === 'harness'
+        ? await executeRendererBrowserCommand(command as BrowserCommand, epoch)
+        : { ok: false, outcome: 'blocked', error_kind: 'unsupported_command', error: '浏览器命令必须经过 Harness 验证' }
+      window.xiaonian.browserExecResult(id, result)
+    })
   })
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
+import { phaseLabel, row } from '../lib/harnessProjection'
 import { StepFlow } from './StepFlow'
 import { Markdown } from './Markdown'
 import { Send, Bell, X, ImagePlus, Plus, History, Mic, MicOff } from 'lucide-react'
@@ -8,7 +9,7 @@ const QUICK = [
   '这周六下午带老婆孩子出去玩4小时，孩子5岁，老婆减脂，预算人均120',
   '周末约4个朋友聚会，2男2女，找个能玩能吃的，热门店帮我取号',
   '帮我给这份行程比个价，再按减脂给餐厅点菜',
-  '把方案发家庭群确认一下'
+  '整理这份方案，方便我分享给同行人确认'
 ]
 
 export function ChatPanel(): JSX.Element {
@@ -16,6 +17,13 @@ export function ChatPanel(): JSX.Element {
   const steps = useStore((s) => s.steps)
   const busy = useStore((s) => s.busy)
   const send = useStore((s) => s.send)
+  const run = useStore((s) => s.run)
+  const backendError = useStore((s) => s.backendError)
+  const backendReady = useStore((s) => s.backendReady)
+  const refresh = useStore((s) => s.hydrateHarness)
+  const cancelRun = useStore((s) => s.cancelRun)
+  const resumeBrowser = useStore((s) => s.resumeBrowser)
+  const setView = useStore((s) => s.setView)
   const proactive = useStore((s) => s.proactive)
   const newSession = useStore((s) => s.newSession)
   const setHistoryOpen = useStore((s) => s.setHistoryOpen)
@@ -32,13 +40,17 @@ export function ChatPanel(): JSX.Element {
     const f = e.target.files?.[0]
     e.target.value = ''
     if (!f || busy) return
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(f.type) || f.size > 8_000_000) {
+      useStore.setState({ backendError: '请上传 8 MB 以内的 PNG、JPEG 或 WebP 图片。' })
+      return
+    }
     const reader = new FileReader()
     reader.onload = async () => {
       const dataUrl = String(reader.result || '')
       if (!dataUrl.startsWith('data:image')) return
-      await window.xiaonian.guideSetImage(dataUrl)
-      void send('我上传了一张攻略截图，请用 import_guide 读一下，按里面的城市/人群/菜品在我这边规划 3 套方案')
+      void send('我上传了一张攻略截图，请提取里面的地点、菜品和约束，结合真实信息帮我规划。', dataUrl)
     }
+    reader.onerror = () => useStore.setState({ backendError: '图片读取失败，请重新选择文件。' })
     reader.readAsDataURL(f)
   }
 
@@ -108,7 +120,8 @@ export function ChatPanel(): JSX.Element {
     <div className="h-full flex flex-col bg-white">
       <div className="h-9 shrink-0 flex items-center px-3 border-b border-neutral-100">
         <span className="text-sm font-semibold">小悠 · 对话</span>
-        {busy && <span className="ml-2 text-xs text-brand-ink/70">思考中…</span>}
+        <span className="ml-2 text-xs text-brand-ink/70" role="status">{backendReady ? phaseLabel(run) : '未连接服务'}</span>
+        {run && !run.outcome && <button onClick={() => void cancelRun()} className="ml-2 text-xs text-neutral-500 hover:text-red-600">停止任务</button>}
         <div className="ml-auto flex items-center gap-1">
           <button onClick={() => setHistoryOpen(true)} title="历史会话" className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100">
             <History size={15} />
@@ -118,6 +131,18 @@ export function ChatPanel(): JSX.Element {
           </button>
         </div>
       </div>
+
+      {backendError && <div role="alert" className="mx-3 mt-2 rounded-lg bg-amber-50 border border-amber-200 p-2 text-xs text-amber-800">
+        <div className="break-words">{backendError}</div>
+        <button className="mt-1 underline" onClick={() => void refresh()}>重新连接并恢复任务</button>
+      </div>}
+      {run && (!!run.state.browser_wait || run.phase === 'WAITING_BROWSER') && <div className="mx-3 mt-2 rounded-lg bg-brand-soft border border-brand/30 p-2 text-xs">
+        <div>{String(row(run.state.browser_wait).message || '请在浏览器中完成登录或接管操作，再继续。')}</div>
+        <div className="mt-2 flex gap-2">
+          <button onClick={() => setView('browser')} className="px-2 py-1 bg-white rounded">打开浏览器</button>
+          <button disabled={busy || !backendReady} onClick={() => void resumeBrowser()} className="px-2 py-1 bg-brand rounded disabled:opacity-40">已处理，继续</button>
+        </div>
+      </div>}
 
       {showProactive && (
         <div className="mx-3 mt-2 p-2.5 rounded-lg bg-brand-soft border border-brand/40 flex items-start gap-2 animate-in">
@@ -155,7 +180,7 @@ export function ChatPanel(): JSX.Element {
       {messages.length <= 1 && (
         <div className="px-3 pb-2 flex flex-wrap gap-1.5">
           {QUICK.map((q) => (
-            <button key={q} onClick={() => void send(q)} className="text-[11px] px-2 py-1 rounded-full bg-neutral-100 hover:bg-brand/20 text-neutral-600 border border-neutral-200">
+            <button key={q} disabled={busy || !backendReady} onClick={() => void send(q)} className="text-[11px] px-2 py-1 rounded-full bg-neutral-100 hover:bg-brand/20 text-neutral-600 border border-neutral-200">
               {q.length > 22 ? q.slice(0, 22) + '…' : q}
             </button>
           ))}
@@ -164,7 +189,7 @@ export function ChatPanel(): JSX.Element {
 
       <div className="p-3 border-t border-neutral-100">
         <div className="flex items-end gap-2 bg-neutral-100 rounded-xl px-3 py-2">
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickImage} />
+          <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={onPickImage} />
           <button
             onClick={() => fileRef.current?.click()}
             disabled={busy}
@@ -196,7 +221,7 @@ export function ChatPanel(): JSX.Element {
             placeholder="跟小悠说一句…也可贴小红书/点评攻略链接，或点左侧📷传攻略截图"
             className="flex-1 bg-transparent outline-none text-sm resize-none max-h-24"
           />
-          <button onClick={submit} disabled={busy || !text.trim()} className="p-1.5 rounded-lg bg-brand text-brand-ink disabled:opacity-40">
+          <button onClick={submit} disabled={busy || !backendReady || !text.trim()} className="p-1.5 rounded-lg bg-brand text-brand-ink disabled:opacity-40">
             <Send size={16} />
           </button>
         </div>

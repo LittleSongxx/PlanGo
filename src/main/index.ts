@@ -1,15 +1,16 @@
 import { app, shell, BrowserWindow, session as electronSession } from 'electron'
 import { join } from 'path'
 import { registerIpc } from './ipc'
-import { loadMockDb } from './data/mockdb'
-import { seedIfEmpty } from './brain/memory'
-import { proactive } from './proactive'
-import { getWeChatBridge } from './im/bridge'
-import { runAgent } from './agent'
 import { detectLocation } from './location'
 import { startShareServer, stopShareServer } from './share/server'
+import { harnessStatus, stopHarness } from './harness'
+import { allowedBrowserSite } from '../shared/browser'
+import { getHarnessEnvironment } from './config'
 
 let mainWindow: BrowserWindow | null = null
+const browserContents = new Set<number>()
+
+export function ownsBrowserContents(id: number): boolean { return browserContents.has(id) }
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -35,8 +36,23 @@ function createWindow(): void {
 
   // 外链走系统浏览器
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    if (/^https?:\/\//i.test(details.url)) void shell.openExternal(details.url)
     return { action: 'deny' }
+  })
+  mainWindow.webContents.on('will-attach-webview', (event, preferences, params) => {
+    if (!/^https?:\/\//i.test(params.src || '') || params.partition !== 'persist:xiaonian') {
+      event.preventDefault()
+      return
+    }
+    delete preferences.preload
+    preferences.nodeIntegration = false
+    preferences.contextIsolation = true
+    preferences.sandbox = true
+    preferences.webSecurity = true
+  })
+  mainWindow.webContents.on('did-attach-webview', (_event, contents) => {
+    browserContents.add(contents.id)
+    contents.once('destroyed', () => browserContents.delete(contents.id))
   })
 
   if (process.env['ELECTRON_RENDERER_URL']) {
@@ -46,32 +62,26 @@ function createWindow(): void {
   }
 }
 
-// 给 <webview> 内的美团/点评一个真实持久指纹（复用登录态）
+// Apply permissions to the actual persistent browser partition, not just the host window.
 function hardenSession(): void {
-  const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
-  electronSession.defaultSession.setUserAgent(ua)
-  // 允许定位权限（高德 JS Geolocation WiFi 定位需要；这样开梯子也能按真实位置定位）。
-  // 桌面工作台场景下统一放行，避免 webview 登录/定位被弹窗阻断。
-  electronSession.defaultSession.setPermissionRequestHandler((_wc, _permission, cb) => cb(true))
-  try {
-    electronSession.defaultSession.setPermissionCheckHandler(() => true)
-  } catch {
-    /* older electron */
+  for (const session of [electronSession.defaultSession, electronSession.fromPartition('persist:xiaonian')]) {
+    session.setPermissionRequestHandler((wc, permission, cb, details) => {
+      const origin = details.requestingUrl || wc.getURL()
+      cb(permission === 'geolocation' && allowedBrowserSite(origin))
+    })
+    session.setPermissionCheckHandler((_wc, permission, origin) => permission === 'geolocation' && allowedBrowserSite(origin))
   }
+  app.on('web-contents-created', (_event, contents) => {
+    if (contents.getType() !== 'webview') return
+    contents.on('will-navigate', (event, url) => { if (!/^https?:\/\//i.test(url)) event.preventDefault() })
+    contents.setWindowOpenHandler(({ url }) => {
+      if (!allowedBrowserSite(url)) return { action: 'deny' }
+      return { action: 'allow', overrideBrowserWindowOptions: { webPreferences: { partition: 'persist:xiaonian', sandbox: true, contextIsolation: true, nodeIntegration: false } } }
+    })
+  })
 }
 
 app.whenReady().then(() => {
-  try {
-    loadMockDb()
-  } catch (e) {
-    console.error('[mockdb] 装载失败：', e)
-  }
-  try {
-    // 首启播种"已用一两个月"的记忆画像（仅空记忆时），让越懂你/主动关心立刻可演示
-    if (seedIfEmpty()) console.log('[memory] 已播种演示画像')
-  } catch (e) {
-    console.error('[memory] 播种失败：', e)
-  }
   hardenSession()
   registerIpc()
   createWindow()
@@ -85,19 +95,10 @@ app.whenReady().then(() => {
     .catch(() => {})
 
   // 局域网分享协作服务（同 WiFi 手机扫码看方案/投票/留评语）
-  startShareServer().then((p) => console.log(p ? `[share] 局域网分享服务已启动 :${p}` : '[share] 启动失败')).catch(() => {})
+  Promise.resolve().then(() => startShareServer(8799, getHarnessEnvironment().YOYU_DATA_DIR || join(app.getPath('userData'), 'harness'))).then((p) => console.log(p ? `[share] 局域网分享服务已启动 :${p}` : '[share] 启动失败')).catch(() => {})
 
-  // 主动关心引擎（opt-in，默认开，可在设置关）
-  proactive.start()
-
-  // 微信入站消息 → 直接交给小悠处理（现场用"模拟入站"触发）
-  getWeChatBridge().onMessage(async (m) => {
-    try {
-      await runAgent(m.text, [])
-    } catch {
-      /* ignore */
-    }
-  })
+  // The renderer reports configuration errors; startup never seeds fabricated user history.
+  void harnessStatus()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -108,7 +109,7 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
-app.on('before-quit', () => stopShareServer())
+app.on('before-quit', () => { stopShareServer(); stopHarness() })
 
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow

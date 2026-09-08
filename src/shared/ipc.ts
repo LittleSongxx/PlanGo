@@ -1,5 +1,8 @@
 // IPC 频道常量（renderer ↔ main）。preload 一能力一方法。
 export const IPC = {
+  harnessRequest: 'harness:request',
+  harnessEvent: 'harness:event',
+  reminderRequest: 'reminders:request',
   // Agent 对话（主线）
   agentChat: 'agent:chat',
   agentConfirm: 'agent:confirm', // 两步确认：token 回传执行

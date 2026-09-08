@@ -40,7 +40,7 @@ export function verifyPlan(plan: Plan, demand: SceneDemand): VerifyReport {
 
   // 1) 预算（硬）
   if (demand.budget_per_person) {
-    const per = plan.total_cost / Math.max(demand.group_size, 1)
+    const per = plan.total_cost == null ? Infinity : plan.total_cost / Math.max(demand.group_size, 1)
     if (per > demand.budget_per_person * 1.15) {
       issues.push({ code: 'budget', severity: 'hard', message: `人均≈¥${Math.round(per)} 超预算¥${demand.budget_per_person}` })
     }

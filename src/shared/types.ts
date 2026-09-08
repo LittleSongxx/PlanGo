@@ -1,7 +1,7 @@
 // 领域模型（防腐层落点）：所有外部数据（VitaBench / 高德 / Mock API）先转成这里的对象，再进 Agent/UI。
 // 术语与 yoyu common/models.py 对齐，移植到 TS。
 
-export type SourceTag = 'real' | 'dataset' | 'simulated' | 'cache' | 'fallback'
+export type SourceTag = 'real' | 'browser' | 'amap' | 'user' | 'unknown' | 'dataset' | 'simulated' | 'cache' | 'fallback'
 
 export type SceneType = 'family' | 'friends' | 'couple' | 'solo' | 'business'
 
@@ -55,7 +55,7 @@ export interface POISummary {
   poi_id: string
   name: string
   category: string
-  raw_score: number
+  raw_score: number | null
   filtered_score?: number
   trust: 'high' | 'medium' | 'low' | 'unknown'
   trust_reason: string
@@ -107,6 +107,7 @@ export interface PlanNode {
   reason: string
   locked: boolean
   transit_from_prev_min: number
+  wait_min?: number | null
   route_from_prev?: RouteInfo
   verify_state: 'suggested' | 'verified' | 'booked'
 }
@@ -116,12 +117,17 @@ export interface Plan {
   style: 'economic' | 'balanced' | 'premium' | 'special'
   title: string
   nodes: PlanNode[]
-  total_cost: number
+  total_cost: number | null
   radar: Record<string, number> // 省钱/好玩/便捷/合适/特色，0-100（移植 weplan 确定性五维打分）
   radar_reasons?: Record<string, string> // 每一维的自然语言理由（与雷达图严格对齐）
   total_travel_min?: number // 全程通勤分钟
   total_distance_km?: number // 全程里程（km）
   share_message: string
+  run_id?: string
+  version?: number
+  party_size?: number
+  evidence?: HarnessEvidence[]
+  validation_notes?: string[]
   source_mix?: Record<string, number>
 }
 
@@ -165,10 +171,13 @@ export interface ChatMessage {
 
 // 成果卡片（渲染到成果区画布）
 export type OutcomeCard =
+  | { kind: 'evidence'; items: HarnessEvidence[] }
+  | { kind: 'browser_page'; title: string; url: string; text: string; observedAt?: string }
   | { kind: 'plan'; plan: Plan }
-  | { kind: 'plans'; variants: { plan: Plan; styleLabel: string; per: number; overBudget?: number }[]; city: string; budget?: number }
+  | { kind: 'plans'; variants: { plan: Plan; styleLabel: string; per: number | null; overBudget?: number }[]; city: string; budget?: number }
   | { kind: 'deal'; title: string; rows: DealRow[] }
-  | { kind: 'dishes'; shopName: string; dishes: DishReco[] }
+  | { kind: 'price_comparison'; title: string; source: SourceTag; data: PriceComparison }
+  | { kind: 'dishes'; shopName: string; dishes: DishReco[]; mode?: 'menu' | 'recommendation'; source?: SourceTag }
   | { kind: 'queue'; shopName: string; number: string; ahead: number; etaMin: number; source: SourceTag }
   | { kind: 'consensus'; planId: string; question: string; options: string[] }
   | { kind: 'receipt'; items: ReceiptItem[]; shareMessage: string }
@@ -179,8 +188,8 @@ export type OutcomeCard =
 
 export interface GroupBuyPackage {
   name: string
-  price: number
-  originalPrice: number
+  price: number | null
+  originalPrice: number | null
   includes: string[]
   fitPeople: string
   sold?: string
@@ -221,6 +230,10 @@ export interface DishReco {
 }
 
 export interface ReceiptItem {
+  run_id?: string
+  action_id?: string
+  resolution_required?: boolean
+  business_confirmed?: boolean
   label: string
   status: 'ok' | 'fail' | 'pending'
   detail: string
@@ -232,4 +245,92 @@ export interface AgentReply {
   steps: AgentStep[]
   cards: OutcomeCard[]
   activities: string[]
+}
+
+// Persisted Planora contracts at the desktop boundary. Domain payloads are
+// validated by the backend; the renderer projects only fields it recognizes.
+export interface HarnessEvidence {
+  evidence_id: string
+  source: SourceTag
+  source_ref: string
+  claim: string
+  observed_at?: string
+  expires_at?: string
+}
+
+export interface HarnessSnapshot {
+  run_id: string
+  thread_id?: string
+  user_id?: string
+  input_text: string
+  phase: string
+  outcome?: string | null
+  event_seq: number
+  version?: number
+  interrupt_id?: string | null
+  command_pending?: boolean
+  cancel_requested?: boolean
+  state: Record<string, unknown>
+}
+
+export interface HarnessEvent {
+  run_id: string
+  seq: number
+  event_type: string
+  phase?: string
+  agent_id?: string | null
+  payload: Record<string, unknown>
+  created_at?: string
+}
+
+export interface HarnessApi {
+  resolveAction: (runId: string, actionId: string, status: 'SUCCEEDED' | 'FAILED', note: string, reference?: string) => Promise<HarnessSnapshot>
+  createRun: (text: string, image?: string) => Promise<HarnessSnapshot>
+  getRun: (runId: string) => Promise<HarnessSnapshot>
+  sendMessage: (runId: string, text: string, image?: string) => Promise<HarnessSnapshot>
+  selectPlan: (runId: string, planId: string, planVersion: number) => Promise<HarnessSnapshot>
+  replan: (runId: string, reason: string) => Promise<HarnessSnapshot>
+  cancel: (runId: string) => Promise<HarnessSnapshot>
+  resume: (runId: string, interruptId: string, decision: 'approve' | 'reject' | 'edit' | 'resume', text?: string) => Promise<HarnessSnapshot>
+  events: (runId: string, after: number) => Promise<{ events: HarnessEvent[] }>
+  listRuns: () => Promise<HarnessSnapshot[]>
+  status: () => Promise<{ ready: boolean; error?: string }>
+}
+
+export interface Reminder {
+  id: string
+  text: string
+  at: number
+  fired: boolean
+}
+
+export interface ReminderList {
+  reminders: Reminder[]
+  history: { id: string; text: string; ts: number; kind: 'reminder' }[]
+}
+
+export interface ReminderApi {
+  list: () => Promise<ReminderList>
+  create: (text: string, at: string) => Promise<ReminderList>
+  remove: (id: string) => Promise<ReminderList>
+}
+
+
+export interface PriceComparison {
+  basis: 'per_person'
+  party_size: number | null
+  total_budget: number | null
+  entries: {
+    name: string
+    unit_price: number | null
+    total: number | null
+    within_budget: boolean | null
+    source_url: string
+    quote: string
+    evidence_id: string
+  }[]
+  recommendation: string | null
+  savings: number | null
+  summary: string
+  limitations: string[]
 }

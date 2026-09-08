@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
-import type { OutcomeCard, Plan, DealRow, DishReco, ReceiptItem, SourceTag, TakeoutItem, DiscoverGroup, POISummary, GroupBuyPackage } from '@shared/types'
+import { canResolveAction } from '../lib/harnessProjection'
+import type { OutcomeCard, Plan, DealRow, DishReco, ReceiptItem, SourceTag, TakeoutItem, DiscoverGroup, POISummary, GroupBuyPackage, HarnessEvidence } from '@shared/types'
 import { SourceBadge } from './SourceBadge'
 import { PlanMap } from './PlanMap'
 import { RouteSheet } from './RouteSheet'
 import { ShareModal } from './ShareModal'
-import { MapPin, Clock, Utensils, Ticket, Users, CheckCircle2, XCircle, AlertTriangle, Send, ListChecks, Tag, Wallet, Globe, Navigation, Mic, MicOff, Compass, Trash2 } from 'lucide-react'
+import { MapPin, Clock, Utensils, Ticket, Users, CheckCircle2, XCircle, AlertTriangle, Send, ListChecks, Tag, Wallet, Globe, Navigation, Mic, MicOff, Compass } from 'lucide-react'
 
 // 无真实图时的分类占位图（对齐 yoyu _CAT_IMG，诚实标"示意图"）。按标题/标签选主题，避免千篇一律。
 const THEME_IMG: { re: RegExp; url: string }[] = [
@@ -35,7 +36,7 @@ function poiImage(title: string, tags: string[] | undefined, category: string): 
 export function OutcomeCanvas(): JSX.Element {
   const cards = useStore((s) => s.cards)
   const setView = useStore((s) => s.setView)
-  const clearCards = useStore((s) => s.clearCards)
+  const refreshRun = useStore((s) => s.refreshRun)
   const routeTarget = useStore((s) => s.routeTarget)
   const closeRoute = useStore((s) => s.closeRoute)
   return (
@@ -48,8 +49,8 @@ export function OutcomeCanvas(): JSX.Element {
         <span className="text-xs text-neutral-400">行程 · 比价 · 点菜 · 排号 · 确认 · 执行回执</span>
         <div className="ml-auto flex items-center gap-1">
           {cards.length > 0 && (
-            <button onClick={clearCards} className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg text-neutral-500 hover:bg-neutral-100" title="清空成果卡片">
-              <Trash2 size={13} /> 清空
+            <button onClick={() => void refreshRun()} className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg text-neutral-500 hover:bg-neutral-100" title="从运行服务重新加载成果">
+              <ListChecks size={13} /> 刷新
             </button>
           )}
           <button onClick={() => setView('browser')} className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg text-neutral-500 hover:bg-neutral-100">
@@ -81,14 +82,20 @@ export function OutcomeCanvas(): JSX.Element {
 
 function CardView({ card }: { card: OutcomeCard }): JSX.Element {
   switch (card.kind) {
+    case 'browser_page':
+      return <Card><div className="flex gap-2 items-center text-sm font-semibold">{card.title}<SourceBadge source="browser" /></div><div className="text-[11px] text-neutral-400 my-1">{card.observedAt ? new Date(card.observedAt).toLocaleString() : '观测时间未知'}</div><pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs text-neutral-600">{card.text}</pre>{/^https?:\/\//i.test(card.url) && <button onClick={() => useStore.getState().navigateInApp(card.url)} className="text-xs underline mt-2">查看原始页面</button>}</Card>
+    case 'evidence':
+      return <EvidenceCard items={card.items} />
     case 'plan':
       return <PlanCard plan={card.plan} />
     case 'plans':
       return <PlansCard variants={card.variants} city={card.city} budget={card.budget} />
+    case 'price_comparison':
+      return <PriceComparisonCard card={card} />
     case 'deal':
       return <DealCard title={card.title} rows={card.rows} />
     case 'dishes':
-      return <DishesCard shopName={card.shopName} dishes={card.dishes} />
+      return <DishesCard shopName={card.shopName} dishes={card.dishes} mode={card.mode} source={card.source} />
     case 'takeout':
       return <TakeoutCard {...card} />
     case 'discover':
@@ -160,7 +167,7 @@ function PlansCard({
   city,
   budget
 }: {
-  variants: { plan: Plan; styleLabel: string; per: number; overBudget?: number }[]
+  variants: { plan: Plan; styleLabel: string; per: number | null; overBudget?: number }[]
   city: string
   budget?: number
 }): JSX.Element {
@@ -173,7 +180,7 @@ function PlansCard({
     <Card accent>
       <div className="flex items-center gap-1.5 mb-2">
         <MapPin size={15} className="text-brand-ink" />
-        <span className="font-semibold text-[15px]">{city}·周末规划 · 3 套方案</span>
+        <span className="font-semibold text-[15px]">{city}·周末规划 · {variants.length} 套方案</span>
       </div>
 
       {/* Tab 切换 */}
@@ -188,15 +195,15 @@ function PlansCard({
           >
             <div className="text-xs font-semibold flex items-center gap-1">
               {v.styleLabel}
-              {v.overBudget ? <span className="text-[9px] text-amber-600">超¥{v.overBudget}</span> : budget ? <span className="text-[9px] text-green-600">达标</span> : null}
+              {v.overBudget ? <span className="text-[9px] text-amber-600">超¥{v.overBudget}</span> : budget && v.per !== null && v.per <= budget ? <span className="text-[9px] text-green-600">达标</span> : null}
             </div>
-            <div className="text-[11px] text-neutral-500 mt-0.5">人均¥{v.per}</div>
+            <div className="text-[11px] text-neutral-500 mt-0.5">{v.per === null ? '费用待核验' : `人均¥${v.per}`}</div>
           </button>
         ))}
       </div>
 
       {/* 预算诚实横幅 */}
-      {budget ? (
+      {budget && active.per !== null ? (
         <div className={`mb-3 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs ${active.overBudget ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>
           <Wallet size={13} />
           {active.overBudget ? `本套人均¥${active.per}，超预算¥${budget}（+¥${active.overBudget}）。可切到「经济实惠」，或放宽预算。` : `本套人均¥${active.per}，在预算¥${budget}以内。`}
@@ -206,8 +213,8 @@ function PlansCard({
       <PlanCard plan={active.plan} embed />
 
       <div className="mt-3 flex flex-wrap gap-1.5">
-        <button onClick={() => void send(`就选「${active.styleLabel}」这套，帮我看看单点vs团购比价`)} className="text-[11px] px-2.5 py-1 rounded-full bg-brand text-brand-ink font-medium">
-          选这套 · 比价
+        <button onClick={() => void useStore.getState().selectPlan(active.plan)} className="text-[11px] px-2.5 py-1 rounded-full bg-brand text-brand-ink font-medium">
+          选这套 · 重新核验
         </button>
         <button onClick={() => openShare(active.plan)} className="text-[11px] px-2.5 py-1 rounded-full bg-neutral-100 hover:bg-neutral-200 border border-neutral-200">
           发同行人确认
@@ -218,13 +225,13 @@ function PlansCard({
       </div>
 
       {/* 针对当前方案的语音/文字修改框（仿 weplan plan-dock，绑定当前 Tab） */}
-      <VariantEditBox label={active.styleLabel} />
+      <VariantEditBox label={active.styleLabel} planId={active.plan.plan_id} version={active.plan.version} />
     </Card>
   )
 }
 
 // 绑定当前方案的修改框：语音（Web Speech API）或输入文字，自动带上「只改这套」上下文。
-function VariantEditBox({ label }: { label: string }): JSX.Element {
+function VariantEditBox({ label, planId, version }: { label: string; planId?: string; version?: number }): JSX.Element {
   const send = useStore((s) => s.send)
   const busy = useStore((s) => s.busy)
   const [text, setText] = useState('')
@@ -246,7 +253,7 @@ function VariantEditBox({ label }: { label: string }): JSX.Element {
     const msg = raw.trim()
     if (!msg || busy) return
     setText('')
-    void send(`【只改「${label}」这套方案，其它两套不动】${msg}`)
+    void send(`【修改方案 ${planId || label}，当前版本 ${version || 1}】${msg}；保留其它已确认的人数、预算、时间和人群约束，修改后重新校验。`)
   }
 
   const toggleMic = (): void => {
@@ -328,7 +335,6 @@ function VariantEditBox({ label }: { label: string }): JSX.Element {
 }
 
 function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element {
-  const per = plan.nodes.length ? Math.round(plan.total_cost / Math.max(2, 1)) : 0
   const catIcon = (c: string) => (c === 'dining' ? <Utensils size={13} /> : c === 'activity' ? <Ticket size={13} /> : <MapPin size={13} />)
   const openRoute = useStore((s) => s.openRoute)
   const coords = useStore((s) => s.coords)
@@ -342,7 +348,7 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
         </div>
       )}
       <div className="text-xs text-neutral-500 mb-3 flex items-center gap-2 flex-wrap">
-        <span>合计约 ¥{plan.total_cost} · {plan.nodes.length} 站</span>
+        <span>{plan.total_cost === null ? '总费用待核验' : `合计约 ¥${plan.total_cost}`} · {plan.nodes.length} 站{plan.party_size ? ` · ${plan.party_size} 人` : ''}{plan.version ? ` · v${plan.version}` : ''}</span>
         {plan.total_distance_km ? <span className="flex items-center gap-0.5"><Navigation size={11} /> 全程约 {plan.total_distance_km}km</span> : null}
         {plan.total_travel_min ? <span className="flex items-center gap-0.5"><Clock size={11} /> 通勤约 {plan.total_travel_min}分钟</span> : null}
         {plan.source_mix && (
@@ -365,7 +371,8 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
         {plan.nodes.map((n) => (
           <div key={n.node_id} className="relative">
             <div className="absolute -left-[13px] top-1 w-3 h-3 rounded-full bg-brand border-2 border-white" />
-            {n.route_from_prev && n.transit_from_prev_min > 0 && (
+            {n.poi?.tags.includes('route_unknown') && <div className="text-[11px] text-amber-700 mb-1">↓ 路线与通勤时间待核验</div>}
+            {!n.poi?.tags.includes('route_unknown') && n.route_from_prev && n.transit_from_prev_min > 0 && (
               <div className="text-[11px] text-neutral-400 mb-1">
                 ↓ {n.route_from_prev.desc}
                 {n.route_from_prev.distance_m ? ` · ${(n.route_from_prev.distance_m / 1000).toFixed(1)}km` : ''}
@@ -399,7 +406,9 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
                 <div className="text-[11px] text-neutral-500 mt-0.5 flex items-center gap-1 flex-wrap">
                   {n.poi?.filtered_score != null && <span className="text-amber-600">★{n.poi.filtered_score}</span>}
                   {(n.poi?.raw_score && n.poi?.filtered_score == null) ? <span className="text-amber-600">★{n.poi.raw_score}</span> : null}
-                  {n.poi?.price_per_person ? <span>人均¥{n.poi.price_per_person}</span> : null}
+                  {n.poi?.price_per_person !== undefined ? <span>人均¥{n.poi.price_per_person}</span> : <span>价格待核验</span>}
+                  {n.wait_min === null ? <span className="text-amber-700">排队待核验</span> : n.wait_min !== undefined ? <span>预计排队 {n.wait_min} 分钟</span> : null}
+                  {n.poi?.tags.includes('supply_unknown') && <span className="text-amber-700">营业状态待核验</span>}
                   {n.poi && <SourceBadge source={n.poi.source} />}
               {n.poi?.lng && n.poi?.lat && (
                 <button
@@ -449,10 +458,35 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
           {plan.share_message}
         </div>
       )}
-      {void per}
+      {plan.validation_notes?.length ? <div className="mt-2 text-xs text-amber-700">{plan.validation_notes.join('；')}</div> : null}
+      {!embed && <><div className="mt-3 flex gap-2"><button onClick={() => useStore.getState().openShare(plan)} className="text-xs px-3 py-1 rounded-full bg-neutral-100">分享给同行人</button><button onClick={() => void useStore.getState().send('请基于当前行程，读取真实菜单和团购价格并比较适用条件。')} className="text-xs px-3 py-1 rounded-full bg-brand/20">比价与点菜</button></div><VariantEditBox label={plan.title} planId={plan.plan_id} version={plan.version} /></>}
     </>
   )
   return embed ? body : <Card accent>{body}</Card>
+}
+
+function PriceComparisonCard({ card }: { card: Extract<OutcomeCard, { kind: 'price_comparison' }> }): JSX.Element {
+  const navigate = useStore(s => s.navigateInApp)
+  const { data } = card
+  return <Card accent>
+    <div className="flex items-center gap-2 text-sm font-semibold"><Wallet size={15} className="text-brand-ink" />{card.title}<SourceBadge source={card.source} /></div>
+    <div className="mt-1 text-xs text-neutral-500">按人均计价 · {data.party_size === null ? '人数待确认' : `${data.party_size} 人`} · {data.total_budget === null ? '总预算待确认' : `总预算 ¥${data.total_budget}`}</div>
+    {data.summary && <p className="mt-2 text-sm text-neutral-700 whitespace-pre-wrap">{data.summary}</p>}
+    <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs">
+      <thead className="bg-neutral-50 text-neutral-500"><tr><th scope="col" className="p-2">选项</th><th scope="col" className="p-2">人均价格</th><th scope="col" className="p-2">总价</th><th scope="col" className="p-2">预算核对</th><th scope="col" className="p-2">来源</th></tr></thead>
+      <tbody>{data.entries.map((entry, index) => <tr key={entry.evidence_id || `${entry.name}:${index}`} className="border-b border-neutral-100 align-top">
+        <th scope="row" className="p-2 font-medium">{entry.name}</th>
+        <td className="p-2 whitespace-nowrap">{entry.unit_price === null ? '价格待核验' : `¥${entry.unit_price} / 人`}</td>
+        <td className="p-2 whitespace-nowrap">{entry.total === null ? '总价待核验' : `¥${entry.total}`}</td>
+        <td className={`p-2 whitespace-nowrap ${entry.within_budget === true ? 'text-green-700' : 'text-amber-700'}`}>{entry.within_budget === null ? '待核验' : entry.within_budget ? '预算内' : '超预算'}</td>
+        <td className="p-2">{/^https?:\/\//i.test(entry.source_url) ? <button onClick={() => navigate(entry.source_url)} aria-label={`查看${entry.name}价格来源`} className="text-brand-ink underline whitespace-nowrap">查看原页</button> : <span className="text-neutral-400">来源未提供</span>}</td>
+      </tr>)}</tbody>
+    </table></div>
+    {data.recommendation && <div className="mt-2 text-sm text-neutral-700">选择建议：{data.recommendation}</div>}
+    {data.savings !== null && <div className="mt-1 text-xs text-neutral-600">总价差额：¥{data.savings}</div>}
+    {!!data.limitations.length && <div className="mt-2 text-xs text-amber-700 whitespace-pre-wrap">{data.limitations.join('；')}</div>}
+    <details className="mt-3 text-xs"><summary className="cursor-pointer text-neutral-600">查看价格原文证据</summary><div className="mt-2 space-y-2">{data.entries.map((entry, index) => <div key={entry.evidence_id || index}><div className="font-medium">{entry.name}</div><blockquote className="mt-1 pl-2 border-l-2 border-neutral-200 text-neutral-500 whitespace-pre-wrap break-words">{entry.quote || '原文证据尚未提供'}</blockquote></div>)}</div></details>
+  </Card>
 }
 
 function DealCard({ title, rows }: { title: string; rows: DealRow[] }): JSX.Element {
@@ -486,23 +520,23 @@ function DealCard({ title, rows }: { title: string; rows: DealRow[] }): JSX.Elem
   )
 }
 
-function DishesCard({ shopName, dishes }: { shopName: string; dishes: DishReco[] }): JSX.Element {
+function DishesCard({ shopName, dishes, mode = 'recommendation', source }: { shopName: string; dishes: DishReco[]; mode?: 'menu' | 'recommendation'; source?: SourceTag }): JSX.Element {
   const send = useStore((s) => s.send)
   const recos = dishes.filter((d) => !d.excluded)
   const avoids = dishes.filter((d) => d.excluded)
   return (
     <Card>
       <div className="flex items-center gap-1.5 mb-2 font-semibold text-sm">
-        <Utensils size={14} className="text-brand-ink" /> AI 单点 · {shopName}
+        <Utensils size={14} className="text-brand-ink" /> {mode === 'menu' ? '菜单摘录' : '点菜建议'} · {shopName}{source && <SourceBadge source={source} />}
       </div>
       <div className="space-y-1.5">
         {recos.map((d, i) => (
           <div key={i} className="flex items-start gap-2 text-xs">
-            <CheckCircle2 size={13} className="text-green-500 mt-0.5 shrink-0" />
+            {mode === 'menu' ? <span className="text-neutral-400 shrink-0">·</span> : <CheckCircle2 size={13} className="text-green-500 mt-0.5 shrink-0" />}
             <div className="flex-1">
               <span className="font-medium">{d.name}</span>
               {d.signature ? <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-brand/15 text-brand-ink align-middle">招牌</span> : null}
-              {d.price ? <span className="text-neutral-400 ml-1">¥{d.price}</span> : null}
+              {d.price !== undefined ? <span className="text-neutral-400 ml-1">¥{d.price}</span> : <span className="text-neutral-400 ml-1">价格待核验</span>}
               <span className="text-neutral-500 ml-1">— {d.reason}</span>
             </div>
           </div>
@@ -543,9 +577,9 @@ function GroupBuyCard({ shopName, packages, source }: { shopName: string; packag
               {p.sold && <span className="ml-auto text-[10px] text-neutral-400">{p.sold}</span>}
             </div>
             <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-brand-ink font-bold text-lg">¥{p.price}</span>
-              <span className="text-[11px] text-neutral-400 line-through">¥{p.originalPrice}</span>
-              <span className="text-[10px] text-green-600">省¥{p.originalPrice - p.price}</span>
+              <span className="text-brand-ink font-bold text-lg">{p.price === null ? '价格待核验' : `¥${p.price}`}</span>
+              {p.originalPrice !== null && <span className="text-[11px] text-neutral-400 line-through">¥{p.originalPrice}</span>}
+              {p.originalPrice !== null && p.price !== null && p.originalPrice > p.price && <span className="text-[10px] text-green-600">省¥{p.originalPrice - p.price}</span>}
               <span className="ml-auto text-[11px] text-neutral-500">{p.fitPeople}</span>
             </div>
             {p.includes?.length ? <div className="mt-1 text-[11px] text-neutral-500">含：{p.includes.join('、')}</div> : null}
@@ -558,7 +592,7 @@ function GroupBuyCard({ shopName, packages, source }: { shopName: string; packag
           </div>
         ))}
       </div>
-      <div className="mt-2 text-[10px] text-neutral-400">团购价含 AI 估算，最终以门店实际为准；下单走两步确认。</div>
+      <div className="mt-2 text-[10px] text-neutral-400">价格来自记录的页面；请核对适用人数和使用条件。下单前会单独确认，未适配的网站可由你接管。</div>
     </Card>
   )
 }
@@ -740,8 +774,8 @@ function ReceiptCard({ items, shareMessage }: { items: ReceiptItem[]; shareMessa
   return (
     <Card>
       <div className="flex items-center gap-1.5 mb-2 font-semibold text-sm">
-        <CheckCircle2 size={14} className="text-green-500" /> 执行回执
-        <span className="ml-auto text-[10px] text-neutral-400 font-normal">计划有变？每项都能改/取消</span>
+        <ListChecks size={14} className="text-brand-ink" /> 执行记录
+        {items.some(item => item.business_confirmed) && <span className="ml-auto text-[10px] text-neutral-400 font-normal">已确认的业务结果可继续提出修改或取消请求</span>}
       </div>
       <div className="space-y-1.5">
         {items.map((it, i) => (
@@ -756,8 +790,9 @@ function ReceiptCard({ items, shareMessage }: { items: ReceiptItem[]; shareMessa
             <div className="flex-1">
               <span className="font-medium">{it.label}</span>
               <span className="text-neutral-500 ml-1">{it.detail}</span>
-              <SourceBadge source={it.source} />
-              {it.status === 'ok' && (
+              {it.source === 'user' ? <span className="ml-1 text-[10px] rounded-full px-1.5 py-0.5 bg-blue-100 text-blue-700">用户确认</span> : <SourceBadge source={it.source} />}
+              {it.resolution_required && <ManualResolution key={`${it.run_id}:${it.action_id}`} item={it} />}
+              {it.status === 'ok' && it.business_confirmed && (
                 <span className="ml-2 inline-flex gap-1">
                   <button
                     onClick={() => void send(`临时有变，帮我改一下「${it.label}」（换时间/换人数/换一家）`)}
@@ -787,6 +822,30 @@ function ReceiptCard({ items, shareMessage }: { items: ReceiptItem[]; shareMessa
   )
 }
 
+function ManualResolution({ item }: { item: ReceiptItem }): JSX.Element {
+  const run = useStore(s => s.run)
+  const busy = useStore(s => s.busy)
+  const ready = useStore(s => s.backendReady)
+  const resolve = useStore(s => s.resolveAction)
+  const [checked, setChecked] = useState(false)
+  const [status, setStatus] = useState<'SUCCEEDED' | 'FAILED'>('FAILED')
+  const [note, setNote] = useState('')
+  const [reference, setReference] = useState('')
+  const current = !!item.run_id && !!item.action_id && canResolveAction(run, item.run_id, item.action_id)
+  const disabled = !current || busy || !ready
+  return <form className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 space-y-2" onSubmit={event => {
+    event.preventDefault()
+    if (!disabled && checked && note.trim()) void resolve(item.run_id!, item.action_id!, status, note, reference)
+  }}>
+    <label className="flex items-start gap-1.5"><input type="checkbox" required checked={checked} onChange={event => setChecked(event.target.checked)} disabled={disabled} /><span>我已在网站核对本次任务结果</span></label>
+    <div className="text-[11px] text-neutral-500">这里只记录你的核对结论；记录会标为「用户确认」。页面按钮已点击不代表业务已完成。</div>
+    <label className="block">核对结果<select value={status} onChange={event => setStatus(event.target.value as 'SUCCEEDED' | 'FAILED')} disabled={disabled} className="ml-2 rounded border border-neutral-200 bg-white px-2 py-1"><option value="FAILED">任务未完成</option><option value="SUCCEEDED">任务已完成</option></select></label>
+    <label className="block">核对说明（必填）<textarea value={note} onChange={event => setNote(event.target.value)} required maxLength={500} disabled={disabled} rows={2} placeholder="说明核对了哪个订单、预约或取号记录，以及实际结果" className="mt-1 w-full rounded border border-neutral-200 bg-white p-2" /></label>
+    <label className="block">业务编号（可选）<input value={reference} onChange={event => setReference(event.target.value)} maxLength={200} disabled={disabled} className="mt-1 w-full rounded border border-neutral-200 bg-white px-2 py-1" /></label>
+    <button disabled={disabled || !checked || !note.trim()} className="rounded bg-brand text-brand-ink px-3 py-1 disabled:opacity-40">记录核对结果</button>
+  </form>
+}
+
 function ConfirmCard({ token, title, detail, danger }: { token: string; title: string; detail: string; danger: boolean }): JSX.Element {
   const confirm = useStore((s) => s.confirm)
   const busy = useStore((s) => s.busy)
@@ -797,8 +856,8 @@ function ConfirmCard({ token, title, detail, danger }: { token: string; title: s
         两步确认
       </div>
       <div className="text-sm font-medium">{title}</div>
-      <div className="text-xs text-neutral-500 mt-0.5 mb-2.5">{detail}</div>
-      <div className="text-[11px] text-neutral-400 mb-2">这是写操作，确认后小悠才会真正执行（幻觉下单率 0）。</div>
+      <div className="text-xs text-neutral-500 mt-0.5 mb-2.5 whitespace-pre-wrap break-words">{detail}</div>
+      <div className="text-[11px] text-neutral-400 mb-2">确认仅授权这里列出的操作。页面或关键参数变化时会重新确认；未取得业务回执会标为待核验。</div>
       <div className="flex gap-2">
         <button disabled={busy} onClick={() => void confirm(token, true)} className="flex-1 py-1.5 text-sm rounded-lg bg-brand text-brand-ink font-medium disabled:opacity-50">
           确认执行
@@ -813,4 +872,15 @@ function ConfirmCard({ token, title, detail, danger }: { token: string; title: s
 
 function styleLabel(s: string): string {
   return { economic: '经济', balanced: '均衡', premium: '品质', special: '特别版' }[s] || s
+}
+
+function EvidenceCard({ items }: { items: HarnessEvidence[] }): JSX.Element {
+  const navigate = useStore((s) => s.navigateInApp)
+  return <Card><details><summary className="cursor-pointer text-sm font-semibold">来源与页面证据 · {items.length} 条</summary>
+    <div className="mt-2 space-y-2">{items.map(item => <div key={item.evidence_id} className="text-xs border-t border-neutral-100 pt-2">
+      <div className="flex items-center gap-2"><SourceBadge source={item.source} /><span className="text-neutral-400">{item.observed_at ? new Date(item.observed_at).toLocaleString() : '观测时间未知'}</span>{item.expires_at && new Date(item.expires_at).getTime() < Date.now() && <span className="text-amber-700">已过期，需重新核验</span>}</div>
+      <div className="mt-1 whitespace-pre-wrap break-words text-neutral-600">{item.claim || item.evidence_id}</div>
+      {/^https?:\/\//i.test(item.source_ref) && <button onClick={() => navigate(item.source_ref)} className="mt-1 text-brand-ink underline break-all">打开原始页面</button>}
+    </div>)}</div>
+  </details></Card>
 }

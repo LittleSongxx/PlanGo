@@ -1,7 +1,7 @@
 {
-  "name": "xiaonian",
+  "name": "yoyu",
   "version": "0.1.0",
-  "description": "小悠 · YOYU · AI 本地生活浏览器 — 美团黑客松赛题06「周末闲时活动规划」",
+  "description": "YOYU · 独立运行的真实浏览器 Agent 与可恢复 Harness",
   "main": "./out/main/index.js",
   "author": "Xiaonian",
   "license": "MIT",
@@ -14,7 +14,19 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "eval": "tsx scripts/eval.ts",
-    "cli": "tsx scripts/cli.ts"
+    "cli": "tsx scripts/cli.ts",
+    "setup:backend": "uv sync --frozen --extra dev --python 3.12",
+    "backend": "uv run --frozen python scripts/backend.py",
+    "test:backend": "uv run --frozen pytest -q",
+    "test:ui": "tsx scripts/check-harness-ui.ts",
+    "test:transport": "tsx scripts/check-harness-transport.ts",
+    "test:browser": "electron --no-sandbox scripts/browser-regression.cjs",
+    "test:desktop": "electron --no-sandbox scripts/desktop-ui-smoke.cjs",
+    "test:full-stack": "electron --no-sandbox scripts/full-stack-smoke.cjs",
+    "check": "npm run typecheck && npm run test:ui && npm run test:transport && npm run test:share && npm run test:backend && npm run build",
+    "upstream:check": "python3 scripts/sync_planora.py check",
+    "test:share": "tsx scripts/check-share.ts",
+    "test:independent": "uv run --frozen python scripts/check_independent.py"
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
@@ -44,5 +56,8 @@
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
     "zustand": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=20.11"
   }
 }

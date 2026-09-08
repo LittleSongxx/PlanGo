@@ -102,7 +102,8 @@ function s(v: unknown): string {
 export function fromAmap(p: AmapPoi): POISummary {
   const [lng, lat] = s(p.location).split(',').map(Number)
   const biz = p.business
-  const rating = Number(s(biz?.rating ?? p.biz_ext?.rating)) || 0
+  const ratingText = s(biz?.rating ?? p.biz_ext?.rating)
+  const rating = ratingText && Number.isFinite(Number(ratingText)) ? Number(ratingText) : null
   const cost = Number(s(biz?.cost ?? p.biz_ext?.cost)) || undefined
   const hours = s(biz?.opentime_today || biz?.opentime_week || p.biz_ext?.open_time)
   const tagStr = s(biz?.tag ?? p.tag)

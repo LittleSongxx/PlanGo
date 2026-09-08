@@ -4,7 +4,9 @@
 import express from 'express'
 import type { Server } from 'http'
 import { networkInterfaces } from 'os'
-import { createHash } from 'crypto'
+import { randomBytes } from 'crypto'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
+import { join } from 'path'
 import type { Plan } from '../../shared/types'
 import { renderSharePage } from './page'
 
@@ -29,7 +31,8 @@ interface ShareRecord {
   prefs: SharePref[]
 }
 
-const shares = new Map<string, ShareRecord>()
+let shares = new Map<string, ShareRecord>()
+let storagePath: string | undefined
 let server: Server | null = null
 let port = 0
 
@@ -44,8 +47,17 @@ function lanIp(): string {
   return '127.0.0.1'
 }
 
-export function startShareServer(preferredPort = 8799): Promise<number> {
+export function startShareServer(preferredPort = 8799, storageDir?: string): Promise<number> {
   if (server) return Promise.resolve(port)
+  if (storageDir) {
+    mkdirSync(storageDir, { recursive: true, mode: 0o700 })
+    storagePath = join(storageDir, 'shares.json')
+    if (existsSync(storagePath)) {
+      const saved = JSON.parse(readFileSync(storagePath, 'utf8'))
+      if (!Array.isArray(saved)) throw new Error('分享存储损坏，请保留文件后恢复备份。')
+      shares = new Map(saved)
+    }
+  }
   const app = express()
   app.use(express.json({ limit: '2mb' }))
 
@@ -66,34 +78,40 @@ export function startShareServer(preferredPort = 8799): Promise<number> {
 
   // 朋友投票
   app.post('/api/s/:id/vote', (req, res) => {
-    const rec = shares.get(req.params.id)
-    if (!rec) return res.status(404).json({ error: 'not_found' })
+    const stored = shares.get(req.params.id)
+    if (!stored) return res.status(404).json({ error: 'not_found' })
+    const rec = { ...stored, votes: [...stored.votes] }
     const voter = String(req.body?.voter || '朋友').slice(0, 12)
     const vote = ['up', 'meh', 'down'].includes(req.body?.vote) ? req.body.vote : 'up'
     rec.votes = rec.votes.filter((v) => v.voter !== voter) // 一人一票，可改
     rec.votes.push({ voter, vote, ts: Date.now() })
+    saveRecord(rec)
     res.json({ ok: true, tally: tally(rec) })
   })
 
   // 朋友留评语/想法（可带预算）
   app.post('/api/s/:id/pref', (req, res) => {
-    const rec = shares.get(req.params.id)
-    if (!rec) return res.status(404).json({ error: 'not_found' })
+    const stored = shares.get(req.params.id)
+    if (!stored) return res.status(404).json({ error: 'not_found' })
+    const rec = { ...stored, prefs: [...stored.prefs] }
     const member = String(req.body?.member || '朋友').slice(0, 12)
     const idea = String(req.body?.idea || '').slice(0, 200).trim()
     const budget = Number(req.body?.budget) || undefined
     if (idea || budget) {
       rec.prefs.push({ member, idea, budget, ts: Date.now() })
+      saveRecord(rec)
     }
     res.json({ ok: true })
   })
 
   return new Promise((resolve) => {
     const tryListen = (p: number, attemptsLeft: number): void => {
-      const s = app.listen(p, () => {
+      // Express 5 also invokes a listen callback on errors; use the native listening event.
+      const s = app.listen(p)
+      s.once('listening', () => {
         server = s
-        port = p
-        resolve(p)
+        port = (s.address() as { port: number }).port
+        resolve(port)
       })
       s.on('error', () => {
         if (attemptsLeft > 0) tryListen(p + 1, attemptsLeft - 1)
@@ -114,11 +132,22 @@ function tally(rec: ShareRecord): { up: number; meh: number; down: number } {
 
 // 桌面端：创建分享（快照方案），返回局域网 URL
 export function createShare(plan: Plan, city: string): { id: string; url: string } {
-  const raw = JSON.stringify(plan) + Date.now()
-  const id = createHash('md5').update(raw).digest('hex').slice(0, 8)
-  shares.set(id, { id, plan, city, createdAt: Date.now(), views: 0, votes: [], prefs: [] })
+  if (!server || !port) throw new Error('分享服务尚未就绪。')
+  const id = randomBytes(16).toString('hex')
+  saveRecord({ id, plan: JSON.parse(JSON.stringify(plan)), city, createdAt: Date.now(), views: 0, votes: [], prefs: [] })
   const url = `http://${lanIp()}:${port}/s/${id}`
   return { id, url }
+}
+
+function saveRecord(record: ShareRecord): void {
+  const next = new Map(shares)
+  next.set(record.id, record)
+  if (storagePath) {
+    const temporary = storagePath + '.tmp'
+    writeFileSync(temporary, JSON.stringify([...next]), { mode: 0o600 })
+    renameSync(temporary, storagePath)
+  }
+  shares = next
 }
 
 // 桌面端：拉取某分享的反馈（投票+评语）

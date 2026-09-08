@@ -38,7 +38,7 @@ export function reviewTrust(poi: POISummary): POISummary {
 
 function popularityDebias(pois: POISummary[]): void {
   for (const p of pois) {
-    if (p.raw_score >= 4.9 && evidenceWeight(p) < 4.0 && p.filtered_score != null) {
+    if ((p.raw_score ?? 0) >= 4.9 && evidenceWeight(p) < 4.0 && p.filtered_score != null) {
       p.filtered_score = Math.round((p.filtered_score - 0.1) * 100) / 100
     }
   }
@@ -63,7 +63,7 @@ export function cleanAndRank(pois: POISummary[], softPrefer: string[] = []): POI
   return [...pois].sort((a, b) => rankKey(b) - rankKey(a))
 
   function rankKey(p: POISummary): number {
-    const base = p.filtered_score != null ? p.filtered_score : p.raw_score
+    const base = p.filtered_score ?? p.raw_score ?? 0
     let bonus = 0
     const blob = `${p.name} ${p.tags.join(' ')}`
     for (const kw of softPrefer) if (blob.includes(kw)) bonus += 0.15

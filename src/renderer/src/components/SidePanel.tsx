@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
-import { X, Cpu, MessageCircle, Puzzle, Brain, Check, Loader2, Plug, Heart, Lock, MapPin } from 'lucide-react'
+import type { ReminderList } from '@shared/types'
+import { X, Cpu, MessageCircle, Puzzle, Brain, Check, Loader2, Plug, Heart, Lock, MapPin, Bell } from 'lucide-react'
 
 // 右侧面板：模型/API 切换 + 微信/飞书入口 + 技能 + 记忆呈现（多 Agent/越用越懂的"外部旋钮"）。
-type Tab = 'model' | 'social' | 'skills' | 'memory'
+type Tab = 'model' | 'social' | 'skills' | 'memory' | 'reminders'
 
 // 常见 OpenAI 兼容供应商预设（抄 yoyu .env 三件套：BASE_URL/KEY/MODEL），key 用户自填。
 const PRESETS: { id: string; name: string; baseURL: string; model: string; note: string }[] = [
@@ -36,6 +37,7 @@ export function SidePanel(): JSX.Element | null {
           <TabBtn cur={tab} me="social" set={setTab} icon={<MessageCircle size={13} />} label="微信/飞书" />
           <TabBtn cur={tab} me="skills" set={setTab} icon={<Puzzle size={13} />} label="技能" />
           <TabBtn cur={tab} me="memory" set={setTab} icon={<Brain size={13} />} label="记忆" />
+          <TabBtn cur={tab} me="reminders" set={setTab} icon={<Bell size={13} />} label="提醒" />
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
@@ -43,6 +45,7 @@ export function SidePanel(): JSX.Element | null {
           {tab === 'social' && <SocialSection />}
           {tab === 'skills' && <SkillsSection />}
           {tab === 'memory' && <MemorySection />}
+          {tab === 'reminders' && <ReminderSection />}
         </div>
       </div>
     </div>
@@ -88,17 +91,21 @@ function ModelSection(): JSX.Element {
     setPing('')
     const patch: any = { llm: { baseURL, model } }
     if (apiKey.trim()) patch.llm.apiKey = apiKey.trim()
-    await window.xiaonian.setConfig(patch)
-    const r = await window.xiaonian.pingLlm()
-    setPing(r.ok ? '连通正常 ✓ ' + r.message : '连接失败：' + r.message)
-    setApiKey('')
-    setSaving(false)
-    window.xiaonian.getConfig().then((rr) => setCfg(rr.config))
+    try {
+      await window.xiaonian.setConfig(patch)
+      const r = await window.xiaonian.pingLlm()
+      setPing(r.ok ? '连通正常 ✓ ' + r.message : '连接失败：' + r.message)
+      setApiKey('')
+      const config = await window.xiaonian.getConfig()
+      setCfg(config.config)
+      await useStore.getState().hydrateHarness()
+    } catch (e) { setPing('保存失败：' + String(e)) }
+    finally { setSaving(false) }
   }
 
   return (
     <div className="space-y-3">
-      <div className="text-xs text-neutral-500">选一个大模型供应商，或手动填 BASE_URL / MODEL / KEY。切换即时生效。</div>
+      <div className="text-xs text-neutral-500">选一个大模型供应商，或手动填 BASE_URL / MODEL / KEY。保存后应用到本地运行服务，任务状态会保留。</div>
       <div className="grid grid-cols-2 gap-2">
         {PRESETS.map((p) => {
           const active = baseURL === p.baseURL
@@ -140,65 +147,11 @@ function ModelSection(): JSX.Element {
 
 function SocialSection(): JSX.Element {
   const [im, setIm] = useState<{ connected: boolean; note: string } | null>(null)
-  const [qr, setQr] = useState('')
-  const [sim, setSim] = useState('小悠，周末想带娃出去玩，你看着安排')
-
-  useEffect(() => {
-    window.xiaonian.imStatus().then(setIm)
-  }, [])
-
-  const loginQr = async (): Promise<void> => {
-    const r = await window.xiaonian.imLoginQr()
-    setQr(r.dataUrl)
-  }
-  const simulate = async (): Promise<void> => {
-    await window.xiaonian.imSimulate(sim, '我')
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-neutral-200 p-3">
-        <div className="flex items-center gap-2">
-          <MessageCircle size={16} className="text-green-500" />
-          <span className="font-medium text-sm">微信 Bridge</span>
-          <span className={`ml-auto text-[11px] px-2 py-0.5 rounded-full ${im?.connected ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-500'}`}>
-            {im?.connected ? '已连接' : '未连接'}
-          </span>
-        </div>
-        <div className="text-[11px] text-neutral-500 mt-1.5">{im?.note || '手机微信扫码，让小悠在你微信里收发消息、主动关心你。'}</div>
-        <div className="text-[11px] text-green-600 mt-1 flex items-center gap-1">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500" /> 连上后小悠 24h 在线：到饭点、周末、纪念日会主动在微信里惦记你
-        </div>
-        <div className="flex gap-2 mt-2">
-          <button onClick={loginQr} className="flex-1 py-1.5 rounded-lg bg-brand text-brand-ink text-xs font-medium">
-            生成登录二维码
-          </button>
-        </div>
-        {qr && (
-          <div className="mt-2 flex flex-col items-center">
-            <img src={qr} alt="微信登录" className="w-40 h-40" />
-            <div className="text-[10px] text-neutral-400 mt-1">现场演示：占位二维码（Bridge 接口已就位）</div>
-          </div>
-        )}
-        <div className="mt-3 border-t border-neutral-100 pt-2">
-          <div className="text-[11px] text-neutral-500 mb-1">模拟一条微信入站消息（现场触发）：</div>
-          <div className="flex gap-1.5">
-            <input value={sim} onChange={(e) => setSim(e.target.value)} className="flex-1 border border-neutral-200 rounded-lg px-2 py-1.5 text-xs outline-none" />
-            <button onClick={simulate} className="px-3 rounded-lg bg-neutral-800 text-white text-xs">发送</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-neutral-200 p-3 opacity-80">
-        <div className="flex items-center gap-2">
-          <MessageCircle size={16} className="text-blue-500" />
-          <span className="font-medium text-sm">飞书</span>
-          <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-500">接口预留</span>
-        </div>
-        <div className="text-[11px] text-neutral-500 mt-1.5">企业场景：把方案/确认推到飞书群，接口已留（webhook + 事件订阅），现场不强依赖。</div>
-      </div>
-    </div>
-  )
+  useEffect(() => { window.xiaonian.imStatus().then(setIm).catch(() => setIm({ connected: false, note: '连接状态获取失败' })) }, [])
+  return <div className="space-y-3 text-xs text-neutral-600">
+    <div className="rounded-xl border border-neutral-200 p-3"><div className="font-semibold text-sm mb-2">微信 / 飞书 · 尚未接入</div>{im?.note || '当前未连接消息平台。'}</div>
+    <div>打开行程卡的「分享给同行人」，复制链接或使用二维码，让同行人投票和留下意见；意见可以继续并入当前方案。</div>
+  </div>
 }
 
 function SkillsSection(): JSX.Element {
@@ -266,10 +219,10 @@ function MemorySection(): JSX.Element {
       {/* 数据主权：本地隐私说明（这是"为什么是浏览器"的第六根支柱） */}
       <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-2.5">
         <div className="flex items-center gap-1.5 text-[12px] font-medium text-emerald-700">
-          <Lock size={12} /> 数据留在你这台电脑
+          <Lock size={12} /> 记忆可查看、可删除
         </div>
         <div className="text-[11px] text-emerald-600/90 mt-1 leading-relaxed">
-          这些记忆只存在本机（明文可查、可删），不会上传我们的服务器。越懂你，也越放心——你是主人，不是产品。
+          记忆保存在你配置的运行服务中，用于后续任务。浏览器登录信息留在本机；任务所需上下文会发送给你配置的模型。
         </div>
       </div>
 
@@ -345,4 +298,59 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </label>
   )
+}
+
+function ReminderSection(): JSX.Element {
+  const [data, setData] = useState<ReminderList>({ reminders: [], history: [] })
+  const [text, setText] = useState('')
+  const [at, setAt] = useState(() => {
+    const next = new Date(Date.now() + 3600000)
+    return new Date(next.getTime() - next.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+  })
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  useEffect(() => {
+    let active = true
+    const refresh = async (): Promise<void> => {
+      try { const value = await window.xiaonian.reminders.list(); if (active) setData(value) }
+      catch (e) { if (active) setError(String(e)) }
+    }
+    void refresh()
+    const timer = setInterval(() => void refresh(), 5000)
+    return () => { active = false; clearInterval(timer) }
+  }, [])
+  const create = async (event: React.FormEvent): Promise<void> => {
+    event.preventDefault()
+    const date = new Date(at)
+    if (!text.trim() || !Number.isFinite(date.getTime()) || date.getTime() <= Date.now()) { setError('请输入提醒内容和未来的时间。'); return }
+    setBusy(true)
+    setError('')
+    try { setData(await window.xiaonian.reminders.create(text.trim(), date.toISOString())); setText('') }
+    catch (e) { setError(String(e)) }
+    finally { setBusy(false) }
+  }
+  const remove = async (id: string): Promise<void> => {
+    setBusy(true)
+    setError('')
+    try { setData(await window.xiaonian.reminders.remove(id)) }
+    catch (e) { setError(String(e)) }
+    finally { setBusy(false) }
+  }
+  return <div className="space-y-4 text-xs">
+    <div className="text-neutral-500">提醒在应用打开时显示。关闭期间到时的提醒，会在下次连接运行服务时补发。</div>
+    <form onSubmit={event => void create(event)} className="space-y-2 rounded-xl border border-neutral-200 p-3">
+      <label className="block">提醒内容<input value={text} onChange={event => setText(event.target.value)} required maxLength={2000} placeholder="如：出门前确认预约" className="mt-1 w-full border border-neutral-200 rounded-lg px-2 py-2" /></label>
+      <label className="block">提醒时间（本机时区）<input type="datetime-local" value={at} onChange={event => setAt(event.target.value)} required className="mt-1 w-full border border-neutral-200 rounded-lg px-2 py-2" /></label>
+      <button disabled={busy} className="w-full rounded-lg bg-brand py-2 text-brand-ink font-medium disabled:opacity-50">添加提醒</button>
+    </form>
+    {error && <div role="alert" className="rounded-lg bg-amber-50 p-2 text-amber-800 break-words">{error}</div>}
+    <div><div className="font-semibold text-sm mb-2">待提醒</div>
+      {data.reminders.filter(item => !item.fired).map(item => <div key={item.id} className="flex items-start gap-2 py-2 border-b border-neutral-100">
+        <Bell size={13} className="mt-0.5 text-brand-ink shrink-0" /><div className="flex-1 min-w-0"><div className="break-words">{item.text}</div><div className="text-neutral-400 mt-1">{new Date(item.at).toLocaleString()}</div></div>
+        <button disabled={busy} onClick={() => void remove(item.id)} title="删除提醒" className="p-1 text-neutral-400 hover:text-red-500"><X size={13} /></button>
+      </div>)}
+      {!data.reminders.some(item => !item.fired) && <div className="text-neutral-400">还没有待提醒事项。</div>}
+    </div>
+    {!!data.history.length && <div><div className="font-semibold text-sm mb-2">提醒记录</div>{data.history.map(item => <div key={item.id} className="py-2 border-b border-neutral-100"><div className="text-neutral-600 break-words">{item.text}</div><div className="text-neutral-400 mt-1">{new Date(item.ts).toLocaleString()}</div></div>)}</div>}
+  </div>
 }

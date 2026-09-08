@@ -1,5 +1,5 @@
 import { useStore } from '../store'
-import { X, Plus, MessageSquare, Trash2, MapPin, Clock } from 'lucide-react'
+import { X, Plus, MessageSquare, EyeOff, MapPin, Clock } from 'lucide-react'
 
 // 左侧滑入的历史抽屉（仿 weplan openDrawer）：会话列表，点开可恢复消息+成果卡。
 export function HistoryDrawer(): JSX.Element | null {
@@ -68,9 +68,10 @@ export function HistoryDrawer(): JSX.Element | null {
                     del(s.id)
                   }}
                   className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-500 hover:bg-neutral-100"
-                  title="删除"
+                  title="从历史列表隐藏（后台任务仍保留）"
+                  aria-label="从历史列表隐藏"
                 >
-                  <Trash2 size={13} />
+                  <EyeOff size={13} />
                 </button>
               </div>
             ))

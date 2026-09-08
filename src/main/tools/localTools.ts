@@ -54,7 +54,7 @@ registerTool({
     updateStep(s3, 'done', `经济 / 均衡 / 特色 三选一${three.notes.length ? '（' + three.notes.join('；') + '）' : ''}`)
 
     const budget = three.demand.budget_per_person
-    const perOf = (p: (typeof three.variants)[number]['plan']) => Math.round(p.total_cost / Math.max(three.demand.group_size, 1))
+    const perOf = (p: (typeof three.variants)[number]['plan']) => p.total_cost == null ? Infinity : Math.round(p.total_cost / Math.max(three.demand.group_size, 1))
     const variants = three.variants.map((v) => ({ plan: v.plan, styleLabel: v.styleLabel, per: perOf(v.plan), overBudget: budget && perOf(v.plan) > budget ? perOf(v.plan) - budget : undefined }))
     emitCard({ kind: 'plans', variants, city: three.demand.city, budget })
 
@@ -320,7 +320,7 @@ registerTool({
     const packages = buildGroupBuyPackages(shop?.name || name, base, size, shop)
     updateStep(st, 'done', `${packages.length} 个套餐`, shop?.source || 'simulated')
     emitCard({ kind: 'groupbuy', shopName: shop?.name || name, packages, source: shop?.source || 'simulated' })
-    const list = packages.map((p) => `${p.name}：团购¥${p.price}（原价¥${p.originalPrice}，省¥${p.originalPrice - p.price}）· ${p.fitPeople}`).join('\n')
+    const list = packages.map((p) => `${p.name}：团购¥${p.price}（原价¥${p.originalPrice}，省¥${(p.originalPrice ?? 0) - (p.price ?? 0)}）· ${p.fitPeople}`).join('\n')
     return { result: `「${shop?.name || name}」团购套餐（含 AI 估算，最终以门店为准）：\n${list}\n看中哪个说一声，我走两步确认帮你下单。` }
   }
 })
@@ -709,7 +709,7 @@ registerTool({
     session.setLastPlan(plan)
     emitCard({ kind: 'plan', plan })
     updateStep(st, 'done')
-    return { result: (msg || '已按要求微调方案。') + `当前人均约¥${Math.round(plan.total_cost / Math.max(demand.group_size, 1))}。` }
+    return { result: (msg || '已按要求微调方案。') + `当前人均约¥${plan.total_cost == null ? '未知' : Math.round(plan.total_cost / Math.max(demand.group_size, 1))}。` }
   }
 })
 

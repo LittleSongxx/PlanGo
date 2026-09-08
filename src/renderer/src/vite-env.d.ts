@@ -1,7 +1,10 @@
 /// <reference types="vite/client" />
-import type { AgentReply, OutcomeCard, AgentStep } from '@shared/types'
+import type { AgentReply, OutcomeCard, AgentStep, HarnessApi, HarnessEvent, ReminderApi } from '@shared/types'
 
 interface XiaonianApi {
+  harness: HarnessApi
+  reminders: ReminderApi
+  onHarnessEvent: (cb: (event: HarnessEvent) => void) => () => void
   chat: (message: string, history: unknown[]) => Promise<AgentReply>
   confirm: (token: string, ok: boolean) => Promise<AgentReply>
   onStep: (cb: (s: AgentStep & { patch?: boolean }) => void) => () => void
@@ -10,6 +13,7 @@ interface XiaonianApi {
   onImIncoming: (cb: (m: { from: string; text: string; ts: number }) => void) => () => void
   onBrowserExec: (cb: (p: { id: number; action: string; args: Record<string, unknown> }) => void) => void
   browserExecResult: (id: number, result: unknown) => void
+  browserEval: (contentsId: number, code: string) => Promise<unknown>
   getConfig: () => Promise<{ config: any; cities: { city: string; count: number }[] }>
   setConfig: (patch: any) => Promise<any>
   setSource: (source: string) => Promise<string>

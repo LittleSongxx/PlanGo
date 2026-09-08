@@ -120,6 +120,6 @@ export function getLocation(): LocationInfo {
 
 export function setManualCity(city: string): LocationInfo {
   cached = { city: normalizeCity(city), source: 'manual' }
-  setConfig({ city: cached.city })
+  setConfig({ city: cached.city, coords: '' })
   return cached
 }

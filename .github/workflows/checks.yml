@@ -1,0 +1,26 @@
+name: YOYU checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: npm ci
+      - run: npm run setup:backend
+      - run: npm run check
+      - run: uv run --frozen ruff check backend/yoyu backend/tests
+      - run: MYPYPATH=backend:vendor/planora/backend uv run --frozen mypy backend/yoyu vendor/planora/backend/planora
+      - run: uv run --frozen python backend/yoyu/migrations/check.py
+      - run: npm run test:independent
+      - run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:browser
+      - run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop
+      - run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:full-stack

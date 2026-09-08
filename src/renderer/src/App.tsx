@@ -14,8 +14,6 @@ import { AiBrowsingBar } from './components/AiBrowsingBar'
 import { detectViaAMap } from './lib/amap'
 
 export default function App(): JSX.Element {
-  const applyStep = useStore((s) => s.applyStep)
-  const addCard = useStore((s) => s.addCard)
   const addProactive = useStore((s) => s.addProactive)
   const setCity = useStore((s) => s.setCity)
   const setLocationInfo = useStore((s) => s.setLocationInfo)
@@ -28,8 +26,9 @@ export default function App(): JSX.Element {
 
   useEffect(() => {
     installBrowserBridge()
-    const un1 = window.xiaonian.onStep((s) => applyStep(s))
-    const un2 = window.xiaonian.onCard((c) => addCard(c))
+    const unHarness = window.xiaonian.onHarnessEvent((event) => useStore.getState().receiveHarnessEvent(event))
+    void useStore.getState().hydrateHarness()
+    const poll = window.setInterval(() => { void useStore.getState().refreshRun() }, 2000)
     const un3 = window.xiaonian.onProactive((p) => addProactive(p))
     const un4 = window.xiaonian.onImIncoming((m) => addProactive({ id: 'im' + m.ts, ts: m.ts, text: `【微信·${m.from}】${m.text}`, kind: 'im' }))
     // 主进程高德 /v3/ip 定位：出站走本机真实公网 IP，返回 rectangle 中心（区县级坐标）。
@@ -66,13 +65,13 @@ export default function App(): JSX.Element {
       })
       .catch(() => {})
     return () => {
-      un1?.()
-      un2?.()
+      unHarness()
+      window.clearInterval(poll)
       un3?.()
       un4?.()
       un5?.()
     }
-  }, [applyStep, addCard, addProactive, setCity, setLocationInfo])
+  }, [addProactive, setCity, setLocationInfo])
 
   // 拖拽分隔条调整右侧对话宽度
   useEffect(() => {
@@ -108,14 +107,11 @@ export default function App(): JSX.Element {
         {/* 中间主工作区：浏览器 / 成果区 切换 */}
         <section className="flex-1 flex flex-col min-w-0 bg-neutral-50 relative">
           <AiBrowsingBar />
-          {view === 'browser' ? (
-            <>
-              <TabBar />
-              <BrowserPane />
-            </>
-          ) : (
-            <OutcomeCanvas />
-          )}
+          <div className={`flex-1 min-h-0 flex flex-col ${view === 'browser' ? '' : 'hidden'}`} aria-hidden={view !== 'browser'}>
+            <TabBar />
+            <BrowserPane />
+          </div>
+          {view === 'outcome' && <div className="flex-1 min-h-0"><OutcomeCanvas /></div>}
         </section>
 
         {/* 可拖拽分隔条 */}

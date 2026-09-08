@@ -19,6 +19,8 @@ export function DiscoverPanel(): JSX.Element | null {
   const openRoute = useStore((s) => s.openRoute)
   const [tab, setTab] = useState<'discover' | 'deals'>('discover')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const busy = useStore((s) => s.busy)
   const [groups, setGroups] = useState<DiscoverGroup[]>([])
   const [deals, setDeals] = useState<{ poi: POISummary; deal: DealRow }[]>([])
 
@@ -29,6 +31,7 @@ export function DiscoverPanel(): JSX.Element | null {
   const load = useCallback(
     async (which: 'discover' | 'deals') => {
       setLoading(true)
+      setError('')
       try {
         if (which === 'discover') {
           const r = await window.xiaonian.discoverFetch(city)
@@ -37,8 +40,10 @@ export function DiscoverPanel(): JSX.Element | null {
           const r = await window.xiaonian.dealsFetch(city)
           setDeals(r.items || [])
         }
-      } catch {
-        /* ignore */
+      } catch (e) {
+        setError(String(e))
+        if (which === 'discover') setGroups([])
+        else setDeals([])
       } finally {
         setLoading(false)
       }
@@ -47,8 +52,8 @@ export function DiscoverPanel(): JSX.Element | null {
   )
 
   useEffect(() => {
-    if (open) void load(open)
-  }, [open, load])
+    if (open) void load(tab)
+  }, [open, tab, load])
 
   if (!open) return null
 
@@ -88,6 +93,8 @@ export function DiscoverPanel(): JSX.Element | null {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
+          {error && <div role="alert" className="mb-3 text-xs text-amber-700 bg-amber-50 rounded-lg p-2">{error}</div>}
+          {tab === 'deals' && <button disabled={busy} onClick={() => { setOpen(false); void send('读取当前浏览器页面的真实菜单和优惠，保留商品名称、价格、人数和使用条件，并展示原文证据。') }} className="mb-3 w-full py-2 rounded-lg bg-brand text-brand-ink text-xs disabled:opacity-40">读取当前页面真实优惠</button>}
           {loading ? (
             <div className="text-center text-neutral-400 text-sm py-12">正在扫描{tab === 'discover' ? '附近热点' : '附近优惠'}…</div>
           ) : tab === 'discover' ? (
@@ -110,10 +117,10 @@ export function DiscoverPanel(): JSX.Element | null {
               </div>
             )
           ) : deals.length === 0 ? (
-            <div className="text-center text-neutral-400 text-sm py-12">附近暂时没算到明显优惠，刷新或换定位试试。</div>
+            <div className="text-center text-neutral-400 text-sm py-12">还没有经过核验的优惠。先在浏览器打开菜单或团购页面，再点击上方读取按钮。</div>
           ) : (
             <div className="space-y-2">
-              <div className="text-[11px] text-neutral-400 mb-1">按"券后省得多"排序（模拟券池演示，真实核销需平台授权）</div>
+              <div className="text-[11px] text-neutral-400 mb-1">仅展示已获取实际价格和使用条件的优惠；是否可用以当前页面为准。</div>
               {deals.map(({ poi, deal }) => (
                 <div key={poi.poi_id} className="rounded-xl border border-neutral-200 p-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
