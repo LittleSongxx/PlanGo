@@ -1,6 +1,4 @@
-// 可安装 Skill 系统（对齐 Anthropic Agent Skills 标准）。
-// Drop-in Bundle：skills/<id>/SKILL.md（YAML frontmatter: name+description）。
-// 渐进披露：启动只把 name+description 进 System Prompt；命中意图才读全文。
+// 桌面 Skill 列表与开关；技能正文由独立 Harness 按需读取。
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs'
 import { join } from 'path'
 
@@ -33,7 +31,7 @@ function parseFrontmatter(text: string): { name?: string; description?: string }
   return { name: out.name, description: out.description }
 }
 
-export function loadSkills(): SkillMeta[] {
+function loadSkills(): SkillMeta[] {
   if (cache) return cache
   const found: SkillMeta[] = []
   for (const dir of skillsDirs()) {
@@ -55,24 +53,6 @@ export function loadSkills(): SkillMeta[] {
   }
   cache = found
   return found
-}
-
-// 渐进披露第 1 层：只给 name + description（advert）进 System Prompt
-export function listSkillAdverts(): string {
-  const skills = loadSkills().filter((s) => s.enabled)
-  if (!skills.length) return ''
-  return skills.map((s) => `  · [${s.name}] ${s.description}`).join('\n')
-}
-
-// 第 2 层：命中意图后读全文
-export function readSkillBody(id: string): string {
-  const s = loadSkills().find((x) => x.id === id)
-  if (!s) return ''
-  try {
-    return readFileSync(s.path, 'utf-8')
-  } catch {
-    return ''
-  }
 }
 
 export function toggleSkill(id: string, enabled: boolean): void {

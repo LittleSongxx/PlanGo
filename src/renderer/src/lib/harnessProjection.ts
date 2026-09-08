@@ -82,7 +82,16 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
   else if (plans.length) cards.push({ kind: 'plan', plan: plans[0] })
   if (evidence.length) cards.push({ kind: 'evidence', items: evidence })
 
-  for (const artifact of rows(state.browser_artifacts)) {
+  // Show the last page observation without changing the append-only audit artifacts.
+  const seenPages = new Set<string>()
+  const artifacts = rows(state.browser_artifacts).reverse().filter(artifact => {
+    if (artifact.type !== 'browser_page' || !str(artifact.url)) return true
+    const key = JSON.stringify([str(artifact.source), artifact.type, artifact.url])
+    if (seenPages.has(key)) return false
+    seenPages.add(key)
+    return true
+  }).reverse()
+  for (const artifact of artifacts) {
     const data = row(artifact.data)
     if (artifact.type === 'price_comparison' && data.basis === 'per_person') {
       cards.push({ kind: 'price_comparison', title: str(artifact.title) || '价格比较', source: source(artifact.source), data: {

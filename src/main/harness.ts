@@ -34,13 +34,13 @@ function identity(): { token: string; browserSessionId: string } {
   return saved
 }
 
-function pythonPath(root: string): string {
+function pythonPath(): string {
   const configured = getHarnessEnvironment().YOYU_PYTHON
   if (configured) return configured
-  const suffix = process.platform === 'win32' ? ['Scripts', 'python.exe'] : ['bin', 'python']
-  const local = join(root, '.venv', ...suffix)
-  if (existsSync(local)) return local
-  throw new Error('YOYU Python 环境尚未安装，请在本项目执行 npm run setup:backend。')
+  if (process.env.CONDA_DEFAULT_ENV === 'planora' && process.env.CONDA_PREFIX) {
+    return join(process.env.CONDA_PREFIX, ...(process.platform === 'win32' ? ['python.exe'] : ['bin', 'python']))
+  }
+  throw new Error('请执行 npm run setup:backend 配置 planora conda 环境，或设置 YOYU_PYTHON。')
 }
 
 export async function getHarness(): Promise<HarnessClient> {
@@ -90,7 +90,7 @@ async function connect(): Promise<HarnessClient> {
     const vendorRoot = join(root, 'vendor', 'planora', 'backend')
     if (!existsSync(join(moduleRoot, 'yoyu', 'app.py'))) throw new Error('YOYU backend source is missing')
     let launchError = ''
-    child = spawn(pythonPath(root), ['-m', 'uvicorn', 'yoyu.app:create_app', '--factory', '--host', '127.0.0.1', '--port', url.port || '8011', '--no-access-log'], {
+    child = spawn(pythonPath(), ['-m', 'uvicorn', 'yoyu.app:create_app', '--factory', '--host', '127.0.0.1', '--port', url.port || '8011', '--no-access-log'], {
       cwd: root,
       env: {
         ...process.env,

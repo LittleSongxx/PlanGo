@@ -1,4 +1,4 @@
-"""Run with .venv/bin/python backend/yoyu/migrations/check.py; touches only a temporary DB."""
+"""Run with conda run -n planora python backend/yoyu/migrations/check.py; temporary DB only."""
 
 import os
 import sqlite3

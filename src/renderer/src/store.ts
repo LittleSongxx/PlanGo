@@ -199,10 +199,11 @@ export const useStore = create<State>((set, get) => ({
     if (current && current.run_id !== run.run_id) return
     if (current && ((run.version ?? 0) < (current.version ?? 0) || (run.version === current.version && run.event_seq < current.event_seq))) return
     const projected = projectHarness(run)
+    const newlyFinished = !!run.outcome && (!current?.outcome || run.state.turn_id !== current.state.turn_id)
     set((s) => ({ run, messages: projected.messages.length ? projected.messages : s.messages, cards: projected.cards,
       backendReady: true, backendError: '', busy: s.requestBusy || runBusy(run),
       aiBrowsing: run.outcome || run.state.browser_wait ? { active: false, site: '', action: '' } : s.aiBrowsing,
-      view: projected.cards.length && !s.cards.length ? 'outcome' : s.view }))
+      view: projected.cards.length && (!s.cards.length || newlyFinished) ? 'outcome' : s.view }))
     get().persistSession()
   },
 

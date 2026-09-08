@@ -1,75 +1,5 @@
-// 防腐层：任何数据源（VitaBench raw / 高德 / 企业 API）→ 统一 POISummary。
-// 原始 dict 绝不直达 Prompt/UI —— 这是"企业级、不像玩具"的关键。
-import type { POISummary, ProductItem, SourceTag } from '@shared/types'
-
-export interface RawVitaShop {
-  poi_id: string
-  name: string
-  category: string
-  raw_score: number
-  address: string
-  city?: string
-  lng?: number
-  lat?: number
-  tags: string[]
-  enable_book: boolean
-  enable_reservation: boolean
-  book_price?: number
-  products: ProductItem[]
-  is_distraction: boolean
-}
-
-// 从标签里挑"推荐菜/招牌"（让展示不假）
-function pickRecommended(tags: string[], products: ProductItem[]): string[] {
-  const fromProd = products.filter((p) => !p.is_distraction).slice(0, 2).map((p) => p.name)
-  const fromTags = tags.filter((t) => t.length <= 6).slice(0, 3)
-  return Array.from(new Set([...fromProd, ...fromTags])).slice(0, 4)
-}
-
-// 简单营业时间猜测（诚实：仅当无真实数据时给常识区间，UI 会标 dataset）
-function guessHours(category: string, tags: string[]): string {
-  const blob = category + tags.join('')
-  if (/酒吧|清吧|livehouse|夜/.test(blob)) return '18:00-02:00'
-  if (/健身|游泳|球/.test(blob)) return '06:00-22:00'
-  if (/咖啡|书店|茶/.test(blob)) return '09:00-22:00'
-  if (/餐|饭|食|火锅|烧烤/.test(blob)) return '10:00-22:00'
-  return '09:00-21:00'
-}
-
-function medianPrice(prices: number[]): number | undefined {
-  const pos = prices.filter((p) => p > 0).sort((a, b) => a - b)
-  if (!pos.length) return undefined
-  // 用中位数并剔除高价套餐（月卡/年卡）离群值的影响，代表"单次人均"
-  const mid = Math.floor(pos.length / 2)
-  const med = pos.length % 2 ? pos[mid] : Math.round((pos[mid - 1] + pos[mid]) / 2)
-  return med
-}
-
-export function fromVita(raw: RawVitaShop, source: SourceTag = 'dataset'): POISummary {
-  const ppp = medianPrice(raw.products.map((p) => p.price)) ?? (raw.book_price || undefined)
-  return {
-    poi_id: raw.poi_id,
-    name: raw.name,
-    category: raw.category,
-    raw_score: raw.raw_score,
-    trust: 'unknown',
-    trust_reason: '',
-    address: raw.address,
-    city: raw.city,
-    lng: raw.lng,
-    lat: raw.lat,
-    price_per_person: ppp,
-    tags: raw.tags || [],
-    enable_book: !!raw.enable_book,
-    enable_reservation: !!raw.enable_reservation,
-    business_hours: guessHours(raw.category, raw.tags || []),
-    products: raw.products || [],
-    source,
-    recommended: pickRecommended(raw.tags || [], raw.products || []),
-    rating_count: 80 + Math.floor((raw.raw_score || 4) * 40) + (raw.tags?.length || 0) * 7,
-    is_distraction: !!raw.is_distraction
-  }
-}
+// 高德 POI 转换为桌面统一的 POISummary。
+import type { POISummary } from '@shared/types'
 
 // 高德 POI → POISummary（兼容 v5 business 结构 + v3 biz_ext）
 export interface AmapPoi {
@@ -91,7 +21,7 @@ export interface AmapPoi {
 }
 
 // 高德在 extensions=all 时，缺失的字符串字段会返回空数组 []（而非 ''），
-// 直接 .split 会抛错并导致整批 POI 转换失败 → 误回退到数据集。统一安全取字符串。
+// 直接 .split 会导致整批 POI 转换失败。统一安全取字符串。
 function s(v: unknown): string {
   if (typeof v === 'string') return v
   if (Array.isArray(v)) return ''

@@ -1,16 +1,9 @@
 // Main validates and serializes commands; the renderer owns real, persistent webviews.
 import { getMainWindow } from './index'
 import { IPC } from '@shared/ipc'
-import { randomUUID } from 'node:crypto'
-import { allowedBrowserSite, browserCommandGuard, isBrowserWrite, validateBrowserCommand, type BrowserCommand, type BrowserObservation, type BrowserOperation } from '@shared/browser'
+import { browserCommandGuard, isBrowserWrite, validateBrowserCommand, type BrowserCommand, type BrowserObservation } from '@shared/browser'
 
-export type BrowserActionName = Exclude<BrowserOperation, 'snapshot'>
 export type BrowserActionResult = Partial<BrowserObservation>
-export const isAllowed = allowedBrowserSite
-export function isDangerAction(text: string): boolean {
-  return /(支付|付款|下单|提交|购买|取号|预约|结算|取消|删除)/.test(text || '')
-}
-
 let seq = 0
 const pending = new Map<number, { resolve: (r: BrowserActionResult) => void; timer: ReturnType<typeof setTimeout> }>()
 // The backend action ledger is authoritative across restarts; this prevents duplicate IPC delivery in one process.
@@ -75,21 +68,6 @@ export async function executeBrowserCommand(raw: BrowserCommand): Promise<Browse
   const result = queue.then(run, run)
   queue = result.catch(() => {})
   commands.set(command.command_id, { fingerprint, result })
-  return result
-}
-
-// Legacy read tools keep their signature, but cannot bypass Harness approval or fresh snapshot checks.
-let legacyTab: string | undefined
-let legacySnapshot: string | undefined
-export async function browserAction(action: BrowserActionName, args: Record<string, unknown> = {}): Promise<BrowserActionResult> {
-  const { hint: _hint, ...arguments_ } = args
-  const result = await executeBrowserCommand({
-    command_id: randomUUID(), run_id: 'legacy', browser_session_id: 'legacy', tab_id: legacyTab,
-    operation: action, arguments: arguments_, expected_snapshot_id: legacySnapshot,
-    expires_at: new Date(Date.now() + 25_000).toISOString()
-  })
-  if (result.tab_id) legacyTab = result.tab_id
-  legacySnapshot = result.snapshot_id
   return result
 }
 

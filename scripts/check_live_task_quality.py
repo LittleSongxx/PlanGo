@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prepare or execute a frozen, bounded live-model pilot with synthetic DOM observations.
 
-Preflight (no credentials/network): .venv/bin/python scripts/check_live_task_quality.py
+Preflight (no credentials/network): conda run -n planora python scripts/check_live_task_quality.py
 Run only after the owner freezes sources: add --run --source-sha <preflight SHA>.
 The real model sees ordinary runtime prompts; this runner never replaces model
 outputs, never approves writes and never loads a live business webpage.

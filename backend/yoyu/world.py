@@ -205,7 +205,7 @@ class BrowserWorld:
             return cache[key]
         row = await self.bridge.get(key)
         processed = (row["payload"] or {}).get("_processed") if row else None
-        if processed and row["payload"].get("_processed_version") == 3:
+        if processed and row["payload"].get("_processed_version") == 4:
             data = PageData.model_validate(processed)
         else:
             fallback = table_data(observation)
@@ -221,6 +221,27 @@ class BrowserWorld:
                 user=page + "\nTABLES:\n" + tables,
                 fallback=fallback,
             )
+            # Explicit DOM columns survive model omissions; unknown cells cannot acquire invented prices.
+            table_names = {item.name for item in [*fallback.menu, *fallback.offers]}
+            inferred = {item.name: item for item in [*data.menu, *data.offers]}
+
+            def merge_table_rows(table_rows, model_rows, limit):
+                rows = [
+                    inferred.get(item.name, item).model_copy(
+                        update={
+                            "price": item.price,
+                            "original_price": item.original_price,
+                            "quote": item.quote,
+                        }
+                    )
+                    for item in table_rows
+                ]
+                return [*rows, *(item for item in model_rows if item.name not in table_names)][
+                    :limit
+                ]
+
+            data.menu = merge_table_rows(fallback.menu, data.menu, 50)
+            data.offers = merge_table_rows(fallback.offers, data.offers, 30)
             searchable = (
                 page
                 + "\n"
@@ -326,7 +347,7 @@ class BrowserWorld:
                                 payload={
                                     **row["payload"],
                                     "_processed": data.model_dump(mode="json"),
-                                    "_processed_version": 3,
+                                    "_processed_version": 4,
                                 }
                             )
                         )

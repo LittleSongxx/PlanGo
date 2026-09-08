@@ -9,6 +9,40 @@ from yoyu.world import BrowserWorld, Item, ObservedPlace, PageData, table_data
 
 
 class PriceGroundingCheck(unittest.IsolatedAsyncioTestCase):
+    async def test_model_omissions_cannot_erase_explicit_dom_table_rows(self):
+        async def get(_):
+            return None
+
+        async def structured(*args, **kwargs):
+            return PageData(menu=[Item(name="时价菜", price=99, quote="时价菜 99元")])
+
+        world = BrowserWorld(
+            DesktopSettings(), SimpleNamespace(get=get), SimpleNamespace(structured=structured)
+        )
+        token = run_context.set({})
+        try:
+            result = await world.extract(
+                {
+                    "command_id": "table-omission",
+                    "title": "菜单",
+                    "text": "菜单",
+                    "tables": [
+                        {
+                            "headers": ["菜品", "价格"],
+                            "rows": [["清蒸鱼", "128元"], ["时价菜", "询价"]],
+                        }
+                    ],
+                }
+            )
+            self.assertEqual(
+                [(item.name, item.price) for item in result.menu],
+                [("清蒸鱼", 128), ("时价菜", None)],
+            )
+            self.assertEqual(result.menu[1].quote, "时价菜 | 询价")
+        finally:
+            run_context.reset(token)
+            await world.close()
+
     async def test_currency_original_price_and_per_person_units_require_literal_evidence(self):
         text = "双人套餐 2人份 套餐128元\n星河餐厅 双人套餐128元\n午餐套餐 原价228元 现价128元\n月亮餐厅 人均64元"
         data = PageData(

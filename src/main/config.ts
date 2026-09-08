@@ -9,10 +9,8 @@ const app = (electron as unknown as { app?: { getPath: (n: string) => string } }
 export interface AppConfig {
   llm: { apiKey: string; baseURL: string; model: string }
   amap: { key: string; jsKey: string; jsSecurity: string }
-  dataSource: 'mock' | 'amap' | 'enterprise'
   city: string
   coords: string // 用户当前坐标 "lng,lat"（GCJ02），作为周边搜索圆心/行程起点
-  enterprise: { base: string; key: string }
 }
 
 function parseEnv(text: string): Record<string, string> {
@@ -110,10 +108,8 @@ export function getConfig(): AppConfig {
       jsKey: env.AMAP_JS_KEY || '',
       jsSecurity: env.AMAP_JS_SECURITY || ''
     },
-    dataSource: (env.DATA_SOURCE as AppConfig['dataSource']) || 'amap',
     city: env.XIAONIAN_CITY || '上海',
-    coords: env.XIAONIAN_COORDS || '',
-    enterprise: { base: env.ENTERPRISE_API_BASE || '', key: env.ENTERPRISE_API_KEY || '' }
+    coords: env.XIAONIAN_COORDS || ''
   }
   const ov = loadOverride()
   cache = deepMerge(base, ov)
@@ -143,7 +139,6 @@ export function getConfigMasked(): AppConfig & { hasLlmKey: boolean; hasAmapKey:
     ...c,
     llm: { ...c.llm, apiKey: mask(c.llm.apiKey) },
     amap: { ...c.amap, key: mask(c.amap.key), jsKey: mask(c.amap.jsKey), jsSecurity: mask(c.amap.jsSecurity) },
-    enterprise: { ...c.enterprise, key: mask(c.enterprise.key) },
     hasLlmKey: !!c.llm.apiKey,
     hasAmapKey: !!c.amap.key
   }
@@ -152,6 +147,7 @@ export function getConfigMasked(): AppConfig & { hasLlmKey: boolean; hasAmapKey:
 function deepMerge<T>(a: T, b: Partial<T>): T {
   const out = { ...a } as Record<string, unknown>
   for (const k of Object.keys(b || {})) {
+    if (!Object.hasOwn(out, k)) continue // Drop obsolete persisted settings and unknown keys.
     const bv = (b as Record<string, unknown>)[k]
     const av = out[k]
     if (bv && typeof bv === 'object' && !Array.isArray(bv) && av && typeof av === 'object') {

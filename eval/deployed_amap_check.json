@@ -1,0 +1,8 @@
+{
+  "date": "2026-09-08T13:09:41.704194+00:00",
+  "environment": "YOYU Docker api / conda planora",
+  "operation": "public Shanghai landmark geocode",
+  "model_calls": 0,
+  "passed": true,
+  "latency_ms": 220.64
+}

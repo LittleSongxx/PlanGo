@@ -106,7 +106,7 @@ def create_app(settings=None, *, token=None):
         finally:
             await runtime.close()
 
-    app = FastAPI(title="YOYU Planora Harness", lifespan=lifespan)
+    app = FastAPI(title="YOYU Harness", lifespan=lifespan)
     app.state.runtime = runtime
 
     async def auth(authorization: str | None = Header(default=None)):

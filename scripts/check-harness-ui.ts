@@ -222,3 +222,40 @@ assert.equal(unknownEntry.unit_price, null)
 assert.equal(unknownEntry.total, null)
 assert.equal(unknownEntry.within_budget, null)
 console.log('Price comparison totals, budget and source projection checks passed')
+
+// A later browser snapshot can move away from already-produced cards; completion must reveal the answer once.
+const reading: HarnessSnapshot = { ...comparisonSnapshot, run_id: 'view-regression', phase: 'RESEARCHING', outcome: undefined, version: 1, event_seq: 1, state: { ...comparisonSnapshot.state, turn_id: 1 } }
+useStore.setState({ run: null, cards: [], view: 'browser', activeSessionId: 'view-regression', requestBusy: false })
+useStore.getState().applyHarness(reading)
+useStore.getState().setView('browser')
+const finished: HarnessSnapshot = { ...reading, phase: 'SUCCEEDED', outcome: 'SUCCEEDED', version: 2, event_seq: 2 }
+useStore.getState().applyHarness(finished)
+assert.equal(useStore.getState().view, 'outcome', 'Final answer must become visible after later browser reads')
+useStore.getState().setView('browser')
+useStore.getState().applyHarness(finished)
+assert.equal(useStore.getState().view, 'browser', 'Repeating a completed snapshot must respect manual view selection')
+
+const pageObservations = {
+  ...snapshot, state: { evidence: snapshot.state.evidence, browser_artifacts: [
+    { type: 'browser_page', source: 'browser', url: 'https://example.org/a', title: 'A 店旧观测', data: { text: '旧报价', menu: [{ name: '午餐', price: 88 }], offers: [{ name: '套餐', price: 128 }] } },
+    { type: 'browser_page', source: 'browser', url: 'https://example.org/b', title: 'B 店', data: { text: '另一家店', menu: [{ name: '午餐', price: 90 }] } },
+    { type: 'image', source: 'user', url: 'https://example.org/a', data: { text: '截图一' } },
+    { type: 'image', source: 'user', url: 'https://example.org/a', data: { text: '截图二' } },
+    ...(comparisonSnapshot.state.browser_artifacts as object[]),
+    ...(comparisonSnapshot.state.browser_artifacts as object[]),
+    { type: 'browser_page', source: 'user', url: 'https://example.org/a', data: { text: '用户提供的页面' } },
+    { type: 'browser_page', source: 'browser', data: { text: '无 URL 观测一' } },
+    { type: 'browser_page', source: 'browser', data: { text: '无 URL 观测二' } },
+    { type: 'browser_page', source: 'browser', url: 'https://example.org/a', title: 'A 店最新观测', observed_at: '2026-09-08T14:00:00Z', data: { text: '最新报价', menu: [{ name: '午餐', price: 68 }], offers: [{ name: '套餐', price: 108 }] } }
+  ] }
+}
+const originalObservations = structuredClone(pageObservations)
+const latestPages = projectHarness(pageObservations)
+assert.deepEqual(latestPages.cards.filter(c => c.kind === 'dishes').map(c => [c.shopName, c.dishes[0].price]), [['B 店', 90], ['A 店最新观测', 68]], 'Latest prices replace earlier observations only for the same page')
+assert.deepEqual(latestPages.cards.filter(c => c.kind === 'groupbuy').map(c => c.packages[0].price), [108])
+assert.deepEqual(latestPages.cards.filter(c => c.kind === 'browser_page').map(c => c.text), ['另一家店', '截图一', '截图二', '用户提供的页面', '无 URL 观测一', '无 URL 观测二', '最新报价'])
+assert.equal(latestPages.cards.filter(c => c.kind === 'browser_page').at(-1)?.observedAt, '2026-09-08T14:00:00Z')
+assert.equal(latestPages.cards.filter(c => c.kind === 'price_comparison').length, 2, 'Non-page comparison artifacts remain separate')
+assert.deepEqual(pageObservations, originalObservations, 'Projection must preserve all raw audit artifacts and evidence')
+assert.deepEqual(latestPages.evidence, projected.evidence)
+console.log('Latest browser page observation projection checks passed')

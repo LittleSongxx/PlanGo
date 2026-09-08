@@ -1,7 +1,7 @@
 """Independent user-outcome acceptance cases; all model, DOM and world inputs are TEST fixtures.
 
 No network, credentials, sibling checkout, or imported Planora evaluation answers.
-Run: .venv/bin/python -m pytest backend/tests/test_task_quality.py -q
+Run: conda run -n planora python -m pytest backend/tests/test_task_quality.py -q
 """
 
 import tempfile

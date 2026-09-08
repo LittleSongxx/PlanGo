@@ -1,0 +1,92 @@
+{
+  "date": "2026-09-08T13:16:07.055734+00:00",
+  "branch": "feat/planora-browser-harness",
+  "runtime_files_matching_deployment": 73,
+  "source_sha256": "581cec74328965e907f6b39d219209189b6b80cde6739918bf0c59dc607d7656",
+  "container_python": "/opt/conda/envs/planora/bin/python",
+  "conda_environment": "planora",
+  "credentials_baked_into_image": false,
+  "services": [
+    {
+      "Service": "api",
+      "State": "running",
+      "Health": "healthy",
+      "Publishers": [
+        {
+          "URL": "127.0.0.1",
+          "TargetPort": 8011,
+          "PublishedPort": 8011,
+          "Protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "Service": "postgres",
+      "State": "running",
+      "Health": "healthy",
+      "Publishers": [
+        {
+          "URL": "",
+          "TargetPort": 5432,
+          "PublishedPort": 0,
+          "Protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "Service": "redis",
+      "State": "running",
+      "Health": "healthy",
+      "Publishers": [
+        {
+          "URL": "",
+          "TargetPort": 6379,
+          "PublishedPort": 0,
+          "Protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "Service": "worker",
+      "State": "running",
+      "Health": "",
+      "Publishers": [
+        {
+          "URL": "",
+          "TargetPort": 8011,
+          "PublishedPort": 0,
+          "Protocol": "tcp"
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "python_tests": 47,
+    "python_subtests": 35,
+    "mypy_files": 63,
+    "real_chromium_assertions": 39,
+    "deployment_api_checks": 23,
+    "npm_check": "passed",
+    "conda_full_stack": "passed",
+    "deployed_full_stack": "passed",
+    "independent_copied_source": "passed",
+    "migration_chain": "passed",
+    "amap_from_container": "passed"
+  },
+  "cleanup": {
+    "deleted_tracked_files": 46,
+    "obsolete_environment_and_cache_bytes_removed": 341714873,
+    "historical_evaluation_reports_preserved": true
+  },
+  "desktop": {
+    "started_on_user_display": true,
+    "command": "env -u ELECTRON_RUN_AS_NODE npm run dev",
+    "backend_url": "http://127.0.0.1:8011",
+    "browser_sandbox_enabled": true
+  },
+  "not_validated": [
+    "Map JavaScript SDK rendering: JS key and security code missing",
+    "Merchant account booking/payment/settlement",
+    "General live-agent task success rate"
+  ]
+}

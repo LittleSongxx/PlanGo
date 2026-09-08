@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Bounded, read-only live checks using only this checkout's ignored .env.
 
-Run: .venv/bin/python scripts/check_live_services.py
+Run: conda run --no-capture-output -n planora python scripts/check_live_services.py
 Two model requests at most (one structured request and its optional repair), one
 public Amap geocode, no browser execution or business side effects. The model
 input is synthetic test data. Reports never contain keys, prompts or raw replies.

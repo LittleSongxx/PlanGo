@@ -5,6 +5,9 @@ permissions:
 jobs:
   integration:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -14,12 +17,17 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+      - uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: '26.5.3-0'
+          activate-environment: planora
+          python-version: '3.12'
       - run: npm ci
-      - run: npm run setup:backend
+      - run: npm run setup:backend -- --dev
       - run: npm run check
-      - run: uv run --frozen ruff check backend/yoyu backend/tests
-      - run: MYPYPATH=backend:vendor/planora/backend uv run --frozen mypy backend/yoyu vendor/planora/backend/planora
-      - run: uv run --frozen python backend/yoyu/migrations/check.py
+      - run: python -m ruff check backend/yoyu backend/tests
+      - run: MYPYPATH=backend:vendor/planora/backend python -m mypy backend/yoyu vendor/planora/backend/planora
+      - run: python backend/yoyu/migrations/check.py
       - run: npm run test:independent
       - run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:browser
       - run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop

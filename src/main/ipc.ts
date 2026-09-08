@@ -116,7 +116,7 @@ export function registerIpc(): void {
     resolveBrowserAction(payload.id, payload.result)
   })
 
-  handle(IPC.getConfig, () => ({ config: { ...getConfigMasked(), dataSource: 'amap', harness: { baseURL: getHarnessEnvironment().YOYU_BACKEND_URL || 'http://127.0.0.1:8011', autoStart: getHarnessEnvironment().YOYU_BACKEND_AUTOSTART !== 'false' } }, cities: [] }))
+  handle(IPC.getConfig, () => ({ config: { ...getConfigMasked(), harness: { baseURL: getHarnessEnvironment().YOYU_BACKEND_URL || 'http://127.0.0.1:8011', autoStart: getHarnessEnvironment().YOYU_BACKEND_AUTOSTART !== 'false' } }, cities: [] }))
   handle(IPC.setConfig, async (raw: unknown) => {
     const patch = z.object({
       llm: z.object({ apiKey: z.string().max(2048), baseURL: z.string().url(), model: z.string().min(1).max(200) }).partial().optional(),
@@ -133,13 +133,11 @@ export function registerIpc(): void {
     return getConfigMasked()
   })
   handle(IPC.pingLlm, () => pingLlm())
-  handle('config:setSource', () => 'amap')
   handle(IPC.listSkills, () => listSkills())
   handle(IPC.toggleSkill, (skillId: string, enabled: boolean) => { toggleSkill(id.parse(skillId), z.boolean().parse(enabled)); return listSkills() })
 
   handle(IPC.imStatus, () => ({ connected: false, note: '微信渠道尚未连接。可以使用真实方案二维码分享。' }))
   handle(IPC.imLoginQr, () => ({ dataUrl: '', note: '尚未配置可用的微信渠道；没有可登录的二维码。' }))
-  handle('im:simulate', () => { throw new Error('正常运行不注入模拟微信消息。') })
   handle(IPC.proactiveList, async () => (await getHarness()).request('/api/v1/reminders'))
   handle('proactive:trigger', () => { throw new Error('提醒由真实计划或订阅事件触发。') })
   handle(IPC.memoryGet, () => memoryProfile())
