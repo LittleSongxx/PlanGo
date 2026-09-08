@@ -1,14 +1,8 @@
 // 自动定位：确定用户当前所在城市（跑在用户机器上时，出站走用户真实 IP）。
 // 优先级：高德 IP 定位 → pconline 归属地 → ip-api → 配置默认城市。用户可在设置页手动覆盖。
 import { getConfig, setConfig } from './config'
-
-export interface LocationInfo {
-  city: string
-  province?: string
-  district?: string
-  source: 'amap-ip' | 'pconline' | 'ip-api' | 'config' | 'manual'
-  coords?: string // "lng,lat" GCJ02
-}
+import { locationPriority, type LocationInfo } from '../shared/location'
+export type { LocationInfo } from '../shared/location'
 
 let cached: LocationInfo | null = null
 
@@ -95,31 +89,35 @@ async function viaIpApi(): Promise<LocationInfo | null> {
 }
 
 export async function detectLocation(force = false): Promise<LocationInfo> {
-  if (cached && !force) return cached
+  if (!force && (cached || locationPriority(getLocation().source) >= 3)) return getLocation()
   const chain = [viaAmap, viaPconline, viaIpApi]
   for (const fn of chain) {
     try {
       const r = await fn()
       if (r && r.city) {
-        cached = r
-        // 写回配置，让规划默认用这个城市（坐标作圆心）
-        setConfig(r.coords ? { city: r.city, coords: r.coords } : { city: r.city })
-        return r
+        if (locationPriority(getLocation().source) > locationPriority(r.source)) return getLocation()
+        return setReportedLocation(r)
       }
     } catch {
       /* next */
     }
   }
-  cached = { city: getConfig().city, source: 'config' }
-  return cached
+  return getLocation()
 }
 
 export function getLocation(): LocationInfo {
-  return cached || { city: getConfig().city, source: 'config' }
+  const config = getConfig()
+  // Saved device/IP coordinates are a configured fallback until observed again during this launch.
+  return cached || { city: config.city, coords: config.coords, source: ['manual', 'address'].includes(config.location.source) ? config.location.source : 'config', district: config.location.district }
 }
 
-export function setManualCity(city: string): LocationInfo {
-  cached = { city: normalizeCity(city), source: 'manual' }
-  setConfig({ city: cached.city, coords: '' })
+export function setReportedLocation(location: LocationInfo, userInitiated = false): LocationInfo {
+  if (!userInitiated && locationPriority(getLocation().source) > locationPriority(location.source)) return getLocation()
+  const next = { ...location, city: normalizeCity(location.city || getConfig().city) }
+  if (!next.coords || !['gps', 'amap-gps'].includes(next.source)) delete next.accuracy
+  setConfig({ city: next.city, coords: next.coords || '', location: { source: next.source, accuracy: next.accuracy || 0, district: next.district || '' } })
+  cached = next
   return cached
 }
+
+export function setManualCity(city: string): LocationInfo { return setReportedLocation({ city, source: 'manual' }, true) }

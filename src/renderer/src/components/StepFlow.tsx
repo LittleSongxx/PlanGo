@@ -1,5 +1,5 @@
 import type { AgentStep } from '@shared/types'
-import { CheckCircle2, Circle, Loader2, XCircle } from 'lucide-react'
+import { CheckCircle2, Circle, Clock3, Loader2, XCircle } from 'lucide-react'
 import { SourceBadge } from './SourceBadge'
 
 export function StepFlow({ steps }: { steps: AgentStep[] }): JSX.Element {
@@ -12,9 +12,11 @@ export function StepFlow({ steps }: { steps: AgentStep[] }): JSX.Element {
             <CheckCircle2 size={14} className="text-green-500 shrink-0" />
           ) : s.status === 'error' ? (
             <XCircle size={14} className="text-red-400 shrink-0" />
-          ) : (
+          ) : s.status === 'waiting' ? (
+            <Clock3 size={14} className="text-amber-500 shrink-0" />
+          ) : s.status === 'running' ? (
             <Loader2 size={14} className="text-brand-ink shrink-0 spin" />
-          )}
+          ) : <Circle size={14} className="text-neutral-400 shrink-0" />}
           <span className={s.status === 'error' ? 'text-red-500' : ''}>{s.label}</span>
           {s.detail && <span className="text-neutral-400 truncate">· {s.detail}</span>}
           {s.source && <SourceBadge source={s.source} />}

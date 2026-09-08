@@ -23,14 +23,16 @@
     "test:full-stack": "conda run --no-capture-output -n plango electron --no-sandbox scripts/full-stack-smoke.cjs",
     "test:deployed": "conda run --no-capture-output -n plango electron --no-sandbox scripts/full-stack-smoke.cjs --deployed",
     "test:llm": "tsx scripts/check-llm.ts",
-    "check": "npm run typecheck && npm run test:desktop-storage && npm run test:ui && npm run test:llm && npm run test:transport && npm run test:share && npm run test:backend && npm run build",
+    "check": "npm run typecheck && npm run test:desktop-storage && npm run test:desktop-correctness && npm run test:ui && npm run test:llm && npm run test:transport && npm run test:share && npm run test:backend && npm run build",
     "upstream:check": "conda run --no-capture-output -n plango python scripts/sync_planora.py check",
     "test:share": "tsx scripts/check-share.ts",
     "test:independent": "conda run --no-capture-output -n plango python scripts/check_independent.py",
     "services:up": "docker compose up --build -d --wait",
     "services:down": "docker compose down",
     "test:desktop-storage": "tsx scripts/check-desktop-storage.ts",
-    "test:desktop-storage-browser": "node scripts/desktop-storage-regression.cjs"
+    "test:desktop-storage-browser": "node scripts/desktop-storage-regression.cjs",
+    "test:desktop-correctness": "tsx scripts/check-desktop-correctness.ts",
+    "test:map-title": "electron --no-sandbox scripts/map-title-regression.cjs"
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",

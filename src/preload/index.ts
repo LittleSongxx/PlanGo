@@ -1,6 +1,7 @@
 // preload：一能力一方法，contextBridge 暴露给渲染层。
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
+import type { LocationInfo } from '../shared/location'
 
 const api = {
   desktopReady: () => ipcRenderer.invoke('desktop:ready'),
@@ -80,7 +81,7 @@ const api = {
   detectLocation: () => ipcRenderer.invoke('location:detect'),
   setCity: (city: string) => ipcRenderer.invoke(IPC.locationSet, city),
   onLocation: (cb: (l: unknown) => void) => sub(IPC.locationUpdate, cb),
-  reportLocation: (p: { city?: string; coords?: string }) => ipcRenderer.invoke('location:report', p),
+  reportLocation: (p: LocationInfo & { userInitiated?: boolean }) => ipcRenderer.invoke('location:report', p),
 
   // 高德 JS SDK + 外链
   getAmapJsConfig: () => ipcRenderer.invoke('amap:jsConfig'),

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { X, Wifi, Puzzle, MessageCircle, Bell, Database, Brain, MapPin } from 'lucide-react'
 import { detectViaAMap, geocodeAddress } from '../lib/amap'
+import { locationLabel } from '@shared/location'
 
 export function SettingsDrawer(): JSX.Element | null {
   const open = useStore((s) => s.settingsOpen)
@@ -118,14 +119,15 @@ function LocationSection(): JSX.Element {
   // 重新定位：客户端 GPS（会触发系统定位授权），精确到街道
   const redetect = async () => {
     setBusy(true)
-    setMsg('正在请求 GPS 定位（首次可能弹出系统授权，请允许）…')
+    setMsg('正在请求设备定位（首次可能弹出系统授权）…')
     try {
       const l = await detectViaAMap()
       if (l?.coords || l?.city) {
-        setLocationInfo({ city: l.city, district: l.district, coords: l.coords, source: l.source, accuracy: l.accuracy })
-        window.plango.reportLocation({ city: l.city, coords: l.coords })
-        setMsg(l.source === 'gps' || l.source === 'amap-gps' ? `已精确定位到 ${l.city}${l.district ? '·' + l.district : ''}` : `仅取到城市级：${l.city}（GPS 不可用，可在下方手动指定我的位置）`)
+        const saved = await window.plango.reportLocation({ ...l, city: l.city || city, userInitiated: true })
+        setLocationInfo(saved)
+        setMsg(`${locationLabel(saved.source, saved.accuracy)}：${saved.city}${saved.district ? '·' + saved.district : ''}`)
       } else setMsg('定位失败，请检查网络或在下方手动指定')
+    } catch { setMsg('定位或保存失败，请重试；未确认的位置不会用于规划。')
     } finally {
       setBusy(false)
     }
@@ -138,17 +140,18 @@ function LocationSection(): JSX.Element {
     try {
       const l = await geocodeAddress(c, city && city !== '定位中…' ? city : undefined)
       if (l?.coords) {
-        setLocationInfo({ city: l.city || city, district: l.district, coords: l.coords, source: 'gps', accuracy: 30 })
-        window.plango.reportLocation({ city: l.city || city, coords: l.coords })
+        const saved = await window.plango.reportLocation({ ...l, city: l.city || city, userInitiated: true })
+        setLocationInfo(saved)
         setMsg(`已把「${c}」设为我的位置`)
         setInput('')
       } else {
         // 兜底：仅当城市名处理
         const r = await window.plango.setCity(c)
-        setLocationInfo({ city: r.city, source: 'manual' })
+        setLocationInfo(r)
         setMsg(`已设为城市：${r.city}`)
         setInput('')
       }
+    } catch { setMsg('地址解析或保存失败，请检查网络后重试。')
     } finally {
       setBusy(false)
     }
@@ -159,19 +162,19 @@ function LocationSection(): JSX.Element {
       <div className="flex items-center gap-2">
         <span className="text-lg font-semibold text-brand-ink">{city}{district ? ' · ' + district : ''}</span>
         <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${precise ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-          {precise ? `GPS精确${locAccuracy ? ' ±' + Math.round(locAccuracy) + 'm' : ''}` : 'IP城市级'}
+          {locationLabel(citySource, locAccuracy)}
         </span>
         <button onClick={redetect} disabled={busy} className="ml-auto text-xs px-2 py-1 rounded-lg bg-brand text-brand-ink disabled:opacity-50">
-          {busy ? '定位中…' : '重新定位(GPS)'}
+          {busy ? '定位中…' : '重新定位'}
         </button>
       </div>
       {coords && <div className="mt-1 text-[11px] text-neutral-400">坐标：{coords}</div>}
       <div className="flex gap-1.5 mt-2">
-        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} placeholder="手动指定我的位置，如 深圳湾科技生态园 / 南山区" className="flex-1 text-xs border border-neutral-200 rounded px-2 py-1" />
+        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} placeholder="手动指定我的位置，如 重庆解放碑 / 观音桥" className="flex-1 text-xs border border-neutral-200 rounded px-2 py-1" />
         <button onClick={apply} disabled={busy} className="text-xs px-2 py-1 rounded bg-brand text-brand-ink disabled:opacity-50">设为我的位置</button>
       </div>
-      {msg && <div className="mt-1 text-[11px] text-brand-ink">{msg}</div>}
-      <div className="mt-1 text-[11px] text-neutral-400">桌面 GPS 需系统授权（系统设置→隐私与安全性→定位服务）。拿不到就手动指定地标，规划会以此为圆心搜"附近"。</div>
+      {msg && <div role="status" className="mt-1 text-[11px] text-brand-ink">{msg}</div>}
+      <div className="mt-1 text-[11px] text-neutral-400">设备定位需系统授权。也可手动指定地标作为规划起点；地址解析不代表设备位置或测量精度。</div>
     </Section>
   )
 }

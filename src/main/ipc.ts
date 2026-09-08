@@ -9,7 +9,8 @@ import { getHarness, harnessStatus, restartHarness } from './harness'
 import { getConfig, getConfigMasked, getHarnessEnvironment, setConfig } from './config'
 import { pingLlm } from './llm'
 import { listSkills, toggleSkill } from './skills/loader'
-import { detectLocation, getLocation, setManualCity } from './location'
+import { detectLocation, getLocation, setManualCity, setReportedLocation } from './location'
+import { locationSources } from '../shared/location'
 import { createShare, getShareFeedback } from './share/server'
 import { computeLiveDiscover } from './discover'
 import { projectHarness } from '../renderer/src/lib/harnessProjection'
@@ -158,9 +159,15 @@ export function registerIpc(): void {
   handle('location:detect', () => detectLocation(true))
   handle(IPC.locationSet, (city: string) => setManualCity(z.string().min(1).max(80).parse(city)))
   handle('location:report', (raw: unknown) => {
-    const p = z.object({ city: z.string().min(1).max(80).optional(), coords: z.string().regex(/^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/).optional() }).parse(raw)
-    setConfig(p)
-    return { city: getConfig().city, coords: getConfig().coords }
+    const p = z.object({ city: z.string().min(1).max(80), coords: z.string().regex(/^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/).optional(),
+      source: z.enum(locationSources), district: z.string().max(80).optional(), accuracy: z.number().finite().nonnegative().optional(), userInitiated: z.boolean().optional()
+    }).parse(raw)
+    if (p.coords) {
+      const [lng, lat] = p.coords.split(',').map(Number)
+      if (Math.abs(lng) > 180 || Math.abs(lat) > 90) throw new Error('坐标超出有效范围')
+    }
+    const { userInitiated, ...location } = p
+    return setReportedLocation(location, userInitiated)
   })
   handle('amap:jsConfig', () => { const a = getConfig().amap; return { jsKey: a.jsKey, jsSecurity: a.jsSecurity, webKey: a.key } })
   handle('shell:openExternal', async (raw: unknown) => {

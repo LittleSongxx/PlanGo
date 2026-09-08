@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from plango_harness.agent.contracts import PlaceCandidate, PlanDraft, PlanDraftStop, TripSpec
+from plango_harness.agent.contracts import Evidence, PlaceCandidate, PlanDraft, PlanDraftStop, TripSpec
 from plango_harness.agent.model_adapter import ModelAdapter
 from plango_harness.domain.planning import place_fits
 
@@ -19,8 +19,9 @@ class PlannerAgent:
         spec: TripSpec,
         places: list[PlaceCandidate],
         advocate_reports: list[Any],
+        evidence: list[Evidence] | None = None,
     ) -> PlanDraft:
-        fallback = self._fallback(spec, places, advocate_reports)
+        fallback = self._fallback(spec, places, advocate_reports, evidence)
         catalog = [
             {
                 "place_id": place.place_id,
@@ -60,6 +61,7 @@ class PlannerAgent:
         spec: TripSpec,
         places: list[PlaceCandidate],
         advocate_reports: list[Any] | None = None,
+        evidence: list[Evidence] | None = None,
     ) -> PlanDraft:
         if not places:
             raise ValueError("no_observed_places")
@@ -97,7 +99,7 @@ class PlannerAgent:
             value -= report_penalty.get(place.place_id, 0.0)
             return value
 
-        eligible = [place for place in places if place_fits(spec, place)]
+        eligible = [place for place in places if place_fits(spec, place, evidence)]
         ordered = sorted(eligible or places, key=lambda p: (not p.price_known, p.average_price, -score(p)))
         goals = list(dict.fromkeys([*(c for c in spec.activity_order if c in spec.required_activities), *spec.required_activities]))
         selected: list[PlaceCandidate] = []

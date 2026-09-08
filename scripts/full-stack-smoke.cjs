@@ -175,7 +175,7 @@ async function main() {
     commands = Number(databaseCheck.stdout.trim())
   }
   await sleep(300)
-  const evidenceDirectory = join(root, 'eval/plango-r0')
+  const evidenceDirectory = join(root, 'eval/plango-p0')
   mkdirSync(evidenceDirectory, { recursive: true })
   const screenshot = join(evidenceDirectory, deployed ? 'deployed-desktop.png' : 'full-stack-desktop.png')
   writeFileSync(screenshot, (await bounded(window.webContents.capturePage(), 'final screenshot')).toPNG())

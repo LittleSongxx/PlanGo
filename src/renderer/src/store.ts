@@ -362,10 +362,10 @@ export const useStore = create<State>((set, get) => ({
   setLocationInfo: (info) =>
     set((s) => ({
       city: info.city || s.city,
-      district: info.district ?? s.district,
-      coords: info.coords || s.coords,
+      district: info.district ?? '',
+      coords: info.coords ?? '',
       citySource: info.source ?? s.citySource,
-      locAccuracy: info.accuracy ?? s.locAccuracy
+      locAccuracy: info.accuracy ?? 0
     })),
   // 页面内导航：在内置浏览器新开一个标签打开高德网页版路线（不跳系统外部浏览器）
   navigateInApp: (url) => {

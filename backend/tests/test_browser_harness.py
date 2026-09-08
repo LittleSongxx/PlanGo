@@ -523,6 +523,29 @@ class ActionAndPlanningCheck(unittest.TestCase):
                 )
 
 
+                accepted = client.post(
+                    "/api/v1/runs/" + run_id + "/resume",
+                    json={"decision": "approve", "interrupt_id": updated["interrupt_id"]},
+                )
+                self.assertEqual(accepted.status_code, 202, accepted.text)
+                preparing = wait_for(client, run_id, lambda v: bool(v["state"].get("execution_goal")) and bool(v["state"].get("browser_wait")))
+                execution_goal = preparing["state"]["execution_goal"]
+                self.assertEqual(execution_goal["plan_id"], updated["state"]["selected_plan"]["plan_id"])
+                self.assertEqual(execution_goal["plan_version"], 2)
+                self.assertEqual(execution_goal["requirements"]["party_size"], 2)
+                self.assertEqual({s["place_id"] for s in execution_goal["stops"]}, set(ids))
+                self.assertEqual(preparing["state"]["browser_task_context"]["kind"], "prepare")
+                handoff_command = client.get("/api/v1/browser/commands?browser_session_id=fixture-desktop").json()["commands"][0]
+                client.post(
+                    "/api/v1/browser/commands/" + handoff_command["command_id"] + "/result",
+                    json={**fixture(handoff_command), "text": "帮助中心：账号设置", "tables": []},
+                )
+                not_finished = wait_for(client, run_id, lambda v: v["phase"] in {"PARTIAL_FAILED", "FAILED", "SUCCEEDED"})
+                self.assertEqual(not_finished["phase"], "PARTIAL_FAILED", not_finished)
+                self.assertEqual(not_finished["state"]["execution_goal"], execution_goal)
+                self.assertEqual(not_finished["state"].get("action_results", []), [])
+
+
 class BoundaryCheck(unittest.TestCase):
     def test_settings_ignore_foreign_environment_and_image_uses_budgeted_adapter(self):
         import os

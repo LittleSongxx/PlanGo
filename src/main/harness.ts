@@ -67,7 +67,7 @@ async function connect(): Promise<HarnessClient> {
       const coordinates = config.coords.split(',').map(Number)
       const valid = config.coords && coordinates.length === 2 && coordinates.every(Number.isFinite) && Math.abs(coordinates[0]) <= 180 && Math.abs(coordinates[1]) <= 90
       const source = getLocation().source
-      return { city: config.city, ...(valid ? { longitude: coordinates[0], latitude: coordinates[1] } : {}), source: source === 'manual' ? 'manual' : source === 'config' ? 'config' : 'device' }
+      return { city: config.city, ...(valid ? { longitude: coordinates[0], latitude: coordinates[1] } : {}), source: source === 'manual' || source === 'address' ? 'manual' : source === 'config' ? 'config' : 'device' }
     },
     remind: (notification) => {
       const window = getMainWindow()

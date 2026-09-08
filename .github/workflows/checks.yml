@@ -34,4 +34,5 @@ jobs:
       - run: npm run test:independent
       - run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:browser
       - run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop
+      - run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:map-title
       - run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:full-stack

@@ -11,7 +11,10 @@ app.commandLine.appendSwitch('no-proxy-server')
 app.commandLine.appendSwitch('disable-gpu')
 
 const fixture = '<!doctype html><html><body><h1>真实菜单测试页</h1><table><tr><th>菜品</th><th>价格</th></tr><tr><td>双人套餐</td><td>128 元</td></tr></table><button id="submit" onclick="window.submits=(window.submits||0)+1">预约</button><input id="search" placeholder="搜索"><p id="result"></p></body></html>'
-const server = createServer((_req, res) => { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(fixture) })
+const server = createServer((req, res) => {
+  if (req.url === '/redirect') { res.writeHead(302, { Location: '/redirected' }); res.end(); return }
+  res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(fixture)
+})
 let window
 
 async function main() {
@@ -147,6 +150,31 @@ globalThis.__browserTestResult = (async () => {
   activateRendererBrowserRun('run-new')
   const nextTurnWrite = await execute(command('click', { idx: 0 }, { run_id: 'run-new', tab_id: 'tab-b', expected_snapshot_id: sameRunPage.snapshot_id, approved_action_id: 'next-turn-approved' }))
   assert(nextTurnWrite.ok && (await b.page('window.submits')) === 1, 'ordinary approval activation retains current-turn snapshot')
+  const nav = await makeTab('tab-navigation')
+  setActiveWebview(nav.wv, 'tab-navigation')
+  await nav.page("var a=document.createElement('a');a.id='navigation';a.href=location.origin+'/next';a.textContent='下一页';a.onclick=function(){localStorage.setItem('unwanted-click','yes')};document.body.appendChild(a);true")
+  const navigationPage = await execute(command('snapshot', {}, { run_id: 'navigation-run' }))
+  const link = navigationPage.elements.find(el => el.text === '下一页')
+  assert(link.href === ${JSON.stringify(url)} + 'next', 'snapshot exposes the actual ordinary anchor URL')
+  const navPin = { run_id: 'navigation-run', tab_id: 'tab-navigation', expected_snapshot_id: navigationPage.snapshot_id }
+  assert((await execute(command('click', { idx: link.idx }, navPin))).error_kind === 'approval_required', 'native anchor navigation still requires approval')
+  await nav.page("document.querySelector('#navigation').href=location.origin+'/changed';true")
+  assert((await execute(command('click', { idx: link.idx }, { ...navPin, approved_action_id: 'navigation-approved' }))).error_kind === 'stale_snapshot', 'changed href invalidates approval snapshot')
+  await nav.page("document.querySelector('#navigation').href=location.origin+'/next';true")
+  await nav.page("var cover=document.createElement('div');cover.id='cover';cover.style.cssText='position:fixed;inset:0;z-index:999999;background:white';document.body.appendChild(cover);true")
+  const coveredNav = await execute(command('snapshot', {}, { run_id: 'navigation-run', tab_id: 'tab-navigation' }))
+  assert((await execute(command('click', { idx: link.idx }, { ...navPin, expected_snapshot_id: coveredNav.snapshot_id, approved_action_id: 'navigation-approved' }))).error_kind === 'element_obscured', 'an obscured anchor cannot navigate')
+  await nav.page("document.querySelector('#cover').remove();true")
+  const currentNav = await execute(command('snapshot', {}, { run_id: 'navigation-run', tab_id: 'tab-navigation' }))
+  const anchorNavigation = await execute(command('click', { idx: link.idx }, { ...navPin, expected_snapshot_id: currentNav.snapshot_id, approved_action_id: 'navigation-approved' }))
+  assert(anchorNavigation.ok && anchorNavigation.interaction_kind === 'navigation' && anchorNavigation.url === link.href, 'bound anchor navigates in the same visible browser tab')
+  assert(await nav.page("localStorage.getItem('unwanted-click')===null"), 'native navigation does not dispatch an untrusted page click handler')
+  assert((await execute(command('snapshot', {}, { run_id: 'navigation-run', tab_id: 'tab-navigation' }))).ok, 'the same run continues observing after a navigation click')
+  await nav.page("var redirect=document.createElement('a');redirect.href=location.origin+'/redirect';redirect.textContent='跳转测试';document.body.appendChild(redirect);true")
+  const beforeRedirect = await execute(command('snapshot', {}, { run_id: 'navigation-run', tab_id: 'tab-navigation' }))
+  const redirectLink = beforeRedirect.elements.find(el => el.text === '跳转测试')
+  const redirected = await execute(command('click', { idx: redirectLink.idx }, { ...navPin, expected_snapshot_id: beforeRedirect.snapshot_id, approved_action_id: 'redirect-approved' }))
+  assert(redirected.outcome === 'unknown' && redirected.error_kind === 'navigation_redirected' && !redirected.interaction_kind, 'redirected navigation is UNKNOWN and cannot masquerade as the approved target')
   return { checks }
 })()
 `

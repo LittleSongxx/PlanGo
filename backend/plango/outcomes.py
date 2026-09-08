@@ -6,14 +6,31 @@ import json
 import math
 import re
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
+from typing import Any, Literal
 
-PLANNING = re.compile(r"行程|出行规划|路线规划|安排.{0,12}(?:半天|一天|游玩)")
+from plango_harness.agent.contracts import PlanStop, TripSpec
+from pydantic import BaseModel, ConfigDict, Field
+
+PLANNING = re.compile(r"行程|出行规划|路线规划|(?:帮我|给我|请)(?:做|制定)?规划|规划(?:一下|一份|重庆|出游|旅游|路线)|安排.{0,12}(?:半天|一天|游玩)")
 BROWSER = re.compile(
     r"浏览器|网页|网站|菜单|点菜|团购|比价|比较|对比|挑选|推荐|外卖|购物|下单|预约|预订|订位|订座|取号|排队号|送花|攻略|截图|支付|付款|取消订单|https?://"
 )
 WRITE = re.compile(r"预约|预订|订位|订座|取号|领号|下单|提交|支付|付款|发送|取消订单|购买")
 REASONING = re.compile(r"比价|比较|对比|挑选|推荐|最便宜|最佳|哪家|差价|差额|(?:计算|算一下|算算).{0,80}(?:总价|价格|费用)")
+
+
+class ExecutionGoal(BaseModel):
+    """The approved itinerary carried into browser preparation, never a page-write grant."""
+
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["itinerary_preparation"] = "itinerary_preparation"
+    run_id: str
+    plan_id: str
+    plan_version: int = Field(ge=1)
+    approval_id: str
+    request: str
+    requirements: TripSpec
+    stops: list[PlanStop] = Field(min_length=1)
 
 
 def update_task_context(state: dict[str, Any]) -> dict[str, Any]:
@@ -43,7 +60,9 @@ def update_task_context(state: dict[str, Any]) -> dict[str, Any]:
         if text != context.get("latest"):
             context["edits"] = [*context.get("edits", []), text]
     # An explicit new objective replaces task kind; a field-only edit retains it.
-    if WRITE.search(text) and not re.search(
+    if mode == "planning":
+        context["kind"] = "planning"
+    elif WRITE.search(text) and not re.search(
         r"不(?:要|用|再).{0,4}(?:预约|下单|支付)|别.{0,3}(?:预约|下单)", text
     ):
         context["kind"] = "write"
@@ -298,6 +317,7 @@ def browser_context(state: dict[str, Any], budget: int = 7500) -> str:
     value: dict[str, Any] = {
         "task": {k: v for k, v in context.items() if k != "turn_id"},
         "current_request": state.get("input_text"),
+        "execution_goal": state.get("execution_goal"),
         "step": state.get("browser_steps"),
         "artifacts": [
             {

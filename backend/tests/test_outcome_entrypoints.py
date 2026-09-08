@@ -89,6 +89,21 @@ class OutcomeEntrypointQuality(unittest.TestCase):
                         "未完成比较仍应保留来源为用户的截图观测",
                     )
 
+    def test_image_planning_request_enters_planning_after_ocr(self):
+        with tempfile.TemporaryDirectory() as directory:
+            app = create_app(settings(directory).model_copy(update={"openai_api_key": "offline-fixture-replaced"}), token=TOKEN)
+            app.state.runtime.model.structured = literal_facts_only
+            with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
+                run_id = client.post("/api/v1/runs", json={
+                    "input_text": "我上传了一张攻略截图，请提取里面的地点、菜品和约束，结合真实信息帮我规划。",
+                    "browser_session_id": "fixture-desktop", "image": PNG,
+                }).json()["run_id"]
+                result = wait_for(client, run_id, lambda v: v["phase"] in TERMINAL or v["state"].get("browser_wait") or v["state"].get("clarification"))
+                self.assertEqual(result["state"]["browser_task_context"]["mode"], "planning")
+                self.assertEqual(result["state"]["browser_task_context"]["kind"], "planning")
+                self.assertNotEqual(result["phase"], "SUCCEEDED", "OCR不能冒充完整规划")
+                self.assertTrue(any(a["type"] == "image" for a in result["state"]["browser_artifacts"]))
+
     def test_image_comparison_requires_more_than_ocr(self):
         self.check_requested_arithmetic(
             "比较截图里的雾岚餐厅和杉木餐厅，3人，总预算240元，推荐便宜的一家并说明差价",

@@ -8,7 +8,8 @@ from pathlib import Path
 
 from alembic import command as migration_command
 from alembic.config import Config
-from plango_harness.agent.contracts import RunPhase
+from plango_harness.agent.contracts import ActionProposal, PlanCandidate, RunPhase, TripSpec
+from plango_harness.domain.planning import verify_plan
 from plango_harness.persistence.database import agent_run
 from plango_harness.runtime import TERMINAL_PHASES, PlanGoRuntime
 from plango_harness.tools.registry import ToolRegistry
@@ -16,6 +17,7 @@ from sqlalchemy import func, select, text, update
 
 from .browser import BrowserBridge, bindings, commands, run_context
 from .graph import artifact, build_desktop_graph
+from .outcomes import ExecutionGoal
 from .planning import BrowserPlanEngine
 from .skills import list_skill_adverts
 from .world import BrowserWorld
@@ -35,15 +37,31 @@ class BrowserTools(ToolRegistry):
         return result
 
     async def prepare_browser_execution(self, state):
-        plan = state.get("selected_plan")
-        if not plan or state.get("approval_decision") != "approve":
+        if not state.get("selected_plan") or state.get("approval_decision") != "approve" or not state.get("action_proposal"):
             raise ValueError("itinerary_not_approved")
-        names = "、".join(stop.name for stop in plan.stops)
+        plan = PlanCandidate.model_validate(state["selected_plan"])
+        proposal = ActionProposal.model_validate(state["action_proposal"])
+        if (proposal.run_id != state["run_id"] or proposal.plan_id != plan.plan_id
+                or proposal.plan_version != plan.version):
+            raise ValueError("stale_itinerary_approval")
+        expiry = proposal.expires_at
+        if expiry and expiry.replace(tzinfo=expiry.tzinfo or timezone.utc) <= datetime.now(timezone.utc):
+            raise ValueError("itinerary_approval_expired")
+        spec = TripSpec.model_validate(state["trip_spec"])
+        checked = await verify_plan(spec, plan, None, evidence=state.get("evidence", []), weather=state.get("weather"))
+        if not checked.executable:
+            raise ValueError("itinerary_evidence_requires_revalidation")
+        goal = ExecutionGoal(run_id=state["run_id"], plan_id=plan.plan_id, plan_version=plan.version,
+                             approval_id=proposal.proposal_id, request=(state.get("browser_task_context") or {}).get("request", state["input_text"]), requirements=spec, stops=plan.stops)
         return {
-            "input_text": f"在真实网页准备已选择的行程：{names}。原需求：{state['input_text']}。请读取商家预约/取号界面，任何提交需要新的具体页面审批。",
+            "execution_goal": goal.model_dump(mode="json"),
+            "browser_task_context": {
+                **(state.get("browser_task_context") or {}), "mode": "browser", "kind": "prepare",
+                "request": state["input_text"], "turn_id": state.get("turn_id", 1),
+            },
             "phase": RunPhase.RESEARCHING,
             "execution_started": True,
-            "reason": "正在准备真实浏览器操作，提交前再次核对具体内容。",
+            "reason": "正在准备已批准行程的真实页面；商家、人数、时间仍需核对，每次页面提交单独审批。",
         }
 
 

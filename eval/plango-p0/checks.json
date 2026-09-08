@@ -1,0 +1,21 @@
+{
+  "scope": "controlled unit/DOM fixtures, not merchant fulfillment",
+  "desktop_regressions_before_fix": 11,
+  "map_title": {
+    "before": {
+      "script_executed": true,
+      "images": 1
+    },
+    "after": {
+      "script_executed": false,
+      "images": 0,
+      "literal_title": true
+    }
+  },
+  "real_chromium_checks": 47,
+  "full_stack_fixture_model_tokens": 0,
+  "remaining_preparation_limit": "ExecutionGoal is preserved and arbitrary help pages cannot claim completion; positive merchant/party/time preparation verification remains P2 work.",
+  "python_passed": 76,
+  "python_subtests": 35,
+  "typecheck_build_passed": true
+}

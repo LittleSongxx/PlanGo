@@ -2,6 +2,7 @@
 // 它会在"地图渲染 provider 完全就绪"后才 resolve —— 解决 Electron 里裸 <script> onload 后
 // 立刻 new AMap.Map 抛「No maps provider」的时序问题。
 import AMapLoader from '@amap/amap-jsapi-loader'
+import type { LocationInfo } from '@shared/location'
 
 let loading: Promise<any> | null = null
 
@@ -21,13 +22,7 @@ export function loadAMap(): Promise<any> {
   return loading
 }
 
-export interface DetectedLoc {
-  city: string
-  district?: string
-  coords?: string // "lng,lat" GCJ02
-  source: 'gps' | 'amap-gps' | 'amap-city' | 'ip'
-  accuracy?: number // 米，越小越精确
-}
+export type DetectedLoc = LocationInfo
 
 const normalize = (c: string): string => (c || '').replace(/^中国/, '').replace(/(省|市|自治区|特别行政区)$/, '').trim()
 
@@ -41,8 +36,9 @@ function viaBrowserGPS(AMap: any): Promise<DetectedLoc | null> {
         try {
           AMap.convertFrom([longitude, latitude], 'gps', (status: string, result: any) => {
             const lnglat = status === 'complete' && result?.locations?.[0] ? result.locations[0] : null
-            const lng = lnglat ? lnglat.lng : longitude
-            const lat = lnglat ? lnglat.lat : latitude
+            if (!lnglat) return res(null)
+            const lng = lnglat.lng
+            const lat = lnglat.lat
             const coords = `${lng},${lat}`
             // 逆地理拿城市/区
             try {
@@ -57,7 +53,7 @@ function viaBrowserGPS(AMap: any): Promise<DetectedLoc | null> {
             }
           })
         } catch {
-          res({ city: '', coords: `${longitude},${latitude}`, source: 'gps', accuracy })
+          res(null)
         }
       },
       () => res(null),
@@ -149,8 +145,7 @@ export async function geocodeAddress(address: string, city?: string): Promise<De
           city: normalize(comp.city || comp.province || city || ''),
           district: comp.district || '',
           coords: `${g.location.lng},${g.location.lat}`,
-          source: 'gps',
-          accuracy: 30
+          source: 'address'
         })
       })
     } catch {

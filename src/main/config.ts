@@ -5,6 +5,7 @@ import { join } from 'path'
 // 用默认导入以兼容 headless（tsx）：electron 非运行时下 module.exports 是字符串路径，app 取到 undefined。
 import electron from 'electron'
 import { migrateConfigFile } from './storageMigration'
+import type { LocationSource } from '../shared/location'
 const app = (electron as unknown as { app?: { getPath: (n: string) => string } })?.app
 
 export interface AppConfig {
@@ -12,6 +13,7 @@ export interface AppConfig {
   amap: { key: string; jsKey: string; jsSecurity: string }
   city: string
   coords: string // 用户当前坐标 "lng,lat"（GCJ02），作为周边搜索圆心/行程起点
+  location: { source: LocationSource; accuracy: number; district: string }
 }
 
 export function parseEnv(text: string): Record<string, string> {
@@ -116,7 +118,8 @@ export function getConfig(): AppConfig {
       jsSecurity: env.AMAP_JS_SECURITY || ''
     },
     city: env.PLANGO_CITY || '重庆',
-    coords: env.PLANGO_COORDS || ''
+    coords: env.PLANGO_COORDS || '',
+    location: { source: 'config', accuracy: 0, district: '' }
   }
   const ov = loadOverride()
   cache = deepMerge(base, ov)

@@ -27,10 +27,11 @@ export interface BrowserObservation {
   url?: string
   title?: string
   text?: string
-  elements?: { idx: number; tag: string; role: string; name: string; text: string }[]
+  elements?: { idx: number; tag: string; role: string; name: string; text: string; href?: string }[]
   tables?: { headers: string[]; rows: string[][] }[]
   fields?: Record<string, unknown>
   receipt?: Record<string, unknown>
+  interaction_kind?: 'navigation'
 }
 
 export const browserCommandSchema = z.object({

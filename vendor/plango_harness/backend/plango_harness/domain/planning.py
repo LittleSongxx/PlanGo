@@ -73,20 +73,89 @@ def goal_errors(spec: TripSpec, stops: list[Any]) -> list[str]:
     return errors
 
 
-def place_fits(spec: TripSpec, place: PlaceCandidate) -> bool:
-    """Cheap factual pruning before any supply/route calls; never drops goals."""
+def _place_facts(place: PlaceCandidate | PlanStop, evidence: list[Evidence] | None) -> tuple[list[Evidence], set[str]]:
+    rows = [item for raw in (evidence or []) for item in [Evidence.model_validate(raw)]
+            if item.evidence_id in place.evidence_ids and item.payload.get("place_id") == place.place_id
+            and not item.expired and item.confidence > 0 and item.source_ref and item.observed_at is not None
+            and item.source in {"browser", "user", "dataset"}]
+    # Candidate tags can be provider heuristics; only explicit, linked observations prove constraints.
+    tags: set[str] = set()
+    for item in rows:
+        raw_tags = item.payload.get("tags")
+        if isinstance(raw_tags, list):
+            tags.update(tag for tag in raw_tags if isinstance(tag, str))
+    for item in rows:
+        for clause in re.split(r"[。；;\n]", item.claim):
+            declaration = re.sub(r"^\s*" + re.escape(place.name) + r"\s*[:：]?\s*", "", clause).strip()
+            prefix = r"(?:(?:本店|本餐厅|本场所)\s*)?"
+            for label, pattern in {
+                "室内": r"(?:提供|设有|均为|全部为|全程)?室内(?:用餐|座位|场地)?",
+                "户外": r"(?:仅有|仅限|均为|全部为|全程)?户外(?:用餐|座位|场地)?",
+                "非室内": r"不提供室内(?:用餐|座位|场地)",
+                "非户外": r"不提供户外(?:用餐|座位|场地)",
+                "清淡": r"提供清淡(?:菜品|餐食)|清淡饮食",
+                "不清淡": r"不提供清淡(?:菜品|餐食)",
+                "低卡": r"提供低卡(?:菜品|餐食)|低卡餐食",
+                "亲子": r"适合儿童|亲子友好|欢迎儿童",
+                "不适合儿童": r"不适合儿童|谢绝儿童|成人限定",
+            }.items():
+                if re.fullmatch(prefix + "(?:" + pattern + ")", declaration):
+                    tags.add(label)
+    return rows, tags
+
+
+def place_fact_checks(spec: TripSpec, place: PlaceCandidate | PlanStop, evidence: list[Evidence] | None = None) -> list[ConstraintCheck]:
+    """One three-state decision for candidate pruning and final verification."""
+    constraints = [*spec.hard_constraints, *(c for member in spec.party for c in member.hard_constraints)]
+    rows, tags = _place_facts(place, evidence)
+    checks: list[ConstraintCheck] = []
+
+    def add(name: str, positive: bool, negative: bool, detail: str) -> None:
+        passed = positive if positive != negative else None
+        checks.append(ConstraintCheck(name=f"{name}:{place.place_id}", kind="unknown" if passed is None else "hard", passed=passed, detail=detail))
+
+    if spec.indoor_required or any(c in {"室内", "必须室内", "全程室内"} for c in constraints):
+        add("indoor", "室内" in tags, bool(tags & {"户外", "非室内"}), f"{place.name} 的室内条件：缺失或冲突的观测需补证据")
+    if spec.outdoor_required or any(c in {"户外", "必须户外", "全程户外"} for c in constraints):
+        add("outdoor", "户外" in tags, bool(tags & {"室内", "非户外"}), f"{place.name} 的户外条件：缺失或冲突的观测需补证据")
+    if place.category == "餐厅" and any(c in {"清淡/减脂", "清淡", "减脂", "低卡"} for c in constraints):
+        add("diet", bool(tags & {"清淡", "减脂", "低卡"}), bool(tags & {"不清淡", "高热量", "高油脂"}), f"{place.name} 的饮食条件需要明确观测，缺标签不代表违反")
+    if place.category not in {"餐厅", "咖啡"}:
+        return checks
+    for constraint in constraints:
+        match = re.fullmatch(r"(?:忌口|过敏)[:：]\s*([^，,;；\s]+)", constraint)
+        if not match:
+            continue
+        term = re.escape(match[1])
+        absence, presence, uncertain = False, False, False
+        subject = r"(?:(?:本店(?:所有餐品|全部餐品)?|本餐厅|所有餐品|全部餐品|本菜品|该菜品|本餐品|该餐品|配料|原料|食材)(?:中|均|全部|都)?\s*)?"
+        # ponytail: accept only complete explicit ingredient declarations; richer merchant schemas can replace this bounded grammar.
+        positive = subject + r"(?:不含有?|不添加|未添加|不使用|未使用)\s*" + term + r"(?:成分)?[！!]?"
+        negative = subject + r"(?:含有?|包含|添加|使用)\s*" + term + r"(?:成分)?[！!]?"
+        for item in rows:
+            if re.search(r"交叉接触|交叉污染|痕量", item.claim):
+                uncertain = True
+            for clause in re.split(r"[。；;\n]", item.claim):
+                if not re.search(term, clause):
+                    continue
+                declaration = re.sub(r"^\s*" + re.escape(place.name) + r"\s*[:：]?\s*", "", clause).strip()
+                absent = bool(re.fullmatch(positive, declaration))
+                present = bool(re.fullmatch(negative, declaration))
+                absence |= absent
+                presence |= present
+                uncertain |= not (absent or present)
+        add("avoid:" + match[1], absence and not uncertain, presence and not uncertain,
+            f"{place.name} 的{constraint}需同商家、有效的明确成分声明；未提及或有风险提示时保持未知")
+    return checks
+
+
+def place_fits(spec: TripSpec, place: PlaceCandidate, evidence: list[Evidence] | None = None) -> bool:
+    """Prune known violations; unknown candidates remain available for evidence gathering."""
     if place.category in spec.excluded_activities:
         return False
     if spec.max_distance_km == 0 and _distance_km(spec.location, place.latitude, place.longitude) > 0:
-        # Every leg of a zero-distance route must stay at the origin.
         return False
-    if spec.outdoor_required and "户外" not in place.tags:
-        return False
-    if spec.indoor_required and "室内" not in place.tags:
-        return False
-    if any(tag in spec.hard_constraints for tag in ("清淡/减脂", "清淡", "减脂")) and place.category == "餐厅" and not set(place.tags) & {"清淡", "低卡", "减脂"}:
-        return False
-    return not any(item.startswith("忌口:") and item.split(":", 1)[1] in " ".join([place.name, *place.tags]) for item in spec.hard_constraints)
+    return not any(check.passed is False for check in place_fact_checks(spec, place, evidence))
 
 
 def _draft_error(code: str, detail: str, *, place_id: str | None = None) -> dict[str, Any]:
@@ -652,7 +721,7 @@ class PlanEngine:
 async def verify_plan(
     spec: TripSpec,
     plan: PlanCandidate,
-    world: WorldProvider,
+    world: WorldProvider | None,
     *,
     evidence: list[Evidence] | None = None,
     weather: dict[str, Any] | None = None,
@@ -674,15 +743,6 @@ async def verify_plan(
     # The goal is audit history, not the active constraint set: a later edit
     # can explicitly remove a requirement mentioned in an earlier goal.
     hard_text = " ".join(all_constraints).lower()
-    avoid_terms = {
-        term
-        for term in ("香菜", "海鲜")
-        if term in hard_text
-    }
-    for constraint in all_constraints:
-        match = re.search(r"(?:忌口|过敏)[:：]?\s*([^，,;；\s]+)", constraint)
-        if match:
-            avoid_terms.add(match.group(1))
     strict_queue = "不排队" in hard_text or spec.max_queue_minutes == 0
     low_queue = "低排队" in hard_text or "少排队" in hard_text
     distance_limit = spec.max_distance_km
@@ -810,10 +870,11 @@ async def verify_plan(
             hard.append(ConstraintCheck(name="locked_time", kind="hard", passed=False, detail=f"{stop.name} 无法在锁定时间前到达并完成排队"))
         if stop.requested_dwell_min and stop.end_minute - stop.start_minute < stop.requested_dwell_min:
             soft.append(ConstraintCheck(name="dwell_adjusted", kind="soft", passed=False, detail=f"{stop.name} 停留调整为 {stop.end_minute - stop.start_minute} 分钟，已为出行和排队预留时间"))
-        if (spec.outdoor_required or any(value in {"户外", "必须户外", "全程户外"} for value in all_constraints)) and "户外" not in stop.tags:
-            hard.append(ConstraintCheck(name=f"outdoor:{stop.place_id}", kind="hard", passed=False, detail="场所缺少户外证据"))
-        if (spec.indoor_required or any(value in {"室内", "必须室内", "全程室内"} for value in all_constraints)) and "室内" not in stop.tags:
-            hard.append(ConstraintCheck(name=f"indoor:{stop.place_id}", kind="hard", passed=False, detail=f"{stop.name} 没有室内场馆证据"))
+        for check in place_fact_checks(spec, stop, evidence_rows):
+            if check.passed is None:
+                unknown.append(check)
+            elif check.passed is False:
+                hard.append(check)
         if distance_limit is not None and stop.distance_km > distance_limit:
             hard.append(ConstraintCheck(name=f"distance:{stop.place_id}", kind="hard", passed=False, detail=f"路线 {stop.distance_km:g} 公里超过 {distance_limit:g} 公里上限"))
         if stop.estimated_wait_min is None or "supply_unknown" in stop.tags:
@@ -872,33 +933,13 @@ async def verify_plan(
                     detail=f"{stop.name} 的路线或环境证据不可用",
                 )
             )
-        if avoid_terms and any(term in " ".join([stop.name, *stop.tags]) for term in avoid_terms):
-            hard.append(
-                ConstraintCheck(
-                    name=f"avoid:{stop.place_id}",
-                    kind="hard",
-                    passed=False,
-                    detail=f"命中回避项 {avoid_terms}",
-                )
-            )
-        if _contains(hard_text, ("清淡", "减脂", "低卡")) and stop.category == "餐厅":
-            if not any(tag in ("清淡", "减脂", "低卡") for tag in stop.tags):
-                hard.append(
-                    ConstraintCheck(
-                        name=f"diet:{stop.place_id}",
-                        kind="hard",
-                        passed=False,
-                        detail=f"{stop.name} 缺少清淡/减脂标签",
-                    )
-                )
     if _contains(hard_text, ("孩子", "亲子", "带娃")) and not any(
-        any(tag in ("亲子", "儿童", "动物") for tag in stop.tags) for stop in plan.stops
+        _place_facts(stop, evidence_rows)[1] & {"亲子", "儿童"} for stop in plan.stops
     ):
-        hard.append(
-            ConstraintCheck(
-                name="child_friendly", kind="hard", passed=False, detail="计划中没有亲子友好证据"
-            )
-        )
+        explicitly_excluded = bool(plan.stops) and all(_place_facts(stop, evidence_rows)[1] & {"不适合儿童", "谢绝儿童", "成人限定"} for stop in plan.stops)
+        check = ConstraintCheck(name="child_friendly", kind="hard" if explicitly_excluded else "unknown",
+                                passed=False if explicitly_excluded else None, detail="计划中没有已确认的亲子友好地点，需要补证据")
+        (hard if explicitly_excluded else unknown).append(check)
     if not plan.stops:
         unknown.append(
             ConstraintCheck(name="places", kind="unknown", passed=None, detail="没有可验证的地点")

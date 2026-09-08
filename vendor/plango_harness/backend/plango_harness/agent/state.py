@@ -104,6 +104,7 @@ class PlanGoState(TypedDict, total=False):
     action_results: list[ActionResult]
     memory_delta: list[MemoryProposal]
     approval_decision: str | None
+    execution_goal: dict[str, Any] | None
     execution_started: bool
     reflection_done: bool
 
@@ -163,6 +164,7 @@ def initial_state(
         "action_results": [],
         "memory_delta": [],
         "approval_decision": None,
+        "execution_goal": None,
         "execution_started": False,
         "reflection_done": False,
         "next_action": None,

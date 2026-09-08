@@ -766,7 +766,7 @@ def build_graph(deps: GraphDeps, checkpointer: Any | None = None, *, extension=N
             stops=[PlanDraftStop(place_id=s.place_id, duration_minutes=s.requested_dwell_min or s.end_minute - s.start_minute) for s in retained],
             label="保留原有活动",
             rationale="编辑后保留合规地点，重新排序、计价和验证",
-        ) if reuse else await planner_agent.run(planning_spec, places, advocate_reports)
+        ) if reuse else await planner_agent.run(planning_spec, places, advocate_reports, state.get("evidence", []))
         plan_version = int(state.get("plan_version", 0)) + 1
         draft_errors: list[dict[str, Any]] = []
         selected = compile_plan_draft(
@@ -1192,6 +1192,7 @@ def build_graph(deps: GraphDeps, checkpointer: Any | None = None, *, extension=N
             "interrupt_id": None,
             "evidence": [] if refresh_supply else state.get("evidence", []),
             "weather": None if refresh_supply else state.get("weather"),
+            "execution_goal": None,
             "execution_started": False,
             "reflection_done": False,
             "outcome": None,
@@ -1353,6 +1354,7 @@ def build_graph(deps: GraphDeps, checkpointer: Any | None = None, *, extension=N
             "action_results": [],
             "memory_delta": [],
             "approval_decision": None,
+            "execution_goal": None,
             "execution_started": False,
             "reflection_done": False,
             "evidence": [],

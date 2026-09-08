@@ -178,6 +178,14 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
 }
 
 export function projectEvents(events: HarnessEvent[]): AgentStep[] {
-  return events.slice(-60).map(e => ({ id: `${e.run_id}:${e.seq}`, label: str(e.payload.label) || e.event_type.replaceAll('_', ' '),
-    status: /FAILED|ERROR|TIMEOUT/.test(e.event_type) ? 'error' : 'done', detail: str(e.payload.detail) || str(e.payload.reason) || e.phase }))
+  return events.slice(-60).map(e => {
+    const kind = e.event_type.toUpperCase()
+    const outcome = (str(e.payload.outcome) || str(e.payload.status) || (kind === 'RUN_FINALIZED' ? str(e.payload.phase) || str(e.phase) : '')).toUpperCase()
+    const status: AgentStep['status'] = /FAILED|ERROR|TIMEOUT|EXHAUSTED|INFEASIBLE/.test(kind) || ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED', 'PARTIAL_FAILED', 'INFEASIBLE'].includes(outcome) ? 'error'
+      : outcome === 'UNKNOWN' || /WAITING|REQUESTED|QUEUED|PENDING|PAUSED|INTERRUPTED/.test(kind) || ['browser', 'approval'].includes(str(e.payload.type)) ? 'waiting'
+      : ['SUCCEEDED', 'OBSERVED', 'EXECUTED'].includes(outcome) || /(?:^|_)(?:SUCCEEDED|COMPLETE|COMPLETED|READY|RESOLVED|RETRIEVED|REFLECTED|RECEIVED)(?:_|$)/.test(kind) ? 'done'
+      : /^WAITING_/.test(str(e.phase)) ? 'waiting'
+      : /STARTED|RUNNING|EXECUTING/.test(kind) ? 'running' : 'idle'
+    return { id: `${e.run_id}:${e.seq}`, label: str(e.payload.label) || e.event_type.replaceAll('_', ' '), status, detail: str(e.payload.detail) || str(e.payload.message) || str(e.payload.reason) || e.phase }
+  })
 }

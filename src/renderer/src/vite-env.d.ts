@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import type { AgentReply, OutcomeCard, AgentStep, HarnessApi, HarnessEvent, ReminderApi } from '@shared/types'
+import type { LocationInfo } from '@shared/location'
 
 interface PlangoApi {
   desktopReady: () => Promise<void>
@@ -35,11 +36,11 @@ interface PlangoApi {
   guideSetImage: (dataUrl: string) => Promise<{ ok: boolean }>
   discoverFetch: (city?: string) => Promise<{ city: string; groups: import('@shared/types').DiscoverGroup[]; source: import('@shared/types').SourceTag }>
   dealsFetch: (city?: string) => Promise<{ city: string; items: { poi: import('@shared/types').POISummary; deal: import('@shared/types').DealRow }[]; source: import('@shared/types').SourceTag }>
-  getLocation: () => Promise<{ city: string; province?: string; source: string; coords?: string; district?: string }>
-  detectLocation: () => Promise<{ city: string; province?: string; source: string; coords?: string; district?: string }>
-  setCity: (city: string) => Promise<{ city: string; source: string; coords?: string; district?: string }>
-  onLocation: (cb: (l: { city: string; province?: string; source: string; coords?: string; district?: string }) => void) => () => void
-  reportLocation: (p: { city?: string; coords?: string }) => Promise<unknown>
+  getLocation: () => Promise<LocationInfo>
+  detectLocation: () => Promise<LocationInfo>
+  setCity: (city: string) => Promise<LocationInfo>
+  onLocation: (cb: (l: LocationInfo) => void) => () => void
+  reportLocation: (p: LocationInfo & { userInitiated?: boolean }) => Promise<LocationInfo>
   getAmapJsConfig: () => Promise<{ jsKey: string; jsSecurity: string; webKey: string }>
   openExternal: (url: string) => Promise<boolean>
 }

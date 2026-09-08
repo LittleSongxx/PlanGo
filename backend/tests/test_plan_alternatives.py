@@ -54,7 +54,7 @@ class AlternativesCheck(unittest.IsolatedAsyncioTestCase):
                 evidence_id=p.place_id + ":proof",
                 source="browser",
                 source_ref="https://fixture.invalid/" + p.place_id,
-                payload={"place_id": p.place_id, "open_minute": 480, "close_minute": 1320},
+                payload={"place_id": p.place_id, "tags": p.tags, "open_minute": 480, "close_minute": 1320},
                 observed_at=now,
                 expires_at=now + timedelta(minutes=10),
             )

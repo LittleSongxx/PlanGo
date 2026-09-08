@@ -154,7 +154,7 @@ export interface VerifyReport {
 }
 
 // —— Agent 运行过程（喂给右侧透明步骤流）——
-export type StepStatus = 'running' | 'done' | 'error'
+export type StepStatus = 'running' | 'waiting' | 'idle' | 'done' | 'error'
 export interface AgentStep {
   id: string
   label: string

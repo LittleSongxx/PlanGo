@@ -109,7 +109,11 @@ function distillScript(snapshotId: string, owner: string, epoch: number): string
         var i=refs.length;el.setAttribute('data-ai-idx',String(i));refs.push(el);
         var name=el.getAttribute('aria-label')||el.getAttribute('placeholder')||el.getAttribute('name')||el.getAttribute('title')||'';
         var text=((el.innerText||'')+'').replace(/\\s+/g,' ').trim().slice(0,80);
-        out.push({idx:i,tag:el.tagName.toLowerCase(),role:el.getAttribute('role')||'',name:name,text:text});
+        var item={idx:i,tag:el.tagName.toLowerCase(),role:el.getAttribute('role')||'',name:name,text:text};
+        if(el.tagName==='A'&&el.hasAttribute('href')&&!el.hasAttribute('download')&&(!el.target||el.target==='_self')){
+          try{var link=new URL(el.href);if(['http:','https:'].includes(link.protocol)&&!link.username&&!link.password)item.href=link.href;}catch(e){}
+        }
+        out.push(item);
         if(refs.length>=180) break;
       }
       function formFingerprint(){
@@ -123,7 +127,7 @@ function distillScript(snapshotId: string, owner: string, epoch: number): string
         if(value.length>100000)throw new Error('页面表单过于复杂，请人工操作');
         return value;
       }
-      var state={id:${JSON.stringify(snapshotId)},owner:${JSON.stringify(owner)},epoch:${epoch},url:location.href,refs:refs,dirty:false,formFingerprint:formFingerprint(),fingerprint:formFingerprint};
+      var state={id:${JSON.stringify(snapshotId)},owner:${JSON.stringify(owner)},epoch:${epoch},url:location.href,refs:refs,hrefs:out.map(function(item){return item.href;}),dirty:false,formFingerprint:formFingerprint(),fingerprint:formFingerprint};
       state.observer=new MutationObserver(function(){state.dirty=true;});
       state.observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true});
       window.__plangoSnapshot=state;
@@ -224,7 +228,15 @@ function elementActionScript(command: BrowserCommand, epoch: number): string {
       return {ok:false,error_kind:'element_unavailable',error:'目标元素不可操作'};`
   let action: string
   if (command.operation === 'click') {
-    action = `var text=(el.innerText||'').slice(0,80);state.dirty=true;el.click();return {ok:true,text:text};`
+    action = `var text=(el.innerText||'').slice(0,80),href=state.hrefs[${idx}];
+      if(href){
+        if(el.tagName!=='A'||el.href!==href||el.hasAttribute('download')||(el.target&&el.target!=='_self'))return {ok:false,error_kind:'stale_snapshot',error:'链接目标已变化，请重新读取并确认'};
+        el.scrollIntoView({block:'center'});rect=el.getBoundingClientRect();
+        var hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+        if(!hit||(hit!==el&&!el.contains(hit)))return {ok:false,error_kind:'element_obscured',error:'链接被遮挡，请先处理页面遮挡'};
+        state.dirty=true;return {ok:true,navigation_url:href};
+      }
+      state.dirty=true;el.click();return {ok:true,text:text};`
   } else if (command.operation === 'type') {
     action = `if(!['INPUT','TEXTAREA','SELECT'].includes(el.tagName)&&!el.isContentEditable)return {ok:false,error_kind:'invalid_element',error:'目标不是输入框'};
       if(el.tagName==='INPUT'&&['password','file','hidden'].includes(el.type))return {ok:false,error_kind:'manual_input_required',error:'敏感输入请由用户在页面填写'};
@@ -315,8 +327,16 @@ export async function executeRendererBrowserCommand(raw: BrowserCommand, command
       case 'click':
       case 'type':
       case 'highlight': {
-        const result = await executeInBrowser(wv, elementActionScript(command, epoch)) as Partial<BrowserObservation>
+        const result = await executeInBrowser(wv, elementActionScript(command, epoch)) as Partial<BrowserObservation> & { navigation_url?: string }
         if (result.ok !== true) return { ...base, ...result, command_id: command.command_id, ok: false, outcome: result.outcome === 'unknown' ? 'unknown' : 'blocked' }
+        if (command.operation === 'click' && result.navigation_url) {
+          // A bound anchor uses native navigation; page click handlers cannot turn it into an unrelated submission.
+          await wv.loadURL(result.navigation_url)
+          await waitForTab(tabId)
+          if (cancelledRuns.has(command.run_id) || epoch !== (runEpochs.get(command.run_id) || 0)) return failure(command, 'run_superseded', '导航期间任务已停止', 'unknown')
+          if (wv.getURL() !== result.navigation_url) return { ...base, ...failure(command, 'navigation_redirected', '导航目标发生跳转，请重新核对页面', 'unknown'), url: wv.getURL() }
+          return { ...base, ok: true, outcome: 'executed', interaction_kind: 'navigation', url: wv.getURL(), title: wv.getTitle() }
+        }
         // A DOM acknowledgement is not an order/booking receipt. The Harness must verify business state separately.
         return { ...base, ...result, command_id: command.command_id, ok: true, outcome: 'executed' }
       }

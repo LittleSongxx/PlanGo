@@ -1,5 +1,6 @@
 import { useStore } from '../store'
 import { Sparkles, Globe, LayoutList, Settings, MapPin, Compass, History, MessageCircle, Ticket } from 'lucide-react'
+import { locationLabel } from '@shared/location'
 
 interface NavItem {
   id: string
@@ -26,8 +27,7 @@ export function IconRail(): JSX.Element {
   const planCount = cards.filter((c) => c.kind === 'plan' || c.kind === 'plans').length
   const precise = citySource === 'gps' || citySource === 'amap-gps'
   const isIp = citySource === 'ip' || citySource === 'amap-ip'
-  const accText = precise && locAccuracy ? `±${Math.round(locAccuracy)}m` : ''
-  const locLabel = precise ? '精确' : isIp ? '区域级' : '城市级'
+  const locLabel = locationLabel(citySource, locAccuracy)
   const locColor = precise ? 'text-green-400' : isIp ? 'text-sky-400' : 'text-amber-400'
 
   const top: NavItem[] = [
@@ -63,7 +63,7 @@ export function IconRail(): JSX.Element {
         <button
           onClick={() => setSettings(true)}
           className="text-[10px] text-neutral-400 text-center leading-tight px-1 hover:text-brand"
-          title={`当前定位：${city}${district ? '·' + district : ''}（${precise ? 'GPS精确' + (accText ? ' ' + accText : '') : isIp ? 'IP区域级' : '城市级'}）\n点击可在设置里重新定位/手动指定`}
+          title={`当前定位：${city}${district ? '·' + district : ''}（${locLabel}）\n点击可在设置里重新定位/手动指定`}
         >
           <MapPin size={12} className={`inline mb-0.5 ${locColor}`} />
           <div className="truncate max-w-[56px]">{district || city}</div>

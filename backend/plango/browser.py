@@ -47,6 +47,7 @@ class Observation(BaseModel):
     browser_session_id: str = Field(min_length=1, max_length=128)
     ok: bool
     outcome: Literal["observed", "executed", "blocked", "unknown", "failed"]
+    interaction_kind: Literal["navigation"] | None = None
     error_kind: str | None = None
     error: str | None = None
     snapshot_id: str | None = None

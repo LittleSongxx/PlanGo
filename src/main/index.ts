@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, session as electronSession } from 'electron'
 import { join } from 'path'
+import { pathToFileURL } from 'node:url'
 import { registerIpc } from './ipc'
 import { detectLocation } from './location'
 import { startShareServer, stopShareServer } from './share/server'
@@ -7,6 +8,7 @@ import { harnessStatus, stopHarness } from './harness'
 import { allowedBrowserSite } from '../shared/browser'
 import { getHarnessEnvironment } from './config'
 import { prepareDesktopStorage } from './storageMigration'
+import { allowsGeolocation } from './permissions'
 
 try {
   const desktopData = prepareDesktopStorage(app.getPath('appData'), app.getPath('userData'))
@@ -21,6 +23,7 @@ try {
 
 let mainWindow: BrowserWindow | null = null
 const browserContents = new Set<number>()
+const rendererUrl = process.env.ELECTRON_RENDERER_URL || pathToFileURL(join(__dirname, '../renderer/index.html')).href
 
 export function ownsBrowserContents(id: number): boolean { return browserContents.has(id) }
 
@@ -78,10 +81,13 @@ function createWindow(): void {
 function hardenSession(): void {
   for (const session of [electronSession.defaultSession, electronSession.fromPartition('persist:plango')]) {
     session.setPermissionRequestHandler((wc, permission, cb, details) => {
-      const origin = details.requestingUrl || wc.getURL()
-      cb(permission === 'geolocation' && allowedBrowserSite(origin))
+      cb(allowsGeolocation({ permission, isMainFrame: details.isMainFrame, requestingUrl: details.requestingUrl,
+        pageUrl: wc.getURL(), hostUrl: rendererUrl, isHost: wc === mainWindow?.webContents,
+        isBrowser: session === electronSession.fromPartition('persist:plango') && wc.session === session }))
     })
-    session.setPermissionCheckHandler((_wc, permission, origin) => permission === 'geolocation' && allowedBrowserSite(origin))
+    session.setPermissionCheckHandler((wc, permission, origin, details) => allowsGeolocation({ permission, isMainFrame: details.isMainFrame,
+      requestingUrl: details.requestingUrl || origin, pageUrl: wc?.getURL() || '', hostUrl: rendererUrl,
+      isHost: !!wc && wc === mainWindow?.webContents, isBrowser: !!wc && session === electronSession.fromPartition('persist:plango') && wc.session === session }))
   }
   app.on('web-contents-created', (_event, contents) => {
     if (contents.getType() !== 'webview') return

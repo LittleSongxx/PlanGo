@@ -64,8 +64,11 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
             content: `<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);color:#fff;font-size:12px;font-weight:700">${label}</span></div>`
           })
           marker.on('click', () => {
+            const content = document.createElement('div')
+            content.style.cssText = 'padding:4px 8px;font-size:13px;font-weight:700'
+            content.textContent = p.title
             new AMap.InfoWindow({
-              content: `<div style="padding:4px 8px;font-size:13px;font-weight:700">${p.title}</div>`,
+              content,
               offset: new AMap.Pixel(0, -30)
             }).open(map, [p.lng, p.lat])
           })
