@@ -1,0 +1,74 @@
+{
+  "date": "2026-09-08T18:35:49.848Z",
+  "backend": "Docker PostgreSQL/Redis API and worker",
+  "python_environment": "plango",
+  "real_electron_dom": true,
+  "page": "controlled canvas-only fixture",
+  "real_model": true,
+  "model_tokens": 2772,
+  "run_id": "be3f27ebfb54456dac9b3abfc76fd960",
+  "observed_events": 2,
+  "input": "读取当前浏览器画面中显示的文字",
+  "expected_canvas_text": "PLANGO-CANVAS-4829",
+  "input_contains_nonce": false,
+  "dom_contains_nonce": false,
+  "visual_text": "PLANGO-CANVAS-4829",
+  "scope": "visual_observation",
+  "limitations": "",
+  "screenshot_metadata": {
+    "screenshot_id": "fdec712a-6ad2-4917-b441-9f1b386aa27e",
+    "snapshot_id": "033239cc8f992b775c7dd697dce8d29043df2ff7",
+    "url": "http://127.0.0.1:57247/canvas",
+    "captured_at": "2026-09-08T18:35:40.073000Z",
+    "viewport": {
+      "width": 988,
+      "height": 800
+    },
+    "image": {
+      "width": 988,
+      "height": 800
+    },
+    "dpr": 1,
+    "zoom": 1,
+    "clip": {
+      "x": 0,
+      "y": 0,
+      "width": 988,
+      "height": 800
+    },
+    "scroll": {
+      "x": 0,
+      "y": 0
+    },
+    "page_version": "6fa40855d5278cd3959690eaf8da6b78bf233ccf5debdd1a9e4503f3285f6e7a",
+    "view_bounds": {
+      "x": 68,
+      "y": 140,
+      "width": 988,
+      "height": 800
+    }
+  },
+  "screenshot_commands": 1,
+  "click_type_commands": 0,
+  "business_receipts": 0,
+  "browser_commands": [
+    {
+      "command_id": "033239cc8f992b775c7dd697dce8d29043df2ff7",
+      "operation": "extract",
+      "ok": true,
+      "outcome": "observed",
+      "screenshot_id": null
+    },
+    {
+      "command_id": "328a526463f4b723d30a2c8fdfae55fb115d2209",
+      "operation": "screenshot",
+      "ok": true,
+      "outcome": "observed",
+      "screenshot_id": "fdec712a-6ad2-4917-b441-9f1b386aa27e"
+    }
+  ],
+  "ui_visible_text": true,
+  "api_worker_restart_recovered": true,
+  "history_ui_restored": true,
+  "screenshot": "/home/song/code/Agent/multi-agent/PlanGo/eval/plango-p1/deployed-vision-desktop.png"
+}

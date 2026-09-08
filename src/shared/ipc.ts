@@ -9,12 +9,11 @@ export const IPC = {
   agentStep: 'agent:step', // main→renderer 推送步骤流
   agentStreamCard: 'agent:card', // main→renderer 推送成果卡片
 
-  // 浏览器桥（main→renderer 下发动作）
-  browserExec: 'browser:exec',
-  browserExecResult: 'browser:exec-result',
-
-  // 标签页管理（renderer 内部，但PlanGo可请求开标签）
-  openTab: 'app:open-tab',
+  // Renderer submits bounded user intents; main owns browser contents and execution.
+  browserRequest: 'browser:view-request',
+  browserLayout: 'browser:view-layout',
+  browserState: 'browser:view-state',
+  browserActivity: 'browser:activity',
 
   // 设置 / 数据源 / LLM
   getConfig: 'config:get',

@@ -1,0 +1,79 @@
+{
+  "date": "2026-09-08T16:57:13.952Z",
+  "scope": "real Electron/Xvfb with synthetic local pages only",
+  "playwright": "1.63.0",
+  "checks": [
+    {
+      "name": "CDP maps exact visible WebContentsView target",
+      "passed": true,
+      "ms": 32,
+      "detail": {
+        "pages": [
+          "http://127.0.0.1:57309/shell",
+          "http://127.0.0.1:57309/fixture"
+        ],
+        "viewId": 2,
+        "sameSession": true,
+        "storagePath": "/home/song/code/Agent/multi-agent/PlanGo/output/playwright/probe-2026-09-08T16-57-13-951Z/profile/Partitions/plango-probe"
+      }
+    },
+    {
+      "name": "native clip matches measured CSS to DIP conversion and color ground truth",
+      "passed": true,
+      "ms": 185,
+      "detail": {
+        "marker": {
+          "x": 40.000003814697266,
+          "y": 40.000003814697266,
+          "width": 80.00000762939453,
+          "height": 80.00000762939453,
+          "viewportWidth": 768,
+          "dpr": 1.875
+        },
+        "zoom": 1.25,
+        "cssToDip": 1.25,
+        "rectangle": {
+          "x": 50.00000476837158,
+          "y": 50.00000476837158,
+          "width": 100.00000953674316,
+          "height": 100.00000953674316
+        },
+        "pixelWidth": 150,
+        "pixelHeight": 150,
+        "magentaFraction": 1
+      }
+    }
+  ],
+  "failures": [],
+  "sources": [
+    "https://www.electronjs.org/docs/latest/api/web-contents-view",
+    "https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp",
+    "https://playwright.dev/docs/api/class-locator#locator-click",
+    "https://www.electronjs.org/docs/latest/api/web-contents#webcontentsfromdevtoolstargetidtargetid"
+  ],
+  "electron": "33.4.11",
+  "chrome": "130.0.6723.191",
+  "passed": 2,
+  "total": 2,
+  "nativeClipCalibration": {
+    "marker": {
+      "x": 40.000003814697266,
+      "y": 40.000003814697266,
+      "width": 80.00000762939453,
+      "height": 80.00000762939453,
+      "viewportWidth": 768,
+      "dpr": 1.875
+    },
+    "zoom": 1.25,
+    "cssToDip": 1.25,
+    "rectangle": {
+      "x": 50.00000476837158,
+      "y": 50.00000476837158,
+      "width": 100.00000953674316,
+      "height": 100.00000953674316
+    },
+    "pixelWidth": 150,
+    "pixelHeight": 150,
+    "magentaFraction": 1
+  }
+}

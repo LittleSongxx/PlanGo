@@ -20,6 +20,7 @@ class DesktopSettings(Settings):
     redis_url: str = "local://"
     allow_redis_fallback: bool = False
     allow_sqlite_fallback: bool = False
+    browser_vision_enabled: bool = False
 
     @classmethod
     def settings_customise_sources(
@@ -86,6 +87,7 @@ def settings_from_env():
         "max_model_tokens": "PLANGO_MAX_MODEL_TOKENS",
         "max_run_seconds": "PLANGO_MAX_RUN_SECONDS",
         "max_repair_rounds": "PLANGO_MAX_REPAIR_ROUNDS",
+        "browser_vision_enabled": "PLANGO_BROWSER_VISION_ENABLED",
     }
     explicit = {field: os.environ[env] for field, env in allowed.items() if env in os.environ}
     return DesktopSettings.model_validate(

@@ -1,55 +1,73 @@
-// Run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a node_modules/.bin/electron --no-sandbox scripts/browser-regression.cjs
-// A real Chromium DOM fixture, with only the Electron webview transport and UI store replaced.
-const { app, BrowserWindow, ipcMain, webContents } = require('electron')
+// Real WebContentsView + trusted main bridge/Playwright regression; isolated loopback fixtures only.
+const { app, BrowserWindow } = require('electron')
 const { createServer } = require('node:http')
-const { readFileSync } = require('node:fs')
-const { resolve } = require('node:path')
+const { readFileSync, mkdtempSync, rmSync } = require('node:fs')
+const { resolve, join } = require('node:path')
+const { tmpdir } = require('node:os')
 const { build } = require('esbuild')
-
-app.commandLine.appendSwitch('host-resolver-rules', 'MAP fixture.meituan.com 127.0.0.1')
+const work = mkdtempSync(join(tmpdir(), 'plango-browser-regression-'))
+app.setPath('userData', work)
+app.commandLine.appendSwitch('remote-debugging-address', '127.0.0.1')
+app.commandLine.appendSwitch('remote-debugging-port', '0')
+app.commandLine.appendSwitch('host-resolver-rules', 'MAP fixture.meituan.com 127.0.0.1, MAP frame.meituan.com 127.0.0.1')
 app.commandLine.appendSwitch('no-proxy-server')
 app.commandLine.appendSwitch('disable-gpu')
-
 const fixture = '<!doctype html><html><body><h1>真实菜单测试页</h1><table><tr><th>菜品</th><th>价格</th></tr><tr><td>双人套餐</td><td>128 元</td></tr></table><button id="submit" onclick="window.submits=(window.submits||0)+1">预约</button><input id="search" placeholder="搜索"><p id="result"></p></body></html>'
-const server = createServer((req, res) => {
+let slowRequests = 0
+const server = createServer((req,res) => {
+  if (req.url === '/slow') { slowRequests++; setTimeout(() => { res.setHeader('Content-Type','text/html'); res.end(fixture) },1800); return }
+  if (req.url === '/frame') { res.setHeader('Content-Type','text/html; charset=utf-8'); res.end('<input placeholder="框架输入"><script>parent.postMessage("frame-ready","*")</script>'); return }
   if (req.url === '/redirect') { res.writeHead(302, { Location: '/redirected' }); res.end(); return }
-  res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(fixture)
+  res.setHeader('Content-Type','text/html; charset=utf-8'); res.end(fixture)
 })
-let window
-
+let host, api, hideNextFill = false
+// Simulate a real layout change after the driver's final check, exactly as the public
+// Playwright fill starts; this wrapper delegates all actual input to Playwright.
+const { chromium } = require('playwright-core')
+const connect = chromium.connectOverCDP.bind(chromium)
+chromium.connectOverCDP = async (...args) => {
+  const browser = await connect(...args), wrapped = new WeakSet()
+  const frame = value => {
+    if (wrapped.has(value)) return; wrapped.add(value)
+    const locate = value.locator.bind(value)
+    value.locator = (...args) => {
+      const locator = locate(...args), fill = locator.fill.bind(locator)
+      locator.fill = (...args) => { if (hideNextFill) { hideNextFill=false; api.setBrowserLayout({x:0,y:0,width:850,height:580,visible:false}) } return fill(...args) }
+      return locator
+    }
+  }
+  const page = value => { value.frames().forEach(frame); value.on('frameattached',frame) }
+  for (const context of browser.contexts()) { context.pages().forEach(page); context.on('page',page) }
+  return browser
+}
+const watchdog = setTimeout(() => { console.error('Browser regression watchdog expired'); app.exit(1) }, 120000)
 async function main() {
-  await app.whenReady()
-  await new Promise((done) => server.listen(0, '127.0.0.1', done))
+  await new Promise(done => server.listen(0, '127.0.0.1', done))
   const url = `http://fixture.meituan.com:${server.address().port}/`
-  ipcMain.handle('fixture:browser-eval', async (event, id, code) => {
-    const target = webContents.fromId(id)
-    if (event.sender !== window.webContents || target?.getType() !== 'webview' || target.hostWebContents !== window.webContents) throw new Error('invalid fixture target')
-    return target.executeJavaScriptInIsolatedWorld(1001, [{ code }])
-  })
-  const script = `
-import { registerWebview, setActiveWebview, setTabOpener, cancelRendererBrowserRun, releaseRendererBrowserRun, activateRendererBrowserRun, executeRendererBrowserCommand as execute } from './src/renderer/src/lib/browserBridge'
-import { validateBrowserCommand, browserCommandGuard, allowedBrowserSite } from './src/shared/browser'
-globalThis.__browserTestResult = (async () => {
+  const outfile = join(work, 'bridge.cjs')
+  await build({ stdin: { contents: "export * from './src/main/browser-bridge'; export * from './src/main/browserView'; export * from './src/main/browserDriver'; export * from './src/shared/browser'", resolveDir: process.cwd(), loader:'ts' },
+    bundle:true,format:'cjs',platform:'node',outfile,external:['electron','playwright-core'],tsconfig:'tsconfig.node.json',
+    plugins:[{name:'raw',setup(build) {
+      build.onResolve({filter:/Readability\.js\?raw$/},()=>({path:resolve('node_modules/@mozilla/readability/Readability.js'),namespace:'raw'}))
+      build.onLoad({filter:/.*/,namespace:'raw'},args=>({contents:readFileSync(args.path,'utf8'),loader:'text'}))
+    }}] })
+  const Module = require('node:module')
+  const loaded = new Module(outfile, module); loaded.filename = outfile; loaded.paths = Module._nodeModulePaths(process.cwd())
+  loaded._compile(readFileSync(outfile,'utf8'),outfile); api = loaded.exports
+  const { executeBrowserCommand: execute, validateBrowserCommand, browserCommandGuard, allowedBrowserSite, createBrowserTab, activateBrowserTab, handleBrowserIntent, releaseBrowserRun, activateBrowserRun, cancelBrowserRun } = api
+  await app.whenReady()
+  host = new BrowserWindow({show:true,width:900,height:650,webPreferences:{sandbox:true,contextIsolation:true,nodeIntegration:false}})
+  await host.loadURL('data:text/html,<html><body>PlanGo controlled browser host</body></html>')
+  api.initializeBrowserViews(host)
+  api.setBrowserLayout({x:0,y:0,width:850,height:580,visible:true})
   let checks = 0
   const assert = (ok, label) => { if (!ok) throw new Error(label); checks++ }
-  const st = { tabs: [], activeTabId: null, aiBrowsing: {}, setView() {}, setAiBrowsing() {}, setActiveTab(id) { this.activeTabId = id } }
-  globalThis.__browserTestStore = st
-  window.plango = { browserEval: (id, code) => require('electron').ipcRenderer.invoke('fixture:browser-eval', id, code) }
-  const makeTab = async (id) => {
-    const frame = document.createElement('webview'); frame.style.cssText = 'width:700px;height:500px';
-    frame.partition = 'fixture-browser';
-    frame.src = ${JSON.stringify(url)} + id
-    st.tabs.push({ id })
-    const ready = new Promise(resolve => frame.addEventListener('dom-ready', resolve, { once: true })); document.body.appendChild(frame); await ready
-    const wv = {
-      getWebContentsId: () => frame.getWebContentsId(),
-      loadURL: url => frame.loadURL(url),
-      getURL: () => frame.getURL(), getTitle: () => frame.getTitle(), isLoading: () => frame.isLoading()
-    }
-    registerWebview(id, wv); return { wv, frame, page: code => frame.executeJavaScript(code) }
+  const makeTab = async (label) => {
+    const tab = await createBrowserTab(url + label)
+    return { id: tab.id, wc: tab.contents, page: code => tab.contents.executeJavaScript(code) }
   }
-  const a = await makeTab('tab-a'), b = await makeTab('tab-b')
-  setActiveWebview(a.wv, 'tab-a')
+  const a = await makeTab('a'), b = await makeTab('b')
+  activateBrowserTab(a.id)
   let seq = 0
   const command = (operation, args = {}, extra = {}) => ({ command_id: 'test-' + ++seq, run_id: 'run-a', browser_session_id: 'session-a', operation, arguments: args, ...extra })
   assert(!allowedBrowserSite('https://meituan.com.evil.test/'), 'hostname suffix bypass')
@@ -66,135 +84,204 @@ globalThis.__browserTestResult = (async () => {
   const injectedCode = await execute(command('snapshot', { code: 'window.injected = true' }))
   assert(injectedCode.error_kind === 'invalid_command' && !(await a.page('window.injected')), 'model-supplied JavaScript is rejected')
   const page = await execute(command('snapshot'))
-  assert(page.ok && page.tab_id === 'tab-a' && page.snapshot_id && page.elements.length === 2, 'snapshot creates stable refs: ' + JSON.stringify(page))
+  assert(page.ok && page.tab_id === a.id && page.snapshot_id && page.elements.length === 2, 'snapshot creates stable refs: ' + JSON.stringify(page))
   assert(page.text.includes('128 元'), 'real page text extracted')
   const pin = { tab_id: page.tab_id, expected_snapshot_id: page.snapshot_id }
   const unapproved = await execute(command('click', { idx: 0 }, pin))
   assert(unapproved.error_kind === 'approval_required' && !(await a.page('window.submits')), 'missing hint cannot bypass approval')
   const invalidHint = await execute(command('click', { idx: 0, hint: '' }, { ...pin, approved_action_id: 'approved' }))
   assert(invalidHint.error_kind === 'invalid_command', 'model hint is not accepted as authority')
-  setActiveWebview(b.wv, 'tab-b')
-  const readPinned = await execute(command('extract_tables', {}, { tab_id: 'tab-a' }))
-  assert(readPinned.ok && readPinned.tab_id === 'tab-a' && readPinned.tables[0].rows[0][1] === '128 元', 'tab switching preserves command target')
+  activateBrowserTab(b.id)
+  const readPinned = await execute(command('extract_tables', {}, { tab_id: a.id }))
+  assert(readPinned.ok && readPinned.tab_id === a.id && readPinned.tables[0].rows[0][1] === '128 元', 'tab switching preserves command target')
   assert(await a.page("typeof window.__plangoSnapshot === 'undefined' && typeof require === 'undefined'"), 'remote page cannot access isolated snapshot or Node')
-  const conflict = await execute(command('snapshot', {}, { run_id: 'run-b', tab_id: 'tab-a' }))
+  const conflict = await execute(command('snapshot', {}, { run_id: 'run-b', tab_id: a.id }))
   assert(conflict.error_kind === 'tab_session_mismatch', 'other run cannot steal tab')
   await a.page("window.__plangoSnapshot={dirty:false,refs:[document.querySelector('#search')],observer:{disconnect(){},takeRecords(){return []}}};window.__plangoSnapshot.observer.disconnect();document.querySelector('#submit').textContent = '支付';window.__plangoSnapshot.dirty=false")
   await Promise.resolve()
   const stale = await execute(command('click', { idx: 0 }, { ...pin, expected_snapshot_id: readPinned.snapshot_id, approved_action_id: 'approved' }))
   assert(stale.error_kind === 'stale_snapshot' && !(await a.page('window.submits')), 'remote snapshot forgery cannot hide DOM mutation')
-  const fresh = await execute(command('snapshot', {}, { tab_id: 'tab-a' }))
-  const clicked = await execute(command('click', { idx: 0 }, { tab_id: 'tab-a', expected_snapshot_id: fresh.snapshot_id, approved_action_id: 'approved' }))
+  const fresh = await execute(command('snapshot', {}, { tab_id: a.id }))
+  const approvedClick = command('click', { idx: 0 }, { tab_id: a.id, expected_snapshot_id: fresh.snapshot_id, approved_action_id: 'approved' })
+  const clicked = await execute(approvedClick)
   assert(clicked.ok && clicked.outcome === 'executed' && (await a.page('window.submits')) === 1 && !clicked.receipt, 'real click has no invented receipt')
-  const repeat = await execute(command('click', { idx: 0 }, { tab_id: 'tab-a', expected_snapshot_id: fresh.snapshot_id, approved_action_id: 'approved' }))
+  assert(JSON.stringify(await execute(approvedClick)) === JSON.stringify(clicked) && (await a.page('window.submits')) === 1, 'same durable command replays its receipt, not its side effect')
+  assert((await execute({ ...approvedClick, arguments: { idx: 1 } })).error_kind === 'command_conflict', 'same command ID cannot change parameters')
+  const repeat = await execute(command('click', { idx: 0 }, { tab_id: a.id, expected_snapshot_id: fresh.snapshot_id, approved_action_id: 'approved' }))
   assert(repeat.error_kind === 'stale_snapshot' && (await a.page('window.submits')) === 1, 'snapshot cannot repeat a write')
   const expired = command('snapshot', {}, { expires_at: '2000-01-01T00:00:00Z' })
   assert(browserCommandGuard(expired) === 'command_expired', 'expired command blocked')
-  const inputPage = await execute(command('snapshot', {}, { tab_id: 'tab-a' }))
+  const inputPage = await execute(command('snapshot', {}, { tab_id: a.id }))
   await a.page("document.querySelector('#search').value = '人工修改'; document.querySelector('#search').dispatchEvent(new Event('input', { bubbles: true }))")
-  const manual = await execute(command('click', { idx: 0 }, { tab_id: 'tab-a', expected_snapshot_id: inputPage.snapshot_id, approved_action_id: 'approved' }))
+  const manual = await execute(command('click', { idx: 0 }, { tab_id: a.id, expected_snapshot_id: inputPage.snapshot_id, approved_action_id: 'approved' }))
   assert(manual.error_kind === 'stale_snapshot', 'manual form edits invalidate snapshot')
-  const silentPage = await execute(command('snapshot', {}, { tab_id: 'tab-a' }))
+  const silentPage = await execute(command('snapshot', {}, { tab_id: a.id }))
   await a.page("document.querySelector('#search').value = '静默篡改'")
-  const silentClick = await execute(command('click', { idx: 0 }, { tab_id: 'tab-a', expected_snapshot_id: silentPage.snapshot_id, approved_action_id: 'approved' }))
+  const silentClick = await execute(command('click', { idx: 0 }, { tab_id: a.id, expected_snapshot_id: silentPage.snapshot_id, approved_action_id: 'approved' }))
   assert(silentClick.error_kind === 'stale_snapshot' && (await a.page('window.submits')) === 1, 'silent input.value change blocks click')
-  const silentType = await execute(command('type', { idx: 1, text: '不得覆盖' }, { tab_id: 'tab-a', expected_snapshot_id: silentPage.snapshot_id, approved_action_id: 'approved' }))
+  const silentType = await execute(command('type', { idx: 1, text: '不得覆盖' }, { tab_id: a.id, expected_snapshot_id: silentPage.snapshot_id, approved_action_id: 'approved' }))
   assert(silentType.error_kind === 'stale_snapshot' && (await a.page("document.querySelector('#search').value")) === '静默篡改', 'silent input.value change blocks type')
-  const typePage = await execute(command('snapshot', {}, { tab_id: 'tab-a' }))
-  const typed = await execute(command('type', { idx: 1, text: '双人套餐' }, { tab_id: 'tab-a', expected_snapshot_id: typePage.snapshot_id, approved_action_id: 'approved' }))
+  const typePage = await execute(command('snapshot', {}, { tab_id: a.id }))
+  const typed = await execute(command('type', { idx: 1, text: '双人套餐' }, { tab_id: a.id, expected_snapshot_id: typePage.snapshot_id, approved_action_id: 'approved' }))
   assert(typed.ok && (await a.page("document.querySelector('#search').value")) === '双人套餐', 'approved type uses actual DOM setter')
   await a.page("document.querySelector('#search').oninput = function(){window.inputAttempts=(window.inputAttempts||0)+1;this.value='受控旧值'};true")
-  const controlledPage = await execute(command('snapshot', {}, { tab_id: 'tab-a' }))
-  const controlled = await execute(command('type', { idx: 1, text: '新的输入' }, { tab_id: 'tab-a', expected_snapshot_id: controlledPage.snapshot_id, approved_action_id: 'approved' }))
+  const controlledPage = await execute(command('snapshot', {}, { tab_id: a.id }))
+  const controlled = await execute(command('type', { idx: 1, text: '新的输入' }, { tab_id: a.id, expected_snapshot_id: controlledPage.snapshot_id, approved_action_id: 'approved' }))
   assert(!controlled.ok && controlled.outcome === 'unknown' && controlled.error_kind === 'input_not_applied' && (await a.page('window.inputAttempts')) === 1, 'restored controlled value is unknown, not acknowledged or retried')
-  const repeatedType = await execute(command('type', { idx: 1, text: '新的输入' }, { tab_id: 'tab-a', expected_snapshot_id: controlledPage.snapshot_id, approved_action_id: 'approved' }))
+  const repeatedType = await execute(command('type', { idx: 1, text: '新的输入' }, { tab_id: a.id, expected_snapshot_id: controlledPage.snapshot_id, approved_action_id: 'approved' }))
   assert(repeatedType.error_kind === 'stale_snapshot' && (await a.page('window.inputAttempts')) === 1, 'failed type consumes snapshot and cannot repeat')
   await a.page("document.querySelector('#search').oninput=null;var select=document.createElement('select');select.id='choice';select.innerHTML='<option value=one>一</option><option value=two>二</option>';document.body.appendChild(select);true")
-  const selectPage = await execute(command('snapshot', {}, { tab_id: 'tab-a' }))
-  const invalidSelect = await execute(command('type', { idx: 2, text: 'absent' }, { tab_id: 'tab-a', expected_snapshot_id: selectPage.snapshot_id, approved_action_id: 'approved' }))
+  const selectPage = await execute(command('snapshot', {}, { tab_id: a.id }))
+  const invalidSelect = await execute(command('type', { idx: 2, text: 'absent' }, { tab_id: a.id, expected_snapshot_id: selectPage.snapshot_id, approved_action_id: 'approved' }))
   assert(!invalidSelect.ok && invalidSelect.outcome === 'blocked' && invalidSelect.error_kind === 'invalid_option' && (await a.page("document.querySelector('#choice').value")) === 'one', 'missing select option blocks before mutation')
-  setTabOpener(() => { void makeTab('tab-c'); return 'tab-c' })
-  const navigated = await execute(command('navigate', { url: ${JSON.stringify(url + 'new')} }, { run_id: 'run-c' }))
-  assert(navigated.ok && navigated.tab_id === 'tab-c' && navigated.url.endsWith('/new'), 'first navigation allocates stable tab')
-  const multiTab = await execute(command('snapshot', {}, { tab_id: 'tab-b' }))
-  const originalTab = await execute(command('snapshot', {}, { tab_id: 'tab-a' }))
-  assert(multiTab.ok && originalTab.ok && originalTab.tab_id === 'tab-a', 'one run can explicitly address both owned tabs')
-  registerWebview('tab-a', null); st.tabs = st.tabs.filter(t => t.id !== 'tab-a')
-  const closed = await execute(command('snapshot', {}, { tab_id: 'tab-a' }))
+  const navigated = await execute(command('navigate', { url: url + 'new' }, { run_id: 'run-c' }))
+  assert(navigated.ok && navigated.tab_id !== a.id && navigated.tab_id !== b.id && navigated.url.endsWith('/new'), 'first navigation allocates stable tab')
+  const multiTab = await execute(command('snapshot', {}, { tab_id: b.id }))
+  const originalTab = await execute(command('snapshot', {}, { tab_id: a.id }))
+  assert(multiTab.ok && originalTab.ok && originalTab.tab_id === a.id, 'one run can explicitly address both owned tabs')
+  await handleBrowserIntent({ kind: 'close', id: a.id })
+  const closed = await execute(command('snapshot', {}, { tab_id: a.id }))
   assert(closed.error_kind === 'tab_closed', 'closed bound tab does not switch to another tab')
-  cancelRendererBrowserRun('run-c')
-  const cancelled = await execute(command('snapshot', {}, { run_id: 'run-c', tab_id: 'tab-c' }))
+  cancelBrowserRun('run-c')
+  const cancelled = await execute(command('snapshot', {}, { run_id: 'run-c', tab_id: navigated.tab_id }))
   assert(cancelled.error_kind === 'run_cancelled', 'takeover stops later commands')
-  const prior = await execute(command('snapshot', {}, { tab_id: 'tab-b' }))
-  releaseRendererBrowserRun('run-a')
-  setActiveWebview(b.wv, 'tab-b')
-  const oldWrite = await execute(command('click', { idx: 0 }, { tab_id: 'tab-b', expected_snapshot_id: prior.snapshot_id, approved_action_id: 'old-approved' }))
+  const prior = await execute(command('snapshot', {}, { tab_id: b.id }))
+  releaseBrowserRun('run-a')
+  activateBrowserTab(b.id)
+  const oldWrite = await execute(command('click', { idx: 0 }, { tab_id: b.id, expected_snapshot_id: prior.snapshot_id, approved_action_id: 'old-approved' }))
   assert(oldWrite.error_kind === 'run_cancelled' && !(await b.page('window.submits')), 'terminal release blocks queued old writes')
-  const reusedSnapshot = await execute(command('click', { idx: 0 }, { run_id: 'run-new', tab_id: 'tab-b', expected_snapshot_id: prior.snapshot_id, approved_action_id: 'new-approved' }))
-  assert(reusedSnapshot.error_kind === 'stale_snapshot' && !(await b.page('window.submits')), 'new run cannot reuse prior run snapshot')
+  const reusedSnapshot = await execute(command('click', { idx: 0 }, { run_id: 'run-new', tab_id: b.id, expected_snapshot_id: prior.snapshot_id, approved_action_id: 'new-approved' }))
+  assert(reusedSnapshot.error_kind === 'stale_snapshot' && !(await b.page('window.submits')), 'new run cannot reuse prior run snapshot: '+JSON.stringify(reusedSnapshot))
   const reusedTab = await execute(command('extract', {}, { run_id: 'run-new' }))
-  assert(reusedTab.ok && reusedTab.tab_id === 'tab-b', 'finished run releases current tab for new conversation')
-  b.wv.isLoading = () => true
-  const delayedWrite = execute(command('click', { idx: 0 }, { run_id: 'run-new', tab_id: 'tab-b', expected_snapshot_id: reusedTab.snapshot_id, approved_action_id: 'pending-approved' }))
-  releaseRendererBrowserRun('run-new')
-  activateRendererBrowserRun('run-new')
-  b.wv.isLoading = () => false
+  assert(reusedTab.ok && reusedTab.tab_id === b.id, 'finished run releases current tab for new conversation')
+  const delayedWrite = execute(command('click', { idx: 0 }, { run_id: 'run-new', tab_id: b.id, expected_snapshot_id: reusedTab.snapshot_id, approved_action_id: 'pending-approved' }))
+  releaseBrowserRun('run-new')
+  activateBrowserRun('run-new')
   const delayedResult = await delayedWrite
   assert(delayedResult.error_kind === 'run_superseded' && !(await b.page('window.submits')), 'reactivation cannot revive an old pending write')
-  const lateWrite = await execute(command('click', { idx: 0 }, { run_id: 'run-new', tab_id: 'tab-b', expected_snapshot_id: reusedTab.snapshot_id, approved_action_id: 'late-approved' }))
+  const lateWrite = await execute(command('click', { idx: 0 }, { run_id: 'run-new', tab_id: b.id, expected_snapshot_id: reusedTab.snapshot_id, approved_action_id: 'late-approved' }))
   assert(lateWrite.error_kind === 'stale_snapshot' && !(await b.page('window.submits')), 'late old snapshot rejected after same-run new turn')
-  const queuedRead = await execute(command('extract', {}, { run_id: 'run-new', tab_id: 'tab-b' }), 0)
+  const queuedReadPromise = execute(command('extract', {}, { run_id: 'run-new', tab_id: b.id }))
+  releaseBrowserRun('run-new'); activateBrowserRun('run-new')
+  const queuedRead = await queuedReadPromise
   assert(queuedRead.error_kind === 'run_superseded', 'old queue epoch cannot produce a fresh snapshot')
-  const sameRunPage = await execute(command('extract', {}, { run_id: 'run-new', tab_id: 'tab-b' }))
+  const sameRunPage = await execute(command('extract', {}, { run_id: 'run-new', tab_id: b.id }))
   assert(sameRunPage.ok && sameRunPage.snapshot_id, 'same run can read again in its next turn')
-  activateRendererBrowserRun('run-new')
-  const nextTurnWrite = await execute(command('click', { idx: 0 }, { run_id: 'run-new', tab_id: 'tab-b', expected_snapshot_id: sameRunPage.snapshot_id, approved_action_id: 'next-turn-approved' }))
+  activateBrowserRun('run-new')
+  const nextTurnWrite = await execute(command('click', { idx: 0 }, { run_id: 'run-new', tab_id: b.id, expected_snapshot_id: sameRunPage.snapshot_id, approved_action_id: 'next-turn-approved' }))
   assert(nextTurnWrite.ok && (await b.page('window.submits')) === 1, 'ordinary approval activation retains current-turn snapshot')
-  const nav = await makeTab('tab-navigation')
-  setActiveWebview(nav.wv, 'tab-navigation')
+  const nav = await makeTab('navigation')
+  activateBrowserTab(nav.id)
   await nav.page("var a=document.createElement('a');a.id='navigation';a.href=location.origin+'/next';a.textContent='下一页';a.onclick=function(){localStorage.setItem('unwanted-click','yes')};document.body.appendChild(a);true")
   const navigationPage = await execute(command('snapshot', {}, { run_id: 'navigation-run' }))
   const link = navigationPage.elements.find(el => el.text === '下一页')
-  assert(link.href === ${JSON.stringify(url)} + 'next', 'snapshot exposes the actual ordinary anchor URL')
-  const navPin = { run_id: 'navigation-run', tab_id: 'tab-navigation', expected_snapshot_id: navigationPage.snapshot_id }
+  assert(link.href === url + 'next', 'snapshot exposes the actual ordinary anchor URL')
+  const navPin = { run_id: 'navigation-run', tab_id: nav.id, expected_snapshot_id: navigationPage.snapshot_id }
   assert((await execute(command('click', { idx: link.idx }, navPin))).error_kind === 'approval_required', 'native anchor navigation still requires approval')
   await nav.page("document.querySelector('#navigation').href=location.origin+'/changed';true")
   assert((await execute(command('click', { idx: link.idx }, { ...navPin, approved_action_id: 'navigation-approved' }))).error_kind === 'stale_snapshot', 'changed href invalidates approval snapshot')
   await nav.page("document.querySelector('#navigation').href=location.origin+'/next';true")
   await nav.page("var cover=document.createElement('div');cover.id='cover';cover.style.cssText='position:fixed;inset:0;z-index:999999;background:white';document.body.appendChild(cover);true")
-  const coveredNav = await execute(command('snapshot', {}, { run_id: 'navigation-run', tab_id: 'tab-navigation' }))
-  assert((await execute(command('click', { idx: link.idx }, { ...navPin, expected_snapshot_id: coveredNav.snapshot_id, approved_action_id: 'navigation-approved' }))).error_kind === 'element_obscured', 'an obscured anchor cannot navigate')
+  const coveredNav = await execute(command('snapshot', {}, { run_id: 'navigation-run', tab_id: nav.id }))
+  const obscured = await execute(command('click', { idx: link.idx }, { ...navPin, expected_snapshot_id: coveredNav.snapshot_id, approved_action_id: 'navigation-approved' }))
+  assert(!obscured.ok && obscured.outcome === 'blocked' && ['element_obscured','browser_timeout'].includes(obscured.error_kind), 'an obscured anchor cannot navigate')
   await nav.page("document.querySelector('#cover').remove();true")
-  const currentNav = await execute(command('snapshot', {}, { run_id: 'navigation-run', tab_id: 'tab-navigation' }))
+  const currentNav = await execute(command('snapshot', {}, { run_id: 'navigation-run', tab_id: nav.id }))
   const anchorNavigation = await execute(command('click', { idx: link.idx }, { ...navPin, expected_snapshot_id: currentNav.snapshot_id, approved_action_id: 'navigation-approved' }))
   assert(anchorNavigation.ok && anchorNavigation.interaction_kind === 'navigation' && anchorNavigation.url === link.href, 'bound anchor navigates in the same visible browser tab')
   assert(await nav.page("localStorage.getItem('unwanted-click')===null"), 'native navigation does not dispatch an untrusted page click handler')
-  assert((await execute(command('snapshot', {}, { run_id: 'navigation-run', tab_id: 'tab-navigation' }))).ok, 'the same run continues observing after a navigation click')
+  assert((await execute(command('snapshot', {}, { run_id: 'navigation-run', tab_id: nav.id }))).ok, 'the same run continues observing after a navigation click')
   await nav.page("var redirect=document.createElement('a');redirect.href=location.origin+'/redirect';redirect.textContent='跳转测试';document.body.appendChild(redirect);true")
-  const beforeRedirect = await execute(command('snapshot', {}, { run_id: 'navigation-run', tab_id: 'tab-navigation' }))
+  const beforeRedirect = await execute(command('snapshot', {}, { run_id: 'navigation-run', tab_id: nav.id }))
   const redirectLink = beforeRedirect.elements.find(el => el.text === '跳转测试')
   const redirected = await execute(command('click', { idx: redirectLink.idx }, { ...navPin, expected_snapshot_id: beforeRedirect.snapshot_id, approved_action_id: 'redirect-approved' }))
   assert(redirected.outcome === 'unknown' && redirected.error_kind === 'navigation_redirected' && !redirected.interaction_kind, 'redirected navigation is UNKNOWN and cannot masquerade as the approved target')
-  return { checks }
-})()
-`
-  const built = await build({
-    stdin: { contents: script, resolveDir: process.cwd(), loader: 'ts' },
-    bundle: true, format: 'iife', platform: 'browser', write: false, tsconfig: 'tsconfig.web.json', external: ['electron'],
-    plugins: [{ name: 'browser-test-dependencies', setup(build) {
-      build.onResolve({ filter: /\/store$/ }, () => ({ path: 'test-store', namespace: 'test' }))
-      build.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export const useStore = { getState: () => globalThis.__browserTestStore }', loader: 'js' }))
-      build.onResolve({ filter: /Readability\.js\?raw$/ }, () => ({ path: resolve('node_modules/@mozilla/readability/Readability.js'), namespace: 'raw' }))
-      build.onLoad({ filter: /.*/, namespace: 'raw' }, args => ({ contents: readFileSync(args.path, 'utf8'), loader: 'text' }))
-    } }]
-  })
-  const code = built.outputFiles[0].text
-  // Only this controlled fixture host has Node enabled to install its IPC stub; guest webviews do not.
-  window = new BrowserWindow({ show: false, webPreferences: { sandbox: false, contextIsolation: false, nodeIntegration: true, webviewTag: true } })
-  await window.loadURL(url)
-  await window.webContents.executeJavaScript(code)
-  const result = await window.webContents.executeJavaScript('globalThis.__browserTestResult')
-  console.log(`Browser regression: ${result.checks} assertions passed (real Chromium fixture)`)
-}
 
-main().then(() => { server.close(); app.exit(0) }).catch(error => { console.error(error); server.close(); app.exit(1) })
+  releaseBrowserRun('navigation-run')
+  const capabilitiesRun = 'capabilities-run'
+  const cap = (operation, args = {}, extra = {}) => command(operation,args,{run_id:capabilitiesRun,tab_id:nav.id,...extra})
+  const frameURL = url.replace('fixture.meituan.com','frame.meituan.com') + 'frame'
+  await nav.page(`document.body.innerHTML='<div id="shadow"></div><iframe id="frame" style="width:700px;height:100px"></iframe><select id="chinese"><option value="重庆">重庆</option><option value="成都">成都</option></select>';
+    document.querySelector('#shadow').attachShadow({mode:'open'}).innerHTML='<input placeholder="影子输入">';
+    window.addEventListener('message',e=>{if(e.data==='frame-ready')window.frameReady=true});document.querySelector('#frame').src=${JSON.stringify(frameURL)};true`)
+  const waitFor = async (condition) => { const until=Date.now()+5000;while(!(await condition())){if(Date.now()>until)throw Error('fixture timed out');await new Promise(r=>setTimeout(r,30))} }
+  await waitFor(()=>nav.page('window.frameReady===true'))
+  const capPage = await execute(cap('snapshot'))
+  assert(capPage.ok && capPage.elements.some(x=>x.name==='影子输入') && capPage.elements.some(x=>x.name==='框架输入'), 'production driver observes open shadow and cross-origin iframe')
+  const shadowInput = capPage.elements.find(x=>x.name==='影子输入')
+  assert((await execute(cap('type',{idx:shadowInput.idx,text:'重庆'}, {expected_snapshot_id:capPage.snapshot_id,approved_action_id:'shadow-approved'}))).ok
+    && await nav.page("document.querySelector('#shadow').shadowRoot.querySelector('input').value==='重庆'"), 'production Playwright fills original shadow input')
+  const framePage = await execute(cap('snapshot'))
+  const frameInput = framePage.elements.find(x=>x.name==='框架输入')
+  assert((await execute(cap('type',{idx:frameInput.idx,text:'观音桥'}, {expected_snapshot_id:framePage.snapshot_id,approved_action_id:'frame-approved'}))).ok
+    && await nav.wc.mainFrame.frames.find(f=>f.url===frameURL).executeJavaScript("document.querySelector('input').value==='观音桥'"), 'production Playwright fills original cross-origin frame')
+  await nav.page("document.querySelector('#shadow').shadowRoot.querySelector('input').oninput=()=>window.hiddenInputs=(window.hiddenInputs||0)+1;true")
+  const beforeHidden = await execute(cap('snapshot'))
+  hideNextFill = true
+  const hiddenType = await execute(cap('type',{idx:beforeHidden.elements.find(x=>x.name==='影子输入').idx,text:'必须不写入'}, {expected_snapshot_id:beforeHidden.snapshot_id,approved_action_id:'hidden-approved'}))
+  assert(!hiddenType.ok && await nav.page("!window.hiddenInputs && document.querySelector('#shadow').shadowRoot.querySelector('input').value==='重庆'"), 'hiding a view as fill begins aborts before input or value mutation')
+  api.setBrowserLayout({x:0,y:0,width:850,height:580,visible:true})
+  await waitFor(()=>nav.page("document.visibilityState==='visible'"))
+  assert((await execute(cap('snapshot'))).ok, 'showing a tab permits fresh reads without cancelling its entire run')
+  const selectSnapshot = await execute(cap('snapshot'))
+  const chineseSelect = selectSnapshot.elements.find(x=>x.tag==='select')
+  assert((await execute(cap('type',{idx:chineseSelect.idx,text:'成都'}, {expected_snapshot_id:selectSnapshot.snapshot_id,approved_action_id:'select-approved'}))).ok
+    && await nav.page("document.querySelector('#chinese').value==='成都'"), 'Chinese option values survive the isolated selector transport')
+  const cloneSnapshot = await execute(cap('snapshot'))
+  await nav.page("var el=document.querySelector('#chinese');el.replaceWith(el.cloneNode(true));true")
+  assert((await execute(cap('type',{idx:chineseSelect.idx,text:'重庆'}, {expected_snapshot_id:cloneSnapshot.snapshot_id,approved_action_id:'clone-approved'}))).error_kind==='stale_snapshot', 'rerendered lookalike cannot inherit snapshot authority')
+  await handleBrowserIntent({kind:'zoom',id:nav.id,factor:1.25})
+  const zoomPage = await execute(cap('snapshot'))
+  const shot = await execute(cap('screenshot',{}, {expected_snapshot_id:zoomPage.snapshot_id}))
+  const png = shot.screenshot && Buffer.from(shot.screenshot.data_url.split(',')[1],'base64')
+  assert(shot.ok && shot.page_version===zoomPage.page_version && shot.screenshot.snapshot_id===zoomPage.snapshot_id
+    && png.readUInt32BE(16)===shot.screenshot.image.width && png.readUInt32BE(20)===shot.screenshot.image.height
+    && Math.abs(shot.screenshot.image.width-shot.screenshot.clip.width*shot.screenshot.dpr)<=2, 'native screenshot pixels and version agree at non-default zoom')
+  await nav.page("var p=document.createElement('button');p.id='popup';p.textContent='Open fixture popup';p.onclick=()=>window.open(location.origin+'/popup');document.body.appendChild(p);true")
+  const popupSnapshot = await execute(cap('snapshot'))
+  const popupButton = popupSnapshot.elements.find(x=>x.text==='Open fixture popup')
+  await execute(cap('click',{idx:popupButton.idx},{expected_snapshot_id:popupSnapshot.snapshot_id,approved_action_id:'popup-approved'}))
+  await waitFor(()=>api.getBrowserState().tabs.some(t=>t.popup))
+  const popup = api.getBrowserState().tabs.find(t=>t.popup)
+  assert(api.isOwnedBrowserContents(api.getBrowserTab(popup.id).id), 'native popup remains a visible manager-owned browser')
+  assert((await execute(command('snapshot',{}, {run_id:'popup-thief',tab_id:popup.id}))).error_kind==='tab_session_mismatch', 'another run cannot steal an opener-owned popup')
+  await waitFor(()=>!api.getBrowserTab(popup.id).isLoading())
+  assert((await execute(command('snapshot',{}, {run_id:capabilitiesRun,tab_id:popup.id}))).ok, 'original run may observe its same-session popup for verification')
+  await handleBrowserIntent({kind:'close',id:popup.id}); activateBrowserTab(nav.id)
+  await nav.page(`document.body.innerHTML='<style>.high{display:none}@media(max-width:650px){.low{display:none}.high{display:inline}}</style><button id="price" onclick="window.chosen=this.innerText"><span class="low">套餐128</span><span class="high">套餐256</span></button>';true`)
+  const beforeResize = await execute(cap('snapshot'))
+  host.setSize(560,650)
+  await waitFor(()=>nav.page("document.querySelector('#price').innerText.includes('256')"))
+  assert((await execute(cap('click',{idx:0},{expected_snapshot_id:beforeResize.snapshot_id,approved_action_id:'resize-old'}))).error_kind==='stale_snapshot'
+    && await nav.page('!window.chosen'), 'CSS responsive price changes invalidate an old approval on the same node')
+  const afterResize = await execute(cap('snapshot'))
+  assert((await execute(cap('click',{idx:0},{expected_snapshot_id:afterResize.snapshot_id,approved_action_id:'resize-new'}))).ok
+    && await nav.page("window.chosen.includes('256')"), 'fresh approval after resize can execute the actual displayed choice')
+  await nav.page(`document.body.innerHTML='<style>.high{display:none}button:hover .low{display:none}button:hover .high{display:inline}</style><button id="long-price" onclick="window.longChosen=this.innerText">${'套餐说明'.repeat(30)}<span class="low">128</span><span class="high">256</span></button>';true`)
+  nav.wc.sendInputEvent({type:'mouseMove',x:500,y:400})
+  await waitFor(()=>nav.page("document.querySelector('#long-price').innerText.endsWith('128')"))
+  const beforeHover = await execute(cap('snapshot'))
+  assert((await execute(cap('click',{idx:0},{expected_snapshot_id:beforeHover.snapshot_id,approved_action_id:'hover-old'}))).error_kind==='stale_snapshot'
+    && await nav.page('!window.longChosen'), 'trial-hover cannot silently change a price beyond the public text truncation')
+  const afterHover = await execute(cap('snapshot'))
+  assert(beforeHover.elements[0].text===afterHover.elements[0].text
+    && (await execute(cap('click',{idx:0},{expected_snapshot_id:afterHover.snapshot_id,approved_action_id:'hover-new'}))).ok
+    && await nav.page("window.longChosen.endsWith('256')"), 'full private semantics protect truncated labels while fresh hover approval works')
+  const slow = execute(command('navigate',{url:url+'slow'}, {run_id:'slow-run'}))
+  await waitFor(()=>slowRequests>0)
+  cancelBrowserRun('slow-run')
+  const cancelledNavigation = await slow
+  assert(!cancelledNavigation.ok, 'cancellation aborts a pending native navigation')
+  await new Promise(r=>setTimeout(r,1900))
+  assert(!api.getBrowserState().tabs.some(t=>api.getBrowserTab(t.id).getURL().endsWith('/slow')), 'cancelled navigation cannot commit after its response arrives')
+  console.log(`Browser regression: ${checks} assertions passed (real WebContentsView + trusted bridge + Playwright)`)
+}
+async function finish(code) {
+  clearTimeout(watchdog)
+  await api?.closeBrowserDriver().catch(() => {})
+  host?.destroy(); server.close()
+  if (!code) rmSync(work,{recursive:true,force:true})
+  else console.error('Failure fixture retained:',work)
+  app.exit(code)
+}
+main().then(()=>finish(0)).catch(error=>{console.error(error);void finish(1)})

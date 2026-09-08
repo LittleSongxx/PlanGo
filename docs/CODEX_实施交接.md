@@ -38,6 +38,8 @@ DOM 和 Vision 共用命令身份、快照、授权、幂等、回执和后验�
 
 ## 当前状态，不要误读
 
+本段以下为迁移前基线；本轮R0/P0/P1的实际实现和P2/P3未完成项以 [实施进度](实施进度.md) 为准，不重复已经完成的更名或恢复旧renderer执行器。
+
 当前是“确定性协调器 + LLM 专业节点 + 浏览器工具 Agent”的工程 MVP。Supervisor 当前采用 fallback 阶段调度；Advocate 逻辑分支共享模型锁，模型请求串行；Compiler/Verifier/Memory/Queue 都不是独立 LLM Agent。
 
 技术运行链和受控菜单任务已经跑通，不能据此宣称所有商户任务闭环。正常浏览器终态绕过 Reflection/记忆，行程拒绝等路径仍可到 Reflection。图片输入只做图像抽取，不是浏览器 Vision fallback。

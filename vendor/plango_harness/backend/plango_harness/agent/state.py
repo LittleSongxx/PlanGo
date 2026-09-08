@@ -37,6 +37,8 @@ class PlanGoState(TypedDict, total=False):
     run_id: str
     browser_wait: dict[str, Any] | None
     location_origin: dict[str, Any]
+    browser_vision_turn: int | None
+    browser_vision_reason: str | None
     browser_steps: int
     processed_image_hash: str | None
     browser_image_context: str
@@ -120,6 +122,8 @@ def initial_state(
 ) -> PlanGoState:
     return {
         "run_id": run_id,
+        "browser_vision_turn": None,
+        "browser_vision_reason": None,
         "thread_id": thread_id or run_id,
         "user_id": user_id,
         "input_text": input_text,

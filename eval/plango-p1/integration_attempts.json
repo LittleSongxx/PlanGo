@@ -1,0 +1,65 @@
+{
+  "scope": "controlled Chromium implementation/debug runs; assertion counts are not business task success rates",
+  "browser_runs": [
+    {
+      "result": "failed",
+      "reason": "first snapshot: selector registration before CDP attach not inherited",
+      "fixed": true
+    },
+    {
+      "result": "passed",
+      "assertions": 49
+    },
+    {
+      "result": "passed",
+      "assertions": 60
+    },
+    {
+      "result": "failed",
+      "reason": "closing tab remained discoverable until destroyed event",
+      "fixed": true
+    },
+    {
+      "result": "failed",
+      "reason": "old-snapshot isolation assertion shortly after unrelated tab close; original error kind not captured",
+      "followup": "target-discovery close race inspection pending"
+    },
+    {
+      "result": "passed",
+      "assertions": 66
+    }
+  ],
+  "fresh_visibility_and_semantic_regressions": "audit.json",
+  "dom_deployed_model_tokens": 1044,
+  "canvas_vision_runs": [
+    {
+      "run_id": "26d103ef4528429aac42b985e00dd20c",
+      "result": "failed",
+      "phase": "PARTIAL_FAILED",
+      "reason": "A correct, persisted visual reading was discarded by the second Vision request guard",
+      "screenshot_commands": 1,
+      "visual_reading_correct": true,
+      "model_tokens": 2683,
+      "fix": "Suppress repeated screenshot advice only after an existing valid read-only visual observation; retain the one-per-turn cap and business/manual barriers"
+    },
+    {
+      "result": "passed",
+      "model_tokens": 2772,
+      "screenshot_commands": 1,
+      "observations": 2,
+      "real_model": true,
+      "api_worker_restart_history_recovered": true
+    }
+  ],
+  "closed_target_followup": {
+    "reproduced_with_injected_unrelated_target_close": true,
+    "fixed_and_targeted_verified": true,
+    "historical_failure_cause_not_proven": true
+  },
+  "final_backend_checks": {
+    "passed": 108,
+    "subtests": 35
+  },
+  "browser_view_checks": 40,
+  "browser_final_checks": 66
+}

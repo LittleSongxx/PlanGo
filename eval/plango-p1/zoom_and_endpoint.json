@@ -1,0 +1,87 @@
+{
+  "date": "2026-09-08T16:58:42.025Z",
+  "scope": "real Electron/Xvfb with synthetic local pages only",
+  "playwright": "1.63.0",
+  "checks": [
+    {
+      "name": "CDP maps exact visible WebContentsView target",
+      "passed": true,
+      "ms": 33,
+      "detail": {
+        "pages": [
+          "http://127.0.0.1:57369/shell",
+          "http://127.0.0.1:57369/fixture"
+        ],
+        "viewId": 2,
+        "sameSession": true,
+        "storagePath": "/home/song/code/Agent/multi-agent/PlanGo/output/playwright/probe-2026-09-08T16-58-42-023Z/profile/Partitions/plango-probe"
+      }
+    },
+    {
+      "name": "main discovers live endpoint through its own DevToolsActivePort",
+      "passed": true,
+      "ms": 0,
+      "detail": {
+        "path": "/home/song/code/Agent/multi-agent/PlanGo/output/playwright/probe-2026-09-08T16-58-42-023Z/profile/DevToolsActivePort",
+        "websocketURL": "ws://127.0.0.1:56729/devtools/browser/cd7a304f-6c02-4d78-b05f-50252942e3c8",
+        "versionMatches": true,
+        "mtime": 1788886722534.2932
+      }
+    },
+    {
+      "name": "Playwright click and fill after zoom1.25 on scale1.5 display",
+      "passed": true,
+      "ms": 113,
+      "detail": {
+        "geometry": {
+          "width": 768,
+          "height": 520,
+          "dpr": 1.875
+        },
+        "zoom": 1.25,
+        "scale": 1.25
+      }
+    },
+    {
+      "name": "native pointer uses measured DIP coordinates and same visible DOM",
+      "passed": true,
+      "ms": 39,
+      "detail": {
+        "css": {
+          "x": 620.0000610351562,
+          "y": 435.0000305175781
+        },
+        "dip": {
+          "x": 775,
+          "y": 544
+        },
+        "scale": 1.25
+      }
+    },
+    {
+      "name": "native focus and text input use the same zoomed field",
+      "passed": true,
+      "ms": 42,
+      "detail": {
+        "sameField": true
+      }
+    }
+  ],
+  "failures": [],
+  "sources": [
+    "https://www.electronjs.org/docs/latest/api/web-contents-view",
+    "https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp",
+    "https://playwright.dev/docs/api/class-locator#locator-click",
+    "https://www.electronjs.org/docs/latest/api/web-contents#webcontentsfromdevtoolstargetidtargetid"
+  ],
+  "endpointDiscovery": {
+    "path": "/home/song/code/Agent/multi-agent/PlanGo/output/playwright/probe-2026-09-08T16-58-42-023Z/profile/DevToolsActivePort",
+    "websocketURL": "ws://127.0.0.1:56729/devtools/browser/cd7a304f-6c02-4d78-b05f-50252942e3c8",
+    "versionMatches": true,
+    "mtime": 1788886722534.2932
+  },
+  "electron": "33.4.11",
+  "chrome": "130.0.6723.191",
+  "passed": 5,
+  "total": 5
+}

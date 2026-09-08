@@ -93,6 +93,11 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
   }).reverse()
   for (const artifact of artifacts) {
     const data = row(artifact.data)
+    if (artifact.type === 'browser_visual') {
+      cards.push({ kind: 'browser_page', title: str(artifact.title) || '截图理解', url: str(artifact.url), text: str(data.visual_text),
+        observedAt: str(artifact.observed_at), scope: 'visual_observation', limitations: strings(data.limitations) })
+      continue
+    }
     if (artifact.type === 'price_comparison' && data.basis === 'per_person') {
       cards.push({ kind: 'price_comparison', title: str(artifact.title) || '价格比较', source: source(artifact.source), data: {
         basis: 'per_person', party_size: num(data.party_size) ?? null, total_budget: num(data.total_budget) ?? null,

@@ -259,3 +259,11 @@ assert.equal(latestPages.cards.filter(c => c.kind === 'price_comparison').length
 assert.deepEqual(pageObservations, originalObservations, 'Projection must preserve all raw audit artifacts and evidence')
 assert.deepEqual(latestPages.evidence, projected.evidence)
 console.log('Latest browser page observation projection checks passed')
+const visual = projectHarness({ ...snapshot, state: { browser_artifacts: [{ type: 'browser_visual', source: 'browser', url: 'https://example.org/visual', observed_at: '2026-09-09T01:00:00Z', data: { visual_text: '截图显示一张菜单', limitations: ['小字无法辨认'], scope: 'visual_observation', screenshot: { data_url: 'must-not-render-image-payload', width: 800 } } }] } })
+const visualCard = visual.cards.find(card => card.kind === 'browser_page')!
+assert.equal(visualCard.text, '截图显示一张菜单')
+assert.equal(visualCard.scope, 'visual_observation')
+assert.deepEqual(visualCard.limitations, ['小字无法辨认'])
+assert(!JSON.stringify(visual.cards).includes('must-not-render-image-payload'))
+assert(!visual.cards.some(card => card.kind === 'receipt'))
+console.log('Visual observations retain scope/limitations and cannot become business receipts')

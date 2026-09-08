@@ -1,10 +1,11 @@
 // Desktop UI invokes bounded APIs; remote web content has no Harness credentials.
-import { ipcMain, shell, session as electronSession, webContents, type IpcMainInvokeEvent } from 'electron'
+import { ipcMain, shell, type IpcMainInvokeEvent } from 'electron'
 import { z } from 'zod'
 import QRCode from 'qrcode'
 import { IPC } from '@shared/ipc'
-import { resolveBrowserAction, cancelBrowserRun } from './browser-bridge'
-import { getMainWindow, ownsBrowserContents } from './index'
+import { cancelBrowserRun, cancelBrowserTab } from './browser-bridge'
+import { getMainWindow, isTrustedRendererUrl } from './index'
+import { handleBrowserIntent, setBrowserLayout } from './browserView'
 import { getHarness, harnessStatus, restartHarness } from './harness'
 import { getConfig, getConfigMasked, getHarnessEnvironment, setConfig } from './config'
 import { pingLlm } from './llm'
@@ -23,7 +24,7 @@ let guideImage: string | undefined
 
 function trusted(event: IpcMainInvokeEvent): void {
   const win = getMainWindow()
-  if (!win || event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame) throw new Error('Untrusted IPC sender')
+  if (!win || event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || !isTrustedRendererUrl(event.senderFrame.url) || !isTrustedRendererUrl(win.webContents.getURL())) throw new Error('Untrusted IPC sender')
 }
 
 function handle(channel: string, listener: (...args: any[]) => unknown): void {
@@ -47,12 +48,20 @@ function projectedReply(run: HarnessSnapshot): AgentReply {
 
 export function registerIpc(): void {
   handle('desktop:ready', () => { console.log('[plango] Desktop ready') })
-  handle('browser:eval', (contentsId: number, code: string) => {
-    z.number().int().positive().parse(contentsId)
-    z.string().max(250_000).parse(code)
-    const target = webContents.fromId(contentsId)
-    if (!target || !ownsBrowserContents(contentsId) || target.getType() !== 'webview' || target.session !== electronSession.fromPartition('persist:plango')) throw new Error('Untrusted browser target')
-    return target.executeJavaScriptInIsolatedWorld(1001, [{ code }])
+  handle(IPC.browserRequest, async (raw: unknown) => {
+    const intent = z.discriminatedUnion('kind', [
+      z.object({ kind: z.literal('state') }).strict(), z.object({ kind: z.literal('create'), url: z.string().max(8192) }).strict(),
+      z.object({ kind: z.literal('navigate'), id, url: z.string().max(8192) }).strict(),
+      z.object({ kind: z.literal('zoom'), id, factor: z.number().finite().min(0.5).max(2.5) }).strict(),
+      ...(['activate', 'close', 'back', 'forward', 'reload', 'focus'] as const).map(kind => z.object({ kind: z.literal(kind), id }).strict())
+    ]).parse(raw)
+    if ('id' in intent && !['activate', 'focus'].includes(intent.kind)) cancelBrowserTab(intent.id)
+    return handleBrowserIntent(intent)
+  })
+  handle(IPC.browserLayout, (raw: unknown) => {
+    const value = z.object({ x: z.number().finite().min(0).max(32000), y: z.number().finite().min(0).max(32000),
+      width: z.number().finite().min(0).max(32000), height: z.number().finite().min(0).max(32000), visible: z.boolean() }).strict().parse(raw)
+    setBrowserLayout(value)
   })
   handle(IPC.reminderRequest, async (operation: string, raw: unknown) => {
     const client = await getHarness()
@@ -112,12 +121,6 @@ export function registerIpc(): void {
     return projectedReply(await (await getHarness()).createRun(p.message))
   })
   handle(IPC.agentConfirm, () => { throw new Error('旧确认已失效，请从当前 Harness 任务重新确认。') })
-  ipcMain.on(IPC.browserExecResult, (event, payload) => {
-    if (event.sender !== getMainWindow()?.webContents || event.senderFrame !== getMainWindow()?.webContents.mainFrame) return
-    if (!Number.isSafeInteger(payload?.id)) return
-    resolveBrowserAction(payload.id, payload.result)
-  })
-
   handle(IPC.getConfig, () => ({ config: { ...getConfigMasked(), harness: { baseURL: getHarnessEnvironment().PLANGO_BACKEND_URL || 'http://127.0.0.1:8011', autoStart: getHarnessEnvironment().PLANGO_BACKEND_AUTOSTART !== 'false' } }, cities: [] }))
   handle(IPC.setConfig, async (raw: unknown) => {
     const patch = z.object({

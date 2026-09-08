@@ -12,6 +12,8 @@ const { pathToFileURL } = require('node:url')
 
 const root = process.cwd(), work = mkdtempSync(join(tmpdir(), 'plango-full-stack-'))
 const deployed = process.argv.includes('--deployed')
+const vision = process.argv.includes('--vision')
+assert(!vision || deployed, '--vision requires --deployed and the configured read-only Vision service')
 const python = process.env.PLANGO_PYTHON || join(process.env.CONDA_PREFIX, process.platform === 'win32' ? 'python.exe' : 'bin/python')
 function deploymentConfig() {
   const result = spawnSync(python, ['-c', 'import json,sys; sys.path.insert(0,"scripts"); from migrate_config import parse_config; print(json.dumps(parse_config(open(".env").read())))'], { cwd: root, encoding: 'utf8', timeout: 5000 })
@@ -21,9 +23,13 @@ function deploymentConfig() {
 const deployment = deployed ? deploymentConfig() : {}
 const token = deployed ? deployment.PLANGO_BACKEND_TOKEN : 'isolated-full-stack-smoke-only'
 assert(token, 'Deployed smoke requires the configured PlanGo control token')
-const input = (deployed ? `部署验收${Date.now().toString(36).slice(-6)}：` : '') + '读取当前浏览器页面的真实菜单'
+const canvasNonce = 'PLANGO-CANVAS-4829'
+const input = vision ? '读取当前浏览器画面中显示的文字' : (deployed ? `部署验收${Date.now().toString(36).slice(-6)}：` : '') + '读取当前浏览器页面的真实菜单'
+assert(!input.includes(canvasNonce), 'The model request must not reveal the expected canvas text')
 const historyTitle = input.length > 26 ? input.slice(0, 26) + '…' : input
-const fixture = '<!doctype html><html><head><title>完整链路菜单样本</title></head><body><h1>完整链路菜单样本</h1><table><tr><th>菜品</th><th>价格</th></tr><tr><td>双人菜单样本</td><td>128 元</td></tr><tr><td>时价菜</td><td>询价</td></tr></table><input placeholder="搜索"></body></html>'
+const fixture = vision
+  ? `<!doctype html><html><head><title>Canvas视觉验收样本</title><style>body{margin:0;background:white}canvas{display:block;width:960px;max-width:100%;height:auto}</style></head><body><canvas width="960" height="420"></canvas><script>const canvas=document.querySelector('canvas'),context=canvas.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,960,420);context.fillStyle='#111';context.font='bold 48px monospace';context.fillText(${JSON.stringify(canvasNonce)},40,190);document.currentScript.remove();</script></body></html>`
+  : '<!doctype html><html><head><title>完整链路菜单样本</title></head><body><h1>完整链路菜单样本</h1><table><tr><th>菜品</th><th>价格</th></tr><tr><td>双人菜单样本</td><td>128 元</td></tr><tr><td>时价菜</td><td>询价</td></tr></table><input placeholder="搜索"></body></html>'
 const server = createServer((_req, res) => { res.setHeader('content-type', 'text/html; charset=utf-8'); res.end(fixture) })
 const shareCollision = createServer()
 const nativeFetch = globalThis.fetch
@@ -34,10 +40,12 @@ function bounded(promise, label, milliseconds = 5000) {
   let timer
   return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Timed out: ' + label)), milliseconds) })]).finally(() => clearTimeout(timer))
 }
-const watchdog = setTimeout(() => { console.error('Full-stack watchdog expired at: ' + phase); void finish(1) }, 90000)
+const watchdog = setTimeout(() => { console.error('Full-stack watchdog expired at: ' + phase); void finish(1) }, vision ? 150000 : 90000)
 process.on('uncaughtException', error => { console.error('Full-stack uncaught exception at ' + phase, error); void finish(1) })
 process.on('unhandledRejection', error => { console.error('Full-stack unhandled rejection at ' + phase, error); void finish(1) })
 app.setPath('userData', join(work, 'electron'))
+app.commandLine.appendSwitch('remote-debugging-address', '127.0.0.1')
+app.commandLine.appendSwitch('remote-debugging-port', '0')
 app.commandLine.appendSwitch('disable-gpu')
 app.commandLine.appendSwitch('no-proxy-server')
 process.env.PLANGO_BACKEND_AUTOSTART = 'false'
@@ -45,7 +53,8 @@ process.env.PLANGO_BACKEND_TOKEN = token
 process.env.PLANGO_DATA_DIR = join(work, 'data')
 // The fixture starts Python first; establish its explicit desktop identity before the backend creates durable state.
 mkdirSync(process.env.PLANGO_DATA_DIR, { recursive: true, mode: 0o700 })
-writeFileSync(join(process.env.PLANGO_DATA_DIR, 'desktop-identity.json'), JSON.stringify({ token, browserSessionId: randomUUID() }), { mode: 0o600 })
+const desktopIdentity = { token, browserSessionId: randomUUID() }
+writeFileSync(join(process.env.PLANGO_DATA_DIR, 'desktop-identity.json'), JSON.stringify(desktopIdentity), { mode: 0o600 })
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 async function waitFor(label, check, timeout = 25000) {
   const start = Date.now()
@@ -56,6 +65,13 @@ async function api(path) {
   const response = await nativeFetch(backendUrl + path, { headers: { Authorization: 'Bearer ' + token }, signal: AbortSignal.timeout(3000) })
   if (!response.ok) throw new Error(`Backend ${response.status}: ${await response.text()}`)
   return bounded(response.json(), 'backend response body', 3000)
+}
+function visionLedger() {
+  assert(/^[a-f0-9]{32}$/.test(runId || ''), 'A persisted run ID is required to audit Vision commands')
+  const sql = `SELECT COALESCE(json_agg(json_build_object('command_id',command_id,'operation',payload->>'operation','ok',result->'ok','outcome',result->>'outcome','text',result->>'text','screenshot_id',result->'screenshot'->>'screenshot_id') ORDER BY seq),'[]'::json) FROM plango_browser_command WHERE run_id='${runId}';`
+  const result = spawnSync('docker', ['compose', 'exec', '-T', 'postgres', 'psql', '-U', 'plango', '-d', 'plango', '-At', '-c', sql], { cwd: root, encoding: 'utf8', timeout: 5000 })
+  assert.equal(result.status, 0, 'Cannot audit the persisted Vision command ledger')
+  return JSON.parse(result.stdout.trim())
 }
 async function startBackend(port) {
   if (deployed) {
@@ -105,7 +121,7 @@ async function main() {
     shareCollision.listen(8799, '127.0.0.1', resolve)
   })
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
-  fixtureUrl = `http://127.0.0.1:${server.address().port}/menu`
+  fixtureUrl = `http://127.0.0.1:${server.address().port}/${vision ? 'canvas' : 'menu'}`
   const reservation = createServer()
   await new Promise(resolve => reservation.listen(0, '127.0.0.1', resolve))
   const port = reservation.address().port
@@ -126,31 +142,55 @@ async function main() {
   await waitFor('real application window', () => { window = BrowserWindow.getAllWindows()[0]; return !!window })
   stage('waiting for renderer hydration')
   await waitFor('renderer ready', () => js("!!document.querySelector('textarea')&&!document.body.innerText.includes('未连接服务')"))
-  stage('opening actual fixture webview')
+  stage('opening actual fixture WebContentsView')
   await fill('input[placeholder="输入网址或搜索词，回车打开…"]', fixtureUrl)
-  await waitFor('real webview', () => js("!!document.querySelector('webview')&&document.querySelector('webview').getURL().includes('/menu')"))
-  stage('sending menu request through UI')
+  await waitFor('real WebContentsView', () => window.contentView.children.some(view => view.webContents?.getURL() === fixtureUrl && !view.webContents.isLoading()))
+  if (vision) {
+    assert(modelEnabled, 'Canvas Vision requires the real configured model')
+    const guest = window.contentView.children.find(view => view.webContents?.getURL() === fixtureUrl).webContents
+    assert.deepEqual(await guest.executeJavaScript(`({canvas:document.body.children.length===1&&document.body.firstElementChild.tagName==='CANVAS',text:document.body.innerText,leaked:document.documentElement.outerHTML.includes(${JSON.stringify(canvasNonce)})})`), { canvas: true, text: '', leaked: false }, 'The nonce must exist only as canvas pixels, not readable DOM or fixture metadata')
+    await guest.executeJavaScript('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+  }
+  stage(vision ? 'sending nonce-free canvas reading request through UI' : 'sending menu request through UI')
   await fill('textarea', input)
   stage('waiting for backend/browser task completion')
   await waitFor('durable completed run', async () => {
     const runs = (await api('/api/v1/runs?user_id=desktop')).runs
-    const current = runs.find(run => !existingRuns.has(run.run_id))
+    let current
+    for (const candidate of runs.filter(run => !existingRuns.has(run.run_id))) {
+      const scoped = await api('/api/v1/runs/' + candidate.run_id)
+      if (scoped.browser_session_id === desktopIdentity.browserSessionId) { current = scoped; break }
+    }
     if (!current) return false
     runId = current.run_id
-    if (current.phase === 'FAILED') throw new Error('Run failed: ' + current.phase)
+    if (['FAILED', 'PARTIAL_FAILED', 'INFEASIBLE', 'CANCELLED'].includes(current.phase)) throw new Error('Run failed: ' + current.phase)
     return current.phase === 'SUCCEEDED'
-  }, deployed ? 60000 : 25000)
+  }, vision ? 90000 : deployed ? 60000 : 25000)
   const completed = await api('/api/v1/runs/' + runId)
-  const artifact = completed.state.browser_artifacts.find(a => a.data.menu?.length)
-  assert(artifact, 'Real backend must persist typed menu extraction')
+  const artifact = completed.state.browser_artifacts.find(a => vision ? a.type === 'browser_visual' : a.data.menu?.length)
+  assert(artifact, vision ? 'Real backend must persist a browser_visual artifact' : 'Real backend must persist typed menu extraction')
   assert.equal(artifact.source, 'browser')
   assert.equal(artifact.url, fixtureUrl)
-  assert.equal(artifact.data.menu[0].price, 128)
-  assert.equal(artifact.data.menu[1].price, null)
+  if (vision) {
+    assert.equal(completed.input_text, input)
+    assert(artifact.data.visual_text.includes(canvasNonce), 'Vision must actually read the nonce from the native screenshot')
+    assert.equal(artifact.data.scope, 'visual_observation')
+    assert(artifact.data.screenshot?.screenshot_id && artifact.data.screenshot.page_version)
+    assert.equal(artifact.data.screenshot.url, fixtureUrl)
+    assert.equal(artifact.data.screenshot.snapshot_id, artifact.snapshot_id)
+    assert(artifact.data.screenshot.image.width > 0 && artifact.data.screenshot.image.height > 0)
+    assert(!Object.hasOwn(artifact.data.screenshot, 'data_url') && !JSON.stringify(artifact).includes('data:image/'), 'Durable visual artifacts retain screenshot metadata without inline image bytes')
+    assert.equal((completed.state.action_results || []).length, 0, 'Read-only Vision must not fabricate business action results')
+    assert(!completed.state.browser_artifacts.some(a => a.type === 'business_receipt' || a.data?.scope === 'business_receipt' || a.data?.receipt), 'Vision observations must not become business receipts')
+  } else {
+    assert.equal(artifact.data.menu[0].price, 128)
+    assert.equal(artifact.data.menu[1].price, null)
+  }
   if (modelEnabled) assert(completed.state.model_token_count > 0, 'The deployed model must actually respond')
   else assert.equal(completed.state.model_token_count, 0, 'No paid model calls in offline mode')
   assert((await api('/api/v1/runs/' + runId + '/events')).events.some(e => e.event_type === 'BROWSER_OBSERVATION'))
-  await waitFor('real-backend menu projected into UI', () => js("document.body.innerText.includes('菜单摘录')&&document.body.innerText.includes('¥128')&&document.body.innerText.includes('价格待核验')"))
+  const visibleResult = vision ? `document.body.innerText.includes(${JSON.stringify(canvasNonce)})&&document.body.innerText.includes('截图理解')&&document.body.innerText.includes('不代表已核验商家事实')` : "document.body.innerText.includes('菜单摘录')&&document.body.innerText.includes('¥128')&&document.body.innerText.includes('价格待核验')"
+  await waitFor('real-backend result projected into UI', () => js(visibleResult))
   // Restart only the owned backend, retaining its independent SQLite/checkpoint files.
   stage('restarting owned backend with persisted state')
   if (deployed) {
@@ -167,20 +207,31 @@ async function main() {
   await js("document.querySelector('button[title=\"历史会话\"]').click()")
   await waitFor('history entry', () => js(`!![...document.querySelectorAll('div')].find(el=>el.className.includes('truncate pr-6')&&el.textContent===${JSON.stringify(historyTitle)})`))
   await js(`[...document.querySelectorAll('div')].find(el=>el.className.includes('truncate pr-6')&&el.textContent===${JSON.stringify(historyTitle)}).click()`)
-  await waitFor('UI recovery after Python restart', () => js("document.body.innerText.includes('菜单摘录')&&document.body.innerText.includes('价格待核验')&&!document.body.innerText.includes('未连接服务')"))
+  await waitFor('UI recovery after Python restart', () => js(`(${visibleResult})&&!document.body.innerText.includes('未连接服务')`))
   let commands = (await api('/api/v1/runs/' + runId + '/events')).events.filter(e => e.event_type === 'BROWSER_OBSERVATION').length
+  let ledger
+  if (vision) {
+    ledger = visionLedger()
+    assert.equal(ledger.filter(command => command.operation === 'screenshot').length, 1, 'Exactly one durable screenshot command is allowed')
+    assert(!ledger.some(command => ['click', 'type'].includes(command.operation)), 'Canvas reading cannot issue browser writes')
+    assert(ledger.every(command => command.ok === true), 'Every issued browser command must have a successful durable observation')
+    assert(!ledger.some(command => command.operation !== 'screenshot' && String(command.text || '').includes(canvasNonce)), 'DOM extraction must not leak the expected canvas nonce')
+    assert.equal(ledger.find(command => command.operation === 'screenshot').screenshot_id, artifact.data.screenshot.screenshot_id)
+  }
   if (!deployed) {
     const databaseCheck = spawnSync(python, ['-c', 'import sqlite3,sys,json; c=sqlite3.connect(sys.argv[1]); rows=c.execute("select result from plango_browser_command").fetchall(); assert len(rows)>=1; results=[json.loads(r[0]) for r in rows]; assert all(r["ok"] for r in results); print(len(rows))', join(work, 'data', 'runs.sqlite')], { encoding: 'utf8', timeout: 5000 })
     assert.equal(databaseCheck.status, 0, databaseCheck.stderr)
     commands = Number(databaseCheck.stdout.trim())
   }
   await sleep(300)
-  const evidenceDirectory = join(root, 'eval/plango-p0')
+  const evidenceDirectory = join(root, 'eval/plango-p1')
   mkdirSync(evidenceDirectory, { recursive: true })
-  const screenshot = join(evidenceDirectory, deployed ? 'deployed-desktop.png' : 'full-stack-desktop.png')
+  const screenshot = join(evidenceDirectory, vision ? 'deployed-vision-desktop.png' : deployed ? 'deployed-desktop.png' : 'full-stack-desktop.png')
   writeFileSync(screenshot, (await bounded(window.webContents.capturePage(), 'final screenshot')).toPNG())
-  if (deployed) writeFileSync(join(evidenceDirectory, 'deployed_desktop_checks.json'), JSON.stringify({ date: new Date().toISOString(), backend: 'Docker PostgreSQL/Redis API and worker', python_environment: 'plango', real_electron_dom: true, page: 'controlled local menu fixture', real_model: modelEnabled, model_tokens: completed.state.model_token_count, run_id: runId, observed_events: commands, prices: [128, null], api_worker_restart_recovered: true, history_ui_restored: true, screenshot }, null, 2) + '\n')
-  console.log(`Full-stack smoke passed: ${deployed ? 'Docker PostgreSQL/Redis' : 'owned Python'} backend, real Electron DOM, ${commands} observations, menu prices/unknowns, backend restart + history recovery, ${completed.state.model_token_count} model tokens. Screenshot: ${screenshot}`)
+  if (deployed) writeFileSync(join(evidenceDirectory, vision ? 'deployed_vision_checks.json' : 'deployed_desktop_checks.json'), JSON.stringify({ date: new Date().toISOString(), backend: 'Docker PostgreSQL/Redis API and worker', python_environment: 'plango', real_electron_dom: true, page: vision ? 'controlled canvas-only fixture' : 'controlled local menu fixture', real_model: modelEnabled, model_tokens: completed.state.model_token_count, run_id: runId, observed_events: commands,
+    ...(vision ? { input, expected_canvas_text: canvasNonce, input_contains_nonce: false, dom_contains_nonce: false, visual_text: artifact.data.visual_text, scope: artifact.data.scope, limitations: artifact.data.limitations, screenshot_metadata: artifact.data.screenshot, screenshot_commands: 1, click_type_commands: 0, business_receipts: 0, browser_commands: ledger.map(({ text, ...command }) => command), ui_visible_text: true } : { prices: [128, null] }),
+    api_worker_restart_recovered: true, history_ui_restored: true, screenshot }, null, 2) + '\n')
+  console.log(`Full-stack smoke passed: ${deployed ? 'Docker PostgreSQL/Redis' : 'owned Python'} backend, real Electron ${vision ? 'canvas screenshot + Vision nonce' : 'DOM menu prices/unknowns'}, ${commands} observations, backend restart + history recovery, ${completed.state.model_token_count} model tokens. Screenshot: ${screenshot}`)
 }
 async function finish(code) {
   if (finishing) return
@@ -189,8 +240,9 @@ async function finish(code) {
   await stopBackend()
   if (deployed && /^[a-f0-9]{32}$/.test(runId || '')) {
     // Retain this run as deployment evidence without mixing it into the real desktop user's history.
-    const archived = spawnSync('docker', ['compose', 'exec', '-T', 'postgres', 'psql', '-U', 'plango', '-d', 'plango', '-c', `UPDATE agent_run SET user_id='plango-deployment-checks' WHERE run_id='${runId}' AND input_text LIKE '部署验收%';`], { cwd: root, encoding: 'utf8', timeout: 5000 })
-    if (archived.status !== 0) { console.error('Could not isolate the deployment test run'); code = 1 }
+    const inputGuard = vision ? "input_text='读取当前浏览器画面中显示的文字'" : "input_text LIKE '部署验收%'"
+    const archived = spawnSync('docker', ['compose', 'exec', '-T', 'postgres', 'psql', '-U', 'plango', '-d', 'plango', '-c', `UPDATE agent_run SET user_id='plango-deployment-checks' WHERE run_id='${runId}' AND ${inputGuard} AND EXISTS (SELECT 1 FROM plango_browser_binding b WHERE b.run_id=agent_run.run_id AND b.browser_session_id='${desktopIdentity.browserSessionId}');`], { cwd: root, encoding: 'utf8', timeout: 5000 })
+    if (archived.status !== 0 || !/UPDATE 1\b/.test(archived.stdout)) { console.error('Could not isolate the deployment test run'); code = 1 }
   }
   server.close()
   if (shareCollision.listening) shareCollision.close()

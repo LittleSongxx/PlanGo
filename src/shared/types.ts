@@ -172,7 +172,7 @@ export interface ChatMessage {
 // 成果卡片（渲染到成果区画布）
 export type OutcomeCard =
   | { kind: 'evidence'; items: HarnessEvidence[] }
-  | { kind: 'browser_page'; title: string; url: string; text: string; observedAt?: string }
+  | { kind: 'browser_page'; title: string; url: string; text: string; observedAt?: string; scope?: 'visual_observation'; limitations?: string[] }
   | { kind: 'plan'; plan: Plan }
   | { kind: 'plans'; variants: { plan: Plan; styleLabel: string; per: number | null; overBudget?: number }[]; city: string; budget?: number }
   | { kind: 'deal'; title: string; rows: DealRow[] }

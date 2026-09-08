@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
+import math
+import re
+import struct
 import time
+import zlib
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Any, Literal
@@ -11,8 +16,8 @@ from urllib.parse import urlsplit
 from langgraph.config import get_config
 from langgraph.types import interrupt
 from plango_harness.agent.contracts import RunPhase
-from plango_harness.persistence.database import metadata
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from plango_harness.persistence.database import agent_action, metadata
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import JSON, Column, Float, Integer, String, Table, insert, select, update
 from sqlalchemy.exc import IntegrityError
 
@@ -41,6 +46,81 @@ commands = Table(
 )
 
 
+class BrowserScreenshot(BaseModel):
+    """A native PNG capture, with viewport/clip in CSS pixels and dpr including zoom."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+    screenshot_id: str = Field(min_length=1, max_length=128)
+    snapshot_id: str = Field(min_length=1, max_length=128)
+    url: str = Field(min_length=1, max_length=8192)
+    captured_at: AwareDatetime
+    viewport: dict[str, float]
+    image: dict[str, int]
+    dpr: float = Field(ge=0.25, le=8, allow_inf_nan=False)
+    zoom: float = Field(ge=0.25, le=5, allow_inf_nan=False)
+    clip: dict[str, float]
+    scroll: dict[str, float]
+    page_version: str = Field(min_length=1, max_length=200)
+    data_url: str = Field(max_length=10_666_700)
+    view_bounds: dict[str, float] | None = None
+
+    @field_validator("captured_at", mode="before")
+    @classmethod
+    def timestamp(cls, value):
+        if isinstance(value, str):
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return value
+
+    @model_validator(mode="after")
+    def validate_geometry_and_png(self):
+        for value, keys in ((self.viewport, {"width", "height"}), (self.image, {"width", "height"}),
+                            (self.clip, {"x", "y", "width", "height"}), (self.scroll, {"x", "y"})):
+            if set(value) != keys or any(not math.isfinite(v) or abs(v) > 10_000_000 for v in value.values()):
+                raise ValueError("invalid_screenshot_geometry")
+        if self.view_bounds is not None and (set(self.view_bounds) != {"x", "y", "width", "height"}
+                or any(not math.isfinite(v) for v in self.view_bounds.values())
+                or self.view_bounds["width"] <= 0 or self.view_bounds["height"] <= 0):
+            raise ValueError("invalid_screenshot_view_bounds")
+        for axis, size in (("x", "width"), ("y", "height")):
+            if not 0 < self.viewport[size] <= 8192 or not 0 < self.image[size] <= 16384:
+                raise ValueError("screenshot_dimensions_out_of_bounds")
+            if self.clip[axis] < 0 or self.clip[size] <= 0 or self.clip[axis] + self.clip[size] > self.viewport[size] + 0.01:
+                raise ValueError("screenshot_clip_outside_viewport")
+            # devicePixelRatio already includes browser zoom; do not multiply zoom twice.
+            if abs(self.image[size] - self.clip[size] * self.dpr) > 2:
+                raise ValueError("screenshot_pixel_ratio_mismatch")
+        if self.image["width"] * self.image["height"] > 16_000_000:
+            raise ValueError("screenshot_pixel_budget_exceeded")
+        url = urlsplit(self.url)
+        if url.scheme not in {"http", "https"} or not url.hostname or url.username or url.password:
+            raise ValueError("invalid_screenshot_url")
+        if not re.fullmatch(r"data:image/png;base64,[A-Za-z0-9+/=]+", self.data_url):
+            raise ValueError("screenshot_requires_native_png")
+        raw = base64.b64decode(self.data_url.split(",", 1)[1], validate=True)
+        if not 45 <= len(raw) <= 8_000_000 or raw[:16] != b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR":
+            raise ValueError("invalid_or_oversize_screenshot_png")
+        if zlib.crc32(raw[12:29]) != int.from_bytes(raw[29:33], "big") or raw[-12:] != b"\x00\x00\x00\x00IEND\xaeB`\x82":
+            raise ValueError("invalid_screenshot_png_header")
+        if struct.unpack(">II", raw[16:24]) != (self.image["width"], self.image["height"]):
+            raise ValueError("screenshot_image_dimensions_mismatch")
+        return self
+
+    def check_binding(self, observation, command, before, *, created_at=0, now=None):
+        captured = self.captured_at.timestamp()
+        current = time.time() if now is None else now
+        if not -2 <= current - captured <= 30 or captured < created_at - 2:
+            raise ValueError("stale_screenshot")
+        if (command.get("operation") != "screenshot" or not command.get("expected_snapshot_id")
+                or self.snapshot_id != command["expected_snapshot_id"]
+                or self.snapshot_id != observation.get("snapshot_id") or self.snapshot_id != before.get("snapshot_id")
+                or self.url != observation.get("url") or self.url != before.get("url")
+                or not command.get("tab_id") or observation.get("tab_id") != command["tab_id"]
+                or before.get("tab_id") != command["tab_id"]
+                or self.page_version != before.get("page_version") or self.page_version != observation.get("page_version")
+                or (command.get("command_id") and command["command_id"] != observation.get("command_id"))):
+            raise ValueError("screenshot_page_binding_mismatch")
+
+
 class Observation(BaseModel):
     model_config = ConfigDict(extra="forbid")
     command_id: str = Field(min_length=1, max_length=64)
@@ -51,6 +131,8 @@ class Observation(BaseModel):
     error_kind: str | None = None
     error: str | None = None
     snapshot_id: str | None = None
+    page_version: str | None = Field(default=None, min_length=1, max_length=200)
+    screenshot: BrowserScreenshot | None = None
     tab_id: str | None = None
     url: str | None = None
     title: str | None = Field(default=None, max_length=4000)
@@ -131,6 +213,7 @@ class BrowserBridge:
         tab_id=None,
         slot=None,
         expires_at=None,
+        expected_page=None,
     ):
         context = run_context.get()
         run_id = context["run_id"]
@@ -157,12 +240,28 @@ class BrowserBridge:
                 slot,
                 tab_id,
                 expected_snapshot_id,
+                *([expected_page] if operation == "screenshot" else []),
             ],
             sort_keys=True,
             ensure_ascii=False,
         )
         command_id = hashlib.sha256(key.encode()).hexdigest()[:40]
         row = await self.get(command_id)
+        if operation == "screenshot":
+            if not expected_page or expected_page.get("snapshot_id") != expected_snapshot_id:
+                raise ValueError("screenshot_requires_prior_dom_snapshot")
+            async with self.database.session() as session:
+                unresolved = (await session.execute(select(agent_action.c.action_id).where(
+                    agent_action.c.run_id == run_id, agent_action.c.status.in_(["UNKNOWN", "RUNNING"]),
+                ).limit(1))).first()
+                if unresolved:
+                    raise ValueError("vision_forbidden_for_unresolved_submission")
+                prior = (await session.execute(select(commands.c.command_id).where(
+                    commands.c.run_id == run_id, commands.c.payload["operation"].as_string() == "screenshot",
+                    commands.c.payload["_turn_id"].as_integer() == context.get("turn_id", 1),
+                ))).scalars().all()
+            if prior and command_id not in prior:
+                raise ValueError("vision_capture_already_requested_this_turn")
         if not row:
             if context["browser_calls"] >= self.runtime.settings.max_tool_calls:
                 raise ValueError("browser_tool_budget_exhausted")
@@ -182,6 +281,8 @@ class BrowserBridge:
                 _turn_id=context.get("turn_id", 1),
                 _generation=binding["generation"],
             )
+            if operation == "screenshot":
+                payload["_expected_page"] = expected_page
             try:
                 async with self.database.session() as session:
                     async with session.begin():
@@ -306,6 +407,13 @@ class BrowserBridge:
                 raise ValueError("browser_result_already_recorded")
             await self.runtime.resume_browser(row["run_id"], command_id)
             return {"accepted": True, "replayed": True}
+        if observation.screenshot is not None or row["payload"]["operation"] == "screenshot":
+            if observation.ok:
+                if observation.outcome != "observed" or observation.screenshot is None:
+                    raise ValueError("screenshot_requires_readonly_capture")
+                observation.screenshot.check_binding(result, row["payload"], row["payload"].get("_expected_page") or {}, created_at=row["created_at"])
+            elif observation.screenshot is not None:
+                raise ValueError("failed_observation_must_not_supply_screenshot")
         if observation.ok and observation.outcome == "observed" and not observation.url:
             raise ValueError("successful_observation_requires_source")
         if (

@@ -2,6 +2,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
 import type { LocationInfo } from '../shared/location'
+import type { BrowserIntent, BrowserLayout, BrowserViewState, BrowserActivity } from '../shared/browserView'
 
 const api = {
   desktopReady: () => ipcRenderer.invoke('desktop:ready'),
@@ -34,11 +35,12 @@ const api = {
   onProactive: (cb: (p: unknown) => void) => sub(IPC.proactivePush, cb),
   onImIncoming: (cb: (m: unknown) => void) => sub(IPC.imIncoming, cb),
 
-  // 浏览器桥
-  onBrowserExec: (cb: (p: { id: number; action: string; args: Record<string, unknown> }) => void) =>
-    ipcRenderer.on(IPC.browserExec, (_e, p) => cb(p)),
-  browserExecResult: (id: number, result: unknown) => ipcRenderer.send(IPC.browserExecResult, { id, result }),
-  browserEval: (contentsId: number, code: string) => ipcRenderer.invoke('browser:eval', contentsId, code),
+  browser: {
+    request: (intent: BrowserIntent) => ipcRenderer.invoke(IPC.browserRequest, intent),
+    layout: (value: BrowserLayout) => ipcRenderer.invoke(IPC.browserLayout, value),
+    onState: (cb: (value: BrowserViewState) => void) => sub(IPC.browserState, cb),
+    onActivity: (cb: (value: BrowserActivity) => void) => sub(IPC.browserActivity, cb)
+  },
 
   // 配置 / LLM
   getConfig: () => ipcRenderer.invoke(IPC.getConfig),
@@ -88,8 +90,8 @@ const api = {
   openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url)
 }
 
-function sub(channel: string, cb: (p: unknown) => void): () => void {
-  const listener = (_e: unknown, payload: unknown) => cb(payload)
+function sub<T>(channel: string, cb: (p: T) => void): () => void {
+  const listener = (_e: unknown, payload: T) => cb(payload)
   ipcRenderer.on(channel, listener)
   return () => ipcRenderer.removeListener(channel, listener)
 }

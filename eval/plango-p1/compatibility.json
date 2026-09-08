@@ -1,0 +1,207 @@
+{
+  "date": "2026-09-08T16:54:40.314Z",
+  "scope": "real Electron/Xvfb with synthetic local pages only",
+  "playwright": "1.63.0",
+  "checks": [
+    {
+      "name": "CDP maps exact visible WebContentsView target",
+      "passed": true,
+      "ms": 39,
+      "detail": {
+        "pages": [
+          "http://127.0.0.1:56475/shell",
+          "http://127.0.0.1:56475/fixture"
+        ],
+        "viewId": 2,
+        "sameSession": true,
+        "storagePath": "/home/song/code/Agent/multi-agent/PlanGo/output/playwright/probe-2026-09-08T16-54-40-314Z/profile/Partitions/plango-probe"
+      }
+    },
+    {
+      "name": "locator click updates actual visible contents",
+      "passed": true,
+      "ms": 117
+    },
+    {
+      "name": "native Electron input and Playwright share DOM",
+      "passed": true,
+      "ms": 34
+    },
+    {
+      "name": "continuous fill and form submit once",
+      "passed": true,
+      "ms": 57
+    },
+    {
+      "name": "cross-origin iframe locator and fill",
+      "passed": true,
+      "ms": 112,
+      "detail": {
+        "frames": [
+          "http://127.0.0.1:56475/fixture",
+          "http://127.0.0.1:56661/frame"
+        ]
+      }
+    },
+    {
+      "name": "open shadow root semantic locator",
+      "passed": true,
+      "ms": 37
+    },
+    {
+      "name": "disabled input replacement resolves to current node",
+      "passed": true,
+      "ms": 322
+    },
+    {
+      "name": "AbortSignal cancels pending click without late effect",
+      "passed": true,
+      "ms": 516,
+      "detail": {
+        "error": "AbortError: locator.click: This operation was aborted\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Late click' })\u001b[22m\n\u001b[2m  - operation was aborted: This operation was aborted\u001b[22m\n"
+      }
+    },
+    {
+      "name": "screenshot device pixels and CSS pixels agree with DPR and zoom",
+      "passed": false,
+      "ms": 370,
+      "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert(Math.abs(c.width-geometry.width)<=1)\n",
+      "stack": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert(Math.abs(c.width-geometry.width)<=1)\n\n    at /home/song/code/Agent/multi-agent/PlanGo/output/playwright/run-probe.cjs:52:624\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async check (/home/song/code/Agent/multi-agent/PlanGo/output/playwright/run-probe.cjs:17:78)\n    at async main (/home/song/code/Agent/multi-agent/PlanGo/output/playwright/run-probe.cjs:52:3)"
+    },
+    {
+      "name": "Electron capturePage and raw CDP screenshot preserve true device dimensions",
+      "passed": true,
+      "ms": 203,
+      "detail": {
+        "geometry": {
+          "width": 768,
+          "height": 520,
+          "dpr": 1.875
+        },
+        "native": {
+          "width": 1440,
+          "height": 975
+        },
+        "rawCDP": {
+          "width": 1440,
+          "height": 975
+        }
+      }
+    },
+    {
+      "name": "navigate preserves persistent session and target",
+      "passed": true,
+      "ms": 105
+    },
+    {
+      "name": "CDP disconnect/reconnect retains view and persistent session",
+      "passed": true,
+      "ms": 33
+    },
+    {
+      "name": "Electron restart retains original partition cookie and localStorage",
+      "passed": true,
+      "ms": 1073,
+      "detail": {
+        "firstRequestHadCookie": true,
+        "samePartitionStorage": "/home/song/code/Agent/multi-agent/PlanGo/output/playwright/probe-2026-09-08T16-54-40-314Z/profile/Partitions/plango-probe"
+      }
+    },
+    {
+      "name": "renderer crash reload and CDP reconnect recover exact view session",
+      "passed": true,
+      "ms": 3865
+    },
+    {
+      "name": "native popup BrowserWindow preserves same session and page event",
+      "passed": true,
+      "ms": 225,
+      "detail": {
+        "activePopupId": 3,
+        "viewIds": [
+          2,
+          3
+        ]
+      }
+    }
+  ],
+  "failures": [
+    {
+      "name": "screenshot device pixels and CSS pixels agree with DPR and zoom",
+      "passed": false,
+      "ms": 370,
+      "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert(Math.abs(c.width-geometry.width)<=1)\n",
+      "stack": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert(Math.abs(c.width-geometry.width)<=1)\n\n    at /home/song/code/Agent/multi-agent/PlanGo/output/playwright/run-probe.cjs:52:624\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async check (/home/song/code/Agent/multi-agent/PlanGo/output/playwright/run-probe.cjs:17:78)\n    at async main (/home/song/code/Agent/multi-agent/PlanGo/output/playwright/run-probe.cjs:52:3)"
+    }
+  ],
+  "sources": [
+    "https://www.electronjs.org/docs/latest/api/web-contents-view",
+    "https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp",
+    "https://playwright.dev/docs/api/class-locator#locator-click",
+    "https://www.electronjs.org/docs/latest/api/web-contents#webcontentsfromdevtoolstargetidtargetid"
+  ],
+  "electron": "33.4.11",
+  "chrome": "130.0.6723.191",
+  "passed": 14,
+  "total": 15,
+  "screenshotGeometry": {
+    "geometry": {
+      "width": 768,
+      "height": 520,
+      "dpr": 1.875
+    },
+    "css": {
+      "width": 614,
+      "height": 416
+    },
+    "device": {
+      "width": 1152,
+      "height": 780
+    },
+    "viewBounds": {
+      "x": 12,
+      "y": 60,
+      "width": 960,
+      "height": 650
+    }
+  },
+  "fallbackScreenshotGeometry": {
+    "geometry": {
+      "width": 768,
+      "height": 520,
+      "dpr": 1.875
+    },
+    "native": {
+      "width": 1440,
+      "height": 975
+    },
+    "rawCDP": {
+      "width": 1440,
+      "height": 975
+    }
+  },
+  "crashControl": {
+    "electron": "33.4.11",
+    "chrome": "130.0.6723.191",
+    "windowVisible": true,
+    "activeId": 2,
+    "bounds": {
+      "x": 12,
+      "y": 60,
+      "width": 960,
+      "height": 650
+    },
+    "zoom": 1.25,
+    "mappedIsOwned": false,
+    "firstRequestHadCookie": true,
+    "storagePath": "/home/song/code/Agent/multi-agent/PlanGo/output/playwright/probe-2026-09-08T16-54-40-314Z/profile/Partitions/plango-probe",
+    "views": [
+      {
+        "id": 2,
+        "url": "http://127.0.0.1:56475/fixture",
+        "sameSession": true
+      }
+    ],
+    "hasFixtureCookie": true
+  }
+}

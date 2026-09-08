@@ -23,7 +23,7 @@ export default function App(): JSX.Element {
   const setChatWidth = useStore((s) => s.setChatWidth)
   const dragging = useRef(false)
   useEffect(() => {
-    installBrowserBridge()
+    const stopBrowser = installBrowserBridge()
     const unHarness = window.plango.onHarnessEvent((event) => useStore.getState().receiveHarnessEvent(event))
     void useStore.getState().hydrateHarness()
     const poll = window.setInterval(() => { void useStore.getState().refreshRun() }, 2000)
@@ -52,6 +52,7 @@ export default function App(): JSX.Element {
     void window.plango.desktopReady()
     return () => {
       unHarness()
+      stopBrowser()
       window.clearInterval(poll)
       un3?.()
       un4?.()

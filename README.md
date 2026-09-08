@@ -100,52 +100,41 @@ Cookie 留在 Electron 持久会话分区，不直接发送给模型或后端。
 
 ## 检查与验收
 
-安装测试工具后运行常规检查：
+本轮证据与未完成项见 [实施进度](docs/实施进度.md)。旧报告保留原结论与失败分母，不作为现行版本的通过凭据。
 
 ```bash
 npm run setup:backend -- --dev
 npm run check
+python3 scripts/check_lifecycle.py
+python3 scripts/migrate_config.py
+conda run --no-capture-output -n plango python backend/plango/migrations/check.py
+npm run test:independent
 ```
 
-包含类型检查、界面投影、模型连接错误处理、命令与回执恢复、分享持久化、Python 回归及构建；使用隔离测试数据，不调用真实模型或交易接口。更名前的 `npm run check` 曾通过，Python 回归为 47 个测试函数，另有 35 个 subtests；Python 类型检查覆盖 63 个文件并通过。
-
-Linux 无桌面显示时可用 Xvfb 运行真实 Chromium/Electron 检查：
+`check` 包含类型、状态/定位/迁移、传输、模型错误处理、分享、Python 回归及构建；这些回归使用隔离测试数据。真实 Chromium/Electron 受控页面另行检查：
 
 ```bash
 env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:browser
+env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:browser-view
 env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop
 env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:full-stack
-npm run test:independent
-python3 scripts/check_lifecycle.py
+env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:map-title
+env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop-storage-browser
 ```
 
-- `browser`：真实页面操作、权限、快照、取消、重复命令和轮次隔离。
-- `desktop`：真实界面、预加载与 IPC，使用明确的离线协议后端样本。
-- `full-stack`：真实 PlanGo Python 后端与 Electron 本地网页样本，验证菜单、持久命令和后端重启恢复，不调用真实模型。
-- `independent`：复制公开源码与锁文件到临时目录，使用调用方的 `plango` 环境启动，验证源码、配置和数据不依赖外部仓库；从锁文件安装全新环境由 Docker 构建验证。
-- `check_lifecycle.py`：在临时目录使用替身 Docker/npm 与真实测试子进程验证启停归属、重复执行和异常清理，不停止正在运行的 PlanGo 或其他服务。
+浏览器已采用主进程 WebContentsView、经实测的 Playwright/CDP 与原生截图。renderer 只发送固定用户意图与布局，不持有任意脚本或 CDP 能力。用户、模型与执行器操作同一浏览会话；原生弹窗也保持该会话。兼容性边界和失败记录见 [浏览器适配验证](docs/浏览器适配验证.md)。截图理解每轮最多一次，须显式启用 `PLANGO_BROWSER_VISION_ENABLED`，目前仅用于只读理解/核验，不能代替提交审批或证明业务完成。
 
-更名前 Docker 构建、迁移和健康检查曾实测通过。已部署 API 的 23 项检查通过，覆盖认证、Skill、记忆和提醒及 PostgreSQL 提交结果，见 [部署 API 检查](eval/deployment_api_checks.json)。可复现：
+部署 API 与实际模型检查须在本项目无进行中操作时运行：
 
 ```bash
 conda run --no-capture-output -n plango python scripts/check_deployment.py
-```
-
-[本次交付检查](eval/project_delivery_checks.json) 记录了运行中的服务及解释器，并确认容器内 73 个源码/Skill 文件与工作区一致、未打包 `.env`。正常桌面启动也已验证，浏览器沙箱保持启用。
-
-该脚本检查默认 8011 服务，创建并清理独立验收用户和提醒，不调用模型。需要运行服务中的 Electron 验收时：
-
-```bash
 env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed
+env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed -- --vision
 ```
 
-`test:deployed` 使用 `.env` 中的已部署后端和实际配置模型，会产生模型调用、创建验收任务，并重启 PlanGo 的 API/worker 检查恢复；请在没有其他进行中任务时执行。页面仍是本地受控菜单样本。
+`test:deployed` 调用已配置真实模型并重启本项目 API/worker，页面分别为受控菜单和 Canvas，保留任务与恢复证据；不进行真实商家交易。`scripts/check_vision_capability.py` 是单独的有界真实图像能力检查，输入为仓库中的受控浏览器截图。各阶段新证据写入 `eval/plango-r0/`、`eval/plango-p0/`、`eval/plango-p1/`，不覆盖历史。
 
-包含新 Skill 的镜像已通过 [部署桌面检查](eval/deployed_desktop_checks.json)：实际模型调用、真实 Electron 菜单读取、价格 128 元与未知价保留、API/worker 重启和历史界面恢复均通过，见 [实测桌面截图](docs/assets/deployed-desktop.png)。验收中修复了完成后未展示结果、同页重复卡片，以及模型漏提取覆盖 DOM 表格价格的问题。
-
-容器内高德 Web 地理编码实测通过，见 [高德检查](eval/deployed_amap_check.json)。后续已配置 JavaScript Key 与安全码，历史重庆地图检查见 `docs/assets/chongqing-map-check.png`；历史记录不等于本轮验收，也不证明真实商家流程完成。
-
-测试中的 `--no-sandbox` 仅用于隔离 Linux 测试；应用正常启动没有禁用浏览器沙箱。以上结果不代表任意商家站点或真实交易均已验收。历史模型两批试测各为 3/4 场景达标，失败记录和具体限制见 [融合实现与质量验证](docs/融合实现与质量验证.md)。
+测试中的 `--no-sandbox` 仅用于隔离 Linux 测试；正常应用保留浏览器沙箱。真实商家履约、任意网站表单和支付均不能由这些受控检查推断。
 
 ## 服务维护
 
@@ -160,7 +149,7 @@ npm run services:down
 
 ## 模块与上游维护
 
-已确认路线见 [架构决策](docs/架构决策.md)；当前角色、流程断点与成熟实现替换机会见 [模块替换与 Agent 工作流审计](docs/模块替换与Agent工作流审计.md)。[当前工作流](figures/yoyu-current-workflow.md) 与[目标工作流建议](figures/yoyu-target-workflow.md) 分开记录，建议不代表已实现。
+已确认路线见 [架构决策](docs/架构决策.md)；当前角色、流程断点与成熟实现替换机会见 [模块替换与 Agent 工作流审计](docs/模块替换与Agent工作流审计.md)。[迁移前工作流记录](figures/yoyu-current-workflow.md) 与[目标工作流建议](figures/yoyu-target-workflow.md) 分开记录，建议不代表已实现。
 
 ```text
 src/renderer/            产品界面与展示投影

@@ -310,6 +310,27 @@ def price_comparison(state: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def current_visual_observation(state: dict[str, Any]) -> dict[str, Any] | None:
+    """Find actual visual evidence for this turn's current DOM page, not just a spent counter."""
+    turn = state.get("turn_id", 1)
+    if state.get("browser_vision_turn") != turn:
+        return None
+    observation = state.get("browser_observation") or {}
+    for item in state.get("browser_artifacts", []):
+        data = item.get("data") or {}
+        screenshot = data.get("screenshot") or {}
+        if (item.get("type") == "browser_visual" and item.get("source") == "browser"
+                and item.get("turn_id", turn) == turn and data.get("scope") == "visual_observation"
+                and isinstance(data.get("visual_text"), str) and data["visual_text"].strip()
+                and item.get("observed_at") and screenshot.get("screenshot_id")
+                and item.get("url") == screenshot.get("url") == observation.get("url")
+                and item.get("snapshot_id") == screenshot.get("snapshot_id") == observation.get("snapshot_id")
+                and screenshot.get("page_version") == observation.get("page_version")
+                and all(observation.get(key) for key in ("url", "snapshot_id", "page_version"))):
+            return item
+    return None
+
+
 def browser_context(state: dict[str, Any], budget: int = 7500) -> str:
     """Keep valid JSON and prior-page facts; discard duplicated page bulk first."""
     observation = state.get("browser_observation") or {}
@@ -318,6 +339,12 @@ def browser_context(state: dict[str, Any], budget: int = 7500) -> str:
         "task": {k: v for k, v in context.items() if k != "turn_id"},
         "current_request": state.get("input_text"),
         "execution_goal": state.get("execution_goal"),
+        "vision": {
+            "used_this_turn": state.get("browser_vision_turn") == state.get("turn_id", 1),
+            "remaining_captures": 0 if state.get("browser_vision_turn") == state.get("turn_id", 1) else 1,
+            "has_current_reading": current_visual_observation(state) is not None,
+            "scope": "read_only_observation; existing visual_text is in artifacts",
+        },
         "step": state.get("browser_steps"),
         "artifacts": [
             {
@@ -326,7 +353,7 @@ def browser_context(state: dict[str, Any], budget: int = 7500) -> str:
                 "data": {
                     k: v
                     for k, v in (a.get("data") or {}).items()
-                    if k in {"menu", "offers", "places"}
+                    if k in {"menu", "offers", "places", "visual_text", "limitations", "scope"}
                 },
             }
             for a in state.get("browser_artifacts", [])

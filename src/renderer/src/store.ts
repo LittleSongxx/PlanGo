@@ -3,14 +3,11 @@ import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, Harnes
 import { projectHarness, projectEvents, runBusy, canResolveAction } from './lib/harnessProjection'
 import { originFallback as computeOrigin } from './lib/cityCenter'
 import { migrateLocalStorage } from './lib/storageMigration'
+import type { BrowserIntent, BrowserViewState, BrowserTabState } from '@shared/browserView'
 
 migrateLocalStorage(localStorage)
 
-export interface Tab {
-  id: string
-  url: string
-  title: string
-}
+export type Tab = BrowserTabState
 
 interface ProactiveMsg {
   id: string
@@ -105,10 +102,13 @@ interface State {
   discoverOpen: false | 'discover' | 'deals'
   aiBrowsing: { active: boolean; site: string; action: string } // 顶部浮条：PlanGo正在浏览
 
-  addTab: (url: string) => string
+  browserSeq: number
+  browserError: string
+  applyBrowserState: (state: BrowserViewState) => void
+  browserIntent: (intent: BrowserIntent) => Promise<void>
+  addTab: (url: string) => void
   closeTab: (id: string) => void
   setActiveTab: (id: string) => void
-  updateTab: (id: string, patch: Partial<Tab>) => void
 
   pushMessage: (m: ChatMessage) => void
   send: (text: string, image?: string) => Promise<void>
@@ -140,7 +140,6 @@ interface State {
   persistSession: () => void
 }
 
-let tabSeq = 0
 let refreshingRun: string | null = null
 
 export const useStore = create<State>((set, get) => ({
@@ -179,19 +178,17 @@ export const useStore = create<State>((set, get) => ({
   discoverOpen: false,
   aiBrowsing: { active: false, site: '', action: '' },
 
-  addTab: (url) => {
-    const id = 'tab_' + ++tabSeq
-    set((s) => ({ tabs: [...s.tabs, { id, url, title: '加载中…' }], activeTabId: id }))
-    return id
+  browserSeq: -1,
+  browserError: '',
+  applyBrowserState: (value) => set(state => value.seq < state.browserSeq ? {} : { tabs: value.tabs, activeTabId: value.activeTabId, browserSeq: value.seq }),
+  browserIntent: async (intent) => {
+    set({ browserError: '' })
+    try { get().applyBrowserState(await window.plango.browser.request(intent)); set({ browserError: '' }) }
+    catch (error) { set({ browserError: (error as Error).message }) }
   },
-  closeTab: (id) =>
-    set((s) => {
-      const tabs = s.tabs.filter((t) => t.id !== id)
-      const activeTabId = s.activeTabId === id ? tabs[tabs.length - 1]?.id ?? null : s.activeTabId
-      return { tabs, activeTabId }
-    }),
-  setActiveTab: (id) => set({ activeTabId: id }),
-  updateTab: (id, patch) => set((s) => ({ tabs: s.tabs.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
+  addTab: (url) => { void get().browserIntent({ kind: 'create', url }) },
+  closeTab: (id) => { void get().browserIntent({ kind: 'close', id }) },
+  setActiveTab: (id) => { void get().browserIntent({ kind: 'activate', id }) },
 
   pushMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
 

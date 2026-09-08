@@ -1,0 +1,18 @@
+{
+  "date": "2026-09-08T17:39:47.296Z",
+  "backend": "Docker PostgreSQL/Redis API and worker",
+  "python_environment": "plango",
+  "real_electron_dom": true,
+  "page": "controlled local menu fixture",
+  "real_model": true,
+  "model_tokens": 1044,
+  "run_id": "c647662015dc4482b8b7388462f1c0d5",
+  "observed_events": 1,
+  "prices": [
+    128,
+    null
+  ],
+  "api_worker_restart_recovered": true,
+  "history_ui_restored": true,
+  "screenshot": "/home/song/code/Agent/multi-agent/PlanGo/eval/plango-p1/deployed-desktop.png"
+}

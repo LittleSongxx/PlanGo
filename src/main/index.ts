@@ -5,10 +5,14 @@ import { registerIpc } from './ipc'
 import { detectLocation } from './location'
 import { startShareServer, stopShareServer } from './share/server'
 import { harnessStatus, stopHarness } from './harness'
-import { allowedBrowserSite } from '../shared/browser'
 import { getHarnessEnvironment } from './config'
 import { prepareDesktopStorage } from './storageMigration'
-import { allowsGeolocation } from './permissions'
+import { allowsGeolocation, sameRendererDocument } from './permissions'
+import { initializeBrowserViews, isOwnedBrowserContents } from './browserView'
+import { browserUrl } from '../shared/browser'
+
+app.commandLine.appendSwitch('remote-debugging-address', '127.0.0.1')
+app.commandLine.appendSwitch('remote-debugging-port', '0')
 
 try {
   const desktopData = prepareDesktopStorage(app.getPath('appData'), app.getPath('userData'))
@@ -22,10 +26,9 @@ try {
 }
 
 let mainWindow: BrowserWindow | null = null
-const browserContents = new Set<number>()
 const rendererUrl = process.env.ELECTRON_RENDERER_URL || pathToFileURL(join(__dirname, '../renderer/index.html')).href
 
-export function ownsBrowserContents(id: number): boolean { return browserContents.has(id) }
+export function isTrustedRendererUrl(url: string): boolean { return sameRendererDocument(url, rendererUrl) }
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -43,32 +46,23 @@ function createWindow(): void {
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
-      webviewTag: true // 内置浏览器视图（美团/点评）复用登录态
+      webviewTag: false
     }
   })
 
   mainWindow.on('ready-to-show', () => mainWindow?.show())
+  initializeBrowserViews(mainWindow)
 
   // 外链走系统浏览器
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    if (/^https?:\/\//i.test(details.url)) void shell.openExternal(details.url)
+    if (mainWindow && isTrustedRendererUrl(mainWindow.webContents.getURL()) && /^https?:\/\//i.test(details.url)) {
+      try { void shell.openExternal(browserUrl(details.url)) } catch { /* Invalid external URL remains blocked. */ }
+    }
     return { action: 'deny' }
   })
-  mainWindow.webContents.on('will-attach-webview', (event, preferences, params) => {
-    if (!/^https?:\/\//i.test(params.src || '') || params.partition !== 'persist:plango') {
-      event.preventDefault()
-      return
-    }
-    delete preferences.preload
-    preferences.nodeIntegration = false
-    preferences.contextIsolation = true
-    preferences.sandbox = true
-    preferences.webSecurity = true
-  })
-  mainWindow.webContents.on('did-attach-webview', (_event, contents) => {
-    browserContents.add(contents.id)
-    contents.once('destroyed', () => browserContents.delete(contents.id))
-  })
+  mainWindow.webContents.on('will-navigate', (event, url) => { if (!isTrustedRendererUrl(url)) event.preventDefault() })
+  mainWindow.webContents.on('will-redirect', (event, url) => { if (!isTrustedRendererUrl(url)) event.preventDefault() })
+  mainWindow.webContents.on('will-attach-webview', event => event.preventDefault())
 
   if (process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
@@ -83,20 +77,12 @@ function hardenSession(): void {
     session.setPermissionRequestHandler((wc, permission, cb, details) => {
       cb(allowsGeolocation({ permission, isMainFrame: details.isMainFrame, requestingUrl: details.requestingUrl,
         pageUrl: wc.getURL(), hostUrl: rendererUrl, isHost: wc === mainWindow?.webContents,
-        isBrowser: session === electronSession.fromPartition('persist:plango') && wc.session === session }))
+        isBrowser: session === electronSession.fromPartition('persist:plango') && wc.session === session && isOwnedBrowserContents(wc.id) }))
     })
     session.setPermissionCheckHandler((wc, permission, origin, details) => allowsGeolocation({ permission, isMainFrame: details.isMainFrame,
       requestingUrl: details.requestingUrl || origin, pageUrl: wc?.getURL() || '', hostUrl: rendererUrl,
-      isHost: !!wc && wc === mainWindow?.webContents, isBrowser: !!wc && session === electronSession.fromPartition('persist:plango') && wc.session === session }))
+      isHost: !!wc && wc === mainWindow?.webContents, isBrowser: !!wc && session === electronSession.fromPartition('persist:plango') && wc.session === session && isOwnedBrowserContents(wc.id) }))
   }
-  app.on('web-contents-created', (_event, contents) => {
-    if (contents.getType() !== 'webview') return
-    contents.on('will-navigate', (event, url) => { if (!/^https?:\/\//i.test(url)) event.preventDefault() })
-    contents.setWindowOpenHandler(({ url }) => {
-      if (!allowedBrowserSite(url)) return { action: 'deny' }
-      return { action: 'allow', overrideBrowserWindowOptions: { webPreferences: { partition: 'persist:plango', sandbox: true, contextIsolation: true, nodeIntegration: false } } }
-    })
-  })
 }
 
 app.whenReady().then(() => {

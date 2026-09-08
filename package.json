@@ -32,12 +32,14 @@
     "test:desktop-storage": "tsx scripts/check-desktop-storage.ts",
     "test:desktop-storage-browser": "node scripts/desktop-storage-regression.cjs",
     "test:desktop-correctness": "tsx scripts/check-desktop-correctness.ts",
-    "test:map-title": "electron --no-sandbox scripts/map-title-regression.cjs"
+    "test:map-title": "electron --no-sandbox scripts/map-title-regression.cjs",
+    "test:browser-view": "electron --no-sandbox scripts/browser-view-regression.cjs"
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
     "@mozilla/readability": "^0.6.0",
     "express": "^5.2.1",
+    "playwright-core": "1.63.0",
     "qrcode": "^1.5.4",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",

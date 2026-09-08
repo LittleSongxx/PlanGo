@@ -83,7 +83,7 @@ export function OutcomeCanvas(): JSX.Element {
 function CardView({ card }: { card: OutcomeCard }): JSX.Element {
   switch (card.kind) {
     case 'browser_page':
-      return <Card><div className="flex gap-2 items-center text-sm font-semibold">{card.title}<SourceBadge source="browser" /></div><div className="text-[11px] text-neutral-400 my-1">{card.observedAt ? new Date(card.observedAt).toLocaleString() : '观测时间未知'}</div><pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs text-neutral-600">{card.text}</pre>{/^https?:\/\//i.test(card.url) && <button onClick={() => useStore.getState().navigateInApp(card.url)} className="text-xs underline mt-2">查看原始页面</button>}</Card>
+      return <Card><div className="flex gap-2 items-center text-sm font-semibold">{card.title}<SourceBadge source="browser" /></div><div className="text-[11px] text-neutral-400 my-1">{card.observedAt ? new Date(card.observedAt).toLocaleString() : '观测时间未知'}</div>{card.scope === 'visual_observation' && <p className="text-xs text-amber-700 my-2">截图理解：仅描述画面，不代表已核验商家事实或完成业务操作。</p>}<pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs text-neutral-600">{card.text}</pre>{card.limitations?.map((limitation, index) => <p key={index} className="text-xs text-neutral-500 mt-1">{limitation}</p>)}{/^https?:\/\//i.test(card.url) && <button onClick={() => useStore.getState().navigateInApp(card.url)} className="text-xs underline mt-2">查看原始页面</button>}</Card>
     case 'evidence':
       return <EvidenceCard items={card.items} />
     case 'plan':

@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import type { AgentReply, OutcomeCard, AgentStep, HarnessApi, HarnessEvent, ReminderApi } from '@shared/types'
 import type { LocationInfo } from '@shared/location'
+import type { BrowserIntent, BrowserLayout, BrowserViewState, BrowserActivity } from '@shared/browserView'
 
 interface PlangoApi {
   desktopReady: () => Promise<void>
@@ -13,9 +14,8 @@ interface PlangoApi {
   onCard: (cb: (c: OutcomeCard) => void) => () => void
   onProactive: (cb: (p: { id: string; ts: number; text: string; kind: string }) => void) => () => void
   onImIncoming: (cb: (m: { from: string; text: string; ts: number }) => void) => () => void
-  onBrowserExec: (cb: (p: { id: number; action: string; args: Record<string, unknown> }) => void) => void
-  browserExecResult: (id: number, result: unknown) => void
-  browserEval: (contentsId: number, code: string) => Promise<unknown>
+  browser: { request: (intent: BrowserIntent) => Promise<BrowserViewState>; layout: (value: BrowserLayout) => Promise<void>;
+    onState: (cb: (value: BrowserViewState) => void) => () => void; onActivity: (cb: (value: BrowserActivity) => void) => () => void }
   getConfig: () => Promise<{ config: any; cities: { city: string; count: number }[] }>
   setConfig: (patch: any) => Promise<any>
   setSource: (source: string) => Promise<string>
@@ -50,19 +50,5 @@ declare global {
     plango: PlangoApi
     AMap?: any
     _AMapSecurityConfig?: { securityJsCode: string }
-  }
-  namespace JSX {
-    interface IntrinsicElements {
-      webview: React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & {
-          src?: string
-          partition?: string
-          allowpopups?: string
-          useragent?: string
-          ref?: React.Ref<HTMLElement>
-        },
-        HTMLElement
-      >
-    }
   }
 }

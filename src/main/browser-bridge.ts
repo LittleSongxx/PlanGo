@@ -1,82 +1,122 @@
-// Main validates and serializes commands; the renderer owns real, persistent webviews.
-import { getMainWindow } from './index'
-import { IPC } from '@shared/ipc'
-import { browserCommandGuard, isBrowserWrite, validateBrowserCommand, type BrowserCommand, type BrowserObservation } from '@shared/browser'
+// Only the trusted main process binds durable Harness commands to visible browser contents.
+import { allowedBrowserSite, browserErrorMessage, browserCommandGuard, isBrowserWrite, validateBrowserCommand, type BrowserCommand, type BrowserObservation } from '@shared/browser'
+import { executeBrowserOperation, captureScreenshot } from './browserDriver'
+import { activateBrowserTab, createBrowserTab, getActiveBrowserTab, getBrowserTab, getBrowserTabSignal, isBrowserTabVisible, loadBrowserURL, notifyBrowserActivity, onBrowserPopup } from './browserView'
 
 export type BrowserActionResult = Partial<BrowserObservation>
-let seq = 0
-const pending = new Map<number, { resolve: (r: BrowserActionResult) => void; timer: ReturnType<typeof setTimeout> }>()
-// The backend action ledger is authoritative across restarts; this prevents duplicate IPC delivery in one process.
 const commands = new Map<string, { fingerprint: string; result: Promise<BrowserObservation> }>()
-let queue: Promise<unknown> = Promise.resolve()
+const bindings = new Map<string, string>()
+const tabOwners = new Map<string, string>()
 const cancelledRuns = new Set<string>()
 const runEpochs = new Map<string, number>()
+const aborts = new Map<string, AbortController>()
+let queue: Promise<unknown> = Promise.resolve()
 
-function changeBrowserRun(runId: string, action: 'cancel_run' | 'release_run' | 'activate_run'): void {
-  if (action === 'activate_run') cancelledRuns.delete(runId)
-  else {
-    cancelledRuns.add(runId)
-    runEpochs.set(runId, (runEpochs.get(runId) || 0) + 1)
-  }
-  const win = getMainWindow()
-  if (win && !win.isDestroyed()) win.webContents.send(IPC.browserExec, { id: 0, action, args: { run_id: runId, epoch: runEpochs.get(runId) || 0 } })
+// Inherit ownership synchronously before the view manager publishes the new popup.
+onBrowserPopup((parentId, childId) => {
+  const owner = tabOwners.get(parentId)
+  if (owner) { tabOwners.set(childId, owner); bindings.set(owner, childId) }
+})
+
+export function cancelBrowserRun(runId: string): void {
+  cancelledRuns.add(runId)
+  runEpochs.set(runId, (runEpochs.get(runId) || 0) + 1)
+  aborts.get(runId)?.abort(new Error('run_cancelled'))
+  aborts.delete(runId)
 }
 
-export function cancelBrowserRun(runId: string): void { changeBrowserRun(runId, 'cancel_run') }
-export function releaseBrowserRun(runId: string): void { changeBrowserRun(runId, 'release_run') }
-export function activateBrowserRun(runId: string): void { changeBrowserRun(runId, 'activate_run') }
+export function activateBrowserRun(runId: string): void { cancelledRuns.delete(runId) }
 
-function dispatch(command: BrowserCommand, epoch: number): Promise<BrowserActionResult> {
-  const win = getMainWindow()
-  if (!win || win.isDestroyed()) return Promise.resolve({ ok: false, outcome: 'blocked', error_kind: 'browser_unavailable', error: '没有可用的应用窗口' })
-  const id = ++seq
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      pending.delete(id)
-      resolve({ ok: false, outcome: isBrowserWrite(command.operation) ? 'unknown' : 'failed', error_kind: 'browser_timeout', error: '浏览器动作超时；写入结果未知，请查询页面，勿重复提交' })
-    }, 25_000)
-    pending.set(id, { resolve, timer })
-    try {
-      win.webContents.send(IPC.browserExec, { id, action: 'harness', args: { command, epoch } })
-    } catch (error) {
-      clearTimeout(timer)
-      pending.delete(id)
-      resolve({ ok: false, outcome: 'failed', error_kind: 'dispatch_failed', error: (error as Error).message })
+export function releaseBrowserRun(runId: string): void {
+  cancelBrowserRun(runId)
+  for (const [tabId, owner] of tabOwners) {
+    if (JSON.parse(owner)[1] === runId) {
+      tabOwners.delete(tabId)
+      bindings.delete(owner)
     }
-  })
+  }
+}
+
+export function cancelBrowserTab(tabId: string): void {
+  const owner = tabOwners.get(tabId)
+  if (owner) cancelBrowserRun(JSON.parse(owner)[1])
+}
+
+function failure(commandId: string, kind: string, outcome: BrowserObservation['outcome'] = 'blocked'): BrowserObservation {
+  return { command_id: commandId, ok: false, outcome, error_kind: kind, error: browserErrorMessage(kind) }
 }
 
 export async function executeBrowserCommand(raw: BrowserCommand): Promise<BrowserObservation> {
   let command: BrowserCommand
   try { command = validateBrowserCommand(raw) }
-  catch (error) {
-    return { command_id: typeof raw?.command_id === 'string' ? raw.command_id : '', ok: false, outcome: 'blocked', error_kind: 'invalid_command', error: (error as Error).message }
-  }
+  catch { return failure(typeof raw?.command_id === 'string' ? raw.command_id : '', 'invalid_command') }
   const fingerprint = JSON.stringify(command)
   const cached = commands.get(command.command_id)
-  if (cached) return cached.fingerprint === fingerprint ? cached.result : { command_id: command.command_id, ok: false, outcome: 'blocked', error_kind: 'command_conflict', error: 'command_id 已关联其他参数' }
+  if (cached) return cached.fingerprint === fingerprint ? cached.result : failure(command.command_id, 'command_conflict')
   command.expires_at ||= new Date(Date.now() + 25_000).toISOString()
   const epoch = runEpochs.get(command.run_id) || 0
   const run = async (): Promise<BrowserObservation> => {
-    if (epoch !== (runEpochs.get(command.run_id) || 0)) return { command_id: command.command_id, ok: false, outcome: 'blocked', error_kind: 'run_superseded', error: '浏览器命令所属轮次已结束' }
-    if (cancelledRuns.has(command.run_id)) return { command_id: command.command_id, ok: false, outcome: 'blocked', error_kind: 'run_cancelled', error: '任务已停止' }
-    const guard = browserCommandGuard(command)
-    if (guard) return { command_id: command.command_id, ok: false, outcome: 'blocked', error_kind: guard, error: guard }
-    const result = await dispatch(command, epoch)
-    return { ...result, command_id: command.command_id, ok: result.ok === true, outcome: result.outcome || (result.error ? 'failed' : 'observed') }
+    let dispatched = false
+    let tabId = command.tab_id
+    const controller = aborts.get(command.run_id) || new AbortController()
+    aborts.set(command.run_id, controller)
+    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(25_000)])
+    const check = (): void => {
+      if (epoch !== (runEpochs.get(command.run_id) || 0)) throw new Error('run_superseded')
+      if (cancelledRuns.has(command.run_id)) throw new Error('run_cancelled')
+      if (signal.aborted) throw new Error('browser_timeout')
+      const guard = browserCommandGuard(command)
+      if (guard) throw new Error(guard)
+    }
+    try {
+      check()
+      const owner = JSON.stringify([command.browser_session_id, command.run_id])
+      tabId ||= bindings.get(owner)
+      if (command.operation === 'open_tab') tabId = undefined
+      if (!tabId && ['navigate', 'open_tab'].includes(command.operation)) {
+        tabId = (await createBrowserTab(String(command.arguments.url), signal)).id
+      } else tabId ||= getActiveBrowserTab()?.id
+      check()
+      if (!tabId) return failure(command.command_id, 'tab_required')
+      if (tabOwners.has(tabId) && tabOwners.get(tabId) !== owner) return failure(command.command_id, 'tab_session_mismatch')
+      const contents = getBrowserTab(tabId)
+      if (!contents || contents.isDestroyed()) return failure(command.command_id, 'tab_closed')
+      bindings.set(owner, tabId)
+      tabOwners.set(tabId, owner)
+      notifyBrowserActivity({ active: true, action: command.operation, site: contents.getTitle() || new URL(contents.getURL()).hostname })
+      activateBrowserTab(tabId)
+      while (!isBrowserTabVisible(tabId)) {
+        check()
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+      check()
+      if (isBrowserWrite(command.operation) && !allowedBrowserSite(contents.getURL())) return failure(command.command_id, 'site_not_allowed')
+      const visibleSignal = AbortSignal.any([signal, getBrowserTabSignal(tabId)])
+      const context = { signal: visibleSignal, check: (): void => {
+        check()
+        if (visibleSignal.aborted) throw new Error('browser_not_visible')
+        if (contents.isDestroyed() || getBrowserTab(tabId!) !== contents) throw new Error('tab_closed')
+        if (!isBrowserTabVisible(tabId!)) throw new Error('browser_not_visible')
+      }, owner, epoch }
+      let result: Partial<BrowserObservation>
+      if (command.operation === 'navigate' || command.operation === 'open_tab') {
+        if (contents.getURL() !== command.arguments.url) await loadBrowserURL(contents, String(command.arguments.url), visibleSignal)
+        result = { ok: true, outcome: 'observed', url: contents.getURL(), title: contents.getTitle() }
+      } else {
+        dispatched = true
+        result = command.operation === 'screenshot'
+          ? await captureScreenshot(contents, command, context)
+          : await executeBrowserOperation(contents, command, context)
+      }
+      if (result.ok) context.check()
+      return { ...result, ...(!result.ok ? { error: browserErrorMessage(result.error_kind || 'browser_execution_failed') } : {}), command_id: command.command_id, tab_id: tabId, ok: result.ok === true, outcome: result.outcome || 'failed' }
+    } catch (error) {
+      const kind = error instanceof Error ? error.message : 'browser_execution_failed'
+      return { ...failure(command.command_id, kind, dispatched && isBrowserWrite(command.operation) ? 'unknown' : 'blocked'), tab_id: tabId }
+    } finally { notifyBrowserActivity({ active: false }) }
   }
   const result = queue.then(run, run)
   queue = result.catch(() => {})
   commands.set(command.command_id, { fingerprint, result })
   return result
-}
-
-export function resolveBrowserAction(id: number, result: BrowserActionResult): void {
-  const entry = pending.get(id)
-  if (!entry) return
-  pending.delete(id)
-  clearTimeout(entry.timer)
-  if (!result || typeof result !== 'object' || typeof result.ok !== 'boolean') {
-    entry.resolve({ ok: false, outcome: 'unknown', error_kind: 'invalid_observation', error: '浏览器回执格式无效' })
-  } else entry.resolve(result)
 }
