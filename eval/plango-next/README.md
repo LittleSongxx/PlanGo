@@ -36,3 +36,5 @@
 `regression-cases.json` 保留8个小场景；`python scripts/inspect_trace.py --check` 复核47条归档断言，输出 `live_tests_run=0`。旧失败/原始累计用量完整保留，后续必要真实调用另行记录；没有做完整角色收益或DOM/Vision sweep。角色选择不再读取历史goal，循环检测只计当前需求流程；后续重规划消息只追加本轮输入，历史原记录保留。
 
 Linux/WSLg试用安装说明见 [试用安装](../../docs/试用安装.md)。独立包、服务、profile与冷备/恢复验收由专属 `plango-trial-check`、`plango-trial-restore-check` 资源完成；中间失败在 `output/trial-check/` 保留。安装验收的受控Cookie、UNKNOWN、审批及队列样本不代表真实业务履约。最终结果清单和包路径以交接文件为准；未发布或push。
+
+最终源码实现提交为 `87f18e9`。本地包 `release/plango-0.1.0-linux-x64.tar.gz`（约108MiB）带独立SHA256，包内 `source_dirty=false`；[final-package.json](final-package.json)记录密钥/来源检查及最终clean包另一次安装/doctor验证。它没有重新启动完整服务，完整图形、升级和冷备恢复是 [trial-install.json](trial-install.json) 的独立证据。WSL后原N1 run 最新状态在 `dianping-after-wsl-recovery.json`，保留2583tokens、消息3→4、menu_read/authentication_required，仍待真实登录。

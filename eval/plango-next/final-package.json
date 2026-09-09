@@ -1,0 +1,49 @@
+{
+  "release": {
+    "format": 1,
+    "version": "0.1.0",
+    "revision": "87f18e9",
+    "source_dirty": false,
+    "implementation_sha256": "02d441e8e321d4ad6c8dbf4bf57bcb33e21e1137d8b35a8d821bec60323a1da1",
+    "platform": "linux-x64",
+    "electron": "33.4.11",
+    "created_at": "2026-09-09T01:18:42.444355+00:00"
+  },
+  "archive_bytes": 112832483,
+  "archive_sha256": "36124dc05aae06e4e6662f59dfb7069e4d9cdf0b64d30a3603f96ba6d24c46bc",
+  "configured_secret_scan": "passed",
+  "user_document_excluded": true,
+  "fixed_upstream_archive_unchanged": true,
+  "original_author_and_license_preserved": true,
+  "third_party_notices_bytes": 712973,
+  "final_archive_install": {
+    "target": "output/trial-final-check",
+    "project": "plango-final-artifact-check",
+    "port": 28013,
+    "doctor_checks": {
+      "linux_x64": true,
+      "python_3_12": true,
+      "docker": true,
+      "display": true,
+      "electron": true,
+      "renderer_build": true,
+      "private_config": true,
+      "PLANGO_BACKEND_TOKEN": true,
+      "PLANGO_POSTGRES_PASSWORD": true,
+      "docker_engine": true,
+      "compose_v2": true,
+      "electron_libraries": true,
+      "postgres_password_url_safe": true,
+      "port": true,
+      "no_legacy_config": true,
+      "profile_identity": true
+    },
+    "configured_features": {
+      "backend_model_configured": false,
+      "amap_search_configured": false,
+      "amap_map_configured": false
+    },
+    "services_started": false,
+    "scope": "Final clean archive extraction/install and diagnostics; full desktop/upgrade/restore acceptance is separately recorded in trial-install.json"
+  }
+}

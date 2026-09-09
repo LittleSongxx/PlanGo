@@ -211,3 +211,10 @@ PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plang
 这两条部署测试分别使用受控菜单/Canvas，调用真实模型，报告默认保存到带时间的 `output/full-stack-smoke/`；不能称真实商家交易。不要移除脚本的主服务拒绝/Compose 归属预检，也不要覆盖旧 `eval` 报告来制造全绿。
 
 新一轮交付时更新本文件和接手提示词的当前状态，保持 [实施进度](实施进度.md) 可追溯；明确代码完成、实际验证、未覆盖和运行状态分别是什么。
+
+## 9. 接续本地交付记录
+
+- 实现提交：`87f18e9 feat: add structured trip editing and installable Linux trial`。后续文档提交只记录交付，实际HEAD以Git为准；未push、创建PR或发布。
+- 最终本地包：`release/plango-0.1.0-linux-x64.tar.gz`，112832483字节（约108MiB），旁边有`.sha256`。包内revision=`87f18e9`、`source_dirty=false`、Electron33.4.11；SHA256为 `36124dc05aae06e4e6662f59dfb7069e4d9cdf0b64d30a3603f96ba6d24c46bc`。
+- [最终包检查](../eval/plango-next/final-package.json)：本机配置密钥扫描通过、用户融合原文排除、固定上游档案/作者/许可证保持。该clean包另装入 `output/trial-final-check`（plango-final-artifact-check/28013），诊断全通过，未启动服务或新建profile；完整桌面/升级/恢复验收仍单独看此前trial-install.json，不虚称再次跑了全部测试。
+- 保留原主库SQL备份 `output/next-maintenance/before-update.sql` 与前后行指纹，测试源/恢复冷备在 `output/trial-check/`。这些私有备份包含身份和数据，不提交或分发；可分发的试用归档没有本项目配置密钥。
