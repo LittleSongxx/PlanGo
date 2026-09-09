@@ -18,7 +18,7 @@ import quality_human_import as human
 import quality_judge as judge
 from quality_scoring import summarize, unique_json_keys
 
-SCOPE = "30 controlled acceptance cases; one independent-context AI reviewer; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark"
+SCOPE = "30 controlled acceptance cases; independent-context AI review; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark"
 
 
 def _bundle_issues(bundle: dict[str, Any]) -> list[str]:
