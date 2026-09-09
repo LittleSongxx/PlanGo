@@ -159,12 +159,34 @@ def _future_evidence_issues(review: dict[str, Any], packet: dict[str, Any]) -> l
         target = outputs.get((claim.get("output") or {}).get("ref_id"), {})
         for evidence in claim.get("evidence", []):
             reference = evidence.get("ref_id")
-            if reference not in {"task", "independent_state"}:
+            if reference not in {"task", "independent_state", "transport_checks"}:
                 continue
             pointer = evidence.get("pointer", "")
             parts = [part.replace("~1", "/").replace("~0", "~") for part in pointer.split("/")[1:]]
             issue = None
-            if reference == "independent_state":
+            if reference == "transport_checks":
+                # A specific receipt/event may predate the final transport log.
+                # Require its nearest recorded timestamp, never a later summary.
+                value = packet.get("transport_checks", {})
+                recorded = None
+                try:
+                    for part in [*parts, None]:
+                        if isinstance(value, dict):
+                            for key in ("at", "captured_at", "created_at", "finished_at"):
+                                if value.get(key):
+                                    try:
+                                        _time(value[key])
+                                    except ValueError:
+                                        continue  # A timezone-free DB event uses its enclosing capture.
+                                    recorded = value[key]
+                                    break
+                        if part is not None:
+                            value = value[int(part)] if isinstance(value, list) else value[part]
+                    if _time(recorded) > _time(target.get("captured_at")):
+                        issue = "transport_evidence_from_future"
+                except (KeyError, TypeError, ValueError, IndexError):
+                    issue = "transport_evidence_time_missing"
+            elif reference == "independent_state":
                 if not parts or parts == ["checkpoints"]:
                     issue = "state_evidence_requires_specific_checkpoint"
                 elif parts[0] == "checkpoints":

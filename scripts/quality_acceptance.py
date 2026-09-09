@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Prepare and execute the frozen 30-case controlled acceptance release.
 
-Human gold approval is required before run. Only evaluation adapters change;
-the product/model freeze and the first-attempt registry are enforced throughout.
+Gold approval is required before run, with independent AI review allowed only
+under the user's explicit delegation. The product/model freeze and attempt
+registry are enforced while collecting; later evidence packaging reads archives.
 """
 from __future__ import annotations
 
@@ -279,7 +280,7 @@ def output_case(original, directory):
     result = runner.read(directory / "collection.json")
     packet["trial_id"] = case["case_id"] + ":" + result["trial_id"]
     checkpoints = result["checkpoints"]
-    baseline_ids, outputs, available, hashes = set(), [], [], {}
+    baseline_ids, outputs, available, hashes, desktop_events = set(), [], [], {}, {}
     def artifact(path):
         p = Path(path)
         p = p if p.is_absolute() else ROOT / p
@@ -314,6 +315,8 @@ def output_case(original, directory):
         if obtained:
             available.append(visible["checkpoint"]["id"])
         desktop = capture.get("desktop_evidence")
+        if desktop:
+            desktop_events[stage] = {"captured_at": capture["captured_at"], "events": envelope.get("events", [])}
         if desktop and desktop.get("ui"):
             ui = artifact(directory / desktop["ui"])
             if ui and ui.get("pending_status"):
@@ -336,7 +339,8 @@ def output_case(original, directory):
     desktop_path = directory / "desktop-result.json"
     if desktop_path.exists():
         raw = runner.read(desktop_path)
-        transport["desktop"] = {key: raw[key] for key in ("transport_counts", "driver_actions", "recovery", "restored_comparison", "cleanup", "desktop_restarted") if key in raw}
+        transport["desktop"] = {key: raw[key] for key in ("run_id", "started_at", "finished_at", "transport_counts", "driver_actions", "recovery", "restored_comparison", "cleanup", "desktop_restarted", "backend_restarted", "message_responses", "acceptances", "acceptance", "saved_baseline", "checkpoints") if key in raw}
+        transport["desktop"]["checkpoint_events"] = desktop_events
         hashes[desktop_path.name] = file_sha(desktop_path)
     stop = result["stop_reason"]
     outcome = stop if stop in {"timeout", "external_blocked", "budget_exhausted"} else "completed" if stop in {"completed", "script_finished"} else "product_failure"
