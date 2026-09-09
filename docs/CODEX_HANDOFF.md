@@ -1,238 +1,196 @@
 # PlanGo 当前实施交接
 
-更新：**2026-09-09（N1→N4 接续收尾，Asia/Shanghai）**。当前仓库：`/home/song/code/Agent/multi-agent/PlanGo`。
+更新：**2026-09-09 11:02（Asia/Shanghai，只读运行快照）**。工作区：`/home/song/code/Agent/multi-agent/PlanGo`。
 
-这是新 Codex 对话的当前交接入口。**R0→P3 本轮核心实施已完成并本地提交；不要重新更名、迁移目录或重建环境。N2结构化需求编辑和Linux试用交付已在接续中补齐；整个产品仍有真实商家登录后读取/准备等未完成范围。** 本文件区分已实现、已验证和建议后续范围，不能把受控测试当作真实商家履约。
+## 0. 当前目标与下一步
 
-## 0. 最新门店与UI接续（2026-09-09，优先于以下旧状态）
+用户希望新 Codex **按最近讨论的“项目本身推进计划”直接实施**，不要重新输出泛化分析或询问“是否开始”。主线是：用户选择门店与优惠 → 修改人数/日期/预算 → 系统解释适用性与缺失规则 → 保存行程 → 中断后继续原任务。
 
-用户已完成扫码及一次网站安全验证。**当前没有需要用户操作的临时窗口，独立桌面/SQLite后端已关闭，登录态和原任务保留。** 调试窗口不用时及时关闭的约定已写入AGENTS，不能做成产品空闲自动退出。
+**先做第5节 D1“发送失败与断线恢复”及 D2“实际配置/能力入口”，再推进 D3 套餐决策和 D4 资料到行程。** 后续依次做效率、路线费用、真实表单及独立使用验收。先复现风险，复用已有持久命令、规范补丁、证据和审批机制，按小阶段验证与本地提交；不要为了形式统一重建架构。
 
-- 默认启动窗口由1500×940改为1800×1120，并限制在屏幕工作区；主界面以门店/地址/人均、优惠价格与条件优先，原文和长标题折叠，推荐菜分组可展开，反馈移到最后。旧raw命令补投影不再盖住较新的结构化卡片。
-- N1原run `f8f8ad2719074b0a9c62cbb08367892f` 位于原 `output/merchant-next/session-C0ovDv/`。真实只读取到顺风123(观音桥大融城店)地址、人均62、10道推荐菜及售价47/98/19.9的3条优惠；面值不当售价，划线价保持未知。详见[真实门店与界面](../eval/plango-merchant-live/README.md)。
-- 原任务仍为PARTIAL_FAILED/needs_evidence、read_only、business_completed=false：完整菜单与使用细则需平台App，当前页面没有原生预约表单；全历史11个extract，click/type/业务动作均0。**不再需要重复要求用户扫码来推进已经读到的预览；后续真实预约准备需实际可操作网页入口。** 重开若网站要求验证仍由用户手动处理，不绕过或复制Cookie。
-- 累计12152tokens/5tools，最后一轮3343tokens/2tools，旧失败全部保留。模型budget fallback来自保守入场估算及预留，baseline没有丢失；没有增加预算或清计数。新的首站确定性抽取、共享持久处理和App预览停止已有离线验证，不把它们说成另一次0模型真实对照。
-- 当前schema无新增数据库迁移。最终本地提交、主服务更新和新版试用包见本文件末尾；旧0.1.0归档及历史交接保留，不覆盖旧交付证据。第0节以下的“等待扫码/窗口保留”属于上一轮快照，已由本节替代。
+用户主投方向已确认 **AI应用／Agent开发**；[秋招与作品集建议](秋招与作品集推进建议.md)是辅助背景，不能据此把本次产品实施改成写简历或发布作品集。20个评估任务、3–5个独立试用者等仍是建议数量，尚未执行；**完整质量指标测评继续暂停**。
 
-## 上一轮接续结果（历史快照）
+本文件取代此前交接的当前状态与后续优先级。原文完整保存在[门店/UI交付归档](CODEX_HANDOFF_2026-09-09_门店UI归档.md)，迁移前基线在[更早交接](CODEX_实施交接.md)。旧文“尚未登录”“继续N2/N3”及进度中的过程性待办不代表当前任务。
 
-用户已授权直接推进第7节。接续从 `ad686e7` 开始，保留全部历史、用户融合原文与项目配置；未新建/重命名 conda 环境、未动兄弟 Planora、未清库、未push/PR/发布。证据集中在 [N1→N4验收](../eval/plango-next/README.md)。
+## 1. 不可丢失的约束
 
-| 项目 | 已实现/已验证 | 仍未覆盖 |
-| --- | --- | --- |
-| N1 | 有界检查大众点评/美团；实见大众点评扫码页在模型前暂停，原run经过WSL重启、重绑tab与只读意图纠正后恢复；累计2583 tokens保持 | 大众点评仅为候选首站；尚需用户在可见窗口登录，再核实真实门店/菜单/套餐及可用表单。登录页不算业务读取 |
-| N2 | 需求卡直接编辑起点、搜索中心/范围、日期/时间、人数、预算、交通；单站锁定/解锁；真实同run5版及WSL恢复、对应日期高德预报、draft_ready保存 | 商家供给未知保留；公共交通实际覆盖仍有限；不是交易验收 |
-| N3 | Linux x86_64/WSLg独立安装、包内Electron非开发启动、重复start、配置诊断、已有安装升级、冷备恢复；17表/72个profile文件/受控Cookie/审批/checkpoint/UNKNOWN/Redis PEL保持 | 受控Cookie不证明真实账号登录或跨机器密钥环解密；未发布，非全平台安装器 |
-| N4 | 8场景小回归、47条归档断言；修复历史goal误选预算角色、跨轮误判循环、重规划历史消息1→3→7→15→31倍增；结构化摘要替代未核验模型理由的UI/分享事实 | 没有完整质量测评或严格同输入性能对照，不报告提速百分比；全候选刷新仍可继续优化 |
+- 只修改本仓库及归属明确的专属资源。禁止修改、依赖、重启兄弟 `../Planora` 的仓库、服务、配置、测评和原 conda `planora` 环境；固定上游只通过本仓库 `vendor/plango_harness`、来源清单及显式维护参考。
+- 产品名 `PlanGo`；自有技术标识 `plango` / `PLANGO_`；默认重庆，保留本项目模型与高德配置。R0更名/目录迁移/独立conda已完成，**不要重新创建环境、迁目录或重建空库**。
+- `.env` 密钥不输出、不提交。不打印完整容器环境或展开后的Compose配置；保留供应商标准 `OPENAI_*` / `AMAP_*` 键。原作者、许可证、上游来源和历史证据保留。
+- 用户原文 `docs/YOYU_Planora_融合方案.md` 必须保持未跟踪，不修改、删除或提交。SHA256：`4e63df2f9bf469b142ce6fc03b321f04da8337bf6d0a9ad817433197dca3a70d`。本次新增的秋招分析文档不属于该保护原文。
+- 保留 Electron + React、真实可见浏览器、WebContentsView、经验证的Playwright/CDP、DOM-first及按需只读Vision。UI、模型、执行器共用会话和Harness授权/回执边界，不能给模型或renderer原始任意JS/CDP/shell权限。
+- 集中式LangGraph工作流，外层Plan-and-Execute，浏览器内层有界ReAct。single/multi是视角策略，不扩为无需求的自治多Agent团队；当前没有产品MCP，不为关键词引入新框架、OpenAPI全量生成或OTel部署。
+- 数据库、任务、checkpoint、审批、幂等、UNKNOWN回执、浏览器登录态完整保留。不清库、不重置profile，不以新建任务、重新授权或重放不确定写入制造成功。重启worker前检查租约/待命令，不能同时启动两个消费者。
+- 常规可逆实现、必要检查及适量真实模型/高德只读调用已有授权；**真实预约提交、下单、支付和外部消息仍需具体授权**。准备授权不包含提交，每项页面输入沿既有审批；不得自动解决验证码。
+- 测试使用归属明确的独立profile/数据库；标明受控样本与真实网页。保留旧失败和累计用量，不提高预算掩盖错误，不把正确暂停当业务完成。
+- 用户要求测试中顺手改善不友好的UI、美观与可读性。**临时窗口不用时及时关闭**；需要用户扫码/验证码/审批时明确说明。关闭窗口保留profile/任务，不实现产品空闲自动关闭。
+- 本地阶段提交可继续；不自动push、创建PR、发布网站/安装包、联系试用者或投递简历。不把代码、录屏或测试数量当个人独立原创、任务成功率或生产SLA。
 
-最终 `npm run check`：**220 pytest +43 subtests**、TS/存储/传输/分享/构建通过；真实主桥 **78** 项、Ruff、mypy **67文件**、生命周期与试用维护回归通过。日志：`output/next-check-final.log`、`next-browser-check.log`、`next-lifecycle-check.log`；旧失败均保留。
+## 2. Git、资源与持久数据（重新查询后操作）
 
-主 plango API/worker 已切换本轮源码，PG/Redis健康；切换前后17表1414条原始行全部保留，49 Cookie及桌面身份/回执原值保持，有效租约/待命令/未回执浏览器命令均0。见[主数据连续性](../eval/plango-next/main-data-continuity.json)。**未启动主用户profile桌面**；当前可见窗口是下面独立扫码验证窗口，不能误认为主桌面。
-
-- N1：`output/merchant-next/session-C0ovDv/`；run `f8f8ad2719074b0a9c62cbb08367892f`，`REQUIREMENTS_READY/authentication_required`，独立SQLite后端当前 `http://127.0.0.1:55631`，可见扫码窗口保留给用户。最新恢复消息3→4，累计2583 tokens不变。端口/PID随重启改变，务必重新查归属；不能复制该profile的Cookie到其他浏览器或自动重放写入。
-- N2：`output/requirements-next/session-kfOEZ5/`；run `de59413d26ff4b1a958d5d607fc4c6a2`，v5 `SUCCEEDED/draft_ready`，累计14514 tokens/164 tools；末轮增量2566/42，cap仍12000/48/300。测试窗口和后端已停止，原31条重复历史保留，后续消息只增量。
-- N3：`plango-trial-check`、`plango-trial-restore-check`均已stop/down，卷/profile/冷备保留在 `output/trial-check/`。实际安装与恢复证据见 [trial-install.json](../eval/plango-next/trial-install.json)。干净源码最终包在 `release/plango-0.1.0-linux-x64.tar.gz`（本地生成，不发布），用法见[试用安装](试用安装.md)。旧dirty试验包不冒称最终源码版本。
-- 用户因WSL应用窗口卡住重启过WSL；恢复后重新核实进程与状态，未按历史PID操作。历史消息增长是已复现并修复的缺陷，但**尚无证据证明它是窗口卡住的唯一或直接原因**。图形验证窗口逐个启动。
-
-后续先让用户完成当前可见大众点评登录，然后在原run读取门店/菜单/套餐来源；确有表单时按既有逐项审批准备。没有真实商家表单就明确停在只读范围，不用受控样本补齐。真实下单/预约提交/支付/外部消息仍需具体授权。实现/源码提交和最终包标识见本文件末尾交付记录。
-
-## 1. 新对话先做什么
-
-1. 阅读根目录 [AGENTS.md](../AGENTS.md)、本文件、[架构决策](架构决策.md)、[实施进度](实施进度.md)末尾“本轮收尾结果”及[Agent 架构与选型](Agent架构与选型.md)。按实际改动再读相关源码和验收 README。
-2. 只读核对 Git、已有修改、Compose 归属、主桌面进程、租约、待命令及保留的测试数据。下面的服务状态只是带时间快照，重新查询才是当前事实。
-3. 以第 7 节为下一阶段建议，先推进真实商家只读/准备适配与结构化需求交互，再做可安装试用交付。直接调查和实现可逆改动，不停在泛化分析，也不再询问“是否开始”。目标站点尚未由用户指定，应依据已有入口和真实可达性选取有界首站；需要用户特定账号或业务操作授权时才提出具体缺口。
-4. 分阶段更新 [实施进度](实施进度.md)，写清改动、验证、未覆盖项。可本地提交，不自动 push、创建 PR 或发布。后续若用户改变范围，以用户新指令为准。
-
-本文件优先于历史进度措辞。[旧实施交接](CODEX_实施交接.md)保留迁移前基线；进度和验收报告中的“正在修”“待复验”有些是当时的过程记录，应结合各自最终结论阅读，不能据此撤销已完成实现或重复施工。
-
-## 2. 不得丢失的约束与授权
-
-- 产品名 `PlanGo`，技术标识 `plango` / `PLANGO_`。主包 `backend/plango`，内部 Harness 为 `vendor/plango_harness/backend/plango_harness`。真实作者署名、许可证、固定上游来源、Alembic 历史 revision 和历史证据保持真实；搜索到旧名不等于运行时遗漏。
-- 仅修改本仓库及其专属资源。**不得修改、借用或重启兄弟 `../Planora` 的仓库、配置、服务、测评，也不得修改、重命名或删除原 conda `planora`。** 本项目独立 `plango` 环境已经存在。
-- 保留 Electron + React、真实可见浏览器、WebContentsView + 已验证的 Playwright/CDP、DOM-first 与按需 Vision。用户、模型、执行器共用同一会话、页面身份、审批、幂等和回执边界。禁止给模型或不可信 renderer 任意 JS/CDP/shell 能力。
-- 保留数据库、任务、checkpoint、审批、幂等记录、UNKNOWN 回执、浏览器登录态与桌面身份。不能清库、重置 profile、重新授权或重放不确定写入来制造迁移/恢复成功。未经检查不得重启 worker；不并行启动旧、新消费者。
-- 保留默认重庆和本项目已有模型/高德配置。`.env` 的值不输出、不提交；不要打印完整 `docker inspect` 环境或展开后的 Compose 配置。保留 `OPENAI_*` / `AMAP_*` 等供应商标准键。桌面模型配置检查不等于已更新独立 Docker 后端环境。
-- 用户明确要求保留未跟踪原文 `docs/YOYU_Planora_融合方案.md`，**不修改、不删除、不顺手提交**。原 SHA256：`4e63df2f9bf469b142ce6fc03b321f04da8337bf6d0a9ad817433197dca3a70d`。
-- 正常运行不使用 mock 补齐商家事实、价格、库存或业务结果。测试页面可受控，但必须标明，不可冒充真实网站。
-- 适量真实模型和高德只读调用已获授权；常规可逆实现、必要测试和本项目服务操作可继续。**真实预约提交、下单、支付、发送消息等外部业务写入仍需具体授权**，准备表单授权不包含最终提交。
-- 本轮完整质量指标测评已暂停。继续必要功能回归、失败定位和有界真实场景验证，不自行恢复角色收益、DOM/hybrid 等整批 sweep，不靠增加预算掩盖错误。
-- 保留丰富产品入口、人工接管、审批、地图、发现、分享、历史、记忆和设置。集中式工作流继续演进，不为形式完整引入另一套 Agent/记忆框架、MCP 或调度系统。
-
-本轮接续工作已按上述范围收尾；未完成的真实商家链继续按第0节处理。新对话不继承旧工具会话、PTY或子Agent状态，不依赖旧agent ID/PID恢复，也不要未经用户要求自动创建goal。
-
-## 3. Git、环境和服务快照
-
-本节保留上一轮08:10的历史快照；最新运行状态以第0节和实际查询为准。
-
-| 项目 | 2026-09-09 08:10 状态 |
+| 项目 | 本次只读核实 |
 | --- | --- |
-| 仓库路径 | `/home/song/code/Agent/multi-agent/PlanGo`；原 `YOYU` 目录已迁走 |
-| 分支 | `feat/planora-browser-harness`，保留历史分支名 |
-| 写本交接前 HEAD | `e1c6172 docs: record PlanGo delivery and verification`；本交接可能形成后续文档提交，以 `git log` 为准 |
-| 最新实现提交 | `d6086c1`：P2/P3、现代桌面 UI 与验收证据；大量 diff 来自原始 JSON 证据，不全是代码 |
-| 之前提交 | R0 `4a5bf11`；CI `4451aa4`；P0 `f845e9c`；P1 `15bb44b` |
-| 工作区初查 | 仅用户融合原文未跟踪；无其他遗留代码修改。之后本交接相关文档会产生修改 |
-| 主 Compose | `plango`：API、PostgreSQL、Redis healthy，worker 运行，migrate Exited 0 |
-| 主 API | `http://127.0.0.1:8011`；数据库/role 为 `plango` |
-| 主任务 | 共 8 条：6 `SUCCEEDED`、1 `REQUIREMENTS_READY`、1 `PARTIAL_FAILED`；有效租约或 pending_command 合计 0，未回执浏览器命令 0；`agent_action` 当前无行 |
-| 主桌面 | **当前未发现存活的本仓库桌面进程**。上一轮启动、连接及重复 start 已验收；`desktop.json` 和 `DevToolsActivePort` 文件仍在，不能当作当前存活证据。需操作 UI 时在图形会话运行 `./start.sh` |
-| 测试 Compose | `plango-e2e` 全部停止；API/worker 的 Exited 143 为之前主动停止，PG/Redis Exited 0。卷、profile、SQL 备份保留 |
-| Python | `/home/song/miniconda3/envs/plango/bin/python`，3.12.14；原 `planora` 未改 |
-| 浏览器已验证组合 | Electron 33.4.11 / Chromium 130 + `playwright-core` 1.63.0；版本变更需重新适配验证 |
+| 分支 | `feat/planora-browser-harness`，历史分支名保留 |
+| 写交接前HEAD | `46543d6 docs: record merchant UI trial artifact and verification`；本次可能形成文档提交，以Git为准 |
+| 最新实现 | `a05f037`：门店预览、读取范围、窗口与UI；此前 `87f18e9`：结构化编辑/试用交付，`d6086c1`：P2/P3核心 |
+| 初查工作区 | 无代码修改；未跟踪文件为用户融合原文、上一轮生成的秋招建议。当前交接文档改动另计 |
+| 主Compose | `plango`，目录标签归属本仓库；API/PG/Redis healthy，worker运行，migrate Exited 0 |
+| 主API/数据库 | `http://127.0.0.1:8011`；database/role=`plango` |
+| 主任务 | 8条：6 SUCCEEDED、1 REQUIREMENTS_READY、1 PARTIAL_FAILED；有效租约或pending_command=0，未回执浏览器命令=0，RUNNING/UNKNOWN动作=0。终态包含只读/草案，不表示6次交易 |
+| 桌面/隔离进程 | lifecycle未发现主桌面；商家、需求验证、trial目录未发现活跃进程。不要依据旧PID/CDP文件操作 |
+| 测试Compose | `plango-e2e`停止，API/worker Exited 143是先前主动停止；`plango-trial-check`、`plango-trial-restore-check`无容器，卷/profile/备份保留 |
+| Python | 已有 `/home/song/miniconda3/envs/plango/bin/python`（3.12系列）；所有后端入口使用独立plango环境 |
+| 浏览器版本 | Electron33.4.11 / Chromium130 + playwright-core1.63.0；升级须重新适配验证 |
 
-初查命令（不输出配置秘密）：
+数据位置：
+
+| 数据 | 路径/边界 |
+| --- | --- |
+| 主卷 | `plango_postgres-data`、`plango_redis-data`、`plango_runtime-data`；禁止 `down -v` |
+| 主profile | `~/.config/plango`，`persist:plango`；Cookie在 `Partitions/plango/Cookies` |
+| 主桌面身份/回执 | profile下 `harness/desktop-identity.json`、`browser-receipts.json`，不能替换成新身份 |
+| 原迁移私有备份 | `output/r0-backup/`；含配置、SQL/卷/profile，不提交、不公开打印 |
+| 最近主库更新备份 | `output/merchant-live/before-main-update.sql`、`before-main-rows.json`；更早 `output/next-maintenance/` |
+| 原真实PG/Redis测试 | `plango-e2e`卷、`output/live-ui/profile/`、`output/live-ui/final-backup/plango-e2e.sql`；当前停止，不是空库 |
+| 商家原任务 | `output/merchant-next/session-C0ovDv/`，数据库 `data/runs.sqlite`、profile `electron/`；原后台端口已停，不固定端口恢复 |
+| 结构化需求原任务 | `output/requirements-next/session-kfOEZ5/`，`data/runs.sqlite`与独立profile，已停止 |
+| 受控表单原任务 | `output/preparation-e2e/session-plD5Ds/`；保留受控表单、失败/取消运行及profile，已停止 |
+| 安装/恢复样本 | `output/trial-check/`及专属卷；受控UNKNOWN/审批/checkpoint/Redis PEL与Cookie均保留 |
+
+当前可继续复核的原run：
+
+- `f8f8ad2719074b0a9c62cbb08367892f`（商家SQLite）：PARTIAL_FAILED/read_only，12152tokens/5tools，无pending/lease。用户已完成扫码和安全验证，取得真实门店地址、人均62、10道推荐菜、售价47/98/19.9的3条优惠；完整菜单/规则需平台App，当前页面无原生预约表单。11条历史浏览器命令全为extract，动作账本0。**不重复把“登录”当成未完成事项**；重开若出现新验证才请用户处理。
+- `de59413d26ff4b1a958d5d607fc4c6a2`（需求SQLite）：SUCCEEDED/draft_ready，v5，14514tokens/164tools，无pending/lease；预算取消、人数修改、单站锁定/解锁、起点/搜索中心、3km、2026-09-11 15:00与驾车均有真实UI/高德记录，经历WSL重启。
+- `381fe190c404442894f72b5ddb925524`（停止的plango-e2e）：保留错误西安历史，后续恢复重庆步行/预算/日期/起点，v6保存。历史天气/日期不能当新的实时事实。
+- `d51586748f934797a6c8b202ccd8df5b`（受控准备SQLite）：SUCCEEDED/ready_to_review，v4，117705tokens/53tools，无pending/lease；是本地受控表单，submit=0，不能当真实预约。其历史60000/轮cap只用于当时诊断，不沿用到新测试；同库其他取消/失败记录保留。
+
+## 3. 已完成的能力与必须保持的契约
+
+| 领域 | 已实现/验收边界 |
+| --- | --- |
+| 规范/地理 | TripSpec稀疏补丁、先规范化再依赖刷新；未提及/清除/未知区分；真实起点、搜索中心、selected POI分开；详情按原ID核验，过期失败不续时间；日期用持久时间锚点 |
+| 需求UI | 起点/中心/范围、日期/时间、人数、预算、交通直接编辑；单站锁定/解锁，expected_version与plan/version/place校验；旧审批失效，历史保留 |
+| 草案/准备 | draft_review绑定exact plan/version/interrupt；save为draft_ready，prepare仅生成保留未知项的准备Goal；原生同form参数核对才ready_to_review，仍未提交；原Goal可显式恢复，UNKNOWN不可重放 |
+| 浏览器 | 主进程WCV及受信固定操作；popup用同session可见BrowserWindow（全WCV popup曾挂起）；renderer原始eval/伪造回执入口已移除；只读Vision每轮最多1次，无坐标写操作 |
+| 读取范围 | 复合请求逐字段验收，当前页需同URL/snapshot；推荐菜、优惠预览不等于完整菜单/规则。短页保留正文；大众点评实见版式只读适配，同实体原文与有限数值校验，面值/原价不当售价；processed共用持久写入，旧结果不改 |
+| 可靠性 | 回执CAS与BROWSER_OBSERVATION同SQL事务；Redis死信发布/ACK原子；SSE单主进程订阅、序号/缺口/重连；已保存回执不可变；新旧观测按时间/snapshot而非数组追加顺序显示 |
+| 预算/恢复 | 每次明确新输入有有界baseline，累计不清零；澄清/审批/浏览器等待保存剩余执行时间，重复恢复不补预算；消息ID绑定run/turn，只追加本轮，旧重复历史保留 |
+| 记忆/反馈 | 显式偏好、反馈、有来源/有效期的episode分开；不从点赞推偏好，UNKNOWN不记履约；删除墓碑防恢复复生；embedding opt-in，不借聊天密钥 |
+| UI/安装 | 默认1800×1120并适配屏幕；资料/优惠/未知项分层，原文折叠、键盘可展开、反馈后置；Linux/WSLg独立安装、非开发启动、诊断、升级/冷备恢复已有证据 |
+
+默认每轮12000tokens/48tools/300执行秒，模型timeout45秒/retry1，高德timeout8秒；实际以本项目配置为准。真实门店最后一轮3343tokens后出现model_token_budget fallback，**baseline正确**：保守输入/schema/system/skills估算及收尾预留触发，不能误当累计上限错误或通过调大额度掩盖。已有跨累计cap新轮回归。
+
+用户曾因窗口卡住重启WSL。历史消息倍增已经修复，但**未证明是那次卡住的直接原因**，长时资源问题仍需复现。
+
+## 4. 现有验证与交付
+
+最近完整npm check为263pytest+43subtests、TS/存储/传输/分享/构建通过；追加预算回归后最终全量pytest为**264+43subtests**，Ruff/mypy67文件、真实浏览器**80项**及隔离完整桌面/键盘交互通过。9场景54条归档断言核对冻结证据中的记录与字段值，不执行新业务，也不是54次新业务成功。本次写交接只读检查状态，未重跑业务验收。
+
+- [真实门店/UI](../eval/plango-merchant-live/README.md)、[读取数据](../eval/plango-merchant-live/read-result.json)、[主数据连续性](../eval/plango-merchant-live/main-data-continuity.json)。主服务更新时17表1414条原始行、49Cookie及身份/回执保持是有时间的历史验收，本次未重新逐行计算。
+- [需求/安装/接续](../eval/plango-next/README.md)、[安装验收](../eval/plango-next/trial-install.json)：17表/72profile文件、受控Cookie/UNKNOWN/审批/checkpoint/Redis PEL恢复；不是跨机器真实登录验收。
+- [原UI](../eval/plango-live-ui/README.md)、[政府网页/图片](../eval/plango-live-browser/README.md)、[受控准备](../eval/plango-live-preparation/README.md)。实际字段、拒绝和旧失败保留。
+- 最新日志：`output/merchant-live/pytest-delivery-final.log`、`check-final-recovery.log`、`browser-security-gate.log`；更细失败/复验在同目录，内容可能私有，先筛选再公开。
+- 新包 `release/plango-0.1.0-linux-x64-merchant-ui.tar.gz`，112828176字节，revision=a05f037/source_dirty=false；SHA256 `c30b58a3a362912c023ae318173f84a6986a7efb6689439acb9659fa52835640`。旧包 `release/plango-0.1.0-linux-x64.tar.gz`保留。包与sidecar存在；[包记录](../eval/plango-merchant-live/package.json)、[使用文档](试用安装.md)。不覆盖旧包，也不声称每次重打包都重跑安装全链。
+
+## 5. 已授权接续的产品实施顺序
+
+这是最近用户要求“针对项目本身”讨论后，要求交接给新会话按计划实施的路线；**下列D1–D7仍未实施**。源码风险先复现，不能当作已经发生的用户事故。求职展示作为顺带保留的证据，不取代本路线。
+
+### D1 / P0：发送失败与断线恢复（第一项）
+
+现状：`ChatPanel`文本/图片入口先清输入再异步send；`store.send`先显示普通用户气泡，失败主要设全局错误。`HarnessClient.createRun`先POST再GET；POST被接收但响应/后续GET失败时，前端可能没有run_id。DTO没有客户端稳定请求ID，每次create_run生成新UUID。已有事务内pending_command去重只覆盖其现有范围，不能假定覆盖创建与每条消息整个生命周期。
+
+先读：`src/renderer/src/components/ChatPanel.tsx` → `src/renderer/src/store.ts` → `src/preload/index.ts` / `src/shared/types.ts` / `src/main/ipc.ts` → `src/main/harnessClient.ts` → `backend/plango/app.py` / `runtime.py` → `vendor/plango_harness/backend/plango_harness/runtime.py` / `persistence/runs.py`。
+
+先复现再改；复用现有持久命令/本地存储/恢复入口，必要时补稳定请求身份和服务端幂等接受，**不要再造一个队列或只靠按钮防抖**。清楚表示未送达、已接收待取回、送达待核实；保留可恢复草稿。
+
+验收覆盖：请求未到服务端、接受后响应丢失、POST成功GET失败、重复点击/重连/桌面重启、相同文本不同轮次、图片与选店入口。一次请求只能形成一次接受/一个run或一个用户轮次/一份预算；相同文字的独立新输入不能被文本去重吞掉；未知业务动作不能通过“重试消息”获得重放权限。保留原记录，新增字段需兼容旧DB/checkpoint并在隔离库验证升级。
+
+### D2 / P0：实际模型配置与能力入口（与D1形成首批交付）
+
+现状：本地pingLlm测试桌面cfg；连接现有Docker服务时只是连接，保存桌面配置/restartHarness不会更新Docker环境。SidePanel已有说明，但ready主要只有model_enabled，缺少可核对的实际执行配置/能力摘要。快捷示例仍包含取号/点菜愿景，与已验收范围需对齐。
+
+入口：`SettingsDrawer.tsx`、`SidePanel.tsx`、`ChatPanel.tsx`、`src/main/{config,harness,ipc}.ts`、`docker-compose.yml`、`backend/plango/settings.py`、`app.py`。扩现有设置/健康入口，不开第二套配置真相。
+
+验收：普通用户能看懂当前任务由哪个服务、哪个模型/能力执行；本地和Docker两路径、缺key/错误模型/断网/未启用Vision分清。只显示必要安全摘要，不泄露key或带凭据URL；不能将ready或本地ping当作任务模型可用，更不能静默覆盖独立Docker配置。示例优先可完成的规划、只读与草案，保留丰富入口和自由输入；App-only时给已取得/缺失/下一步，不重复要求扫码。
+
+### D3 / P1：从读到优惠到辅助选择优惠
+
+`world.py::Item/PageData`已有price/people/conditions/quote；`outcomes.py::price_comparison`确定性主线仍以门店average_price计算，尚未形成完整套餐适用性决策；`OutcomeCanvas.tsx`已有优惠/比较入口。
+
+先做同店2–3个优惠，按已确认人数、日期、总预算显示适用/不适用/规则缺失及来源。50元券售价47元分清；双人餐98元不能在3人时直接按98÷3认定够用；券叠加、超出人数收费、有效期和节假日限制未知时保留未知。只比较已知同口径费用，不因平均价格或推荐菜名凑出完整单点清单。
+
+验收：人数2→3、日期/预算变更实际重算；缺规则/过期/异店/面值与原价混淆均有反例；提供带来源的选择依据，不能升格为可预约或已购买。不新增交易权限。
+
+### D4 / P1：已读门店/优惠到行程的显式衔接
+
+已有普通高德规划与网页来源策略刻意分开。新增用户明确“把这家店和这个优惠用于本次安排”的路径时，核对页面商家与canonical POI/地址、选择的优惠及证据身份；同名分店/过期/歧义不自动合并。
+
+复用 `selected_poi`、TripSpec、计划版本、证据和draft机制；不得把所有打开网页静默混入高德结果，不建立第二套事实状态。验收同一任务选择→改人数/日期→重新核验→保存→重启恢复，旧审批失效，缺失费用/规则仍明示。
+
+### D5 / P1：减少等待与长时稳定性
+
+依据[真实回归日志](真实用户回归.md)选窄场景：单站已锁定且只改人数时，不应无条件刷新全部候选；每次只传当前相关证据，压掉重复正文/quote/skills上下文，避免相同页面无收益提取。保留必须的过期身份、日期天气、路线及未知项核验。
+
+先固定输入/版本/模型/预算/冷热缓存口径，再小范围对照真实调用数、tokens、端到端等待；保留人工等待和失败，不扩大成暂停中的质量sweep。WSL卡住、长会话、反复切换任务/标签、监听器/资源回收单独复现，不猜原因、不以调高预算过关。
+
+### D6 / P1：路线可行性与费用口径
+
+当前max_distance_km在需求卡同时用于搜索和路线核验；考虑区分搜索半径与可接受路程，保留旧规范默认语义/兼容并按依赖刷新。公交可选但后端全链仍有限，先说明能力，再有界补真实路线/换乘/步行衔接。
+
+预算明确餐饮、活动、交通和未估费用，不能把仅餐饮估算展示成全部支出保证。验收不同起点/搜索中心、交通变更、不可达/路线缺失、有限天气日期，保留真实直线下界与unknown，不能补模拟时长或车费。
+
+### D7 / P2：真实表单与独立使用验收
+
+先有界找到一个真实可操作网页表单再适配；当前大众点评页面仅公开预览，不无限撞登录/风控，不编造预订URL。复用同form参数、plan/version审批与恢复；用户具体批准输入后核对，submit=0；真实提交/支付仍另行授权。找不到就按只读范围交付，不用fixture假装商家验收。
+
+在用户配合下让未参与开发者完成安装和2–3个实际任务，记录并顺手修UI/说明卡点；不代发邀约，不把开发者自己测试算用户采用。其他平台安装器按真实受众需要决定，现有Linux交付不重做。
+
+## 6. 新会话首轮应落地什么
+
+1. 读根AGENTS、本文件、架构决策、Agent架构与选型、进度末尾；只读核实本文件第2节的归属与待任务。
+2. 先D1：沿完整发送链复现三个网络故障窗口，保留失败证据；核对创建和消息幂等边界，实施最小修复及旧数据兼容。并行可只读梳理D2，避免冲突文件同时编辑。
+3. D1/D2首批交付要做到：用户能恢复输入和确认送达；重复操作不重复任务/预算；当前服务实际模型/能力可核对；示例与真实支持范围一致；必要UI顺手改善。
+4. 通过必要回归后更新进度/交接/使用文档并本地阶段提交，然后继续D3–D7。遇到具体账号、业务写授权或确需用户选择的缺口时才问，不停在“是否开始”。
+
+## 7. 启停和验证入口
+
+归属检查不要打印环境：
 
 ```bash
-cd /home/song/code/Agent/multi-agent/PlanGo
 git status --short
 git log -7 --oneline
 docker ps -a --filter label=com.docker.compose.project=plango --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'
-docker ps -a --filter label=com.docker.compose.project=plango-e2e --format '{{.Names}}\t{{.Status}}'
-docker exec plango-postgres-1 psql -U plango -d plango -Atc "SELECT phase,count(*) FROM agent_run GROUP BY phase ORDER BY phase; SELECT count(*) FROM agent_run WHERE lease_until>now() OR pending_command IS NOT NULL; SELECT count(*) FROM plango_browser_command WHERE result IS NULL;"
-/home/song/miniconda3/envs/plango/bin/python --version
+docker exec plango-postgres-1 psql -U plango -d plango -Atc "SELECT count(*) FROM agent_run WHERE lease_until>now() OR pending_command IS NOT NULL; SELECT count(*) FROM plango_browser_command WHERE result IS NULL;"
 ```
 
-用 `scripts/lifecycle.py` 的只读 `desktop_processes()` 核实 cwd、父子关系、boot ID 和进程启动时间；不要仅凭 PID 文件、进程名或旧端口杀进程。主桌面 CDP 端口动态发现于 `~/.config/plango/DevToolsActivePort`，先核实端口归属；不要固定旧端口。`./start.sh` / `./stop.sh` 已有本仓库归属检查和保留卷逻辑，当前启动实际仍是 `npm run dev`。
+用 `scripts/lifecycle.py::desktop_processes()` 的cwd、父子关系、boot ID/开始时间核实。`./start.sh` / `./stop.sh` 有归属保护且保留卷；源码start仍开发入口，试用安装依据trial-install.json走包内Electron。浏览器CDP端口动态生成于对应profile/DevToolsActivePort，文件存在不证明进程存活。旧output中的交互driver脚本可能写固定eval文件、重用私有配置，**先读后用，不能盲跑或新开同库第二消费者**。
 
-## 4. 持久数据与恢复位置
-
-| 数据 | 位置与注意事项 |
-| --- | --- |
-| 主数据卷 | `plango_postgres-data`、`plango_redis-data`、`plango_runtime-data`；不使用 `down -v` 或清卷 |
-| 主桌面 | `~/.config/plango`，浏览器分区 `persist:plango`；Cookie DB 为 `Partitions/plango/Cookies` |
-| 桌面身份与回执 | `~/.config/plango/harness/desktop-identity.json`、`browser-receipts.json`；保留原会话 ID、幂等及不确定回执 |
-| 原迁移备份 | 私有 `output/r0-backup/`（目录 700），含原 `.env`、Compose、`postgres.sql`、旧卷冷备/清单、完整桌面 profile；不提交、不公开打印 |
-| 真实 UI 隔离数据 | `plango-e2e` 卷 + `output/live-ui/profile/`；私有 SQL `output/live-ui/final-backup/plango-e2e.sql`（600） |
-| 外部网页/图片隔离数据 | `output/live-browser-e2e/session-7sbvyC/`；原后端 55877 已停止 |
-| 准备链隔离数据 | `output/preparation-e2e/session-plD5Ds/`；原后端 56427、受控页面 55887 已停止 |
-| 主启动日志 | `output/lifecycle/setup.log`、`desktop.log`、`desktop.json`；日志可能含私有上下文，先筛选再引用 |
-
-R0 迁移保留原 4 个用户任务、18 条浏览器命令、49 条 Cookie，16 张业务/checkpoint 表原始行；682 条真实 checkpoint 可读取，32 条旧模块路径经严格兼容转换。Redis 原 22 条消息及消费位置保留，非空 PEL 另有受控迁移测试。主库另有按测试用户归档的验收记录，不能用“必须仍只有 4 条”作为数据连续性标准。
-
-最后主服务更新后，原始行及 49 Cookie、身份/回执再次核验完整，见 [连续性证据](../eval/plango-live-ui/original-data-continuity.json)与同目录 `desktop-data-continuity.json`。这是上轮验收事实，不代表每次读取本文时重新计算。`output/live-ui/check_original_rows.py` 依赖隔离测试 PostgreSQL，不能在测试服务停止时盲跑；恢复原 SQL 只能进入独立审计数据库，主库只读比对。
-
-旧 YOYU 容器/卷及备份保留用于回滚，不重启旧消费者。历史 Alembic revision ID、上游标注和旧模块兼容白名单有意保留；不要机械追求旧名零匹配或扩大反序列化白名单。细节见 [PlanGo 迁移](PlanGo迁移.md)。
-
-## 5. 已实现的架构与关键契约
-
-架构是 **LangGraph 集中式 Agent Workflow：外层 Plan-and-Execute，浏览器内层有界 ReAct**。确定性协调器负责路由、预算、审批、证据和完成门槛；Requirement/Discovery/Planner/Advocate/Critic 等专业节点各有结构化输入输出。`single/multi` 是视角策略，不是两套拓扑；Advocate 可逻辑分支，共享模型锁仍串行调用。Compiler、Verifier、Memory、Queue 是服务，不把它们包装成自治 LLM Agent。
-
-| 领域 | 已实现及继续修改时必须保持的边界 |
-| --- | --- |
-| 需求/规划 | `TripSpec` 规范字段与稀疏补丁；先规范化再计算依赖变化。起点、搜索中心、selected POI、活动类别和新地名分开。专业模型只读当前规范字段；累积 goal/messages 和旧报告保留审计，不把旧预算/旧人数重新带回当前生成 |
-| 地理/事实 | 前后端共用高德规范 POI 入口；附近 5km 与城市搜索有明确区别。选店 canonical ID 服务端核验；过期身份按原 ID 实际刷新，日期变更实际查对应天气。失败保持旧时间并报告 unknown；高德身份不证明排队、库存、可订 |
-| 路线 | 计划起点/交通模式传到地图与路线面板；walking 已有真实链路证据。路线失败时只能显示真实两点的直线下界及来源，不能伪装步行/驾车时长；后端公共交通覆盖仍有限，不能从前端 JS 公交能力推断已完整支持 |
-| 草案/准备 | 持久 `draft_review` 绑定 exact plan/version/interrupt。保存产生 `draft_ready`；明确“仅准备表单”产生 `itinerary_preparation` Goal，并保留未核验事项。`ready_to_review` 只证明同一原生表单门店、人数、日期/时间与入口核对，`business_completed=false` |
-| 修改/恢复 | 人数等变更产生新方案版本/审批；旧 Goal 不能继续用。原准备 Goal 的 PARTIAL 可显式 resume，重新读取；严格同 form 唯一字段差异可提出待审批 type，实际输入后需新快照验证。不得重放旧写命令或 UNKNOWN |
-| 浏览器 | 主进程 WCV 管理与 Playwright/CDP 固定操作，同一持久 session；实际 popup 使用同 session 的可见原生 BrowserWindow，之前全 WCV popup 方案实测有挂起，不能未验证就改回。renderer 原始 eval/伪造回执 IPC 已移除 |
-| Vision | 按需只读，每 turn 最多 1 次截图；当前本机显式启用，示例默认关闭。没有坐标点击/输入。快照、页面、时效、来源与授权共用边界；登录/验证码/拒绝/UNKNOWN 不得切换视觉绕过 |
-| 回执/一致性 | Browser result CAS 与 `BROWSER_OBSERVATION` 同 SQL 事务；已保存回执不可变，重复传输不重复执行。迟到截图 ACK 可保留真实证据，但消费仍有时效/身份校验。Redis 死信发布和 ACK 原子化，发布失败不能 ACK |
-| 预算/等待 | 每次明确新用户输入取得有界本轮 baseline；累计 tokens/tools 不清零。人工澄清/审批/浏览器等待保存剩余执行时间，自动恢复/重复命令不加预算；checkpoint 与投影间崩溃不重复补充额度 |
-| SSE | 桌面主进程唯一订阅者，Last-Event-ID、严格序号、gap 重连、终态追平；恢复时即便快照未变也通知 UI 脱离离线。服务端 SSE 仍使用数据库轮询 |
-| 记忆/反馈 | 明确偏好、幂等反馈和有来源/有效期的限定 episode 分开；可信读取/准备可投影经历。评分不推断偏好，UNKNOWN 不记履约；删除/清空的最小墓碑防止恢复复生。Embedding opt-in，禁用时不借用聊天密钥 |
-| Skills/工程 | 本地 10 个 Skills 目录，按需只读正文，开关持久化并冻结新任务快照，不增加权限。当前产品无 MCP；沿用 Pydantic/Zod/共享 TS 协议，没有全量 OpenAPI 类型生成、OTel collector/exporter 部署或第二套框架 |
-
-模型错误已区分鉴权、权限、配额、限流、连接、超时、服务/请求、结构化和内部错误；只有结构化错误做 JSON repair，不能把网络失败变成模拟成功。默认每轮 12000 tokens / 48 tools / 300 执行秒，模型 timeout 45 秒、retry 1，高德 timeout 8 秒；实际以本项目配置为准，不能为过关盲目扩大。
-
-主要源码入口：
-
-| 修改对象 | 入口 |
-| --- | --- |
-| API、运行与结果 | `backend/plango/app.py`、`runtime.py`、`outcomes.py` |
-| 工作流、规范/地理编排 | `backend/plango/graph.py`、`planning.py`、`geo.py`、`world.py`、`location.py` |
-| 核心状态与专业节点 | `vendor/plango_harness/backend/plango_harness/agent/{contracts,state,requirements,graph,model_adapter,subgraphs}.py`、`agent/subagents/` |
-| 编译、事实、持久恢复 | 内部包 `domain/planning.py`、`providers/world.py`、`persistence/runs.py`、`queue.py`、`memory/` |
-| 可见执行器 | `src/main/browserView.ts`、`browserDriver.ts`、`browser-bridge.ts` |
-| 桌面传输/配置 | `src/main/harnessClient.ts`、`harness.ts`、`ipc.ts`、`config.ts`、`location.ts`、`skills/loader.ts` |
-| UI 投影与交互 | `src/renderer/src/store.ts`、`lib/harnessProjection.ts`、`components/` 中 ChatPanel、OutcomeCanvas、DraftReviewCard、PlanMap、RouteSheet、SidePanel、SettingsDrawer、ResultFeedback |
-
-现有 API 可优先复用：`POST /api/v1/geo/{search,geocode,reverse}`；创建 run 可带 selected_poi hint，服务端再做真实 ID 核验；`POST /api/v1/runs/{id}/draft-decision` 传 decision=`save|prepare` 和 interrupt/plan/version；`POST /api/v1/runs/{id}/preparation/resume` 传 plan_id/plan_version/approval_id；`POST /api/v1/runs/{id}/feedback` 是独立幂等反馈入口。修改前读实际 Pydantic 模型，不凭本文概述直接拼生产请求。
-
-## 6. 已验证什么，尚未证明什么
-
-| 证据入口 | 实际覆盖 | 不可扩大的结论 |
-| --- | --- | --- |
-| [真实桌面流程](../eval/plango-live-ui/README.md) | Electron + 真模型/高德 + 独立 PG/Redis；发现、规划与同 run 多轮修改、草案保存、真实步行路线、分享/投票/留言、明确偏好/反馈/遗忘、提醒、Skills 重启、API 断线恢复 | 没有证明任意要求/任意商家都成功；保留真实失败和修后记录 |
-| [外部网页与图片](../eval/plango-live-browser/README.md) | 真重庆政府三峡博物馆网页读取、该网页截图经真实 filechooser 上传、导航/标签/缩放/常驻停止/历史恢复 | 网页为 `read_only`，用户图片为 `image_text`，不证明实时库存或业务写入；短暂“停止任务并接管”浮条未单独点击验收 |
-| [原任务准备恢复](../eval/plango-live-preparation/README.md) | 真 Electron/模型/高德身份 + **本地受控原生表单**；原任务恢复、逐项审批 type，时间 18:30→18:31、人数 3→4，新版本/审批与 ready_to_review | 17 命令=12 extract+2 snapshot+3 type，其中 localhost type 被拒、两次实际执行；click=0、submit=0。`fixture.meituan.com` 仅测试 host 映射，不是真实美团预约 |
-| `eval/plango-ui/` | 离线受控 UI 夹具与布局 | 不是真模型或真实商家流程 |
-| `eval/plango-r0/`、`plango-p0/`、`plango-p1/` | 分阶段迁移、正确性和浏览器适配记录 | 历史阶段记录不代表所有最终能力；失败文件不覆盖 |
-
-关键保留任务，继续复验时不要删除失败后另造“成功基线”：
-
-- 规划原 run `381fe190c404442894f72b5ddb925524` 位于 `plango-e2e`：保留错误西安历史，修后完成重庆步行、预算 250、2026-09-10 14:00、真实天气/身份刷新、新起点解放碑，v6 保存；路线实测约 119m/2min。历史日期不应在未来冒充新的实时证据。
-- 准备原 run `d51586748f934797a6c8b202ccd8df5b` 位于独立准备 SQLite：最终 v4，4 人/18:31，2 条待核验事项保留，`business_completed=false`。该诊断场景每轮 cap **60000**，累计 117705、最终轮 baseline 91945；未抬到 120000，不能把它当默认 12000 cap 的性能验收。
-- 外部网页成功 run `6903a5625c244b82983989f5f268635e`、图片成功 run `7aca5ec4a79a44648a54a8681d3e081e` 位于独立网页 SQLite。
-
-最近完整 `npm run check` 通过 **209 pytest + 43 subtests**、TS、存储/传输/分享与构建；随后计划起点/交通模式 UI 改动又通过类型/投影/构建、真实 Chromium 地图夹具与真实高德 UI。主桥真实浏览器 **76**、原生视图 **40** 项通过；Ruff、mypy（66 文件）通过。这是此前实施验收，本次文档交接未重跑业务测试。私有日志见 `output/live-ui/release-check.log`、`final-ui-build.log`、`browser-final.log`、`browser-view-final-retry.log`；失败日志仍保留。未 push，远端 Actions 没有本轮通过证据。
-
-**尚未覆盖：** 真实预约提交/下单/支付/外部消息；逐商家 OAuth、验证码、闭合 Shadow 和交易回执；微信/飞书产品渠道；完整公共交通规划；完整质量与多角色收益对比；其他操作系统安装器、跨机器真实登录态恢复。普通 host Playwright 截图不包含原生 WCV，查看真实网页要用 native capturePage 或系统截图。
-
-## 7. 建议下一阶段路线与验收
-
-用户已授权按本节接续，最新完成范围见第0节。**大众点评是依据实见入口保留的候选首站，尚未取得登录后的商家证据，也未授权真实交易。** 原固定架构和数据约束继续有效。
-
-### N1：一条真实商家只读到准备链
-
-先检查已有入口、站点策略和当前可见会话，选择一个真实可达且有业务价值的首站。先完成真实门店身份/地址、菜单或套餐条件、来源和有效时间读取；确需登录时保留当前会话并提供人工接管，不复制 Cookie 到隐藏浏览器、不绕过验证码。基于真实页面缺口修改受信适配器和后验规则，再验证正常、失效和恢复路径。
-
-验收至少覆盖：真实来源可追溯，门店一致，未知条件不编造；真实页面的准备参数与当前方案一致；修改人数/时间使旧审批失效；重启能恢复原任务，已发写命令/UNKNOWN 不重放。未取得业务写入授权前，停在经批准的表单准备/待核对范围，报告尚未完成交易。站点不提供可操作表单时明确交付只读范围，不用本地样本冒充补齐。
-
-### N2：结构化需求确认与编辑
-
-此项已实现并做真实同run验证。需求卡通过 `POST /api/v1/runs/{id}/requirements` 提交 `expected_version`、稀疏fields及可选精确stop_lock，复用TripSpec/版本/依赖刷新，不另建事实状态。扩大/缩小/取消范围均实际刷新搜索，地理失败后的人工澄清保留其余字段。
-
-验收用同一持久任务：编辑指定字段后，界面与后台规范一致；只刷新受影响事实/路线，仍有效的门店身份和无关字段保留；取消预算不会恢复旧金额；修改日期查询对应日期的真实天气；锁定保留正确站点但不能冻结失效证据；旧方案/审批明确失效，历史保留。
-
-### N3：可独立安装的试用版本
-
-Linux/WSLg试用路径已实现并验收。源码 `start.sh` 保留开发入口，已安装试用版依据持久安装身份直接启动包内Electron及编译页面，后端从包内固定源码构建；使用 `scripts/trial.py` 管理安装/诊断/冷备/恢复/升级，不依赖兄弟仓库或主机conda。见试用安装文档。
-
-验收包括：不依赖 Vite dev server 或兄弟仓库的启动路径；配置校验与无密钥诊断；持久数据备份/恢复；已有 profile/数据库升级和独立干净安装两条路径；版本说明、停止/重复启动与资源归属。不要把主用户现有 profile 当干净安装样本。
-
-### N4：基于实际日志缩短用户等待
-
-在首站和需求卡稳定后，用实际 trace 定位重复地理刷新、冗余模型调用与无效循环，做小范围对照和固定真实用户回归集。全量质量测评仍待用户恢复范围。MCP、新 Agent、OpenAPI 生成或 OTel 只有出现明确收益和需求时再引入。
-
-当前需求卡与Linux试用交付已具备上述证据；**一个站点登录后的真实只读/准备链仍未交付**。不能把局部工程完成或受控恢复验收标为全项目完成。
-
-## 8. 验证命令与操作注意
-
-按改动选择检查；文档改动不必重跑真实模型。完整常规检查和专门浏览器检查是两组，`npm run check` 不包含下面全部 Electron 回归：
+按变更选择检查，不为文档改动重跑模型：
 
 ```bash
 npm run check
 /home/song/miniconda3/envs/plango/bin/python -m ruff check backend vendor/plango_harness/backend/plango_harness
 /home/song/miniconda3/envs/plango/bin/python -m mypy backend/plango vendor/plango_harness/backend/plango_harness
-env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:browser
-env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:browser-view
+npm run test:transport
+npm run test:ui
 env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop
-env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:map-title
+env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:browser
+python scripts/check_lifecycle.py
+npm run test:trial
+python scripts/inspect_trace.py --check
 ```
 
-需要完整部署链时，先确认 18011 和保留的 `plango-e2e` 资源归属、待任务，才启动它；当前测试数据不是空库。测试脚本会重启测试 API/worker，只允许隔离 URL/Compose：
+D1关注 `scripts/check-harness-transport.ts`、`check-harness-ui.ts`、`backend/tests/test_{turn_budget,message_history,queue_delivery,receipt_atomicity,structured_requirements}.py` 并新增必要失联接受回归；D2沿已有配置/模型连接检查扩展。`npm run check`不包含全部Electron回归。
+
+需要部署链时先核对隔离资源、端口和待命令，再显式连接专属测试项目；不要绕过脚本主服务拒绝检查：
 
 ```bash
-PLANGO_SERVICE_PORT=18011 docker compose -p plango-e2e up --build -d --wait
+PLANGO_SERVICE_PORT=18011 docker compose -p plango-e2e build api
+PLANGO_SERVICE_PORT=18011 docker compose -p plango-e2e up --no-build -d --wait
 PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plango-e2e env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed
-PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plango-e2e env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed -- --vision
 ```
 
-这两条部署测试分别使用受控菜单/Canvas，调用真实模型，报告默认保存到带时间的 `output/full-stack-smoke/`；不能称真实商家交易。不要移除脚本的主服务拒绝/Compose 归属预检，也不要覆盖旧 `eval` 报告来制造全绿。
+它使用受控页面及真实模型，可能重启隔离API/worker；不代表真实交易。共享镜像先build api一次再up --no-build，避免此前并发导出同标签竞争。对当前主服务更新也须先确认静止、备份、保持数据连续性，不能拿主profile做干净安装测试。
 
-新一轮交付时更新本文件和接手提示词的当前状态，保持 [实施进度](实施进度.md) 可追溯；明确代码完成、实际验证、未覆盖和运行状态分别是什么。
-
-## 9. 接续本地交付记录
-
-- 实现提交：`87f18e9 feat: add structured trip editing and installable Linux trial`。后续文档提交只记录交付，实际HEAD以Git为准；未push、创建PR或发布。
-- 最终本地包：`release/plango-0.1.0-linux-x64.tar.gz`，112832483字节（约108MiB），旁边有`.sha256`。包内revision=`87f18e9`、`source_dirty=false`、Electron33.4.11；SHA256为 `36124dc05aae06e4e6662f59dfb7069e4d9cdf0b64d30a3603f96ba6d24c46bc`。
-- [最终包检查](../eval/plango-next/final-package.json)：本机配置密钥扫描通过、用户融合原文排除、固定上游档案/作者/许可证保持。该clean包另装入 `output/trial-final-check`（plango-final-artifact-check/28013），诊断全通过，未启动服务或新建profile；完整桌面/升级/恢复验收仍单独看此前trial-install.json，不虚称再次跑了全部测试。
-- 保留原主库SQL备份 `output/next-maintenance/before-update.sql` 与前后行指纹，测试源/恢复冷备在 `output/trial-check/`。这些私有备份包含身份和数据，不提交或分发；可分发的试用归档没有本项目配置密钥。
-
-## 10. 本轮门店/UI收尾状态
-
-最终全量pytest264+43subtests、Ruff/mypy67文件、TS/构建、浏览器80项及隔离桌面/键盘交互通过；9场景54条归档断言通过。主API/worker已更新门店/UI接续源码，17表原始行与主profile49Cookie/身份/回执保持，健康且无待命令，见[本轮连续性](../eval/plango-merchant-live/main-data-continuity.json)。
-
-原N1读取任务当前PARTIAL_FAILED/read_only，保留真实取得字段与未覆盖范围；所有临时窗口、独立后端已关闭，不存在待用户扫码的活动窗口。`output/merchant-next/session-C0ovDv/`保留真实登录态与数据，重开需要先核实归属；只有遇到新的真实安全验证时再请用户处理。实际UI恢复未新增模型用量。新的本地实现/包路径在最终交付记录中补充；不覆盖上一归档，不push或发布。
-
-本轮实现本地提交：`a05f037 feat: improve merchant previews and desktop readability`。新版归档为 `release/plango-0.1.0-linux-x64-merchant-ui.tar.gz`（约108MiB），包内revision=a05f037、source_dirty=false；SHA256为 `c30b58a3a362912c023ae318173f84a6986a7efb6689439acb9659fa52835640`，旁边保存校验文件。密钥/来源/作者许可证检查通过，见[新版包记录](../eval/plango-merchant-live/package.json)。旧试用归档保留；本次没有重新声称跑过一遍完整安装/冷备恢复，沿用已验收的打包入口并验证新增功能。未push、PR或发布。
+新证据使用新目录/文件名，公开材料脱敏；原始SQL/profile/配置留私有output。完成后关闭临时窗口与专属测试进程，保留数据，最后核对Git与用户原文哈希。**下一阶段尚未开始，不能把本次交接文档当D1–D7已交付。**
