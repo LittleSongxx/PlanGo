@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import random
 import re
 import time
@@ -292,7 +293,7 @@ PlanBuilder = FallbackPlanBuilder
 
 def _plan_rationale(stops: list[PlanStop], party_size: int | None) -> str:
     price_known = all(stop.unit_price is not None and "price_unknown" not in stop.tags for stop in stops)
-    cost = f"估算总费用 ¥{sum(stop.estimated_cost for stop in stops):g}" if price_known else "总费用待核验"
+    cost = f"已知估算小计 ¥{sum(stop.estimated_cost for stop in stops):g}" if price_known else "地点费用待核验"
     pending = []
     if any(stop.supply_source == "unknown" or stop.estimated_wait_min is None or "supply_unknown" in stop.tags for stop in stops):
         pending.append("营业/排队")
@@ -300,6 +301,8 @@ def _plan_rationale(stops: list[PlanStop], party_size: int | None) -> str:
         pending.append("可订情况")
     if any(stop.distance_kind != "route" or "route_unknown" in stop.tags for stop in stops):
         pending.append("路线")
+    if any(stop.transport_cost is None for stop in stops):
+        pending.append("交通费用")
     people = f"{party_size} 人" if party_size is not None else "人数待确认"
     return f"行程草案：{' → '.join(stop.name for stop in stops)}；{people}；{cost}。" + (f"待核验：{'、'.join(pending)}。" if pending else "")
 
@@ -578,14 +581,17 @@ class PlanEngine:
                 )
                 continue
 
-            route, route_evidence = await read("estimate_route", (origin.latitude, origin.longitude, place.place_id), lambda: self.world.estimate_route(origin, place))
+            route, route_evidence = await read("estimate_route", (origin.latitude, origin.longitude, place.place_id, cursor),
+                lambda: self.world.estimate_route(origin, place, mode=spec.travel_mode, visit_date=spec.visit_date,
+                                                 timezone_name=spec.timezone, at_minute=cursor))
             if isinstance(route_evidence, dict):
                 route_evidence = Evidence.model_validate(route_evidence)
             route_evidence = route_evidence.model_copy(update={
                 "evidence_id": route_evidence.evidence_id + ":" + hashlib.sha1(f"{origin.latitude},{origin.longitude}".encode()).hexdigest()[:8],
                 "payload": {**route_evidence.payload, "destination_place_id": place.place_id,
                             "requested_visit_date": scope[0], "requested_timezone": spec.timezone,
-                            "origin": [origin.latitude, origin.longitude]},
+                            "origin": [origin.latitude, origin.longitude], "origin_name": origin.name,
+                            "departure_minute": cursor, "requested_mode": spec.travel_mode},
             })
             evidence_ids.add(route_evidence.evidence_id)
             self.last_evidence.append(route_evidence)
@@ -666,7 +672,12 @@ class PlanEngine:
             )
             self.last_evidence.append(supply_evidence)
             evidence_ids.add(supply_evidence.evidence_id)
-            fresh_cost = round(float(place.average_price) * party_size, 2)
+            fare = route.get("cost_per_person")
+            transport_cost = (round(float(fare) * spec.party_size, 2)
+                if isinstance(fare, (int, float)) and not isinstance(fare, bool) and math.isfinite(fare) and fare >= 0
+                and spec.party_size is not None and route_evidence.confidence > 0 and not route_evidence.expired else None)
+            fresh_cost = round(float(place.average_price) * party_size + (transport_cost or 0), 2)
+            transport_summary = route.get("summary") or f"{origin.name} → {place.name}；交通费用待核验"
             active_stop_ids = [ref for ref in stop.evidence_ids if ref in place.evidence_ids or any(item.evidence_id == ref and not item.expired and item.confidence > 0 and item.payload.get("place_id") == stop.place_id for item in dated_evidence)]
             active_stop_ids += [route_evidence.evidence_id, supply_evidence.evidence_id]
             evidence_ids.update(active_stop_ids)
@@ -678,10 +689,11 @@ class PlanEngine:
                         # a stop into an open slot or refresh a failed route.
                         *(tag for tag in stop.tags if tag not in {
                             "time_infeasible", "locked_time_conflict",
-                            "closed", "not_reservable", "route_unknown", "place_unknown", "price_unknown", "supply_unknown", "reservation_unknown",
+                            "closed", "not_reservable", "route_unknown", "place_unknown", "price_unknown", "supply_unknown", "reservation_unknown", "transport_cost_unknown",
                         }),
                         *place.tags,
                         *([] if place.price_known else ["price_unknown"]),
+                        *(["transport_cost_unknown"] if transport_cost is None else []),
                         *timing_tags,
                         *(["closed"] if service_supply.open_now is False else []),
                         *(["supply_unknown"] if service_supply.open_now is None or supply.estimated_wait_min is None else []),
@@ -703,6 +715,8 @@ class PlanEngine:
                         "end_minute": scheduled_end,
                         "estimated_cost": fresh_cost,
                         "unit_price": place.average_price if place.price_known else None,
+                        "transport_cost": transport_cost,
+                        "transport_summary": transport_summary,
                         "category": place.category,
                         "address": getattr(place, "address", None) or stop.address,
                         "estimated_wait_min": supply.estimated_wait_min,
@@ -853,8 +867,12 @@ async def verify_plan(
         if "price_unknown" in stop.tags:
             check = ConstraintCheck(name=f"price:{stop.place_id}", kind="unknown" if spec.total_budget < float("inf") else "soft", passed=None, detail=f"{stop.name} 未提供可核验单价，不能把缺失价格当免费")
             (unknown if check.kind == "unknown" else soft).append(check)
-        if stop.unit_price is not None and spec.party_size is not None and abs(stop.estimated_cost - stop.unit_price * spec.party_size) > .01:
-            hard.append(ConstraintCheck(name=f"pricing:{stop.place_id}", kind="hard", passed=False, detail="站点价格未按确认人数计算"))
+        if "transport_cost_unknown" in stop.tags:
+            check = ConstraintCheck(name=f"transport_cost:{stop.place_id}", kind="unknown" if spec.total_budget < float("inf") else "soft", passed=None,
+                detail=f"前往{stop.name}的交通费未估；预算仅覆盖已知费用，不能保证全部支出")
+            (unknown if check.kind == "unknown" else soft).append(check)
+        if stop.unit_price is not None and spec.party_size is not None and abs(stop.estimated_cost - stop.unit_price * spec.party_size - (stop.transport_cost or 0)) > .01:
+            hard.append(ConstraintCheck(name=f"pricing:{stop.place_id}", kind="hard", passed=False, detail="站点价格未按确认人数与本段交通估算计算"))
         if not stop.evidence_ids:
             unknown.append(
                 ConstraintCheck(

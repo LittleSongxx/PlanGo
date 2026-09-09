@@ -103,7 +103,7 @@ export function DiscoverPanel(): JSX.Element | null {
           </button>
         </div>
 
-        <div className="flex gap-1 p-1 mx-5 mt-4 rounded-xl bg-[#eff5f0]">
+        <div className="flex gap-1 p-1 mx-5 mt-4 rounded-xl bg-[var(--surface-soft)]">
           <button onClick={() => setTab('discover')} className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium ${tab === 'discover' ? 'bg-brand text-brand-ink' : 'text-neutral-500 hover:bg-neutral-100'}`}>
             <Compass size={13} /> 地点发现
           </button>
@@ -112,7 +112,7 @@ export function DiscoverPanel(): JSX.Element | null {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 bg-[#f7f9f6] mt-4">
+        <div className="flex-1 overflow-y-auto p-5 bg-[var(--surface-soft)] mt-4">
           {error && <div role="alert" className="mb-3 text-xs text-amber-700 bg-amber-50 rounded-lg p-2">{error}</div>}
           {tab === 'discover' && freshness && <div className="mb-2 text-[11px] text-neutral-500">高德 · {new Date(freshness.observed_at).toLocaleString('zh-CN')}{freshness.cache_hit ? ' · 包含缓存结果' : ''}{expired ? ' · 信息已过期，请刷新后选择' : ''}</div>}
           {tab === 'deals' && <button disabled={busy} onClick={() => { setOpen(false); void send('读取当前浏览器页面的真实菜单和优惠，保留商品名称、价格、人数和使用条件，并展示原文证据。') }} className="mb-3 w-full py-2 rounded-lg bg-brand text-brand-ink text-xs disabled:opacity-40">读取当前页面真实优惠</button>}
@@ -120,7 +120,7 @@ export function DiscoverPanel(): JSX.Element | null {
             <div className="text-center text-neutral-400 text-sm py-12">正在读取{tab === 'discover' ? '地点信息' : '已观测优惠'}…</div>
           ) : tab === 'discover' ? (
             groups.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center py-20 px-6"><span className="flex h-16 w-16 items-center justify-center rounded-[22px] border border-[#dae8de] bg-white text-[#658a72]"><Compass size={27} strokeWidth={1.5} /></span><h3 className="text-base font-semibold mt-5">换个范围，发现下一站</h3><p className="text-xs leading-6 text-[var(--muted)] max-w-xs mt-2">当前范围未返回地点，确认位置后刷新试试。</p><button onClick={() => void load(tab, true)} className="mt-5 plango-primary"><RefreshCw size={13} />重新查找</button></div>
+              <div className="flex flex-col items-center justify-center text-center py-20 px-6"><span className="flex h-16 w-16 items-center justify-center rounded-[22px] border border-[var(--line)] bg-white text-brand-strong"><Compass size={27} strokeWidth={1.5} /></span><h3 className="text-base font-semibold mt-5">换个范围，发现下一站</h3><p className="text-xs leading-6 text-[var(--muted)] max-w-xs mt-2">当前范围未返回地点，确认位置后刷新试试。</p><button onClick={() => void load(tab, true)} className="mt-5 plango-primary"><RefreshCw size={13} />重新查找</button></div>
             ) : (
               <div className="space-y-6">
                 {groups.map((g) => (
@@ -138,7 +138,7 @@ export function DiscoverPanel(): JSX.Element | null {
               </div>
             )
           ) : deals.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center py-20 px-6"><span className="flex h-16 w-16 items-center justify-center rounded-[22px] border border-[#dae8de] bg-white text-[#658a72]"><Ticket size={27} strokeWidth={1.5} /></span><h3 className="text-base font-semibold mt-5">从真实页面，找到合适的优惠</h3><p className="text-xs leading-6 text-[var(--muted)] max-w-xs mt-2">还没有已读取的优惠。先在浏览器打开菜单或团购页面，再点击上方读取按钮。</p></div>
+            <div className="flex flex-col items-center justify-center text-center py-20 px-6"><span className="flex h-16 w-16 items-center justify-center rounded-[22px] border border-[var(--line)] bg-white text-brand-strong"><Ticket size={27} strokeWidth={1.5} /></span><h3 className="text-base font-semibold mt-5">从真实页面，找到合适的优惠</h3><p className="text-xs leading-6 text-[var(--muted)] max-w-xs mt-2">还没有已读取的优惠。先在浏览器打开菜单或团购页面，再点击上方读取按钮。</p></div>
           ) : (
             <div className="space-y-2">
               <div className="text-[11px] text-neutral-400 mb-1">仅展示已获取实际价格和使用条件的优惠；是否可用以当前页面为准。</div>

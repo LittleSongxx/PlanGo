@@ -23,7 +23,7 @@ from .geo import install_geo_routes
 from .health import install_health_routes
 from .location import LocationContext
 from .reminders import install_reminder_routes, setup_reminders
-from .requirements import RequirementEdit
+from .requirements import MerchantCandidatesRequest, OfferSelection, RequirementEdit
 from .runtime import DesktopRuntime, _utc
 from .settings import settings_from_env
 
@@ -246,6 +246,14 @@ def create_app(settings=None, *, token=None):
     @app.post("/api/v1/runs/{run_id}/requirements", dependencies=protected, status_code=202)
     async def edit_requirements(run_id: str, body: RequirementEdit):
         return await runtime.edit_requirements(run_id, body)
+
+    @app.post("/api/v1/runs/{run_id}/merchant-candidates", dependencies=protected)
+    async def merchant_candidates(run_id: str, body: MerchantCandidatesRequest):
+        return await runtime.merchant_candidates(run_id, body.source_ref)
+
+    @app.post("/api/v1/runs/{run_id}/offer-selection", dependencies=protected, status_code=202)
+    async def select_offer(run_id: str, body: OfferSelection):
+        return await runtime.select_offer(run_id, body)
 
     @app.post(
         "/api/v1/runs/{run_id}/interrupts/{interrupt_id}/resume",

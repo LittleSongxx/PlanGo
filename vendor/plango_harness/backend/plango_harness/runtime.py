@@ -271,6 +271,13 @@ class PlanGoRuntime:
                 prior["stops"] = [{**stop, "locked": lock["locked"]} if stop["place_id"] == lock["place_id"] else stop for stop in prior["stops"]]
                 reset["previous_plan"] = prior
             reset["structured_requirement_edit"] = {**requirement_edit, "turn_id": int(state.get("turn_id", 1)) + 1}
+            if requirement_edit.get("offer_source"):
+                reset["browser_task_context"] = {**(state.get("browser_task_context") or {}), "offer_source": requirement_edit["offer_source"]}
+            if requirement_edit.get("offer_selection"):
+                reset["selected_poi"] = requirement_edit["selected_poi"]
+                reset["browser_task_context"] = {**reset["browser_task_context"], "mode": "planning", "kind": "planning", "request": reason}
+                if requirement_edit.get("identity_evidence"):
+                    reset["evidence"] = [*reset["evidence"], requirement_edit["identity_evidence"]]
         messages = list(state.get("messages", []))
         messages.append(HumanMessage(content=reason, id=f"user:{run_id}:{int(state.get('turn_id', 1)) + 1}"))
         state.update(
@@ -943,8 +950,11 @@ class PlanGoRuntime:
                     else:
                         state["browser_wait"] = None
                     if first.get("type") == "clarification":
+                        previous_clarification = state.get("clarification") or {}
+                        if previous_clarification.get("kind") == "draft_review":
+                            previous_clarification = {}  # A new question cannot inherit an old plan approval binding.
                         state["clarification"] = {
-                            **(state.get("clarification") or {}),
+                            **previous_clarification,
                             "question": str(first.get("question") or "还需要补充哪些约束？")
                         }
             events: list[dict[str, Any]] = []

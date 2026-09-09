@@ -28,7 +28,7 @@ def test_execution_summary_and_saved_model_are_safe(tmp_path):
             "check": {"status": "not_checked"},
         }
         assert data["execution"]["capabilities"]["browser_vision_enabled"] is False
-        assert data["execution"]["capabilities"]["transit"] == "limited"
+        assert data["execution"]["capabilities"]["transit"] == "same_city"
         assert not any(secret in response.text for secret in ["secret", "password", "/v1", "user:"])
         assert "execution" not in client.get("/health/ready").json()
         assert client.get("/api/v1/health/ready", headers={"Authorization": "Bearer wrong"}).status_code == 401

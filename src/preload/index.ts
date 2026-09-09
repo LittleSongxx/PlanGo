@@ -1,7 +1,7 @@
 // preload：一能力一方法，contextBridge 暴露给渲染层。
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
-import type { HarnessFeedbackInput, RequirementEdit, HarnessDeliveryRequest } from '../shared/types'
+import type { HarnessFeedbackInput, RequirementEdit, HarnessDeliveryRequest, OfferSourceRef, OfferSelection } from '../shared/types'
 import type { LocationInfo, SelectedPoi } from '../shared/location'
 import type { BrowserIntent, BrowserLayout, BrowserViewState, BrowserActivity } from '../shared/browserView'
 
@@ -13,6 +13,8 @@ const api = {
     remove: (id: string) => ipcRenderer.invoke(IPC.reminderRequest, 'remove', { id })
   },
   harness: {
+    merchantCandidates: (runId: string, sourceRef: OfferSourceRef) => ipcRenderer.invoke(IPC.harnessRequest, 'merchantCandidates', { runId, sourceRef }),
+    selectOffer: (runId: string, selection: OfferSelection) => ipcRenderer.invoke(IPC.harnessRequest, 'selectOffer', { runId, selection }),
     deliver: (request: HarnessDeliveryRequest) => ipcRenderer.invoke(IPC.harnessRequest, 'deliver', request),
     checkDelivery: (requestId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'checkDelivery', { requestId }),
     editRequirements: (runId: string, edit: RequirementEdit) => ipcRenderer.invoke(IPC.harnessRequest, 'editRequirements', { runId, edit }),

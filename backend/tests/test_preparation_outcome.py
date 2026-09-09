@@ -147,7 +147,8 @@ def test_plan_approval_reaches_readonly_preparation_then_reenters_planning_on_ed
         provider_fields = {
             "places": [{"place_id": "browser:fixture", "name": "雾岚餐厅", "address": "重庆市渝中区邹容路1号", "category": "餐厅", "latitude": 29.56, "longitude": 106.57, "average_price": 50, "open_minute": 0, "close_minute": 1440,
                         "supply": {"open_now": True, "reservable": True, "seats_left": 10, "estimated_wait_min": 0}}],
-            "routes": {"browser:fixture": {"driving_min": 0, "walking_min": 0, "transit_min": 0, "distance_km": 0}},
+            "routes": {"browser:fixture": {"driving_min": 0, "walking_min": 0, "transit_min": 0, "distance_km": 0,
+                "origin": {"latitude": 29.56, "longitude": 106.57}, "cost_per_person": 0}},  # Explicit controlled route/fee for this form-approval check.
         }
         respond(command("extract"), fields=provider_fields)
         paused = wait_for(client, run_id, lambda v: v["phase"] in {"WAITING_APPROVAL", "FAILED", "INFEASIBLE"})

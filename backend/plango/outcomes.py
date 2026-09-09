@@ -20,6 +20,7 @@ BROWSER = re.compile(
 WRITE = re.compile(r"预约|预订|订位|订座|取号|领号|下单|提交|支付|付款|发送|取消订单|购买")
 REASONING = re.compile(r"比价|比较|对比|挑选|推荐|最便宜|最佳|哪家|差价|差额|(?:计算|算一下|算算).{0,80}(?:总价|价格|费用)")
 READ_REQUEST = re.compile(r"读取|提取|识别|查看|看看|打开|访问|浏览|滚动|点击|输入|填写|切换")
+CURRENT_PAGE = re.compile(r"(?:当前|这个|此)(?:浏览器)?(?:中|上|里)?的?(?:页面|网页|页)|本(?:页面|网页|页)")
 
 
 def intent_text(text: str) -> str:
@@ -55,7 +56,7 @@ _READ_FIELDS: dict[ReadField, tuple[str, str]] = {
     "address": ("门店地址", r"地址"),
     "menu": ("菜单详情", r"菜单|餐单|菜价|\bmenu\b"),
     "recommended_dishes": ("推荐菜", r"推荐菜|网友推荐"),
-    "offers": ("套餐条目", r"套餐|团购"),
+    "offers": ("套餐条目", r"套餐|团购|优惠"),
     "offer_conditions": ("套餐使用条件", r"(?:套餐|团购).{0,8}(?:条件|规则|须知)|使用条件|使用规则|购买须知"),
 }
 
@@ -138,7 +139,15 @@ def read_goal(state, context):
     if context.get("mode") != "browser" or context.get("kind") != "extract":
         return None
     request = task_text({**state, "browser_task_context": context})
-    source = "user_image" if re.search(r"截图|图片|上传", request) and not re.search(r"网页|浏览器|网站|https?://", request) else "browser"
+    requests = [str(context.get("request") or ""), *(str(text) for text in context.get("edits", []))]
+    boundaries = [index for index, text in enumerate(requests) if CURRENT_PAGE.search(text)
+                  and re.match(r"\s*(?:请)?(?:只|仅)(?:需(?:要)?|要)?(?:读取?|查看|提取)", text)]
+    if boundaries:
+        # Preserve all history, but only the latest explicit scope and later
+        # edits define the active checklist, including across a paused restart.
+        active = requests[boundaries[-1]:]
+        request = active[0] + ("\n后续修改（后文优先）：\n" + "\n".join(active[1:]) if len(active) > 1 else "")
+    source = "user_image" if re.search(r"截图|图片|上传", request) and not (CURRENT_PAGE.search(request) or re.search(r"网页|浏览器|网站|https?://", request)) else "browser"
     kind = context.get("read_kind") or ("menu_read" if re.search(r"菜单|餐单|菜价|\bmenu\b", request, re.I) else "page_read")
     if source == "user_image" and re.search(r"文字|OCR", request, re.I):
         kind = "page_read"
@@ -260,7 +269,7 @@ def read_outcome(state, now=None):
         if item.get("source") != "browser" or not item.get("url"):
             continue
         if goal.required_fields and item.get("type") == "browser_page":
-            if re.search(r"当前(?:浏览器)?(?:中|上|里)?的?(?:页面|网页)", goal.request) and (
+            if CURRENT_PAGE.search(goal.request) and (
                     item.get("url") != observation.get("url") or item.get("snapshot_id") != observation.get("snapshot_id")):
                 continue
             fields, partial = _read_page_fields(data, item.get("title") or "")
@@ -516,6 +525,8 @@ def update_task_context(state: dict[str, Any]) -> dict[str, Any]:
     context["budget_ambiguous"] = "budget" in invalid
     if "party_size" in edits:
         context["party_ambiguous"] = edits["party_size"] is None
+    if context.get("kind") == "extract" and (CURRENT_PAGE.search(text) or re.search(r"https?://", text)) and READ_REQUEST.search(requested):
+        context.pop("offer_source", None)  # A new explicit read supplies candidates; it never changes the selected offer.
     context.update(turn_id=turn, latest=text)
     return context
 

@@ -109,7 +109,7 @@ async def test_venue_claim_requires_complete_assertion(claim, expected):
     assert bool(result.unknown_evidence) is (expected is None)
 
 
-@pytest.mark.parametrize("price,known,cost_text", [(50, True, "估算总费用 ¥200"), (0, True, "估算总费用 ¥0"), (0, False, "总费用待核验")])
+@pytest.mark.parametrize("price,known,cost_text", [(50, True, "已知估算小计 ¥200"), (0, True, "已知估算小计 ¥0"), (0, False, "地点费用待核验")])
 def test_compiled_summary_uses_observed_stops_and_preserves_untrusted_draft(price, known, cost_text):
     place, _, evidence = observed_case()
     place = place.model_copy(update={"average_price": price, "price_known": known})
@@ -118,5 +118,5 @@ def test_compiled_summary_uses_observed_stops_and_preserves_untrusted_draft(pric
     original = draft.model_dump()
     plan = compile_plan_draft(TripSpec(goal="四人午餐", party_size=4), draft, [place], evidence=evidence)
     assert plan is not None
-    assert plan.rationale == f"行程草案：普通餐厅；4 人；{cost_text}。待核验：营业/排队、可订情况、路线。"
+    assert plan.rationale == f"行程草案：普通餐厅；4 人；{cost_text}。待核验：营业/排队、可订情况、路线、交通费用。"
     assert draft.model_dump() == original, "Original model output remains available for the synthesis audit artifact"

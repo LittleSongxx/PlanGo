@@ -29,7 +29,7 @@ const historicalPlan = { ...plan, rationale: unsupported, stops: [{ ...plan.stop
 const historicalSnapshot = { ...snapshot, state: { ...snapshot.state, candidate_plans: [historicalPlan] } }
 const historicalBefore = structuredClone(historicalSnapshot)
 const grounded = projectHarness(historicalSnapshot).cards.find(c => c.kind === 'plan')!.plan
-assert.equal(grounded.share_message, '行程草案：真实店铺；4 人；总费用待核验。待核验：营业/排队、可订情况、路线。')
+assert.equal(grounded.share_message, '行程草案：真实店铺；4 人；费用待核验。待核验：营业/排队、可订情况、路线、交通费用。未计返程及额外消费，不保证全部支出。')
 assert.equal(grounded.nodes[0].reason, '计划停留 10:00–11:00；费用待核验。营业/排队待核验。')
 assert.equal(grounded.nodes[0].wait_min, null, 'A historical default zero with unknown supply cannot prove no queue')
 assert.deepEqual(historicalSnapshot, historicalBefore, 'Projection must preserve historical model prose as audit data')
@@ -37,7 +37,7 @@ for (const total of [null, 0]) {
   const zeroPriced = { ...historicalPlan, total_cost: total, stops: [{ ...historicalPlan.stops[0], unit_price: 0 }] }
   const projectedZero = projectHarness({ ...snapshot, state: { ...snapshot.state, place_candidates: [], candidate_plans: [zeroPriced] } }).cards.find(c => c.kind === 'plan')!.plan
   assert.equal(projectedZero.total_cost, total)
-  assert(projectedZero.share_message.includes(total === null ? '总费用待核验' : '估算总费用 ¥0'))
+  assert(projectedZero.share_message.includes(total === null ? '费用待核验' : '已知估算小计 ¥0'))
 }
 
 const stale = structuredClone(snapshot)

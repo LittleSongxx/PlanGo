@@ -76,11 +76,12 @@ class AlternativesCheck(unittest.IsolatedAsyncioTestCase):
                     expires_at=now + timedelta(minutes=10),
                 )
 
-            async def estimate_route(self, origin, destination):
+            async def estimate_route(self, origin, destination, **kwargs):
                 route = {
-                    "driving_min": 5,
+                    "walking_min": 5,
                     "distance_km": destination.distance_km,
                     "source": "browser",
+                    "cost_per_person": 0,  # Controlled walking route for alternative ranking.
                 }
                 return route, Evidence(
                     evidence_id="route:" + destination.place_id,
@@ -97,6 +98,7 @@ class AlternativesCheck(unittest.IsolatedAsyncioTestCase):
             goal="两人，先看展再吃饭，保留14:30展览",
             party_size=2,
             budget=300,
+            travel_mode="walking",
             indoor_required=True,
             required_activities=["展览", "餐厅"],
             activity_order=["展览", "餐厅"],

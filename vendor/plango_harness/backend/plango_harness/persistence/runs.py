@@ -46,6 +46,35 @@ def _jsonable(value: Any) -> Any:
     return str(value)
 
 
+def _assistant_reply(state: Mapping[str, Any], events: Sequence[Mapping[str, Any]] = ()) -> dict[str, Any] | None:
+    """Keep user-facing boundary text in audit history, outside model messages."""
+    phase = state.get("phase")
+    outcome = state.get("execution_outcome") or {}
+    if phase in {"SUCCEEDED", "PARTIAL_FAILED", "FAILED", "CANCELLED", "INFEASIBLE"}:
+        content = state.get("reason") or outcome.get("summary")
+    elif phase in {"REQUIREMENTS_READY", "WAITING_APPROVAL"} and state.get("interrupt_id"):
+        boundary = state.get("browser_wait") or state.get("clarification") or {}
+        for event in reversed(events):
+            if event.get("event_type") == "GRAPH_INTERRUPTED":
+                interrupts = (event.get("payload") or {}).get("interrupts") or []
+                boundary = interrupts[0] if isinstance(interrupts, list) and interrupts else interrupts
+                break
+        if not isinstance(boundary, dict):
+            return None
+        if boundary.get("type") == "browser" or state.get("browser_wait"):
+            # A receipt wait is a tool step; only an actual gate asks the user to act.
+            content = boundary.get("message") if boundary.get("error_kind") else None
+        elif phase == "WAITING_APPROVAL":
+            content = state.get("reason") or "请核对待批准的操作，确认后再继续。"
+        else:
+            content = boundary.get("question") or state.get("reason") or outcome.get("summary")
+    else:
+        return None
+    if not isinstance(content, str) or not content.strip():
+        return None
+    return {"content": content.strip(), "turn_id": int(state.get("turn_id") or 1)}
+
+
 class RunRepository:
     def __init__(self, database: Database) -> None:
         self.database = database
@@ -332,6 +361,7 @@ class RunRepository:
                                 agent_run.c.lease_owner,
                                 agent_run.c.cancel_requested,
                                 agent_run.c.pending_command,
+                                agent_run.c.state_json,
                             )
                             .where(agent_run.c.run_id == run_id)
                             .with_for_update()
@@ -352,6 +382,22 @@ class RunRepository:
                         raise RuntimeError("run command fenced")
                     if release_lease and not lease_owner:
                         raise ValueError("lease owner required for boundary release")
+                    saved_events = list(events)
+                    reply = _assistant_reply(payload, events)
+                    previous_state = row[5] or {}
+                    if reply is not None and (reply != _assistant_reply(previous_state) or phase != previous_state.get("phase")):
+                        # A resume may save an intermediate state before returning to
+                        # the same question. Compare its last durable reply under the
+                        # same row lock; a new turn with identical text stays distinct.
+                        previous_reply = (await session.execute(
+                            select(run_event.c.payload_json, run_event.c.phase)
+                            .where(run_event.c.run_id == run_id, run_event.c.event_type == "ASSISTANT_MESSAGE")
+                            .order_by(run_event.c.seq.desc()).limit(1)
+                        )).first()
+                        if not previous_reply or previous_reply[0] != reply or previous_reply[1] != phase:
+                            # Append after caller events so input acceptance keeps its
+                            # original event sequence, independent of reply history.
+                            saved_events.append({"event_type": "ASSISTANT_MESSAGE", "payload": reply, "agent_id": "assistant"})
                     next_version = int(row[0]) + 1
                     await session.execute(
                         update(agent_run)
@@ -369,7 +415,7 @@ class RunRepository:
                         )
                     )
                     seq = int(row[1] or 0)
-                    for item in events:
+                    for item in saved_events:
                         seq += 1
                         event_phase = item.get("phase") or phase
                         event_phase = (

@@ -140,7 +140,7 @@ export function ShareModal(): JSX.Element | null {
             <button
               onClick={merge}
               disabled={!fb?.mergeInstruction}
-              className="mt-3 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-brand-strong text-white font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              className="mt-3 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-brand text-brand-ink font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Wand2 size={14} /> 把朋友意见并入方案
             </button>

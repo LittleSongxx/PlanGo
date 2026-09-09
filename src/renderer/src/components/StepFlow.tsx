@@ -12,7 +12,7 @@ function StepIcon({ status, animate = false }: { status: AgentStep['status']; an
 
 export function StepFlow({ steps }: { steps: AgentStep[] }): JSX.Element {
   const latest = steps.at(-1)
-  return <details className="group bg-[#f6f9f6] border border-[var(--line)] rounded-2xl animate-in">
+  return <details className="group bg-[var(--surface-soft)] border border-[var(--line)] rounded-2xl animate-in">
     <summary className="cursor-pointer list-none p-4 flex items-center gap-2 text-xs min-w-0">
       {latest && <StepIcon status={latest.status} animate />}
       <span className="shrink-0 font-medium">任务过程（{steps.length}）</span>
@@ -23,7 +23,7 @@ export function StepFlow({ steps }: { steps: AgentStep[] }): JSX.Element {
       {steps.map((step, index) => <div key={step.id} className="flex items-center gap-2 text-xs text-neutral-600 min-w-0">
         <StepIcon status={step.status} animate={index === steps.length - 1} />
         <span title={step.label} className={`shrink-0 max-w-[65%] truncate ${step.status === 'error' ? 'text-red-500' : ''}`}>{step.label}</span>
-        {step.detail && <span title={step.detail} className="text-[#819084] min-w-0 truncate">· {step.detail}</span>}
+        {step.detail && <span title={step.detail} className="text-[var(--muted)] min-w-0 truncate">· {step.detail}</span>}
         {step.source && <SourceBadge source={step.source} />}
       </div>)}
     </div>

@@ -388,10 +388,12 @@ class ActionAndPlanningCheck(unittest.TestCase):
                     client.post(resolve_url, json={**confirmation, "status": "FAILED"}).status_code,
                     409,
                 )
-                event = client.get(f"/api/v1/runs/{run_id}/events").json()["events"][-1]
-                self.assertEqual(event["event_type"], "ACTION_RESOLVED")
+                history = client.get(f"/api/v1/runs/{run_id}/events").json()["events"]
+                event = next(item for item in reversed(history) if item["event_type"] == "ACTION_RESOLVED")
                 self.assertEqual(event["payload"]["resolution_source"], "user_confirmation")
                 self.assertFalse(event["payload"]["automatically_verified"])
+                self.assertEqual(history[-1]["event_type"], "ASSISTANT_MESSAGE")
+                self.assertIn("来自用户确认", history[-1]["payload"]["content"])
                 client.post(f"/api/v1/runs/{run_id}/messages", json={"text": "重新检查菜单"})
                 wait_for(
                     client,
@@ -452,6 +454,8 @@ class ActionAndPlanningCheck(unittest.TestCase):
                             "walking_min": 5,
                             "transit_min": 5,
                             "distance_km": 0,
+                            "origin": {"latitude": 39.997, "longitude": 116.482},
+                            "cost_per_person": 0,  # Explicit controlled transport price; not a production fallback.
                         }
                         for pid in ids
                     },

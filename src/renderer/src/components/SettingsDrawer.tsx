@@ -34,7 +34,7 @@ export function SettingsDrawer(): JSX.Element | null {
           </button>
         </div>
 
-        <div className="p-5 space-y-4 text-[13px] overflow-y-auto flex-1 bg-[#f7f9f6]">
+        <div className="p-5 space-y-4 text-[13px] overflow-y-auto flex-1 bg-[var(--surface-soft)]">
           {/* 定位 */}
           <LocationSection />
 

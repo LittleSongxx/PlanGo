@@ -1,11 +1,11 @@
 import type { SourceTag } from '@shared/types'
 
 const MAP: Record<string, { label: string; cls: string }> = {
-  browser: { label: '网页来源', cls: 'bg-[#eef5f0] text-[#4e745b] border border-[#dfece2]' },
-  amap: { label: '高德资料', cls: 'bg-[#eef5f0] text-[#4e745b] border border-[#dfece2]' },
+  browser: { label: '网页来源', cls: 'bg-neutral-100 text-neutral-600 border border-neutral-200' },
+  amap: { label: '高德资料', cls: 'bg-neutral-100 text-neutral-600 border border-neutral-200' },
   user: { label: '用户提供', cls: 'bg-blue-100 text-blue-700' },
   unknown: { label: '待核验', cls: 'bg-amber-50 text-amber-700 border border-amber-100' },
-  real: { label: '线上资料', cls: 'bg-[#eef5f0] text-[#4e745b]' },
+  real: { label: '线上资料', cls: 'bg-neutral-100 text-neutral-600' },
   dataset: { label: '数据集', cls: 'bg-blue-100 text-blue-700' },
   simulated: { label: '模拟', cls: 'bg-amber-100 text-amber-700' },
   cache: { label: '缓存', cls: 'bg-neutral-100 text-neutral-600' },

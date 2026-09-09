@@ -61,6 +61,16 @@ class Location(ContractModel):
 Activity = Literal["展览", "餐厅", "咖啡", "公园", "citywalk", "电影", "亲子", "动物园"]
 
 
+class OfferReference(ContractModel):
+    """The user's exact selection; merchant facts remain in their original evidence ledger."""
+    command_id: str = Field(min_length=1, max_length=128)
+    artifact_id: str = Field(min_length=1, max_length=160)
+    offer_index: int = Field(ge=0, le=29)
+    offer_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    place_id: str = Field(min_length=1, max_length=128)
+    identity_evidence_id: str | None = Field(default=None, max_length=128)
+
+
 class TripSpec(ContractModel):
     goal: str = Field(min_length=1, max_length=4000)
     party: list[PartyMember] = Field(
@@ -84,12 +94,22 @@ class TripSpec(ContractModel):
     location: Location = Field(default_factory=lambda: Location(latitude=39.997, longitude=116.482))
     search_location: Location | None = None
     must_visit_place_ids: list[str] = Field(default_factory=list, max_length=8)
+    selected_offer: OfferReference | None = None
     weather_sensitive: bool = True
     indoor_required: bool = False
     outdoor_required: bool = False
     max_queue_minutes: int | None = Field(default=None, ge=0, le=1440)
     max_distance_km: float | None = Field(default=None, ge=0, le=1000)
+    search_radius_km: float | None = Field(default=None, ge=0.1, le=50, allow_inf_nan=False)
     travel_mode: Literal["driving", "walking", "transit"] = "driving"
+
+    @model_validator(mode="before")
+    @classmethod
+    def legacy_search_radius(cls, value: Any) -> Any:
+        if isinstance(value, dict) and "search_radius_km" not in value:
+            distance = value.get("max_distance_km")
+            return {**value, "search_radius_km": min(distance, 50) if isinstance(distance, (int, float)) and not isinstance(distance, bool) and distance > 0 else None}
+        return value
 
     @field_validator("timezone")
     @classmethod
@@ -181,6 +201,8 @@ class PlanStop(ContractModel):
     end_minute: int = Field(ge=1, le=1440)
     estimated_cost: float = Field(default=0, ge=0)
     unit_price: float | None = Field(default=None, ge=0)
+    transport_cost: float | None = Field(default=None, ge=0)
+    transport_summary: str | None = Field(default=None, max_length=6000)
     estimated_wait_min: int | None = Field(default=0, ge=0, le=1440)
     supply_source: Literal["amap", "dataset", "simulated", "unknown", "browser"] = "unknown"
     supply_observed_at: datetime | None = None

@@ -303,7 +303,7 @@ class PlanOutcomeQuality(unittest.IsolatedAsyncioTestCase):
                 async def get_place(_):
                     return place
 
-                async def route(origin, destination):
+                async def route(origin, destination, **kwargs):
                     return {"driving_min": travel, "distance_km": 1}, Evidence(
                         evidence_id="quality-route",
                         source="browser",

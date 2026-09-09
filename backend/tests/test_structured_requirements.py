@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
+from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
@@ -64,7 +65,7 @@ def test_origin_clarification_corrects_the_failed_explicit_address_without_losin
         async def execute(name, arguments, ctx):
             assert name == "geocode"
             requested.append(arguments["address"])
-            return {"ok": True, "result": corrected.model_dump(mode="json")} if arguments["address"] == corrected.name else {"ok": False, "error": "not_found"}
+            return {"ok": True, "result": corrected.model_dump(mode="json")} if arguments["address"] == corrected.name else {"ok": False, "error": "ambiguous_location"}
 
         model = ModelAdapter(settings(tmp_path))
         model.structured = AsyncMock(return_value=RequirementOutput(location_name=corrected.name))
@@ -77,13 +78,16 @@ def test_origin_clarification_corrects_the_failed_explicit_address_without_losin
         graph.add_edge("requirements", END)
         graph = graph.compile(checkpointer=InMemorySaver())
         state = initial_state(run_id="fixture", user_id="fixture", input_text="修改行程需求；起点：受控无效起点；总预算：未设定")
+        state["messages"] += [HumanMessage(content="历史重复句", id="legacy-1"), HumanMessage(content="历史重复句", id="legacy-2"), AIMessage(content="历史答复", id="legacy-assistant")]
         state.update(previous_spec=TripSpec(goal="原任务", budget=300), structured_requirement_edit={"fields": {"location_name": "受控无效起点", "budget": None}, "turn_id": 1})
         config = {"configurable": {"thread_id": "fixture"}}
         waiting = await graph.ainvoke(state, config)
         assert waiting.get("__interrupt__") and model.structured.await_count == 0
+        assert "多个匹配" in waiting["__interrupt__"][0].value["question"] and "Key" not in waiting["__interrupt__"][0].value["question"]
         restored = await graph.ainvoke(Command(resume={"text": "出发地点改为受控恢复起点"}), config)
         assert not restored.get("__interrupt__")
         assert restored["trip_spec"].location == corrected and restored["trip_spec"].budget is None
+        assert restored["messages"][:-1] == state["messages"] and len(restored["messages"]) == len(state["messages"]) + 1
         assert {item["field"] for item in restored["requirement_patch"]} >= {"location", "budget"}
         assert requested[-1] == corrected.name
 
@@ -164,6 +168,9 @@ def test_same_run_explicit_edits_and_lock_preserve_history_and_invalidate_approv
         plan = locked["state"]["selected_plan"]
         unlocked = edit(stop_lock={"plan_id": plan["plan_id"], "plan_version": plan["version"], "place_id": plan["stops"][0]["place_id"], "locked": False})
         assert unlocked["state"]["selected_plan"]["stops"][0]["locked"] is False
+        separated = edit({"search_radius_km": .5, "route_distance_km": 2})
+        assert separated["state"]["trip_spec"]["search_radius_km"] == .5
+        assert separated["state"]["trip_spec"]["max_distance_km"] == 2
         moved = edit({"location_name": "受控新起点", "search_location_name": "受控新商圈", "max_distance_km": 2})
         assert moved["state"]["trip_spec"]["location"]["name"] == "受控新起点"
         assert moved["state"]["trip_spec"]["search_location"]["name"] == "受控新商圈"
@@ -181,7 +188,7 @@ def test_same_run_explicit_edits_and_lock_preserve_history_and_invalidate_approv
         assert unlocked["state"]["execution_goal"] is None
         with sqlite3.connect(tmp_path / "runs.sqlite") as database:
             assert database.execute("SELECT count(*) FROM agent_run").fetchone()[0] == 1
-            assert database.execute("SELECT count(*) FROM run_event WHERE event_type='REQUIREMENTS_EDITED'").fetchone()[0] == 7
+            assert database.execute("SELECT count(*) FROM run_event WHERE event_type='REQUIREMENTS_EDITED'").fetchone()[0] == 8
         final_version = cleared["state"]["selected_plan"]["version"]
         # Simulate shutdown after durable acceptance but before the worker consumes the edit.
         app.state.runtime._enqueue_run = AsyncMock()

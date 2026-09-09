@@ -28,6 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .browser import BrowserScreenshot
 from .outcomes import (
+    CURRENT_PAGE,
     ExecutionGoal,
     browser_context,
     browser_manual_error,
@@ -371,7 +372,9 @@ def build_desktop_graph(runtime, deps, checkpointer):
         ) or (item.get("kind") == "episode" and (item.get("payload") or {}).get("scope") in {"read_only", "image_text", "ready_to_review", "price_comparison"}
               and (item.get("payload") or {}).get("business_completed") is False)]
         urls = re.findall(r'https?://[^\s<>"，。；]+', state["input_text"])
-        previous = state.get("browser_observation") or {}
+        current_read = CURRENT_PAGE.search(state["input_text"]) and (state.get("execution_goal") or {}).get("source") == "browser"
+        explicit_target = bool(current_read or urls)
+        previous = {} if explicit_target else state.get("browser_observation") or {}
         # Replay-safe one browser step per graph node; model decisions checkpoint before I/O.
         return {
             "browser_steps": 0,
@@ -386,6 +389,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
             "browser_action": None,
             "browser_receipt_pending": False,
             "browser_artifacts": [],
+            **({"browser_observation": {}, "browser_before_action": {}, "browser_wait": None} if explicit_target else {}),
             "reason": "正在读取真实浏览器页面",
         }
 
@@ -679,6 +683,11 @@ def build_desktop_graph(runtime, deps, checkpointer):
         observation = state.get("browser_observation") or {}
         context = state.get("browser_task_context") or {}
         preparing = (state.get("execution_goal") or {}).get("kind") == "itinerary_preparation" or context.get("kind") in {"prepare", "planning"}
+        active_read_goal = read_goal(state, context) if not preparing else None
+        if active_read_goal:
+            # A paused older checkpoint may predate read-scope normalization.
+            # Re-derive only its read checklist from already accepted input, without a new turn or grant.
+            state = {**state, "execution_goal": active_read_goal}
         write_goal = context.get("kind") == "write"
         reasoning_goal = context.get("kind") == "reasoning"
         comparison = price_comparison(state) if reasoning_goal else None
@@ -744,7 +753,8 @@ def build_desktop_graph(runtime, deps, checkpointer):
             return {"browser_next": BrowserDecision().model_dump(), "browser_vision_reason": vision_reason,
                     "execution_outcome": evaluated.model_dump(mode="json") if evaluated else None,
                     "browser_vision_turn": turn, "phase": RunPhase.RESEARCHING, "reason": "DOM观测仍有空缺，正在请求一次只读截图理解。"}
-        update: dict[str, Any] = {"browser_next": decision.model_dump(), "execution_outcome": evaluated.model_dump(mode="json") if evaluated else None}
+        update: dict[str, Any] = {"browser_next": decision.model_dump(), "execution_outcome": evaluated.model_dump(mode="json") if evaluated else None,
+                                  **({"execution_goal": active_read_goal} if active_read_goal else {})}
         if decision.operation == "finish":
             partial = write_goal or (preparing and not complete_preparation) or (reasoning_goal and not complete_answer) or (context.get("kind") == "extract" and (evaluated is None or evaluated.status != "satisfied"))
             if evaluated and evaluated.kind == "itinerary_preparation":

@@ -9,12 +9,12 @@ export function renderSharePage(id: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>PlanGo · 给你的周末安排</title>
 <style>
-  :root { --brand:#bce8d4; --ink:#183e32; --ink2:#63786a; --bg:#f2f5f1; --card:#fff; --line:#dfe8e0; }
+  :root { --brand:#ffd100; --ink:#2c2924; --ink2:#78746a; --bg:#f8f7f3; --card:#fff; --line:#e8e5dd; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--ink); }
   .wrap { max-width:600px; margin:0 auto; padding:24px 18px 48px; }
-  .banner { background:linear-gradient(135deg,#edf7f1,#d0eadb); border:1px solid #c5dfcf; border-radius:24px; padding:24px; margin-bottom:16px; }
-  .banner .tag { font-size:12px; color:#296c53; font-weight:600; letter-spacing:1px; }
+  .banner { background:linear-gradient(135deg,#fff8db,#fff0ad); border:1px solid #f0dd91; border-radius:24px; padding:24px; margin-bottom:16px; }
+  .banner .tag { font-size:12px; color:#8a5a00; font-weight:600; letter-spacing:1px; }
   .banner h1 { font-size:24px; margin:12px 0 10px; line-height:1.4; }
   .banner .meta { font-size:12px; color:var(--ink2); line-height:1.8; }
   .readonly { font-size:12px; color:var(--ink2); margin:12px 2px 16px; line-height:1.8; }
@@ -23,20 +23,20 @@ export function renderSharePage(id: string): string {
   .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:12px; }
   .node { display:flex; gap:10px; padding:10px 0; border-bottom:1px dashed var(--line); }
   .node:last-child { border-bottom:none; }
-  .photo { position:relative; width:72px; height:72px; border-radius:16px; background:#edf3ee; flex:none; display:grid; place-items:center; color:#829288; font-size:10px; overflow:hidden; }
+  .photo { position:relative; width:72px; height:72px; border-radius:16px; background:#faf9f6; flex:none; display:grid; place-items:center; color:#78746a; font-size:10px; overflow:hidden; }
   .photo img { position:absolute; width:100%; height:100%; object-fit:cover; }
   .node .t { font-size:12px; color:var(--ink2); }
   .node .n { font-weight:600; margin:2px 0; }
   .node .s { font-size:12px; color:var(--ink2); }
   .tags { margin-top:4px; }
-  .tags span { display:inline-block; font-size:10px; background:#edf7f1; color:#296c53; border-radius:20px; padding:2px 8px; margin:2px 4px 0 0; }
+  .tags span { display:inline-block; font-size:10px; background:#fff8db; color:#8a5a00; border-radius:20px; padding:2px 8px; margin:2px 4px 0 0; }
   .cta { display:flex; gap:8px; margin:6px 0 14px; }
   .btn { flex:1; border:none; border-radius:12px; padding:12px; font-size:14px; font-weight:600; cursor:pointer; }
   .btn.up { background:var(--brand); color:var(--ink); }
   .btn.meh { background:#eef1f4; color:#555; }
   .btn.down { background:#fdeaea; color:#c0392b; }
-  .btn.sel { outline:3px solid #70a68b; outline-offset:2px; }
-  button:focus-visible,input:focus-visible,textarea:focus-visible { outline:3px solid #70a68b; outline-offset:2px; }
+  .btn.sel { outline:3px solid #b47a00; outline-offset:2px; }
+  button:focus-visible,input:focus-visible,textarea:focus-visible { outline:3px solid #b47a00; outline-offset:2px; }
   button:disabled { opacity:.55; cursor:wait; }
   .idea { width:100%; border:1px solid var(--line); border-radius:12px; padding:10px; font-size:14px; font-family:inherit; resize:vertical; min-height:64px; }
   .row { display:flex; gap:8px; margin-top:8px; align-items:center; }
@@ -64,14 +64,15 @@ async function load() {
     const img = imageUrl(poi.image);
     const score = poi.filtered_score || poi.raw_score;
     const rec = (poi.recommended||[]).slice(0,3).map(r=>'<span>'+esc(r)+'</span>').join('');
-    return '<div class="node"><div class="photo"><span>暂无实景图</span>'+(img?'<img alt="'+esc(poi.name||n.title)+'" src="'+img+'" onerror="this.remove()"/>':'')+'</div><div><div class="t">'+esc(n.time_start)+(n.time_end?('–'+esc(n.time_end)):'')+'</div><div class="n">'+esc(n.title)+'</div><div class="s">'+(score?('★'+esc(score)+' '):'')+(poi.price_per_person?('· 人均¥'+esc(poi.price_per_person)):'')+'</div><div class="s">'+esc(n.reason||'')+'</div><div class="tags">'+rec+'</div></div></div>';
+    return '<div class="node"><div class="photo"><span>暂无实景图</span>'+(img?'<img alt="'+esc(poi.name||n.title)+'" src="'+img+'" onerror="this.remove()"/>':'')+'</div><div><div class="t">'+esc(n.time_start)+(n.time_end?('–'+esc(n.time_end)):'')+'</div><div class="n">'+esc(n.title)+'</div><div class="s">'+(score?('★'+esc(score)+' '):'')+(poi.price_per_person?('· 人均¥'+esc(poi.price_per_person)):'')+'</div><div class="s">'+esc(n.reason||'')+'</div>'+(n.transport_summary?'<details class="s"><summary>路线与费用</summary>'+esc(n.transport_summary)+'</details>':'')+'<div class="tags">'+rec+'</div></div></div>';
   }).join('');
   const notes = Array.isArray(p.validation_notes) ? p.validation_notes : [];
   const pending = notes.length || (p.nodes||[]).some(n=>n.verify_state==='suggested');
   app.innerHTML =
     '<div class="banner"><div class="tag">PlanGo · 一起安排下一站</div><h1>'+esc(p.title||'出行安排')+'</h1>'+
-    '<div class="meta">'+esc(data.city||'')+(p.visit_date?' · '+esc(p.visit_date):'')+' · '+(typeof p.total_cost==='number'?'合计约¥'+p.total_cost:'费用待核验')+' · '+(p.nodes||[]).length+' 站'+(p.total_travel_min?(' · 通勤约'+p.total_travel_min+'分钟'):'')+'</div></div>'+
+    '<div class="meta">'+esc(data.city||'')+(p.visit_date?' · '+esc(p.visit_date):'')+' · '+(typeof p.total_cost==='number'?'已知估算小计¥'+p.total_cost:'费用待核验')+' · '+(p.nodes||[]).length+' 站'+(p.total_travel_min?(' · 通勤约'+p.total_travel_min+'分钟'):'')+'</div></div>'+
     '<div class="readonly">这是分享时的方案快照。你可以投票或留下建议，发起人确认并入后再调整安排。</div>'+
+    '<div class="readonly">费用为已知估算，未计返程及额外消费，不保证全部支出。'+(p.cost_breakdown?('餐饮：'+esc(p.cost_breakdown.dining??'待核对')+'；活动：'+esc(p.cost_breakdown.activities??'待核对')+'；去程交通：'+esc(p.cost_breakdown.transport??'待核对')):'交通费未单独核对')+'</div>'+
     (pending?'<div class="notice"><b>待核验草案 · 不代表已预约或可直接执行</b><ul>'+notes.map(n=>'<li>'+esc(n)+'</li>').join('')+'</ul></div>':'')+
     '<div class="card">'+nodes+'</div>'+
     '<div class="cta">'+

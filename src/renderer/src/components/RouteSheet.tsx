@@ -129,7 +129,7 @@ export function RouteSheet({ target, onClose }: { target: RouteTarget; onClose: 
           ))}
         </div>
 
-        <div ref={mapEl} className="w-full h-[340px] bg-[#edf3ee]" />
+        <div ref={mapEl} className="w-full h-[340px] bg-[var(--surface-soft)]" />
 
         <div className="p-5 space-y-3 overflow-y-auto">
           {err ? (

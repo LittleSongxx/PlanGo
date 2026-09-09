@@ -65,6 +65,10 @@ class RequirementOutput(ContractModel):
     outdoor_required: bool | None = None
     max_queue_minutes: int | None = Field(default=None, ge=0, le=1440)
     max_distance_km: float | None = Field(default=None, ge=0, le=1000)
+    search_radius_km: float | None = Field(default=None, ge=0.1, le=50)
+    route_distance_km: float | None = Field(default=None, ge=0.1, le=1000)
+    clear_search_radius: bool = False
+    clear_route_distance: bool = False
     travel_mode: Literal["driving", "walking", "transit"] | None = None
 
     def to_trip_spec(self, fallback_goal: str, base: TripSpec | None = None) -> TripSpec:
@@ -175,6 +179,20 @@ class RequirementOutput(ContractModel):
             values["max_queue_minutes"] = None
         if "距离优先" in (self.remove_hard_constraints or []):
             values["max_distance_km"] = None
+            if not self.clear_route_distance and self.route_distance_km is None:
+                values["search_radius_km"] = None
+        elif self.max_distance_km is not None:
+            # Legacy input changed both limits; explicit new fields below override each independently.
+            values["search_radius_km"] = min(self.max_distance_km, 50) if self.max_distance_km > 0 else None
+        if self.search_radius_km is not None:
+            values["search_radius_km"] = self.search_radius_km
+        if self.route_distance_km is not None:
+            values["max_distance_km"] = self.route_distance_km
+        if self.clear_search_radius:
+            values["search_radius_km"] = None
+        if self.clear_route_distance:
+            values["max_distance_km"] = None
+            values["hard_constraints"] = [item for item in values["hard_constraints"] if item != "距离优先"]
         time_start = values.get("time_window_start")
         if time_start is not None and not re.fullmatch(r"(?:[01]?\d|2[0-3]):[0-5]\d", str(time_start)):
             time_start = None

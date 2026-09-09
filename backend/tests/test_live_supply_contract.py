@@ -69,8 +69,8 @@ class LiveSupplyContractCheck(unittest.IsolatedAsyncioTestCase):
                 )
             ]
 
-        async def route(origin, destination):
-            result = {"distance_km": 1, "driving_min": 5, "source": "browser"}
+        async def route(origin, destination, **kwargs):
+            result = {"distance_km": 1, "walking_min": 5, "source": "browser", "cost_per_person": 0}
             return result, Evidence(
                 evidence_id="route-proof",
                 source="browser",
@@ -122,6 +122,7 @@ class LiveSupplyContractCheck(unittest.IsolatedAsyncioTestCase):
                 location=Location(name="上海", latitude=31.2304, longitude=121.4737),
                 party_size=1,
                 budget=200,
+                travel_mode="walking",
             )
             evidence = source_evidence
             evaluation = await BrowserPlanEngine(world).evaluate(spec, plan, evidence=evidence)

@@ -44,7 +44,7 @@ export function IconRail(): JSX.Element {
 
   return (
     <aside className="w-[176px] shrink-0 flex flex-col min-h-0 overflow-y-auto select-none" aria-label="主导航">
-      <div className="flex items-center gap-2.5 px-2 pt-3 pb-6" title="PlanGo"><span className="w-10 h-10 rounded-[14px] bg-brand-strong text-white flex items-center justify-center shadow-card"><Route size={21} strokeWidth={2} /></span><div><span className="text-[23px] tracking-[-0.8px] font-bold text-brand-ink">PlanGo</span><p className="text-[10px] text-[var(--muted)] mt-0.5">生活，有计划地出发</p></div></div>
+      <div className="flex items-center gap-2.5 px-2 pt-3 pb-6" title="PlanGo"><span className="w-10 h-10 rounded-[14px] bg-brand text-brand-ink flex items-center justify-center shadow-card"><Route size={21} strokeWidth={2} /></span><div><span className="text-[23px] tracking-[-0.8px] font-bold text-brand-ink">PlanGo</span><p className="text-[10px] text-[var(--muted)] mt-0.5">生活，有计划地出发</p></div></div>
       <button onClick={newSession} className="plango-primary w-full mb-6" title="开始新安排"><Plus size={16} />开始新安排</button>
       <div className="plango-kicker px-3 mb-2">工作台</div>
       <nav className="space-y-1">{top.map(item => <RailButton key={item.id} item={item} />)}</nav>
@@ -63,7 +63,7 @@ export function IconRail(): JSX.Element {
 
 function RailButton({ item }: { item: NavItem }): JSX.Element {
   return <button onClick={item.onClick} title={item.label} aria-label={item.label} aria-current={item.active ? 'page' : undefined}
-    className={`relative w-full h-11 rounded-xl flex items-center gap-3 px-3 transition-colors text-[13px] ${item.active ? 'bg-white text-brand-strong font-semibold shadow-card border border-[#d8e6dc]' : 'border border-transparent text-[#617269] hover:bg-white/70 hover:text-brand-ink'}`}>
+    className={`relative w-full h-11 rounded-xl flex items-center gap-3 px-3 transition-colors text-[13px] ${item.active ? 'bg-brand-soft text-brand-ink font-semibold shadow-card border border-brand/50' : 'border border-transparent text-neutral-600 hover:bg-white/70 hover:text-brand-ink'}`}>
     {item.icon}<span>{item.id === 'outcome' ? '方案与结果' : item.id === 'plugins' ? '连接与能力' : item.label}</span>{item.badge ? <span className="ml-auto rounded-md bg-brand-soft text-brand-strong px-1.5 py-0.5 text-[10px] tabular-nums">{item.badge}</span> : null}
   </button>
 }

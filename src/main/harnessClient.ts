@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, existsSync, openSync, writeFileSync, fsyncSync
 import { join } from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import type { BrowserCommand, BrowserObservation } from '../shared/browser'
-import type { HarnessEvent, HarnessSnapshot, HarnessFeedbackInput, HarnessFeedbackReply, RequirementEdit, HarnessDeliveryRequest, HarnessDeliveryResult, HarnessStatus } from '../shared/types'
+import type { HarnessEvent, HarnessSnapshot, HarnessFeedbackInput, HarnessFeedbackReply, RequirementEdit, HarnessDeliveryRequest, HarnessDeliveryResult, HarnessStatus, OfferSourceRef, OfferSelection, MerchantCandidates } from '../shared/types'
 import type { LocationContext, SelectedPoi } from '../shared/location'
 
 interface Options {
@@ -276,6 +276,18 @@ export class HarnessClient {
   async editRequirements(runId: string, edit: RequirementEdit): Promise<HarnessSnapshot> {
     return this.withIntent(runId, true, async () => {
       await this.request(`/api/v1/runs/${encodeURIComponent(runId)}/requirements`, 'POST', edit)
+      return this.getRun(runId)
+    })
+  }
+
+  merchantCandidates(runId: string, sourceRef: OfferSourceRef): Promise<MerchantCandidates> {
+    return this.request(`/api/v1/runs/${encodeURIComponent(runId)}/merchant-candidates`, 'POST', { source_ref: sourceRef })
+  }
+
+  async selectOffer(runId: string, selection: OfferSelection): Promise<HarnessSnapshot> {
+    return this.withIntent(runId, false, async () => {
+      await this.request(`/api/v1/runs/${encodeURIComponent(runId)}/offer-selection`, 'POST', selection)
+      this.options.onActivate?.(runId, true)
       return this.getRun(runId)
     })
   }

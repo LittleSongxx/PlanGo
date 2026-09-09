@@ -8,6 +8,7 @@ import { PoiImage } from './PoiImage'
 import { ResultFeedback } from './ResultFeedback'
 import { DraftReviewCard } from './DraftReviewCard'
 import { RequirementsCard } from './RequirementsCard'
+import { OfferComparisonCard } from './OfferComparisonCard'
 import { MapPin, Clock, Utensils, Ticket, Users, CheckCircle2, XCircle, AlertTriangle, Send, ListChecks, Tag, Wallet, Globe, Navigation, Mic, MicOff, Compass, ArrowRight, Sparkles, FileText } from 'lucide-react'
 
 const cardPriority = (card: OutcomeCard): number => card.kind === 'confirm' || card.kind === 'draft_review' ? 2 : card.kind === 'preparation' && card.current ? 1 : 0
@@ -19,7 +20,7 @@ export function OutcomeCanvas(): JSX.Element {
   const refreshRun = useStore((s) => s.refreshRun)
   const reading = readProgress(run)
   return (
-    <div className="h-full flex flex-col bg-[#f7f9f6]">
+    <div className="h-full flex flex-col bg-[var(--surface-soft)]">
       <div className="min-h-[52px] shrink-0 flex items-center gap-2 px-5 border-b border-[var(--line)] bg-white/75">
         <ListChecks size={16} className="text-brand-ink" />
         <span className="text-xs font-medium text-brand-ink">本次安排</span>
@@ -37,18 +38,19 @@ export function OutcomeCanvas(): JSX.Element {
       </div>
       <div className="flex-1 overflow-y-auto p-5 lg:p-6">
         <RequirementsCard />
+        {run?.offer_comparison_error && <div role="status" className="max-w-4xl mx-auto mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">优惠来源暂不可用：{run.offer_comparison_error}{run.selected_offer && <p className="mt-1 text-xs">原优惠选择记录保留。请重新核对来源后继续，未将失效资料当作当前可用优惠。</p>}</div>}
         {!!(reading.observed.length || reading.missing.length) && <div aria-label="资料读取范围" className="max-w-4xl mx-auto plango-card p-4 mb-5 text-sm leading-6 space-y-2">
           {!!reading.observed.length && <div className="flex items-start gap-3"><span className="text-brand-strong font-medium shrink-0">已读</span><span>{reading.observed.join('、')}</span></div>}
           {!!reading.missing.length && <div className="flex items-start gap-3"><span className="text-amber-800 font-medium shrink-0">仍需核对</span><span className="text-neutral-600">{reading.missing.map(field => `${field}${reading.partial.includes(field) ? '（仅取得部分条件）' : ''}`).join('、')}</span></div>}
         </div>}
         {cards.length === 0 && run?.outcome ? <div className="max-w-4xl mx-auto plango-card p-6"><h2 className="text-base font-semibold">本轮尚无可展示的成果</h2><p className="text-sm text-[var(--muted)] leading-6 mt-3">{String(run.state.reason || '你可以在对话中查看任务记录，调整需求后继续。')}</p></div> : cards.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-5">
-            <div aria-hidden="true" className="relative w-32 h-28 mb-7"><div className="absolute left-4 top-3 w-20 h-24 rounded-2xl border border-[#d5e4d9] bg-[#eaf3ec] rotate-[-10deg]" /><div className="absolute right-3 top-1 w-20 h-24 rounded-2xl border border-[#d6e6db] bg-white shadow-panel rotate-[8deg] flex items-center justify-center"><FileText size={30} className="text-[#5a8a6c]" /></div><span className="absolute bottom-0 right-0 h-10 w-10 rounded-2xl bg-brand-strong text-white flex items-center justify-center"><Sparkles size={18} /></span></div>
+            <div aria-hidden="true" className="relative w-32 h-28 mb-7"><div className="absolute left-4 top-3 w-20 h-24 rounded-2xl border border-brand/50 bg-brand-soft rotate-[-10deg]" /><div className="absolute right-3 top-1 w-20 h-24 rounded-2xl border border-[var(--line)] bg-white shadow-panel rotate-[8deg] flex items-center justify-center"><FileText size={30} className="text-brand-strong" /></div><span className="absolute bottom-0 right-0 h-10 w-10 rounded-2xl bg-brand text-brand-ink flex items-center justify-center"><Sparkles size={18} /></span></div>
             <div className="plango-kicker">A LITTLE PLANNING, A BETTER DAY</div>
             <h2 className="text-[25px] leading-9 tracking-[-0.6px] font-semibold text-brand-ink mt-3">把想去的地方，变成清楚的安排</h2>
             <p className="text-[13px] leading-6 text-[var(--muted)] max-w-sm mt-3">在右侧说说人数、时间和偏好。查到的资料、可调整的方案与执行记录，会逐步汇集到这里。</p>
             <button onClick={() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="任务输入"]')?.focus()} className="plango-primary mt-7">从对话开始<ArrowRight size={15} /></button>
-            <div className="flex items-center gap-5 mt-9 text-[11px] text-[#7e8e82]"><span>有来源的资料</span><span className="h-1 w-1 rounded-full bg-[#b9cbbd]" /><span>可以继续修改</span><span className="h-1 w-1 rounded-full bg-[#b9cbbd]" /><span>由你确认关键操作</span></div>
+            <div className="flex items-center gap-5 mt-9 text-[11px] text-[var(--muted)]"><span>有来源的资料</span><span className="h-1 w-1 rounded-full bg-[#d8d4ca]" /><span>可以继续修改</span><span className="h-1 w-1 rounded-full bg-[#d8d4ca]" /><span>由你确认关键操作</span></div>
           </div>
         ) : (
           <div className="max-w-4xl mx-auto space-y-5">
@@ -75,7 +77,7 @@ function CardView({ card }: { card: OutcomeCard }): JSX.Element {
         <div className="flex items-center gap-3"><span className={`flex h-10 w-10 items-center justify-center rounded-xl ${card.ready ? 'bg-brand-soft text-brand-strong' : 'bg-amber-50 text-amber-700'}`}>{card.ready ? <ListChecks size={20} /> : <Clock size={20} />}</span><div><div className="plango-kicker">准备核对</div><h3 className="font-semibold text-base mt-1">{card.ready ? '已准备，待你复核' : '准备事项尚待完善'}</h3></div><SourceBadge source="browser" /></div>
         <p className="text-[13px] leading-6 text-neutral-600 mt-4">{card.summary}</p>
         {!!card.pendingChecks?.length && <div className="mt-3 p-4 rounded-xl border border-amber-100 bg-amber-50 text-xs leading-6 text-amber-800"><b>计划仍有待核验事项</b><ul className="list-disc pl-4">{card.pendingChecks.map((note, index) => <li key={index}>{note}</li>)}</ul></div>}
-        {card.entries.map((entry, index) => <div key={index} className="mt-3 rounded-xl border border-[var(--line)] bg-[#f7faf7] p-4"><h4 className="font-semibold text-sm">{entry.name}</h4><p className="text-xs text-[var(--muted)] mt-1">{entry.address}</p><p className="text-sm mt-3">{entry.partySize === undefined ? '人数待核对' : `${entry.partySize} 人`} · {entry.date} {entry.time} {entry.timezone === 'Asia/Shanghai' ? '北京时间' : entry.timezone}</p></div>)}
+        {card.entries.map((entry, index) => <div key={index} className="mt-3 rounded-xl border border-[var(--line)] bg-[var(--surface-soft)] p-4"><h4 className="font-semibold text-sm">{entry.name}</h4><p className="text-xs text-[var(--muted)] mt-1">{entry.address}</p><p className="text-sm mt-3">{entry.partySize === undefined ? '人数待核对' : `${entry.partySize} 人`} · {entry.date} {entry.time} {entry.timezone === 'Asia/Shanghai' ? '北京时间' : entry.timezone}</p></div>)}
         {card.issues.map((issue, index) => <div key={index} className={`mt-3 rounded-xl border p-3 text-xs leading-6 ${issue.mismatch ? 'border-red-100 bg-red-50 text-red-700' : 'border-amber-100 bg-amber-50 text-amber-800'}`}><b>{issue.name} · {issue.mismatch ? '需要修正' : '待补充核对'}</b><div>{issue.detail}</div></div>)}
         <div className="mt-4 flex items-center justify-between gap-4 border-t border-[var(--line)] pt-4"><div className="text-[11px] text-[var(--muted)] leading-5">尚未提交预约、订单或付款。<br />{card.observedAt ? `核对记录：${new Date(card.observedAt).toLocaleString('zh-CN')}` : '核对时间未知'}</div><div className="flex flex-wrap gap-2"><button onClick={() => useStore.getState().setView('browser')} className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] px-3 py-2 text-xs bg-white"><Globe size={14} />打开浏览器核对</button>{card.resume && <button disabled={busy || !card.resume.can_resume} onClick={() => void resumePreparation(card.resume!.run_id, card.resume!.plan_id, card.resume!.plan_version, card.resume!.approval_id)} className="plango-primary disabled:opacity-40">继续核对表单</button>}</div></div>
         {card.resume?.can_resume && <p className="mt-3 text-[11px] text-[var(--muted)]">继续会重新读取原方案的表单，并在填写前请你确认。</p>}
@@ -100,6 +102,7 @@ function CardView({ card }: { card: OutcomeCard }): JSX.Element {
     case 'discover':
       return <DiscoverCard city={card.city} groups={card.groups} source={card.source} />
     case 'groupbuy':
+      if (card.comparison && card.runId && card.version) return <OfferComparisonCard comparison={card.comparison} runId={card.runId} version={card.version} />
       return <GroupBuyCard shopName={card.shopName} packages={card.packages} source={card.source} />
     case 'queue':
       return <QueueCard {...card} />
@@ -115,7 +118,7 @@ function CardView({ card }: { card: OutcomeCard }): JSX.Element {
 }
 
 function Card({ children, accent }: { children: React.ReactNode; accent?: boolean }): JSX.Element {
-  return <div className={`plango-card ${accent ? 'border-[#bfd8c8] shadow-panel' : ''} p-5 animate-in`}>{children}</div>
+  return <div className={`plango-card ${accent ? 'border-brand/60 shadow-panel' : ''} p-5 animate-in`}>{children}</div>
 }
 
 function BrowserPageCard({ card }: { card: Extract<OutcomeCard, { kind: 'browser_page' }> }): JSX.Element {
@@ -125,7 +128,7 @@ function BrowserPageCard({ card }: { card: Extract<OutcomeCard, { kind: 'browser
     <div className="text-xs text-[var(--muted)] mt-2">读取于 {card.observedAt ? new Date(card.observedAt).toLocaleString('zh-CN') : '时间未知'}</div>
     {card.scope === 'image_text' && <p className="text-sm leading-6 text-amber-700 mt-3">图片识别：内容来自你提供的图片，价格和商家信息尚未实时核验。</p>}
     {card.scope === 'visual_observation' && <p className="text-sm leading-6 text-amber-700 mt-3">截图理解：仅描述画面，不代表已核验商家事实或完成业务操作。</p>}
-    {card.places?.map((place, index) => <div key={index} className="mt-4 rounded-xl border border-[var(--line)] bg-[#f7faf7] p-4 text-sm leading-6">
+    {card.places?.map((place, index) => <div key={index} className="mt-4 rounded-xl border border-[var(--line)] bg-[var(--surface-soft)] p-4 text-sm leading-6">
       {card.places!.length > 1 && <h4 className="font-semibold mb-2">{place.name}</h4>}
       <div className="flex items-start gap-2"><MapPin size={16} className="mt-1 shrink-0 text-brand-strong" /><span>{place.address || '门店地址待核验'}</span></div>
       <div className="mt-2 flex items-center gap-2"><Wallet size={16} className="shrink-0 text-brand-strong" /><span>{place.averagePrice === undefined ? '人均费用待核验' : `页面人均 ¥${place.averagePrice}`}</span></div>
@@ -135,7 +138,7 @@ function BrowserPageCard({ card }: { card: Extract<OutcomeCard, { kind: 'browser
       <summary className="cursor-pointer text-[var(--muted)] py-1">查看原始网页摘录与来源</summary>
       {card.rawTitle && <p className="mt-3 text-xs leading-6 text-neutral-500 break-words">网页原标题：{card.rawTitle}</p>}
       {card.places?.filter(place => place.quote).map((place, index) => <blockquote key={index} className="mt-3 border-l-2 border-brand/40 pl-3 text-sm leading-6 text-neutral-600 whitespace-pre-wrap break-words">{place.quote}</blockquote>)}
-      <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words font-sans text-sm leading-7 text-[#425748] bg-[#f6f9f6] rounded-xl border border-[#e8eee8] p-4 mt-3">{card.text}</pre>
+      <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words font-sans text-sm leading-7 text-neutral-700 bg-[var(--surface-soft)] rounded-xl border border-[var(--line)] p-4 mt-3">{card.text}</pre>
     </details>
     {card.limitations?.map((limitation, index) => <p key={index} className="text-sm leading-6 text-neutral-600 mt-2">{limitation}</p>)}
     {/^https?:\/\//i.test(card.url) && <button onClick={() => useStore.getState().navigateInApp(card.url)} className="text-sm font-medium text-brand-strong underline underline-offset-4 mt-4">查看原始页面</button>}
@@ -166,10 +169,10 @@ function RadarChart({ radar, size = 168 }: { radar: Record<string, number>; size
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {gridRings}
       {axes}
-      <polygon points={dataPts} fill="rgba(91,156,115,.17)" stroke="#3d8a60" strokeWidth={2} strokeLinejoin="round" />
+      <polygon points={dataPts} fill="rgba(255,209,0,.24)" stroke="#b77900" strokeWidth={2} strokeLinejoin="round" />
       {vals.map((v, i) => {
         const [x, y] = pt(i, v)
-        return <circle key={i} cx={x} cy={y} r={3} fill="#3d8a60" />
+        return <circle key={i} cx={x} cy={y} r={3} fill="#b77900" />
       })}
       {labels.map((l, i) => {
         const [x, y] = pt(i, 1.26)
@@ -213,12 +216,12 @@ function PlansCard({
             key={i}
             onClick={() => setTab(i)} aria-pressed={i === tab}
             className={`rounded-xl border px-2 py-2 text-left transition-colors ${
-              i === tab ? 'border-[#8bb79b] bg-brand-soft shadow-card' : 'border-[var(--line)] bg-white hover:border-[#acc6b5]'
+              i === tab ? 'border-brand bg-brand-soft shadow-card' : 'border-[var(--line)] bg-white hover:border-brand'
             }`}
           >
             <div className="text-xs font-semibold flex items-center gap-1">
               {v.styleLabel}
-              {v.overBudget ? <span className="text-[9px] text-amber-600">超¥{v.overBudget}</span> : budget && v.per !== null && v.per <= budget ? <span className="text-[9px] text-green-600">达标</span> : null}
+              {v.overBudget ? <span className="text-[9px] text-amber-600">超¥{v.overBudget}</span> : budget && v.per !== null && v.per <= budget ? <span className="text-[9px] text-green-600">已知估算未超</span> : null}
             </div>
             <div className="text-[11px] text-neutral-500 mt-0.5">{v.per === null ? '费用待核验' : `人均¥${v.per}`}</div>
           </button>
@@ -229,7 +232,7 @@ function PlansCard({
       {budget && active.per !== null ? (
         <div className={`mb-3 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs ${active.overBudget ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>
           <Wallet size={13} />
-          {active.overBudget ? `本套人均¥${active.per}，超预算¥${budget}（+¥${active.overBudget}）。可切到「经济实惠」，或放宽预算。` : `本套人均¥${active.per}，在预算¥${budget}以内。`}
+          {active.overBudget ? `已知部分人均估算¥${active.per}，已超预算¥${budget}（+¥${active.overBudget}）。` : `已知部分人均估算¥${active.per}，未超预算¥${budget}；未估费用另计。`}
         </div>
       ) : null}
 
@@ -372,7 +375,7 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
       )}
       <div className="text-xs text-neutral-500 mb-3 flex items-center gap-2 flex-wrap">
         {plan.visit_date && <span>{plan.visit_date}{plan.timezone === 'Asia/Shanghai' ? ' · 北京时间' : plan.timezone ? ` · ${plan.timezone}` : ''}</span>}
-        <span>{plan.total_cost === null ? '总费用待核验' : `合计约 ¥${plan.total_cost}`} · {plan.nodes.length} 站{plan.party_size ? ` · ${plan.party_size} 人` : ''}{plan.version ? ` · v${plan.version}` : ''}</span>
+        <span>{plan.total_cost === null ? '费用待核验' : `已知估算小计 ¥${plan.total_cost}`} · {plan.nodes.length} 站{plan.party_size ? ` · ${plan.party_size} 人` : ''}{plan.version ? ` · v${plan.version}` : ''}</span>
         {plan.budget_limit === null ? <span>预算未设上限</span> : plan.budget_limit !== undefined ? <span>总预算 ¥{plan.budget_limit}</span> : null}
         {plan.total_distance_km ? <span className="flex items-center gap-0.5"><Navigation size={11} /> 全程约 {plan.total_distance_km}km</span> : null}
         {plan.total_travel_min ? <span className="flex items-center gap-0.5"><Clock size={11} /> 通勤约 {plan.total_travel_min}分钟</span> : null}
@@ -387,6 +390,10 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
         )}
       </div>
 
+      {plan.cost_breakdown && <div aria-label="费用明细" className="mb-4 rounded-xl border border-[var(--line)] bg-[var(--surface-soft)] p-3 text-xs leading-6">
+        <div className="flex flex-wrap gap-x-5 gap-y-1">{([['餐饮', plan.cost_breakdown.dining], ['活动', plan.cost_breakdown.activities], ['去程交通', plan.cost_breakdown.transport]] as const).map(([label, value]) => <span key={label}>{label}：{value === null ? '待核对' : `约 ¥${value}`}</span>)}</div>
+        {plan.cost_breakdown.pending.map(note => <p key={note} className="text-[var(--muted)]">{note}</p>)}
+      </div>}
       {/* 地图（真实路网） */}
       <PlanMap plan={plan} />
 
@@ -398,6 +405,7 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
             <div className="absolute -left-[13px] top-1 w-3 h-3 rounded-full bg-brand border-2 border-white" />
             {n.distance_kind === 'straight_line_lower_bound' && n.distance_km != null ? <div className="text-[11px] text-amber-700 mb-1">↓ 直线至少 {distanceLabel(n.distance_km, true)}，路线待核验</div> : n.poi?.tags.includes('route_unknown') && <div className="text-[11px] text-amber-700 mb-1">↓ 路线与通勤时间待核验</div>}
             {n.distance_kind === 'route' && n.distance_km != null && !n.route_from_prev && <div className="text-[11px] text-[var(--muted)] mb-1">↓ 路线约 {distanceLabel(n.distance_km)}{n.transit_from_prev_min != null && n.transit_from_prev_min > 0 ? ` · 约 ${n.transit_from_prev_min} 分钟` : ''}</div>}
+            {n.transport_summary && <details className="mb-2 text-xs leading-6 text-[var(--muted)]"><summary className="cursor-pointer">查看交通路线与费用依据</summary><p className="mt-1 whitespace-pre-wrap break-words">{n.transport_summary}</p></details>}
             {!n.poi?.tags.includes('route_unknown') && n.route_from_prev && (n.transit_from_prev_min ?? 0) > 0 && (
               <div className="text-[11px] text-neutral-400 mb-1">
                 ↓ {n.route_from_prev.desc}
@@ -577,7 +585,7 @@ function GroupBuyCard({ shopName, packages, source }: { shopName: string; packag
       </div>
       <div className="space-y-3">
         {packages.map((p, i) => (
-          <div key={i} className={`rounded-xl border p-4 ${p.recommended ? 'border-brand bg-brand/5' : 'border-[var(--line)] bg-[#f7faf7]'}`}>
+          <div key={i} className={`rounded-xl border p-4 ${p.recommended ? 'border-brand bg-brand/5' : 'border-[var(--line)] bg-[var(--surface-soft)]'}`}>
             <div className="flex items-center gap-1.5">
               <span className="font-semibold text-base leading-6">{p.name}</span>
               {p.recommended && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-brand text-brand-ink">推荐</span>}
@@ -593,7 +601,7 @@ function GroupBuyCard({ shopName, packages, source }: { shopName: string; packag
             {p.quote && <details className="mt-3 text-sm"><summary className="cursor-pointer py-1 text-[var(--muted)]">查看套餐原文证据</summary><blockquote className="mt-2 border-l-2 border-brand/40 pl-3 leading-6 text-neutral-600 whitespace-pre-wrap break-words">{p.quote}</blockquote></details>}
             <button
               onClick={() => void send(`请核对「${shopName}」的「${p.name}」套餐价格、适用人数与使用条件；只读，不下单。`)}
-              className="mt-4 w-full py-2.5 rounded-xl bg-brand-strong text-white text-sm font-medium hover:brightness-95"
+              className="mt-4 w-full py-2.5 rounded-xl bg-brand text-brand-ink text-sm font-medium hover:brightness-95"
             >
               核对这个套餐
             </button>
@@ -863,7 +871,7 @@ function ConfirmCard({ token, title, detail, danger }: { token: string; title: s
       <div className="text-xs text-neutral-500 mt-0.5 mb-2.5 whitespace-pre-wrap break-words">{detail}</div>
       <div className="text-[11px] text-neutral-400 mb-2">确认仅授权这里列出的操作。页面或关键参数变化时会重新确认；未取得业务回执会标为待核验。</div>
       <div className="flex gap-2">
-        <button disabled={busy} onClick={() => void confirm(token, true)} className="flex-1 py-2.5 text-sm rounded-xl bg-brand-strong text-white font-medium disabled:opacity-50">
+        <button disabled={busy} onClick={() => void confirm(token, true)} className="flex-1 py-2.5 text-sm rounded-xl bg-brand text-brand-ink font-medium disabled:opacity-50">
           确认执行
         </button>
         <button disabled={busy} onClick={() => void confirm(token, false)} className="px-5 py-2.5 text-sm rounded-xl border border-[var(--line)] bg-white text-neutral-600 disabled:opacity-50">

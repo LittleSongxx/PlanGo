@@ -1,4 +1,4 @@
-import type { AgentStep, ChatMessage, HarnessEvidence, HarnessEvent, HarnessSnapshot, OutcomeCard, Plan, POISummary, SourceTag } from '../../../shared/types'
+import type { AgentStep, ChatMessage, HarnessEvidence, HarnessEvent, HarnessSnapshot, OutcomeCard, Plan, POISummary, SourceTag, OfferComparison, OfferSourceRef, OfferSelection } from '../../../shared/types'
 
 type Row = Record<string, unknown>
 export const row = (value: unknown): Row => value && typeof value === 'object' && !Array.isArray(value) ? value as Row : {}
@@ -8,6 +8,40 @@ const num = (value: unknown): number | undefined => typeof value === 'number' &&
 const strings = (value: unknown): string[] => Array.isArray(value) ? value.filter((x): x is string => typeof x === 'string') : []
 const source = (value: unknown): SourceTag => ['real', 'browser', 'amap', 'user', 'unknown', 'dataset', 'simulated', 'cache', 'fallback'].includes(str(value)) ? value as SourceTag : 'unknown'
 const time = (value: unknown): string => num(value) === undefined ? '时间待确认' : `${String(Math.floor(Number(value) / 60)).padStart(2, '0')}:${String(Number(value) % 60).padStart(2, '0')}`
+
+export function sameOfferSource(a: OfferSourceRef | undefined, b: OfferSourceRef | undefined): boolean {
+  return !!a?.command_id && !!a.artifact_id && a.command_id === b?.command_id && a.artifact_id === b?.artifact_id
+}
+
+export function canSelectOffer(run: HarnessSnapshot | null, selection: OfferSelection): boolean {
+  const comparison = run?.offer_comparison
+  return !!run && run.version === selection.expected_version && !run.command_pending && !run.cancel_requested && !run.state.browser_receipt_pending &&
+    !rows(run.state.action_results).some(action => ['RUNNING', 'UNKNOWN'].includes(str(action.status))) &&
+    sameOfferSource(comparison?.source_ref, selection.source_ref) && comparison?.source.valid === true && !!selection.poi_id && !!comparison?.entries.some(entry => entry.grounded === true && entry.offer_index === selection.offer_index && entry.offer_hash === selection.offer_hash && entry.status !== 'ineligible')
+}
+
+function projectOfferComparison(value: OfferComparison): OfferComparison {
+  const data = row(value), merchant = row(data.merchant), origin = row(data.source), reference = row(data.source_ref), constraints = row(data.constraints)
+  return {
+    source_ref: { command_id: str(reference.command_id), artifact_id: str(reference.artifact_id) },
+    merchant: { name: str(merchant.name), address: str(merchant.address) },
+    source: { artifact_id: str(origin.artifact_id), command_id: str(origin.command_id), url: str(origin.url), observed_at: str(origin.observed_at), expires_at: str(origin.expires_at), valid: origin.valid === true },
+    constraints: { party_size: num(constraints.party_size) ?? null, visit_date: str(constraints.visit_date) || null, budget: num(constraints.budget) ?? null, per_person_budget: num(constraints.per_person_budget) ?? null, timezone: str(constraints.timezone) || 'Asia/Shanghai' },
+    entries: rows(data.entries).filter(entry => str(entry.name)).map(entry => {
+      const ref = row(entry.source_ref), missing = strings(entry.missing_rules)
+      const validRef = entry.grounded === true && origin.valid === true && !!str(reference.command_id) && reference.command_id === origin.command_id && reference.artifact_id === origin.artifact_id && ref.command_id === reference.command_id && ref.offer_index === entry.offer_index && ref.offer_hash === entry.offer_hash && Number.isSafeInteger(entry.offer_index) && Number(entry.offer_index) >= 0 && /^[a-f0-9]{64}$/.test(str(entry.offer_hash))
+      const status = entry.status === 'ineligible' ? 'ineligible' : entry.status === 'eligible' && !missing.length && validRef ? 'eligible' : 'unknown'
+      return { offer_index: num(entry.offer_index) ?? -1, offer_hash: validRef ? str(entry.offer_hash) : '', name: str(entry.name), grounded: entry.grounded === true,
+        price_basis: ['per_person', 'per_package', 'voucher', 'single_item'].includes(str(entry.price_basis)) ? entry.price_basis as 'per_person' | 'per_package' | 'voucher' | 'single_item' : 'unknown',
+        kind: ['voucher', 'package', 'single_item'].includes(str(entry.kind)) ? entry.kind as 'voucher' | 'package' | 'single_item' : 'unknown', status,
+        price: num(entry.price) ?? null, face_value: num(entry.face_value) ?? null, original_price: num(entry.original_price) ?? null, people: num(entry.people) ?? null,
+        known_cost: num(entry.known_cost) ?? null, total_cost: status === 'eligible' ? num(entry.total_cost) ?? null : null,
+        within_budget: status === 'eligible' && num(entry.total_cost) !== undefined && typeof entry.within_budget === 'boolean' ? entry.within_budget : null,
+        reasons: strings(entry.reasons), missing_rules: validRef ? missing : [...missing, '原文引用待重新核对'], quote: str(entry.quote),
+        source_ref: { command_id: str(ref.command_id), offer_index: num(ref.offer_index) ?? -1, offer_hash: str(ref.offer_hash) } }
+    }), limitations: strings(data.limitations), summary: str(data.summary)
+  }
+}
 
 export function readProgress(run: HarnessSnapshot | null): { observed: string[]; missing: string[]; partial: string[] } {
   const data = row(row(run?.state.execution_outcome).data)
@@ -48,7 +82,8 @@ function evidenceOf(state: Row): HarnessEvidence[] {
 function projectPlan(candidate: Row, run: HarnessSnapshot, evidence: HarnessEvidence[]): Plan {
   const state = run.state
   const spec = row(state.trip_spec)
-  const cap = num(spec.budget) ?? (num(spec.per_person_budget) !== undefined && num(spec.party_size) !== undefined ? Number(spec.per_person_budget) * Number(spec.party_size) : undefined)
+  const caps = [num(spec.budget), num(spec.per_person_budget) !== undefined && num(spec.party_size) !== undefined ? Number(spec.per_person_budget) * Number(spec.party_size) : undefined].filter((value): value is number => value !== undefined)
+  const cap = caps.length ? Math.min(...caps) : undefined
   const places = rows(state.place_candidates)
   const checks = rows(candidate.checks)
   const verifier = row(state.verifier)
@@ -61,10 +96,18 @@ function projectPlan(candidate: Row, run: HarnessSnapshot, evidence: HarnessEvid
   const supplyUnknown = (stop: Row): boolean => source(stop.supply_source) === 'unknown' || num(stop.estimated_wait_min) === undefined || strings(stop.tags).includes('supply_unknown')
   const partySize = num(candidate.party_size) ?? num(spec.party_size)
   const totalCost = !stops.length || stops.some(stop => unitPrice(stop) === undefined) ? null : num(candidate.total_cost) ?? null
+  const dining = (stop: Row) => /餐|美食|咖啡|dining|restaurant|food/i.test(str(stop.category))
+  const venueCost = (selected: Row[]) => selected.some(stop => unitPrice(stop) === undefined || num(stop.estimated_cost) === undefined)
+    ? null : Math.round(selected.reduce((sum, stop) => sum + Math.max(0, Number(stop.estimated_cost) - (num(stop.transport_cost) ?? 0)), 0) * 100) / 100
+  const transportKnown = stops.every(stop => num(stop.transport_cost) !== undefined)
+  const costBreakdown = { dining: venueCost(stops.filter(dining)), activities: venueCost(stops.filter(stop => !dining(stop))),
+    transport: transportKnown ? Math.round(stops.reduce((sum, stop) => sum + Number(stop.transport_cost), 0) * 100) / 100 : null,
+    pending: [...(transportKnown ? [] : ['交通费尚未完整估算（如驾驶油费、停车费）']), '返程与额外消费另需核对。', ...(spec.selected_offer ? ['优惠规则尚需核对，未自动抵扣所选优惠。'] : [])] }
   const pending = [
     ...(stops.some(supplyUnknown) ? ['营业/排队'] : []),
     ...(stops.some(stop => source(stop.supply_source) === 'unknown' || strings(stop.tags).includes('reservation_unknown')) ? ['可订情况'] : []),
-    ...(stops.some(stop => stop.distance_kind !== 'route' || strings(stop.tags).includes('route_unknown')) ? ['路线'] : [])
+    ...(stops.some(stop => stop.distance_kind !== 'route' || strings(stop.tags).includes('route_unknown')) ? ['路线'] : []),
+    ...(!transportKnown ? ['交通费用'] : [])
   ]
   const candidateSource = (stop: Row): SourceTag => source(places.find(p => p.place_id === stop.place_id)?.source || stop.supply_source)
   return {
@@ -72,9 +115,9 @@ function projectPlan(candidate: Row, run: HarnessSnapshot, evidence: HarnessEvid
     visit_date: str(spec.visit_date) || undefined, timezone: str(spec.timezone) || undefined,
     origin: num(row(spec.location).latitude) !== undefined && num(row(spec.location).longitude) !== undefined ? { name: str(row(spec.location).name), latitude: Number(row(spec.location).latitude), longitude: Number(row(spec.location).longitude) } : undefined,
     travel_mode: ['driving', 'walking', 'transit'].includes(str(spec.travel_mode)) ? spec.travel_mode as 'driving' | 'walking' | 'transit' : undefined,
-    title: ['PlanDraft', 'PlanCandidate', '确定性 fallback'].includes(str(candidate.label)) ? '基础方案' : str(candidate.label) || '当前方案', budget_limit: cap ?? (spec.budget === null && spec.per_person_budget === null ? null : undefined), style: 'balanced', total_cost: totalCost,
+    title: ['PlanDraft', 'PlanCandidate', '确定性 fallback'].includes(str(candidate.label)) ? '基础方案' : str(candidate.label) || '当前方案', budget_limit: cap ?? (spec.budget === null && spec.per_person_budget === null ? null : undefined), style: 'balanced', total_cost: totalCost, cost_breakdown: costBreakdown,
     // Historical model prose remains in the snapshot; only structured facts become shareable claims.
-    radar: {}, share_message: `行程草案：${stops.map(stop => str(stop.name)).join(' → ')}；${partySize === undefined ? '人数待确认' : `${partySize} 人`}；${totalCost === null ? '总费用待核验' : `估算总费用 ¥${totalCost}`}。${pending.length ? `待核验：${pending.join('、')}。` : ''}`,
+    radar: {}, share_message: `行程草案：${stops.map(stop => str(stop.name)).join(' → ')}；${partySize === undefined ? '人数待确认' : `${partySize} 人`}；${totalCost === null ? '费用待核验' : `已知估算小计 ¥${totalCost}`}。${pending.length ? `待核验：${pending.join('、')}。` : ''}未计返程及额外消费，不保证全部支出。`,
     evidence: evidence.filter(e => strings(candidate.evidence_ids).includes(e.evidence_id) || stops.some(s => strings(s.evidence_ids).includes(e.evidence_id))),
     validation_notes: [...new Set(checks.filter(c => c.passed !== true).map(c => str(c.detail) || str(c.name)).concat(unknownNotes, verifier.executable === false ? ['当前是待核验方案，尚不具备执行条件。'] : []))],
     source_mix: Object.fromEntries([...new Set(stops.map(candidateSource))].map(s => [s, stops.filter(x => candidateSource(x) === s).length])),
@@ -93,6 +136,7 @@ function projectPlan(candidate: Row, run: HarnessSnapshot, evidence: HarnessEvid
       return { node_id: `${str(stop.place_id)}:${i}`, time_start: time(stop.start_minute), time_end: time(stop.end_minute), category: kind, title: str(stop.name), poi,
         reason: `计划停留 ${time(stop.start_minute)}–${time(stop.end_minute)}；${poi.price_per_person === undefined ? '费用待核验' : `人均估算 ¥${poi.price_per_person}`}。${supplyUnknown(stop) ? '营业/排队待核验。' : ''}`, locked: stop.locked === true, transit_from_prev_min: strings(stop.tags).includes('route_unknown') || stop.distance_kind === 'straight_line_lower_bound' ? null : num(stop.travel_min) ?? null, distance_km: num(stop.distance_km) ?? null,
         distance_kind: ['route', 'straight_line_lower_bound'].includes(str(stop.distance_kind)) ? stop.distance_kind as 'route' | 'straight_line_lower_bound' : undefined, wait_min: supplyUnknown(stop) ? null : num(stop.estimated_wait_min) ?? null,
+        transport_cost: num(stop.transport_cost) ?? null, transport_summary: str(stop.transport_summary) || undefined,
         verify_state: row(state.verifier).plan_id === candidate.plan_id && row(state.verifier).executable === true ? 'verified' as const : 'suggested' as const }
     })
   }
@@ -110,7 +154,7 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
   const selected = row(state.selected_plan)
   const plans = (candidateRows.length ? candidateRows : selected.plan_id ? [selected] : []).map(p => projectPlan(p, run, evidence))
   if (plans.length > 1) {
-    const budget = num(row(state.trip_spec).per_person_budget)
+    const budget = typeof plans[0].budget_limit === 'number' && plans[0].party_size ? plans[0].budget_limit / plans[0].party_size : num(row(state.trip_spec).per_person_budget)
     cards.push({ kind: 'plans', city: str(row(row(state.trip_spec).location).name), budget, variants: plans.map(p => {
       const per = p.total_cost !== null && p.party_size ? Math.round(p.total_cost / p.party_size * 100) / 100 : null
       return { plan: p, styleLabel: p.title, per, overBudget: per !== null && budget !== undefined && per > budget ? Math.round((per - budget) * 100) / 100 : undefined }
@@ -180,12 +224,18 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
     const title = (places.length === 1 ? str(places[0].name) : '') || str(artifact.title).match(/^【([^】]+)】/)?.[1] || str(artifact.title) || (artifact.type === 'image' ? '图片识别' : '页面观测')
     const readFields = readEvidenceIds.includes(str(artifact.artifact_id)) ? strings(row(readOutcome.data).observed_fields) : []
     if (menu.length) cards.push({ kind: 'dishes', mode: readFields.includes('menu') ? 'menu' : readFields.includes('recommended_dishes') ? 'recommended_dishes' : 'excerpt', source: source(artifact.source), shopName: title, dishes: menu.filter(x => str(x.name)).map(x => ({ name: str(x.name), price: num(x.price), priceUnit: str(x.unit) || undefined, reason: str(x.quote) })) })
-    if (offers.length) cards.push({ kind: 'groupbuy', shopName: title, source: source(artifact.source), packages: offers.filter(x => str(x.name)).map(x => ({ name: str(x.name), price: num(x.price) ?? null, originalPrice: num(x.original_price) ?? null, includes: strings(x.conditions), fitPeople: num(x.people) ? `适用 ${x.people} 人` : '适用人数待确认', quote: str(x.quote) || undefined })) })
+    if (offers.length && (!run.offer_comparison || artifact.artifact_id !== run.offer_comparison.source_ref.artifact_id)) cards.push({ kind: 'groupbuy', shopName: title, source: source(artifact.source), packages: offers.filter(x => str(x.name)).map(x => ({ name: str(x.name), price: num(x.price) ?? null, originalPrice: num(x.original_price) ?? null, includes: strings(x.conditions), fitPeople: num(x.people) ? `适用 ${x.people} 人` : '适用人数待确认', quote: str(x.quote) || undefined })) })
     if (str(data.text) || data.tables || places.length || (!menu.length && !offers.length)) {
       const tableText = rows(data.tables).map(table => [strings(table.headers).join(' · '), ...(Array.isArray(table.rows) ? table.rows.filter(Array.isArray).map(cells => cells.map(value => String(value ?? '')).join(' · ')) : [])].filter(Boolean).join('\n')).filter(Boolean).join('\n\n')
       cards.push({ kind: 'browser_page', title, rawTitle: str(artifact.title), scope: artifact.type === 'image' ? 'image_text' : undefined, url: str(artifact.url), text: str(data.text) || tableText || '此页面暂无可直接显示的文字摘录，可在浏览器中继续查看。', source: source(artifact.source), observedAt: str(artifact.observed_at),
         menuCount: menu.length, offerCount: offers.length, places: places.map(place => ({ name: str(place.name), address: str(place.address) || undefined, averagePrice: num(place.average_price), priceUnit: str(place.price_unit) || undefined, quote: str(place.quote) || undefined })) })
     }
+  }
+
+  if (run.offer_comparison) {
+    const comparison = projectOfferComparison(run.offer_comparison)
+    if (comparison.entries.length) cards.push({ kind: 'groupbuy', shopName: comparison.merchant.name || '门店优惠比较', source: 'browser', comparison, runId: run.run_id, version: run.version,
+      packages: comparison.entries.map(entry => ({ name: entry.name, price: entry.price, originalPrice: entry.original_price, includes: entry.reasons, fitPeople: entry.people === null ? '人数规则待核对' : `标注 ${entry.people} 人`, quote: entry.quote })) })
   }
 
   const proposal = row(state.action_proposal)
@@ -251,18 +301,63 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
       source: source(result.source) }
   }) })
 
-  const messages: ChatMessage[] = rows(state.messages).flatMap(m => {
-    const role = m.role || m.type
-    const content = str(m.content) || (Array.isArray(m.content) ? rows(m.content).map(x => str(x.text)).join('\n') : '')
-    return content && ['human', 'user', 'ai', 'assistant'].includes(str(role)) ? [{ role: role === 'human' || role === 'user' ? 'user' as const : 'assistant' as const, content }] : []
-  })
-  if (!messages.length && run.input_text) messages.push({ role: 'user', content: run.input_text })
   const wait = row(state.browser_wait)
-  const pending = str(state.pending_message)
-  if (pending && messages.at(-1)?.content !== pending) messages.push({ role: 'user', content: pending })
   const summary = (run.outcome ? str(state.reason) : '') || (needsFreshObservation ? '当前页面目标无法核对，请重新读取页面后再确认。' : '') || str(row(state.clarification).question) || str(wait.message) || str(wait.reason) || str(state.reason) || (plans.length ? `已生成${plans.length > 1 ? `${plans.length} 份候选` : ''}方案，请查看成果区。${run.phase === 'WAITING_APPROVAL' ? '实际操作需在确认卡中批准。' : ''}` : run.outcome ? phaseLabel(run) : '')
-  if (summary && messages.at(-1)?.content !== summary) messages.push({ role: 'assistant', content: summary })
+  const messages = projectConversation(run, run.command_pending ? '' : summary)
   return { cards, messages, evidence }
+}
+
+export function projectConversation(run: HarnessSnapshot, summary = ''): ChatMessage[] {
+  const stored: ChatMessage[] = rows(run.state.messages).flatMap(m => {
+    const role = str(m.role || m.type)
+    const content = str(m.content) || (Array.isArray(m.content) ? rows(m.content).map(x => str(x.text)).join('\n') : '')
+    return content && ['human', 'user', 'ai', 'assistant'].includes(role)
+      ? [{ id: str(m.id) || undefined, role: role === 'human' || role === 'user' ? 'user' as const : 'assistant' as const, content }] : []
+  })
+  const events = [...new Map((run.events || []).filter(e => e.run_id === run.run_id && e.seq <= run.event_seq).map(e => [e.seq, e])).values()].sort((a, b) => a.seq - b.seq)
+  // The durable event sequence also covers replies to structured edits and
+  // clarification inputs. Partial logs fall back to the saved message history.
+  const complete = events[0]?.event_type === 'RUN_CREATED' && events.every((e, i) => e.seq === i + 1) && events.at(-1)?.seq === run.event_seq
+  const messages: ChatMessage[] = complete ? [] : [...stored]
+  const replyTimes = new Set(events.filter(e => e.event_type === 'ASSISTANT_MESSAGE').map(e => e.created_at).filter(Boolean))
+  let storedCursor = 0
+  const reply = (content: string, id: string) => {
+    if (content && !(messages.at(-1)?.role === 'assistant' && messages.at(-1)?.content === content)) messages.push({ id, role: 'assistant', content })
+  }
+  if (complete) for (const event of events) {
+    const p = event.payload, id = `${run.run_id}:event:${event.seq}`
+    const input = event.event_type === 'RUN_CREATED' ? str(p.input_text)
+      : ['USER_MESSAGE', 'RESUME_REQUESTED'].includes(event.event_type) ? str(p.text)
+        : ['REPLAN_REQUESTED', 'REQUIREMENTS_EDITED'].includes(event.event_type) ? str(p.reason) : ''
+    if (input) {
+      messages.push({ id, role: 'user', content: input })
+      // Retain genuine assistant messages from older checkpoints as well.
+      const match = stored.findIndex((m, i) => i >= storedCursor && m.role === 'user' && m.content === input)
+      if (match >= 0) {
+        storedCursor = match + 1
+        while (stored[storedCursor]?.role === 'assistant') {
+          const m = stored[storedCursor++]
+          reply(m.content, m.id || `${id}:stored:${storedCursor}`)
+        }
+      }
+    } else if (event.event_type === 'ASSISTANT_MESSAGE') {
+      reply(str(p.content), id)
+    } else if (event.event_type === 'GRAPH_INTERRUPTED') {
+      // New boundaries include an exact public reply. For old runs recover
+      // only recorded user-facing questions, never internal model/tool traces.
+      const exactReply = event.created_at && replyTimes.has(event.created_at)
+      if (!exactReply) for (const [n, question] of rows(p.interrupts).entries()) {
+        if (['clarification', 'draft_review', 'approval'].includes(str(question.type))) reply(str(question.question) || str(question.message), `${id}:${n}`)
+      }
+    } else if (['RUN_FAILED', 'RUN_TIMEOUT', 'RUN_CANCELLED'].includes(event.event_type)) {
+      reply(str(p.reason), id)
+    }
+  }
+  if (!messages.length && run.input_text) messages.push({ id: `${run.run_id}:input`, role: 'user', content: run.input_text })
+  const pending = str(run.state.pending_message)
+  if (!complete && pending && !(messages.at(-1)?.role === 'user' && messages.at(-1)?.content === pending)) messages.push({ id: `${run.run_id}:pending`, role: 'user', content: pending })
+  reply(summary, `${run.run_id}:current:${run.state.turn_id || 1}`)
+  return messages
 }
 
 const eventLabels: Record<string, string> = {

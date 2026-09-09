@@ -32,7 +32,7 @@ export function SidePanel(): JSX.Element | null {
           </button>
         </div>
 
-        <div className="flex gap-1 m-5 mb-0 p-1 rounded-xl bg-[#f0f5f1]" role="tablist" aria-label="能力类型">
+        <div className="flex gap-1 m-5 mb-0 p-1 rounded-xl bg-[var(--surface-soft)]" role="tablist" aria-label="能力类型">
           <TabBtn cur={tab} me="model" set={setTab} icon={<Cpu size={13} />} label="模型" />
           <TabBtn cur={tab} me="social" set={setTab} icon={<MessageCircle size={13} />} label="微信/飞书" />
           <TabBtn cur={tab} me="skills" set={setTab} icon={<Puzzle size={13} />} label="技能" />
@@ -56,7 +56,7 @@ function TabBtn({ cur, me, set, icon, label }: { cur: Tab; me: Tab; set: (t: Tab
     <button
       onClick={() => set(me)} role="tab" aria-selected={cur === me}
       className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-9 ${
-        cur === me ? 'bg-white text-brand-strong shadow-card' : 'text-[#748378] hover:text-brand-ink'
+        cur === me ? 'bg-white text-brand-strong shadow-card' : 'text-[var(--muted)] hover:text-brand-ink'
       }`}
     >
       {icon}
@@ -138,7 +138,7 @@ function ModelSection(): JSX.Element {
         <input value={apiKey} onChange={(e) => setApiKey(e.target.value)} type="password" className="plango-field" placeholder={cfg?.llm?.apiKey || '粘贴 API Key'} />
       </Field>
 
-      <button onClick={save} disabled={saving} className="w-full py-2 rounded-xl bg-brand-strong text-white font-medium text-sm flex items-center justify-center gap-1.5 disabled:opacity-50">
+      <button onClick={save} disabled={saving} className="w-full py-2 rounded-xl bg-brand text-brand-ink font-medium text-sm flex items-center justify-center gap-1.5 disabled:opacity-50">
         {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} 保存桌面配置并测试
       </button>
       {ping && <div className={`text-xs ${ping.includes('✓') ? 'text-green-600' : 'text-red-500'}`}>{ping}</div>}
@@ -186,7 +186,7 @@ function SkillsSection(): JSX.Element {
             </div>
             <button
               onClick={() => toggle(s.id, !s.enabled)} disabled={saving !== null} role="switch" aria-checked={s.enabled} aria-label={s.name}
-              className={`shrink-0 w-10 h-5 rounded-full relative transition-colors ${s.enabled ? 'bg-brand-strong' : 'bg-neutral-300'}`}
+              className={`shrink-0 w-10 h-5 rounded-full relative transition-colors ${s.enabled ? 'bg-brand' : 'bg-neutral-300'}`}
             >
               <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${s.enabled ? 'left-[22px]' : 'left-0.5'}`} />
             </button>
@@ -236,11 +236,11 @@ function MemorySection(): JSX.Element {
       </div>
 
       {/* 数据主权：本地隐私说明（这是"为什么是浏览器"的第六根支柱） */}
-      <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-2.5">
-        <div className="flex items-center gap-1.5 text-[12px] font-medium text-emerald-700">
+      <div className="rounded-xl bg-[var(--surface-soft)] border border-[var(--line)] p-2.5">
+        <div className="flex items-center gap-1.5 text-[12px] font-medium text-brand-ink">
           <Lock size={12} /> 记忆可查看、可删除
         </div>
-        <div className="text-[11px] text-emerald-600/90 mt-1 leading-relaxed">
+        <div className="text-[11px] text-neutral-600 mt-1 leading-relaxed">
           记忆保存在你配置的运行服务中，用于后续任务。浏览器登录信息留在本机；任务所需上下文会发送给你配置的模型。
         </div>
       </div>
@@ -261,7 +261,7 @@ function MemorySection(): JSX.Element {
         <div className="space-y-1.5">
           {prefs.map((c: any, i: number) => (
             <div key={i} className="group flex items-center gap-2 text-xs rounded-lg border border-neutral-200 px-2.5 py-1.5">
-              <span className={`px-1.5 py-0.5 rounded text-[10px] ${c.polarity === 'negative' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] ${c.polarity === 'negative' ? 'bg-red-50 text-red-500' : 'bg-brand-soft text-brand-strong'}`}>
                 {c.polarity === 'negative' ? '不爱' : '偏好'}
               </span>
               <span className="flex-1">{c.text}<span className="block text-[10px] text-[var(--muted)] mt-1">{c.explicit ? '你明确保存' : '历史记录 · 未标注明确确认'}</span></span>

@@ -1,9 +1,10 @@
 // Offline integration fixture, not a real-world task success measurement.
 // npm run build && env -u ELECTRON_RUN_AS_NODE xvfb-run -a node_modules/.bin/electron --no-sandbox scripts/desktop-ui-smoke.cjs
-const { app, BrowserWindow, screen, session } = require('electron')
+// Optional 180-second soak (reuse built output): env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop -- --soak
+const { app, BrowserWindow, screen, session, ipcMain } = require('electron')
 const assert = require('node:assert/strict')
 const { createServer } = require('node:http')
-const { mkdirSync, mkdtempSync, rmSync, writeFileSync, cpSync } = require('node:fs')
+const { mkdirSync, mkdtempSync, rmSync, writeFileSync, appendFileSync, cpSync } = require('node:fs')
 const { tmpdir } = require('node:os')
 const { join, resolve } = require('node:path')
 const { pathToFileURL } = require('node:url')
@@ -21,6 +22,19 @@ process.env.PLANGO_BACKEND_TOKEN = 'offline-smoke-only'
 process.env.PLANGO_DATA_DIR = join(work, 'harness')
 let snapshot, command, observation, snapshotReads = 0
 let deliveryReceipt, deliveryLookupBroken = true, deliveryPosts = 0, deliveryLookups = 0, browserResultPosts = 0
+let allPosts = 0
+let offerEdits = 0, merchantLookups = 0, offerSelections = 0, draftSaves = 0
+const offerSource = { command_id: 'smoke-command', artifact_id: 'fixture-page' }
+const offerConstraints = { party_size: 2, visit_date: '2026-09-11', budget: 200, per_person_budget: null, timezone: 'Asia/Shanghai' }
+const merchant = { name: '受控门店（甲店）', address: '受控路 1 号' }
+function comparisonFixture() {
+  return { source_ref: offerSource, merchant, source: { ...offerSource, url: fixtureUrl, observed_at: new Date().toISOString(), expires_at: new Date(Date.now() + 600000).toISOString(), valid: true }, constraints: { ...offerConstraints },
+    entries: [['50 元代金券', 'voucher', 47, 50, null], ['精选双人餐', 'package', 98, null, 2], ['冷面鸡单品', 'single_item', 19.9, null, null]].map(([name, kind, price, face_value, people], offer_index) => {
+      const offer_hash = ['a', 'b', 'c'][offer_index].repeat(64), insufficient = people !== null && people < offerConstraints.party_size
+      return { name, kind, price, price_basis: kind === 'package' ? 'per_package' : kind, face_value, people, original_price: null, offer_index, offer_hash, grounded: true, status: insufficient ? 'ineligible' : 'unknown', known_cost: price, total_cost: null, within_budget: null,
+        reasons: [insufficient ? '套餐标注 2 人，本次 3 人，不能认定覆盖全员' : '本条只确认商品售价，完整用餐费用仍待核对'], missing_rules: ['叠加、额外费用和使用日期待核对'], quote: `${name} 售价${price}元`, source_ref: { command_id: offerSource.command_id, offer_index, offer_hash } }
+    }), limitations: ['这是受控页面测试资料，尚未购买或预约'], summary: '同店优惠按当前条件逐项核对' }
+}
 let healthMode = 'current', modelChecks = 0, modelCheck = { status: 'not_checked' }
 const input = '读取当前浏览器页面的真实菜单'
 const fixture = '<!doctype html><html><head><title>菜单界面回归样本</title></head><body><h1>菜单界面回归样本</h1><table><tr><th>菜品</th><th>价格</th></tr><tr><td>真实读取的双人套餐</td><td>128 元</td></tr><tr><td>时价菜</td><td>询价</td></tr>' + Array.from({ length: 8 }, (_, index) => `<tr><td>回归菜品 ${index + 3}</td><td>询价</td></tr>`).join('') + '</table><input placeholder="搜索"></body></html>'
@@ -28,6 +42,7 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1')
   if (url.pathname === '/fixture') { res.setHeader('content-type', 'text/html; charset=utf-8'); res.end(fixture); return }
   if (req.headers.authorization !== 'Bearer offline-smoke-only') { res.writeHead(401); res.end('{}'); return }
+  if (req.method === 'POST') allPosts++
   let body = ''; for await (const part of req) body += part
   const data = body ? JSON.parse(body) : {}
   let result = {}
@@ -64,6 +79,40 @@ const server = createServer(async (req, res) => {
     assert.equal(decodeURIComponent(url.pathname.slice('/api/v1/requests/'.length)), deliveryReceipt.request_id)
     result = deliveryReceipt
   } else if (url.pathname === '/api/v1/runs/smoke-run') { snapshotReads++; result = snapshot }
+  else if (url.pathname === '/api/v1/runs/smoke-run/requirements' && req.method === 'POST') {
+    offerEdits++
+    assert.deepEqual(data.offer_source, offerSource)
+    assert.equal(data.expected_version, snapshot.version)
+    assert.deepEqual(data.fields, { visit_date: '2026-09-12', party_size: 3, budget: 120 })
+    Object.assign(offerConstraints, data.fields)
+    snapshot = { ...snapshot, version: snapshot.version + 1, event_seq: snapshot.event_seq + 1, offer_comparison: comparisonFixture(), state: { ...snapshot.state, browser_task_context: { offer_source: offerSource, ...offerConstraints } } }
+    result = { accepted: true }
+  } else if (url.pathname === '/api/v1/runs/smoke-run/merchant-candidates' && req.method === 'POST') {
+    merchantLookups++
+    assert.deepEqual(data.source_ref, offerSource)
+    result = { source_ref: offerSource, merchant, source: 'amap', observed_at: new Date().toISOString(), candidates: [
+      { poi_id: 'other-branch', name: '受控门店（乙店）', address: '受控路 99 号', longitude: 106.58, latitude: 29.56 },
+      { poi_id: 'canonical-one', name: merchant.name, address: merchant.address, longitude: 106.57, latitude: 29.55 }
+    ] }
+  } else if (url.pathname === '/api/v1/runs/smoke-run/offer-selection' && req.method === 'POST') {
+    offerSelections++
+    assert.deepEqual(data, { expected_version: snapshot.version, source_ref: offerSource, offer_index: 0, offer_hash: 'a'.repeat(64), poi_id: 'canonical-one', identity_confirmed: true })
+    const plan = { plan_id: 'fixture-offer-plan', version: 1, label: '已选门店行程', party_size: 3, total_cost: null, stops: [{ place_id: 'canonical-one', name: merchant.name, category: '餐厅', start_minute: 600, end_minute: 660, unit_price: null, supply_source: 'unknown', evidence_ids: ['fixture-page'] }] }
+    snapshot = { ...snapshot, selected_offer: { ...offerSource, offer_index: 0, offer_hash: 'a'.repeat(64), place_id: 'canonical-one' }, phase: 'REQUIREMENTS_READY', outcome: null, version: snapshot.version + 1, event_seq: snapshot.event_seq + 1, interrupt_id: 'draft:smoke-run:fixture-offer-plan:1',
+      draft_review: { interrupt_id: 'draft:smoke-run:fixture-offer-plan:1', plan_id: plan.plan_id, plan_version: 1, scope: 'draft_ready', can_prepare: false, preparation_blockers: ['优惠使用细则尚未核验'], conflicts: [], unknowns: [{ name: 'offer_rules', detail: '叠加、额外费用和使用日期待核对' }] },
+      state: { ...snapshot.state, browser_task_context: { ...snapshot.state.browser_task_context, offer_selection: data }, trip_spec: { ...offerConstraints, location: { name: '重庆', latitude: 29.55, longitude: 106.57 }, travel_mode: 'walking' }, selected_plan: plan,
+        place_candidates: [{ place_id: 'canonical-one', name: merchant.name, address: merchant.address, source: 'amap', price_known: false, latitude: 29.55, longitude: 106.57 }] } }
+    result = { accepted: true }
+  } else if (url.pathname === '/api/v1/runs/smoke-run/draft-decision' && req.method === 'POST') {
+    draftSaves++
+    assert.equal(data.decision, 'save')
+    assert.equal(data.plan_id, 'fixture-offer-plan')
+    assert.equal(data.plan_version, 1)
+    assert.equal(data.interrupt_id, snapshot.interrupt_id)
+    snapshot = { ...snapshot, phase: 'SUCCEEDED', outcome: 'SUCCEEDED', interrupt_id: null, draft_review: null, version: snapshot.version + 1, event_seq: snapshot.event_seq + 1,
+      state: { ...snapshot.state, reason: '已保存所选门店与优惠草案，缺失规则保留', execution_outcome: { kind: 'planning_draft', status: 'satisfied', data: { scope: 'draft_ready', business_completed: false } } } }
+    result = { accepted: true }
+  }
   else if (url.pathname.endsWith('/events')) result = { events: [] }
   else if (url.pathname === '/api/v1/browser/commands') result = { commands: command && !observation ? [command] : [], cursor: observation ? 1 : 0 }
   else if (url.pathname === '/api/v1/browser/commands/smoke-command/result') {
@@ -91,12 +140,102 @@ async function waitFor(label, test, timeout = 20000) {
   while (Date.now() - started < timeout) { if (await test()) return; await sleep(100) }
   throw new Error('Timed out: ' + label)
 }
-async function js(code) { return window.webContents.executeJavaScript(code, true) }
-async function fill(selector, value) {
+async function bounded(label, operation, timeout = 10000) {
+  let timer
+  try { return await Promise.race([operation, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} exceeded ${timeout} ms`)), timeout) })]) }
+  finally { clearTimeout(timer) }
+}
+async function js(code) { return bounded('host renderer response', window.webContents.executeJavaScript(code, true)) }
+async function setInput(selector, value) {
   await js(`(() => { const el=document.querySelector(${JSON.stringify(selector)}); if(!el)throw new Error('missing input'); Object.getOwnPropertyDescriptor(el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(el,${JSON.stringify(value)}); el.dispatchEvent(new Event('input',{bubbles:true})); })()`)
   await sleep(50)
+}
+async function fill(selector, value) {
+  await setInput(selector, value)
   await js(`document.querySelector(${JSON.stringify(selector)}).dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}))`)
 }
+async function soak(uiEvidence, guest) {
+  const started = Date.now(), duration = 180000, samples = [], failures = [], responseTimes = []
+  const samplesPath = join(uiEvidence, 'soak-samples.jsonl'), reportPath = join(uiEvidence, 'soak-summary.json')
+  const baselinePosts = allPosts, originalSnapshot = JSON.stringify(snapshot)
+  let cycles = 0, temporaryTabs = 0, nextSample = 0
+  const crashed = (_event, contents, details) => { if (details.reason !== 'clean-exit') failures.push({ event: 'render-process-gone', id: contents.id, ...details }) }
+  const unresponsive = () => failures.push({ event: 'host-unresponsive' })
+  app.on('render-process-gone', crashed)
+  window.on('unresponsive', unresponsive)
+  const listenerCounts = () => Object.fromEntries([['app', app], ['ipcMain', ipcMain], ['window', window], ['host', window.webContents], ['guest', guest]].flatMap(([name, emitter]) =>
+    emitter.eventNames().filter(event => typeof event === 'string').map(event => [`${name}:${event}`, emitter.listenerCount(event)])))
+  const browserState = () => js("window.plango.browser.request({kind:'state'})")
+  const baselineBrowser = await browserState(), baselineViews = window.contentView.children.length
+  const baselineIds = baselineBrowser.tabs.map(tab => tab.id).sort()
+  const baselineListeners = listenerCounts()
+  const probe = async (label, operation) => { const at = Date.now(); const result = await bounded(label, operation); responseTimes.push(Date.now() - at); return result }
+  const sample = async () => {
+    const browser = await probe('browser IPC response', browserState())
+    const metrics = app.getAppMetrics().map(metric => ({ pid: metric.pid, creationTime: metric.creationTime, type: metric.type, memory_kb: metric.memory, cpu: metric.cpu }))
+    const heap = await probe('guest renderer response', guest.executeJavaScript("({title:document.title,heap:performance.memory?{used:performance.memory.usedJSHeapSize,total:performance.memory.totalJSHeapSize,limit:performance.memory.jsHeapSizeLimit}:null})"))
+    const listeners = listenerCounts()
+    assert.equal(heap.title, '菜单界面回归样本')
+    assert.deepEqual(browser.tabs.map(tab => tab.id).sort(), baselineIds, 'Temporary tabs must return to the original tab identities')
+    assert.equal(window.contentView.children.length, baselineViews, 'Closed tabs must release their WebContentsView')
+    assert.equal(allPosts, baselinePosts, 'Soak navigation may not submit new business/model/task commands')
+    assert.equal(JSON.stringify(snapshot), originalSnapshot, 'The saved run, source artifacts and selected offer remain intact')
+    assert.equal(await probe('active run response', js("localStorage.getItem('plango_active_run')")), 'smoke-run')
+    assert.deepEqual(failures, [], 'Host and guest must not crash or become unresponsive')
+    for (const [event, count] of Object.entries(listeners)) assert(count <= (baselineListeners[event] || 0), `Listener growth: ${event}: ${baselineListeners[event] || 0} -> ${count}`)
+    const item = { elapsed_ms: Date.now() - started, cycles, temporary_tabs_closed: temporaryTabs, main_bytes: process.memoryUsage(), main_native_kb: await process.getProcessMemoryInfo(), app_metrics: metrics,
+      host_pid: window.webContents.getOSProcessId(), guest_pid: guest.getOSProcessId(), guest_heap_bytes: heap.heap, view_count: window.contentView.children.length, tab_count: browser.tabs.length,
+      listeners, all_posts: allPosts, max_response_ms: Math.max(0, ...responseTimes) }
+    samples.push(item); appendFileSync(samplesPath, JSON.stringify(item) + '\n')
+    console.log(JSON.stringify({ soak_seconds: Math.round(item.elapsed_ms / 1000), cycles, temporaryTabs, main_rss_bytes: item.main_bytes.rss, guest_pid: item.guest_pid, max_response_ms: item.max_response_ms }))
+  }
+  try {
+    await sample(); nextSample = 15000
+    writeFileSync(join(uiEvidence, 'soak-start.png'), await probe('start screenshot', window.webContents.capturePage().then(image => image.toPNG())))
+    while (Date.now() - started < duration) {
+      cycles++
+      await probe('switch to browser', js("document.querySelector('button[title=\"浏览器\"]').click()"))
+      await waitFor('soak visible guest', () => probe('guest visibility', guest.executeJavaScript("document.visibilityState==='visible'")), 5000)
+      await probe('switch to outcome', js("document.querySelector('button[title=\"成果区\"]').click()"))
+      await waitFor('soak hidden guest', () => probe('guest visibility', guest.executeJavaScript("document.visibilityState==='hidden'")), 5000)
+      await probe('open settings', js("document.querySelector('button[title=\"设置\"]').click()"))
+      await waitFor('soak settings', () => js("!!document.querySelector('button[aria-label=\"关闭设置\"]')"), 5000)
+      await probe('close settings', js("document.querySelector('button[aria-label=\"关闭设置\"]').click()"))
+      await probe('open history', js("document.querySelector('button[title=\"历史会话\"]').click()"))
+      await waitFor('soak history', () => js("!!document.querySelector('[data-history-entry]')"), 5000)
+      await probe('restore same history', js(`[...document.querySelectorAll('[data-history-entry]')].find(el=>el.getAttribute('aria-label')==='打开会话：'+${JSON.stringify(input)}).click()`))
+      await waitFor('soak restored offer', () => js("document.querySelector('[aria-label=\"优惠：50 元代金券\"]')?.innerText.includes('本次已选')"), 5000)
+      if (cycles % 3 === 0) {
+        const added = await probe('create controlled tab', js(`window.plango.browser.request({kind:'create',url:${JSON.stringify(fixtureUrl)}+'?soak='+${cycles}})`))
+        const temporary = added.tabs.filter(tab => !baselineIds.includes(tab.id))
+        assert.equal(temporary.length, 1)
+        await probe('close controlled tab', js(`window.plango.browser.request({kind:'close',id:${JSON.stringify(temporary[0].id)}})`))
+        await waitFor('soak tab cleanup', async () => (await browserState()).tabs.length === baselineIds.length && window.contentView.children.length === baselineViews, 5000)
+        temporaryTabs++
+      }
+      assert(!guest.isDestroyed(), 'The original browser session remains alive across all view changes')
+      if (Date.now() - started >= nextSample) { await sample(); nextSample += 15000 }
+      await sleep(Math.min(1000, Math.max(0, duration - (Date.now() - started))))
+    }
+    await sample()
+    writeFileSync(join(uiEvidence, 'soak-final.png'), await probe('final screenshot', window.webContents.capturePage().then(image => image.toPNG())))
+    const trend = values => ({ first: values[0], last: values.at(-1), min: Math.min(...values), max: Math.max(...values), delta: values.at(-1) - values[0] })
+    const report = { scope: '180-second controlled desktop navigation soak', passed: true, elapsed_ms: Date.now() - started, cycles, temporary_tabs_closed: temporaryTabs, samples: samples.length,
+      max_response_ms: Math.max(...responseTimes), additional_posts: allPosts - baselinePosts, crashes_or_unresponsive: failures, baseline_view_count: baselineViews, baseline_tab_count: baselineIds.length,
+      baseline_listeners: baselineListeners, final_listeners: samples.at(-1).listeners, main_rss_bytes: trend(samples.map(item => item.main_bytes.rss)),
+      guest_working_set_kb: trend(samples.map(item => item.app_metrics.find(metric => metric.pid === item.guest_pid)?.memory_kb.workingSetSize || 0)),
+      limitations: ['受控无外网页面与固定后端样本；不是商家履约或真实模型质量测评', '只覆盖 180 秒和采集到的主进程 EventEmitter 监听器；不证明没有长期泄漏', '内存仅记录趋势，不设任意通过阈值，不解释历史 WSL 卡住根因'] }
+    writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n')
+    console.log(JSON.stringify({ scope: report.scope, passed: true, cycles, temporaryTabs, samples: samples.length, reportPath }))
+  } catch (error) {
+    writeFileSync(reportPath, JSON.stringify({ scope: '180-second controlled desktop navigation soak', passed: false, elapsed_ms: Date.now() - started, cycles, temporaryTabs, failures, error: String(error) }, null, 2) + '\n')
+    throw error
+  } finally {
+    app.off('render-process-gone', crashed)
+    window.off('unresponsive', unresponsive)
+  }
+}
+
 async function main() {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
   process.env.PLANGO_BACKEND_URL = `http://127.0.0.1:${server.address().port}`
@@ -249,6 +388,51 @@ async function main() {
   const screenshot = join(tmpdir(), 'plango-desktop-ui-smoke.png')
   writeFileSync(screenshot, (await window.webContents.capturePage()).toPNG())
   writeFileSync(join(uiEvidence, '03-outcome-observed.png'), (await window.webContents.capturePage()).toPNG())
+  // One controlled D3/D4 flow through the real renderer, preload and client; merchant facts are fixture data.
+  snapshot = { ...snapshot, version: snapshot.version + 1, event_seq: snapshot.event_seq + 1, offer_comparison: comparisonFixture() }
+  await js("document.querySelector('button[title=\"从运行服务重新加载成果\"]').click()")
+  await waitFor('browser-only comparison requirements', () => js("document.body.innerText.includes('优惠比较条件') && !!document.querySelector('[aria-label=\"门店优惠比较\"]')"))
+  assert.equal(await js("document.querySelector('[aria-label=\"优惠：50 元代金券\"]').innerText.includes('券面值 ¥50')"), true)
+  await setInput('input[aria-label="同行人数"]', '3')
+  await setInput('input[aria-label="出行日期"]', '2026-09-12')
+  await setInput('input[aria-label="总预算（元）"]', '120')
+  await js("[...document.querySelectorAll('button')].find(el=>el.innerText==='保存条件并重新比较').click()")
+  await waitFor('three people invalidate two-person package', () => js("document.querySelector('[aria-label=\"优惠：精选双人餐\"]')?.innerText.includes('当前条件不适用')"))
+  assert.equal(offerEdits, 1)
+  assert.equal(await js("document.querySelector('[aria-label=\"门店优惠比较\"]').innerText.includes('2026-09-12') && document.querySelector('[aria-label=\"门店优惠比较\"]').innerText.includes('总预算 ¥120')"), true)
+  assert.equal(await js("document.querySelector('[aria-label=\"优惠：精选双人餐\"]').innerText.includes('完整用餐费用待核对')"), true)
+  await js("document.querySelector('[aria-label=\"优惠：精选双人餐\"]').scrollIntoView({block:'center'})")
+  await sleep(200)
+  writeFileSync(join(uiEvidence, '14-offer-three-people.png'), (await window.webContents.capturePage()).toPNG())
+  await js("document.querySelector('[aria-label=\"优惠：50 元代金券\"] > button').click()")
+  await waitFor('canonical merchant candidates', () => js("document.querySelector('[aria-label=\"核对门店候选\"]')?.innerText.includes('受控门店（乙店）')"))
+  assert.equal(await js("document.querySelector('[aria-label=\"核对门店候选\"] input:checked')===null"), true, 'Canonical merchant is never silently selected')
+  assert.equal(await js("document.querySelector('[aria-label=\"核对门店候选\"]').innerText.includes('高德地图') && document.querySelector('[aria-label=\"核对门店候选\"]').innerText.includes('受控路 99 号')"), true)
+  await js("document.querySelector('input[type=radio][value=\"canonical-one\"]').click()")
+  await js("document.querySelector('[aria-label=\"核对门店候选\"]').scrollIntoView({block:'center'})")
+  await sleep(200)
+  writeFileSync(join(uiEvidence, '15-offer-canonical-merchant.png'), (await window.webContents.capturePage()).toPNG())
+  await js("[...document.querySelectorAll('button')].find(el=>el.innerText==='确认两处资料是同一家门店，加入行程').click()")
+  await waitFor('same-run merchant draft', () => js("!!document.querySelector('[aria-label=\"草案待核对\"]') && document.body.innerText.includes('受控门店（甲店）')"))
+  assert.equal(await js("localStorage.getItem('plango_active_run')"), 'smoke-run')
+  assert.equal(offerSelections, 1)
+  assert.equal(await js("document.querySelector('[aria-label=\"优惠：50 元代金券\"]').innerText.includes('本次已选')"), true)
+  await js("[...document.querySelectorAll('button')].find(el=>el.innerText==='保存草案').click()")
+  await waitFor('selected offer draft saved', () => js("document.body.innerText.includes('草案已保存')"))
+  const selectedSource = JSON.stringify(snapshot.state.browser_task_context.offer_selection)
+  window.webContents.reload()
+  await waitFor('renderer restart restores same selected draft', () => js("document.body.innerText.includes('草案已保存') && document.body.innerText.includes('受控门店（甲店）')"))
+  assert.equal(await js("localStorage.getItem('plango_active_run')"), 'smoke-run')
+  assert.equal(JSON.stringify(snapshot.state.browser_task_context.offer_selection), selectedSource)
+  assert.equal(deliveryPosts, 1)
+  assert.equal(browserResultPosts, 1)
+  assert.equal(draftSaves, 1)
+  assert.equal(merchantLookups, 1)
+  assert.equal(await js("document.querySelector('[aria-label=\"门店优惠比较\"]').scrollWidth <= document.querySelector('[aria-label=\"门店优惠比较\"]').clientWidth"), true, 'Offer comparison has no horizontal overflow')
+  await sleep(300)
+  writeFileSync(join(uiEvidence, '16-offer-saved-restored.png'), (await window.webContents.capturePage()).toPNG())
+  console.log(JSON.stringify({ scope: 'controlled D3/D4 full desktop flow', offerEdits, merchantLookups, offerSelections, draftSaves, runId: 'smoke-run', rendererReload: true, uiEvidence, businessActions: 0 }))
+  if (process.argv.includes('--soak')) await soak(uiEvidence, guest)
   const hostUrl = window.webContents.getURL()
   await js(`location.href=${JSON.stringify(fixtureUrl)}`)
   await sleep(100)

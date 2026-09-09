@@ -1,11 +1,12 @@
 """Controlled HTTP transport fixtures; never real merchant facts or model calls."""
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.settings import DesktopSettings
 from plango_harness.agent.contracts import Location
-from plango_harness.providers.world import AmapWorldProvider
+from plango_harness.providers.world import AmapWorldProvider, WorldProviderError
 
 POI = {"id": "fixture-poi", "name": "受控餐厅", "location": "106.577,29.558", "type": "餐饮服务;中餐厅",
        "cityname": "重庆市", "address": "受控地址", "photos": [{"url": "https://fixture.invalid/photo.png"}],
@@ -16,6 +17,11 @@ def transport(calls):
     def response(request):
         calls.append((request.url.path, {k: v for k, v in request.url.params.items() if k != "key"}))
         if request.url.path.endswith("/geocode/geo"):
+            if request.url.params.get("address") == "多义地铁站":
+                return httpx.Response(200, json={"status": "1", "geocodes": [
+                    {"location": "106.919,29.552", "formatted_address": "重庆市巴南区同名村", "city": "重庆市", "level": "村庄"},
+                    {"location": "106.401,29.204", "formatted_address": "重庆市江津区同名村", "city": "重庆市", "level": "村庄"},
+                ]})
             return httpx.Response(200, json={"status": "1", "geocodes": [{"location": "106.577,29.558", "formatted_address": "重庆市", "province": "重庆市", "city": [], "district": "渝中区", "level": "市"}]})
         if request.url.path.endswith("/geocode/regeo"):
             return httpx.Response(200, json={"status": "1", "regeocode": {"formatted_address": "重庆市渝中区受控地址", "addressComponent": {"province": "重庆市", "city": [], "district": "渝中区"}}})
@@ -50,6 +56,11 @@ async def test_shared_poi_source_scope_cache_metadata_and_planner_hours():
         _, cached_evidence = await provider.search_places("餐厅", Location(name="重庆", longitude=106.577, latitude=29.558))
         assert cached_evidence[-1].observed_at == evidence[-1].observed_at
         assert cached_evidence[-1].expires_at == evidence[-1].expires_at
+        before = len(calls)
+        with pytest.raises(WorldProviderError, match="多个匹配") as failure:
+            await provider.geocode("多义地铁站", city="重庆")
+        assert failure.value.error_kind == "ambiguous_location"
+        assert len(calls) == before + 1, "Ambiguity must not fall back to a wider search and pick its first result"
     finally:
         await provider.close()
 
@@ -76,6 +87,8 @@ def test_geo_routes_keep_scope_provenance_and_never_create_browser_jobs(tmp_path
         assert client.post('/api/v1/geo/search', json={**body, 'limit': 26}).status_code == 422
         city = client.post('/api/v1/geo/geocode', json={'address': '重庆', 'city': '重庆'}).json()['location']
         assert city['granularity'] == 'city' and city['city'] == '重庆市'
+        ambiguous = client.post('/api/v1/geo/geocode', json={'address': '多义地铁站', 'city': '重庆'})
+        assert ambiguous.status_code == 409 and '多个匹配' in ambiguous.json()['detail']
         address = client.post('/api/v1/geo/reverse', json={'longitude': 106.577, 'latitude': 29.558}).json()['location']
         assert address['district'] == '渝中区' and 'accuracy' not in address
         assert client.get('/api/v1/runs').json()['runs'] == []

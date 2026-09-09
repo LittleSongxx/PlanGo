@@ -4,7 +4,7 @@ import re
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import ormsgpack
 from langchain_core.messages import HumanMessage
@@ -20,6 +20,7 @@ from plango_harness.agent.contracts import (
     Evidence,
     Location,
     MemoryProposal,
+    OfferReference,
     PlaceCandidate,
     PlanCandidate,
     PlanDraft,
@@ -195,6 +196,36 @@ def _place_candidates(rows: list[Any] | None) -> list[PlaceCandidate]:
     ]
 
 
+def _fixed_place_scope(state, spec, places, evidence, refresh):
+    """Limit a cached, explicitly fixed single stop before refresh and specialist inputs."""
+    places = _place_candidates(places)
+    if refresh.get("discovery", True) or spec.optional_activities:
+        return places, evidence
+    prior_raw = state.get("previous_plan") or state.get("selected_plan")
+    prior = PlanCandidate.model_validate(prior_raw) if prior_raw else None
+    fixed = set(spec.must_visit_place_ids) | {stop.place_id for stop in prior.stops if stop.locked} if prior else set(spec.must_visit_place_ids)
+    if len(fixed) != 1 or (prior and (len(prior.stops) != 1 or prior.stops[0].place_id not in fixed)):
+        return places, evidence
+    selected = state.get("selected_poi") or {}
+    if not prior and selected.get("place_id") not in fixed:
+        return places, evidence
+    retained = [place for place in places if place.place_id in fixed]
+    if len(retained) != 1:
+        return places, evidence  # A missing fixed identity must follow the existing discovery/clarification path.
+    category = retained[0].category
+    if category in spec.excluded_activities or set(spec.required_activities + spec.activity_order) - {category}:
+        return places, evidence
+    referenced = set(retained[0].evidence_ids) | {eid for stop in prior.stops for eid in stop.evidence_ids} if prior else set(retained[0].evidence_ids)
+    kept = []
+    for raw in evidence:
+        fact = Evidence.model_validate(raw)
+        bound = {str(fact.payload[key]) for key in ("place_id", "destination_place_id") if fact.payload.get(key)}
+        # Unbound weather/user declarations/failures remain global evidence; never delete audit history.
+        if not bound or bound & fixed or fact.evidence_id in referenced:
+            kept.append(fact)
+    return retained, kept
+
+
 def _missing_place_identity(place: PlaceCandidate, evidence: list[Evidence]) -> bool:
     return place.place_id.startswith("amap:") and not any(
         item.evidence_id in place.evidence_ids and item.payload.get("place_id") == place.place_id
@@ -263,6 +294,7 @@ _CHECKPOINT_TYPES = (
     "PlanStop",
     "RunPhase",
     "TripSpec",
+    "OfferReference",
     "VerifierResult",
     "AgentArtifact",
 )
@@ -418,25 +450,46 @@ def build_graph(
             "trace": _trace(state, "memory_retrieved", count=len(context)),
         }
 
-    async def requirements(state: PlanGoState) -> dict[str, Any]:
+    async def requirements(state: PlanGoState, corrections: tuple[RequirementOutput, ...] = ()) -> dict[str, Any]:
         previous_spec = state.get("previous_spec")
         if isinstance(previous_spec, dict):
             previous_spec = TripSpec.model_validate(previous_spec)
         edit = state.get("structured_requirement_edit") or {}
         explicit = edit.get("fields", {}) if edit.get("turn_id") == state.get("turn_id", 1) else None
+        offer_selection = edit.get("offer_selection") if explicit is not None else None
         if explicit is not None:
             values = {key: value for key, value in explicit.items() if value is not None}
-            for key, flag in (("budget", "clear_budget"), ("per_person_budget", "clear_per_person_budget"), ("visit_date", "visit_date_unknown"), ("time_window_start", "time_window_start_unknown")):
+            for key, flag in (("budget", "clear_budget"), ("per_person_budget", "clear_per_person_budget"), ("visit_date", "visit_date_unknown"), ("time_window_start", "time_window_start_unknown"), ("search_radius_km", "clear_search_radius"), ("route_distance_km", "clear_route_distance")):
                 if key in explicit and explicit[key] is None:
                     values[flag] = True
             if "max_distance_km" in explicit and explicit["max_distance_km"] is None:
                 values["remove_hard_constraints"] = ["距离优先"]
+            if offer_selection and previous_spec is None:
+                values.update(party_size_unknown=explicit.get("party_size") is None,
+                              clear_budget=explicit.get("budget") is None,
+                              clear_per_person_budget=explicit.get("per_person_budget") is None,
+                              required_activities=["餐厅"])
             output = RequirementOutput.model_validate(values)
         else:
             output = await requirement_agent.run(
                 state["input_text"], state.get("memory_context", []), previous_spec,
                 state.get("messages", []), reference_at=state.get("requirement_reference_at"),
             )
+        spec = output.to_trip_spec(state["input_text"], base=previous_spec)
+        for correction in corrections:
+            # Apply every explicit answer slot with the normal sparse/null semantics.
+            spec = correction.to_trip_spec(state["input_text"], base=spec)
+            updates = correction.model_dump(exclude_none=True)
+            for name, reference in (("location_name", "location_reference"), ("search_location_name", "search_location_reference")):
+                if getattr(correction, name) or getattr(correction, reference):
+                    updates.update({name: getattr(correction, name), reference: getattr(correction, reference)})
+            output = output.model_copy(update=updates)
+        if offer_selection and previous_spec is None:
+            missing = [key for key in ("party_size", "visit_date", "time_window_start") if getattr(spec, key) is None]
+            if missing:
+                names = {"party_size": "人数", "visit_date": "到店日期", "time_window_start": "到店时间"}
+                output = output.model_copy(update={"clarification_needed": True, "clarification_fields": missing,
+                    "clarification_question": "已保留所选门店与优惠，还需要确认" + "、".join(names[key] for key in missing) + "。优惠缺失规则仍需核对。"})
         pending = []
         for field in (state.get("clarification") or {}).get("fields", []):
             if field not in {"budget", "per_person_budget", "duration_minutes", "max_queue_minutes", "max_distance_km"}:
@@ -455,14 +508,16 @@ def build_graph(
                 "clarification_fields": list(dict.fromkeys([*output.clarification_fields, *pending])),
                 "clarification_question": output.clarification_question or "先前的预算、时长或距离/排队上限仍待确认。",
             })
-        spec = output.to_trip_spec(state["input_text"], base=previous_spec)
-        if explicit is not None and "party_size" in explicit:
+        if explicit is not None and ("party_size" in explicit or any(correction.party_size is not None for correction in corrections)):
             # A total edit does not invent the composition of a mixed party.
-            spec = spec.model_copy(update={"party_counts": {spec.party[0].role: spec.party_size} if len(spec.party) == 1 else {}})
+            spec = spec.model_copy(update={"party_counts": {spec.party[0].role: spec.party_size} if len(spec.party) == 1 and spec.party_size is not None else {}})
+        if offer_selection:
+            offer_reference = OfferReference.model_validate(offer_selection)
+            spec = spec.model_copy(update={"selected_offer": offer_reference, "must_visit_place_ids": list(dict.fromkeys([*spec.must_visit_place_ids, offer_reference.place_id]))})
         selected_raw = state.get("selected_poi") or {}
         selected_poi = PlaceCandidate.model_validate(selected_raw) if selected_raw else None
         selected_location = Location(name=selected_poi.name, latitude=selected_poi.latitude, longitude=selected_poi.longitude) if selected_poi else None
-        location_name = output.location_name or (previous_spec.location.name if previous_spec else "望京")
+        location_name: str | None = output.location_name or (previous_spec.location.name if previous_spec else "望京")
         resolved_location = None
         tool_call_count = int(state.get("tool_call_count", 0))
         geocode_response: dict[str, Any] | None = None
@@ -470,6 +525,9 @@ def build_graph(
         location_origin = None
         if hasattr(deps.world, "requirement_origin"):
             location_name, resolved_location, location_origin = await deps.world.requirement_origin(state, output.location_name, previous_spec)
+            if offer_selection and previous_spec is None and resolved_location is None and not output.location_name and output.location_reference is None:
+                # A city configured for search does not establish this user's starting point.
+                location_name = None
             if output.location_reference == "selected_place":
                 resolved_location = selected_location
                 location_origin = {"source": "user", "reference": "selected_place", "name": selected_poi.name if selected_poi else None}
@@ -485,6 +543,7 @@ def build_graph(
                 resolved_location = Location.model_validate(geocode_response.get("result") or {})
             elif geocode_response.get("error") == "tool_budget_exhausted":
                 return {
+                    "messages": [],
                     "phase": RunPhase.FAILED,
                     "reason": "达到本次运行的 Provider 调用上限",
                     "tool_call_count": ctx.tool_call_count,
@@ -497,18 +556,22 @@ def build_graph(
                 }
         tool_call_count = ctx.tool_call_count
         if resolved_location is None and getattr(deps.world, "strict_location", False):
-            answer = interrupt({"type": "clarification", "id": f"clarification:{state['run_id']}:location:{state.get('turn_id',1)}", "question": f"未能取得{location_name or '当前城市'}的真实起点坐标，请提供定位，或配置高德 Key 并明确出发地点。"})
+            question = "当前起点有多个匹配，请补区县、街道或门牌号。" if (geocode_observation or {}).get("error") == "ambiguous_location" else f"未能取得{location_name or '当前城市'}的真实起点坐标，请提供定位，或配置高德 Key 并明确出发地点。"
+            answer = interrupt({"type": "clarification", "id": f"clarification:{state['run_id']}:location:{state.get('turn_id',1)}", "question": question})
             text = str((answer or {}).get("text", "")) if isinstance(answer, dict) else str(answer or "")
-            if explicit is not None and text.strip():
-                # Parse the answer to this location question, retaining the other exact edits.
+            if explicit is not None:
                 correction = await requirement_agent.run(text, state.get("memory_context", []), spec, state.get("messages", []), reference_at=state.get("requirement_reference_at"))
-                if correction.location_name or correction.location_reference:
-                    state = {**state, "structured_requirement_edit": {**edit, "fields": {**explicit,
-                        "location_name": correction.location_name, "location_reference": correction.location_reference}}}
-            return await requirements({**state, "input_text": state["input_text"] + "\n" + text})
+                corrections = (*corrections, correction)
+            command_id = answer.get("_command_id") if isinstance(answer, dict) else None
+            message = HumanMessage(content=text, id=f"user:{state['run_id']}:{state.get('turn_id', 1)}:location:{command_id or len(corrections) + 1}")
+            accepted = {"input_text": state["input_text"] + "\n" + text,
+                        "messages": [*state.get("messages", []), message],
+                        "consumed_command_id": command_id, "interrupt_id": None}
+            recovered = await requirements(cast(PlanGoState, {**state, **accepted}), corrections)
+            return {**accepted, **recovered, "messages": [message, *recovered.get("messages", [])]}
         if resolved_location is not None:
             spec = spec.model_copy(update={"location": resolved_location})
-        if previous_spec is None and selected_poi:
+        if (previous_spec is None or offer_selection) and selected_poi:
             spec = spec.model_copy(update={"must_visit_place_ids": [selected_poi.place_id], "search_location": Location(name=selected_poi.name, latitude=selected_poi.latitude, longitude=selected_poi.longitude)})
         if output.search_location_reference == "selected_place" and selected_location:
             spec = spec.model_copy(update={"search_location": selected_location})
@@ -541,6 +604,7 @@ def build_graph(
         elif re.search(r"天气(?:变|更新)|下雨|刷新天气", state["input_text"]):
             refresh["weather"] = True
         result: dict[str, Any] = {
+            "messages": [],  # Only an accepted clarification emits new messages from this subgraph.
             "trip_spec": spec,
             "requirement_patch": patch,
             "requirement_refresh": refresh,
@@ -566,6 +630,11 @@ def build_graph(
                 )
             ],
         }
+        before_places, before_evidence = len(result["place_candidates"]), len(result["evidence"])
+        result["place_candidates"], result["evidence"] = _fixed_place_scope(state, spec, result["place_candidates"], result["evidence"], refresh)
+        if len(result["place_candidates"]) < before_places or len(result["evidence"]) < before_evidence:
+            result["trace"] += _trace(state, "fixed_place_scope", candidates_before=before_places, candidates_after=len(result["place_candidates"]),
+                                      evidence_before=before_evidence, evidence_after=len(result["evidence"]))
         missing_identity = any(_missing_place_identity(place, result["evidence"]) for place in _place_candidates(result["place_candidates"]))
         missing_weather = spec.weather_sensitive and not _weather_observed(result["evidence"])
         result["last_observation"] = {**(geocode_observation or {}), "refresh_discovery": refresh["discovery"], "refresh_context": refresh["weather"] or missing_identity or missing_weather}

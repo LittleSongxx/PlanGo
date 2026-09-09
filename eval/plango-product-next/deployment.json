@@ -1,0 +1,16 @@
+{
+  "health_ready": true,
+  "deployed_sources_match": {
+    "api:backend/plango/offers.py": true,
+    "api:vendor/plango_harness/backend/plango_harness/persistence/runs.py": true,
+    "worker:backend/plango/offers.py": true,
+    "worker:vendor/plango_harness/backend/plango_harness/persistence/runs.py": true
+  },
+  "main_runs": 8,
+  "pending_counts": [
+    0,
+    0,
+    0
+  ],
+  "new_business_tasks": 0
+}

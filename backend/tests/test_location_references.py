@@ -95,5 +95,7 @@ def test_named_origin_assignment_precedes_same_message_origin_references():
             assert execute.await_count == 1 and execute.await_args.args[1] == {"address": address}
         direct = RequirementAgent._fallback(f"把出发地点改为{address}，从这个新起点出发", [], previous)
         assert direct.location_name == address and direct.location_reference is None
+        correction = await RequirementAgent(model).run("起点更正为重庆市江北区观音桥步行街1号，2026年9月10日18:30，活动总时长120分钟，仍为3人和总预算250元，保留选定门店与优惠。", [], previous)
+        assert correction.location_name == "重庆市江北区观音桥步行街1号" and correction.location_reference is None
 
     asyncio.run(exercise())

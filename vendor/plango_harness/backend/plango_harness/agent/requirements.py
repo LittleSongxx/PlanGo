@@ -75,17 +75,20 @@ def requirement_delta(previous: TripSpec | None, current: TripSpec, *, explicit_
     new_activities = set(current.required_activities + current.optional_activities) - set(previous.required_activities + previous.optional_activities)
     stricter_place = (current.indoor_required and not previous.indoor_required) or (current.outdoor_required and not previous.outdoor_required)
     stricter_place |= current.max_distance_km is not None and (previous.max_distance_km is None or current.max_distance_km < previous.max_distance_km)
-    discovery = location or bool(new_activities) or bool(stricter_place) or bool(changed & {"must_visit_place_ids", "max_distance_km"})
+    discovery = location or bool(new_activities) or bool(stricter_place) or bool(changed & {"must_visit_place_ids", "max_distance_km", "search_radius_km"})
     transport = "travel_mode" in changed
-    return patch, {"discovery": discovery, "weather": location or temporal, "supply": discovery or temporal or party or transport, "routes": location or temporal or party or transport}
+    return patch, {"discovery": discovery, "weather": location or temporal, "supply": discovery or temporal or party or transport or "selected_offer" in changed, "routes": location or temporal or party or transport or "max_distance_km" in changed}
 
 
 def retain_evidence(rows: list[Any], refresh: dict[str, bool]) -> list[Evidence]:
-    if refresh["discovery"]:
-        return []
     kept = []
     for raw in rows:
         item = Evidence.model_validate(raw)
+        if item.source == "user" and item.payload.get("kind") == "merchant_identity_confirmation":
+            kept.append(item)  # Retain the historical user declaration; it does not renew either merchant source.
+            continue
+        if refresh["discovery"]:
+            continue
         fields = set(item.payload)
         source = f"{item.evidence_id} {item.source_ref}".lower()
         supply = bool(fields & {"open_now", "reservable", "seats_left", "estimated_wait_min"}) or "supply" in source

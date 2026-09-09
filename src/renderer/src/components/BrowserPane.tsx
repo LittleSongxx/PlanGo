@@ -44,7 +44,7 @@ export function BrowserPane(): JSX.Element {
       <button title="后退" className="plango-icon-button disabled:opacity-30" disabled={!active?.canGoBack} onClick={() => action('back')}><ArrowLeft size={16} /></button>
       <button title="前进" className="plango-icon-button disabled:opacity-30" disabled={!active?.canGoForward} onClick={() => action('forward')}><ArrowRight size={16} /></button>
       <button title="重新加载" className="plango-icon-button disabled:opacity-30" disabled={!active} onClick={() => action('reload')}><RotateCw size={15} className={active?.loading ? 'animate-spin' : ''} /></button>
-      <div className="flex-1 min-w-0 flex items-center h-9 px-3 bg-[#f3f6f3] border border-[#e4ebe5] rounded-xl focus-within:border-brand-strong">
+      <div className="flex-1 min-w-0 flex items-center h-9 px-3 bg-[var(--surface-soft)] border border-[var(--line)] rounded-xl focus-within:border-brand-strong">
         <Search size={13} className="text-neutral-400 mr-1.5 shrink-0" />
         <input value={address} onChange={event => setAddress(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') go(address) }} placeholder="输入网址或搜索词，回车打开…" aria-label="浏览器网址或搜索词" className="flex-1 min-w-0 bg-transparent text-xs outline-none" />
       </div>
@@ -60,7 +60,7 @@ export function BrowserPane(): JSX.Element {
     </div>
     <div ref={content} data-browser-viewport className="flex-1 relative min-h-0 mx-3 mb-3" onClick={() => action('focus')}>
       {!tabs.length && <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 text-center px-8">
-        <div className="w-20 h-20 rounded-[26px] bg-brand-soft border border-[#dcece2] shadow-card rotate-[-5deg] flex items-center justify-center"><Compass size={26} className="text-brand-ink" /></div>
+        <div className="w-20 h-20 rounded-[26px] bg-brand-soft border border-brand/50 shadow-card rotate-[-5deg] flex items-center justify-center"><Compass size={26} className="text-brand-ink" /></div>
         <div><div className="text-[25px] tracking-[-0.6px] font-semibold text-brand-ink">从一个真实页面开始</div><div className="text-[13px] leading-6 text-[var(--muted)] mt-3 max-w-sm">打开大众点评/美团并登录后，PlanGo会在这个真实浏览器中读取页面；登录态持久保存，需要时可直接接管。</div></div>
         <div className="flex flex-wrap gap-2 justify-center">{FAVORITES.map(favorite => <button key={favorite.url} onClick={() => go(favorite.url)} className="px-4 py-3 text-xs rounded-xl bg-white border border-[var(--line)] hover:border-brand-strong hover:bg-brand-soft shadow-card"><span className="mr-1">{favorite.emoji}</span>{favorite.label}</button>)}</div>
       </div>}

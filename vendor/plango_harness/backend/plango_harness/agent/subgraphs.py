@@ -25,6 +25,8 @@ from typing_extensions import TypedDict
 
 
 class RequirementState(TypedDict, total=False):
+    consumed_command_id: str | None
+    interrupt_id: str | None
     structured_requirement_edit: dict[str, Any] | None
     turn_budget: dict[str, Any]
     browser_task_context: dict[str, Any]
@@ -81,6 +83,10 @@ class RequirementInput(TypedDict, total=False):
 
 
 class RequirementOutput(TypedDict, total=False):
+    input_text: str
+    messages: list[AnyMessage]
+    consumed_command_id: str | None
+    interrupt_id: str | None
     place_candidates: list[PlaceCandidate]
     requirement_patch: list[dict[str, Any]]
     requirement_refresh: dict[str, bool]

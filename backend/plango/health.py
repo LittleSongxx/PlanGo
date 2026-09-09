@@ -35,7 +35,7 @@ def execution_summary(settings, check=None):
             "browser_vision_enabled": settings.browser_vision_enabled,
             "browser_strategy": "dom_first",
             "image_input": "model_dependent",
-            "transit": "limited",
+            "transit": "same_city",
         },
     }
 

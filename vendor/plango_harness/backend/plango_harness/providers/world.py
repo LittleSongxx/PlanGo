@@ -23,6 +23,13 @@ def _observed(ttl_minutes: int = 30) -> tuple[datetime, datetime]:
     return now, now + timedelta(minutes=ttl_minutes)
 
 
+def unique_geocode(data: Any) -> dict[str, Any] | None:
+    rows = data.get("geocodes") if isinstance(data, dict) else None
+    if isinstance(rows, list) and len(rows) > 1:
+        raise ValueError("地点有多个匹配，请补充区县、街道或门牌号后再确认起点")
+    return rows[0] if isinstance(rows, list) and len(rows) == 1 and isinstance(rows[0], dict) else None
+
+
 def _number(value: Any, default: float = 0.0) -> float:
     try:
         number = float(value)
@@ -146,7 +153,9 @@ class WorldProvider(Protocol):
     async def get_supply(self, place_id: str, at_minute: int) -> Supply: ...
 
     async def estimate_route(
-        self, origin: Location, destination: PlaceCandidate
+        self, origin: Location, destination: PlaceCandidate, *, mode: str = "driving",
+        visit_date: date | None = None, timezone_name: str = "Asia/Shanghai",
+        at_minute: int | None = None,
     ) -> tuple[dict[str, Any], Evidence]: ...
 
     async def get_weather(self, location: Location) -> tuple[dict[str, Any], Evidence]: ...
@@ -290,7 +299,9 @@ class SandboxWorldProvider:
         )
 
     async def estimate_route(
-        self, origin: Location, destination: PlaceCandidate
+        self, origin: Location, destination: PlaceCandidate, *, mode: str = "driving",
+        visit_date: date | None = None, timezone_name: str = "Asia/Shanghai",
+        at_minute: int | None = None,
     ) -> tuple[dict[str, Any], Evidence]:
         distance = _distance_km(origin, destination.latitude, destination.longitude)
         driving = max(6, round(distance * 4 + 8))
@@ -301,7 +312,7 @@ class SandboxWorldProvider:
             "driving_min": driving,
             "transit_min": transit,
             "walking_min": walking,
-            "recommended": "transit" if distance < 3 else "driving",
+            "recommended": mode,
             "source": "simulated",
         }
         observed_at, expires_at = _observed(60)
@@ -346,6 +357,7 @@ class AmapWorldProvider:
         self.client = httpx.AsyncClient(timeout=settings.amap_timeout_seconds)
         self._cache: dict[str, tuple[PlaceCandidate, float]] = {}
         self._poi_cache: dict[str, tuple[dict[str, Any], float]] = {}
+        self._city_cache: dict[tuple[float, float], tuple[dict[str, Any], float]] = {}
         self._request_lock = asyncio.Lock()
         self._last_request = 0.0
         self.last_error_kind: str | None = None
@@ -577,9 +589,11 @@ class AmapWorldProvider:
             return None
 
         def parse(data):
-            rows = (data or {}).get("geocodes")
-            row = rows[0] if isinstance(rows, list) and rows else None
-            if not isinstance(row, dict):
+            try:
+                row = unique_geocode(data)
+            except ValueError as error:
+                raise WorldProviderError("ambiguous_location", str(error)) from None
+            if row is None:
                 return None
             actual = row.get("city") if isinstance(row.get("city"), str) else row.get("province")
             actual = actual if isinstance(actual, str) else ""
@@ -609,74 +623,139 @@ class AmapWorldProvider:
         # its returned city must still satisfy the source-scope check above.
         return parse(await self._get("geocode/geo", {"address": address}))
 
+    async def _route_city(self, latitude: float, longitude: float) -> dict[str, Any]:
+        """The Location city_code historically contains adcodes; resolve the actual citycode."""
+        key = (latitude, longitude)
+        cached = self._city_cache.get(key)
+        if cached and cached[1] > time.monotonic():
+            return cached[0]
+        data = await self._get("geocode/regeo", {"location": f"{longitude:.6f},{latitude:.6f}", "extensions": "base"})
+        component = (data or {}).get("regeocode", {}).get("addressComponent", {})
+        code = component.get("citycode")
+        if not isinstance(code, str) or not re.fullmatch(r"\d{3,4}", code):
+            raise WorldProviderError(self.last_error_kind or "transit_city_unknown")
+        city = {"citycode": code, "name": component.get("city") or component.get("province"),
+                "source_ref": "geocode/regeo", "location": [latitude, longitude]}
+        if len(self._city_cache) >= 128:
+            self._city_cache.pop(next(iter(self._city_cache)))
+        self._city_cache[key] = (city, time.monotonic() + 300)
+        return city
+
+    @staticmethod
+    def _transit_segments(path: dict[str, Any]) -> list[dict[str, Any]]:
+        def populated(value):
+            if isinstance(value, dict):
+                return any(populated(item) for item in value.values())
+            if isinstance(value, list):
+                return any(populated(item) for item in value)
+            return value is not None and value != ""
+
+        parts = []
+        for segment in path["segments"]:
+            # AMap sends nested empty railway/walking containers even for ordinary metro legs.
+            if populated(segment.get("railway")) or populated(segment.get("taxi")):
+                raise WorldProviderError("unsupported_transit_segment")
+            walking = segment.get("walking")
+            if populated(walking):
+                parts.append({"mode": "walking", "distance_m": float(walking["distance"]),
+                    "duration_seconds": float(walking["duration"]),
+                    "origin": walking.get("origin"), "destination": walking.get("destination"),
+                    "instructions": [step["instruction"] for step in walking.get("steps", []) if isinstance(step.get("instruction"), str)]})
+            lines = (segment.get("bus") or {}).get("buslines")
+            if lines:
+                # ponytail: one fastest provider combination, first equivalent busline per leg; add alternative selection only when requested.
+                line = lines[0]
+                if not all(isinstance(value, str) and value.strip() for value in (
+                    line.get("name"), line.get("departure_stop", {}).get("name"), line.get("arrival_stop", {}).get("name")
+                )):
+                    raise ValueError("invalid_transit_stops")
+                parts.append({"mode": "transit", "name": line["name"], "distance_m": float(line["distance"]),
+                    "duration_seconds": float(line["duration"]), "departure_stop": line["departure_stop"]["name"],
+                    "arrival_stop": line["arrival_stop"]["name"], "via_num": line.get("via_num"),
+                    "entrance": segment.get("entrance"), "exit": segment.get("exit")})
+        if not parts or not any(part["mode"] == "transit" for part in parts) or any(
+            not math.isfinite(part[key]) or part[key] < 0 for part in parts for key in ("distance_m", "duration_seconds")
+        ):
+            raise ValueError("invalid_transit_segments")
+        walking_distance = _number(path.get("walking_distance"), -1)
+        if walking_distance < 0 or abs(walking_distance - sum(part["distance_m"] for part in parts if part["mode"] == "walking")) > 1:
+            raise ValueError("incomplete_transit_walking_segments")
+        return parts
+
     async def estimate_route(
-        self, origin: Location, destination: PlaceCandidate, *, mode: str = "driving"
+        self, origin: Location, destination: PlaceCandidate, *, mode: str = "driving",
+        visit_date: date | None = None, timezone_name: str = "Asia/Shanghai",
+        at_minute: int | None = None,
     ) -> tuple[dict[str, Any], Evidence]:
         lower_bound = math.floor(_distance_km(origin, destination.latitude, destination.longitude) * 1000) / 1000
-        if mode not in {"driving", "walking"}:
-            evidence = self._error_evidence("direction/" + mode, key=destination.place_id)
-            evidence = evidence.model_copy(update={"claim": "当前适配器尚不能核验所选交通方式", "payload": {**evidence.payload, "error_kind": "unsupported_route_mode", "requested_mode": mode}})
-            return {"distance_km": lower_bound, "distance_kind": "straight_line_lower_bound", "driving_min": None, "walking_min": None, "transit_min": None, "recommended": "unknown", "source": "amap", "error_kind": "unsupported_route_mode"}, evidence
-        operation = "direction/" + mode
-        data = await self._get(
-            operation,
-            {
-                "origin": f"{origin.longitude},{origin.latitude}",
-                "destination": f"{destination.longitude},{destination.latitude}",
-                **({"strategy": 0} if mode == "driving" else {}),
-            },
-        )
+        operation = "direction/transit/integrated" if mode == "transit" else "direction/" + mode
+        route_key = f"{destination.place_id}:{origin.latitude:.6f}:{origin.longitude:.6f}:{mode}:{visit_date}:{timezone_name}:{at_minute}"
+        context: dict[str, Any] = {"origin": [origin.latitude, origin.longitude], "origin_name": origin.name,
+                   "destination_place_id": destination.place_id, "destination_name": destination.name,
+                   "requested_mode": mode, "requested_visit_date": visit_date.isoformat() if visit_date else None,
+                   "requested_timezone": timezone_name, "departure_minute": at_minute}
+        cost_note = "油费、停车费及过路费未估" if mode == "driving" else "交通费待核验"
+        data = None
         try:
-            path = (data or {}).get("route", {}).get("paths", [])[0]
-            distance, duration = float(path["distance"]), float(path["duration"])
+            if mode not in {"driving", "walking", "transit"}:
+                raise WorldProviderError("unsupported_route_mode")
+            params: dict[str, Any] = {"origin": f"{origin.longitude:.6f},{origin.latitude:.6f}",
+                "destination": f"{destination.longitude:.6f},{destination.latitude:.6f}"}
+            if mode != "walking":
+                params["strategy"] = 0
+            if mode == "transit":
+                if timezone_name != "Asia/Shanghai" or (at_minute is not None and not 0 <= at_minute < 1440):
+                    raise WorldProviderError("unsupported_transit_departure")
+                start_city = await self._route_city(origin.latitude, origin.longitude)
+                end_city = await self._route_city(destination.latitude, destination.longitude)
+                context["cities"] = [start_city, end_city]
+                if start_city["citycode"] != end_city["citycode"]:
+                    raise WorldProviderError("cross_city_transit_unsupported")
+                params.update(city=start_city["citycode"], cityd=end_city["citycode"], extensions="all")
+                if visit_date is not None:
+                    params["date"] = visit_date.isoformat()
+                if at_minute is not None:
+                    params["time"] = f"{at_minute // 60:02}:{at_minute % 60:02}"
+            data = await self._get(operation, params)
+            path = (data or {}).get("route", {}).get("transits" if mode == "transit" else "paths", [])[0]
+            parts = self._transit_segments(path) if mode == "transit" else []
+            distance = sum(part["distance_m"] for part in parts) if parts else float(path["distance"])
+            duration = float(path["duration"])
             if not math.isfinite(distance) or not math.isfinite(duration) or distance < 0 or duration <= 0:
                 raise ValueError("invalid_route_measurements")
-            distance_km = round(distance / 1000, 2)
-            minutes = max(1, round(duration / 60))
-            route = {
-                "distance_km": distance_km,
-                "distance_kind": "route",
-                "driving_min": minutes if mode == "driving" else None,
-                "transit_min": None,
-                "walking_min": minutes if mode == "walking" else None,
-                "recommended": mode,
-                "source": "amap",
-            }
+            distance_km, minutes = round(distance / 1000, 3), max(1, math.ceil(duration / 60))
+            raw_fare = (_number(path.get("cost"), -1) if not isinstance(path.get("cost"), bool) else -1) if mode == "transit" else 0 if mode == "walking" else -1
+            fare: float | None = raw_fare if raw_fare >= 0 else None
+            if mode == "transit":
+                cost_note = (f"标准票价估算 ¥{fare:g}/人；未计儿童/老人优惠及返程" if fare is not None else "标准票价/人待核验；未计儿童/老人优惠及返程")
+            elif mode == "walking":
+                cost_note = "步行交通费 ¥0；未计返程及其他消费"
+            labels = [f"步行{part['distance_m']:g}米（约{math.ceil(part['duration_seconds'] / 60)}分钟）" if part["mode"] == "walking" else
+                      f"{part['name']}：{part['departure_stop']}→{part['arrival_stop']}（约{math.ceil(part['duration_seconds'] / 60)}分钟）" for part in parts]
+            name = {"walking": "步行", "driving": "驾车", "transit": "公交"}[mode]
+            summary = f"{origin.name} → {destination.name}；{name}约{distance_km:g}公里 / {minutes}分钟"
+            if labels:
+                summary += "；" + " → ".join(labels)
+            summary += "；" + cost_note
+            route = {**context, "distance_km": distance_km, "distance_kind": "route",
+                "driving_min": minutes if mode == "driving" else None, "transit_min": minutes if mode == "transit" else None,
+                "walking_min": minutes if mode == "walking" else None, "recommended": mode, "source": "amap",
+                "cost_per_person": fare, "cost_note": cost_note, "summary": summary, "segments": parts}
+            if parts:
+                route.update(walking_distance_m=sum(part["distance_m"] for part in parts if part["mode"] == "walking"),
+                             transfers=max(0, sum(part["mode"] == "transit" for part in parts) - 1))
             observed_at, expires_at = _observed(10)
-            route_key = (
-                f"{destination.place_id}:{origin.latitude:.5f}:{origin.longitude:.5f}:{mode}"
-            )
-            return route, Evidence(
-                evidence_id=(
-                    f"amap-route:{hashlib.sha1(route_key.encode()).hexdigest()[:12]}"
-                ),
-                source="amap",
-                source_ref=operation,
-                claim=f"高德{'步行' if mode == 'walking' else '驾车'}路线约 {distance_km:.1f} km / {minutes} 分钟",
-                payload=route,
-                observed_at=observed_at,
-                expires_at=expires_at,
-                confidence=0.9,
-            )
-        except (IndexError, KeyError, AttributeError, ValueError, TypeError):
-            evidence = self._error_evidence(
-                operation,
-                empty=bool(data),
-                key=f"{destination.place_id}:{origin.latitude:.5f}:{origin.longitude:.5f}:{mode}",
-            )
-            return (
-                {
-                    "distance_km": lower_bound,
-                    "distance_kind": "straight_line_lower_bound",
-                    "driving_min": None,
-                    "transit_min": None,
-                    "walking_min": None,
-                    "recommended": "unknown",
-                    "source": "amap",
-                    "error_kind": evidence.payload.get("error_kind"),
-                },
-                evidence,
-            )
+            return route, Evidence(evidence_id=f"amap-route:{hashlib.sha1(route_key.encode()).hexdigest()[:12]}",
+                source="amap", source_ref=operation, claim=summary, payload=route,
+                observed_at=observed_at, expires_at=expires_at, confidence=0.9)
+        except (WorldProviderError, IndexError, KeyError, AttributeError, ValueError, TypeError) as error:
+            evidence = self._error_evidence(operation, empty=bool(data), key=route_key)
+            kind = error.error_kind if isinstance(error, WorldProviderError) else evidence.payload.get("error_kind")
+            route = {**context, "distance_km": lower_bound, "distance_kind": "straight_line_lower_bound",
+                "driving_min": None, "transit_min": None, "walking_min": None, "recommended": "unknown",
+                "source": "amap", "error_kind": kind, "cost_per_person": None, "cost_note": cost_note,
+                "summary": f"{origin.name} → {destination.name}；路线待核验，直线距离至少{lower_bound:g}公里；{cost_note}"}
+            return route, evidence.model_copy(update={"payload": {**evidence.payload, **route}, "claim": route["summary"]})
 
     async def get_supply(self, place_id: str, at_minute: int) -> Supply:
         # Amap does not provide live seats/queues; an actual provider never creates simulated supply.

@@ -23,7 +23,7 @@ _CN_DIGITS = {
     "十": 10,
 }
 
-_VENUE_REFERENCE = re.compile(r"(?:当前|这个|这家|该|原来(?:的)?|原先(?:的)?|之前(?:的)?|已选|选中(?:的)?)(?:网页|页面|店|门店|餐厅|商家)")
+_VENUE_REFERENCE = re.compile(r"(?:当前|这个|这家|该|原来(?:的)?|原先(?:的)?|之前(?:的)?|已选(?:的)?(?:这家)?|选中(?:的)?)(?:网页|页面|店|门店|餐厅|商家)")
 
 
 def _location_kind(value: str) -> Literal["current_origin", "selected_place", "generic_activity", "named_location"]:
@@ -64,6 +64,25 @@ def _hours(value: str) -> float | None:
             if (not tens or tens in _CN_DIGITS) and (not ones or ones in _CN_DIGITS):
                 return float(_CN_DIGITS.get(tens, 1) * 10 + _CN_DIGITS.get(ones, 0))
         return None
+
+
+def distance_patch(text: str) -> dict[str, Any]:
+    """Explicit separate limits; generic distance wording retains the legacy contract."""
+    result: dict[str, Any] = {"search_radius_km": None, "route_distance_km": None, "clear_search_radius": False, "clear_route_distance": False}
+    for field, clear, cue, maximum in (("search_radius_km", "clear_search_radius", r"搜索(?:半径|范围)", 50),
+                                        ("route_distance_km", "clear_route_distance", r"(?:单段)?(?:路程上限|路线距离|可接受路程)", 1000)):
+        pattern = rf"(?:(取消|清除|不设)\s*{cue}(?:限制|上限)?|{cue}\s*(?:改为|改成|设为|不超过|最多|上限|为|是|[:：])?\s*({_PEOPLE_AMOUNT})\s*(公里|km|米|m))"
+        for match in re.finditer(pattern, text, re.I):
+            number = _hours(match[2]) if match[2] else None
+            value = number / (1000 if match[3].lower() in {"米", "m"} else 1) if number is not None else None
+            if match[1] or value is not None and 0.1 <= value <= maximum:
+                result.update({field: value, clear: bool(match[1])})
+                if field == "route_distance_km":
+                    result["max_distance_km"] = None
+            else:
+                result.update(clarification_needed=True, clarification_fields=[field],
+                              clarification_question=f"请确认{match[0]}：可设置范围为0.1至{maximum}公里。")
+    return result
 
 
 def _time_minutes(match: re.Match[str]) -> float | None:
@@ -785,6 +804,7 @@ class RequirementAgent:
             updates["location_name"] = None
         for field in ("visit_date", "visit_date_unknown", "timezone", "time_window_start_unknown"):
             updates[field] = getattr(fallback, field)
+        updates.update(distance_patch(text))
         return output.model_copy(update=updates)
 
     @staticmethod
@@ -907,7 +927,7 @@ class RequirementAgent:
             if search_location_reference:
                 search_location_name = None
         location_matches = re.finditer(
-            r"(?<!现)(?:在|去|从|改到|改成|改为|换到|调整到)\s*([\u4e00-\u9fffA-Za-z0-9·]{2,24}?)(?=出发|安排|玩|逛|吃|喝|看|参观|先|用餐|聚餐|附近|预算|下午|上午|晚上|今天|周六|，|,|$)",
+            r"(?<!现)(?:在|去|从|改到|改成|改为|换到|调整到|更正为)\s*([\u4e00-\u9fffA-Za-z0-9·]{2,24}?)(?=出发|安排|玩|逛|吃|喝|看|参观|先|用餐|聚餐|附近|预算|下午|上午|晚上|今天|周六|，|,|$)",
             value,
         )
         generic_locations = {"附近", "周边", "周围", "这边", "那里", "室内", "户外", "公园", "动物园", "餐厅", "展览", "电影", "咖啡", "博物馆", "电影院", "城市漫步", "明天", "今天", "后天", "周末", "时间", "预算"}
@@ -932,12 +952,12 @@ class RequirementAgent:
                 else:
                     search_location_reference, search_location_name = reference, None
                 continue
-            if location_match[0].startswith(("改到", "改成", "改为", "换到", "调整到")) and re.search(r"预算|人均|人数|排队|时长|时间", clause_prefix):
+            if location_match[0].startswith(("改到", "改成", "改为", "换到", "调整到", "更正为")) and re.search(r"预算|人均|人数|排队|时长|时间", clause_prefix):
                 continue
             if re.search(r"(?:排|放)$", value[:location_match.start()]) and re.search(r"(?:前|后)$", candidate):
                 continue
             if not all(piece in generic_locations for piece in re.split(r"[和与及、]", candidate)) and not re.search(r"看展|看电影|吃饭|咖啡|之前|之后|以后|(?:排|放)(?:在|到)|(?:排|放)(?:最前|最后)|^[并且]+", candidate):
-                if location_match[0].startswith(("去", "改到", "改成", "改为", "换到", "调整到")) and not re.search(r"起点|出发地点", clause_prefix):
+                if location_match[0].startswith(("去", "改到", "改成", "改为", "换到", "调整到", "更正为")) and not re.search(r"起点|出发地点", clause_prefix):
                     search_location_name = candidate or search_location_name
                     search_location_reference = None
                 else:

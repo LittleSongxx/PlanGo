@@ -1,0 +1,206 @@
+{
+  "scope": "bounded real AMap adapter read; no task or merchant transaction",
+  "route": {
+    "origin": [
+      29.573462,
+      106.532469
+    ],
+    "origin_name": "观音桥(地铁站)",
+    "destination_place_id": "amap:B0FFG33I2E",
+    "destination_name": "解放碑步行街",
+    "requested_mode": "transit",
+    "requested_visit_date": "2026-09-11",
+    "requested_timezone": "Asia/Shanghai",
+    "departure_minute": 1080,
+    "cities": [
+      {
+        "citycode": "023",
+        "name": "重庆市",
+        "source_ref": "geocode/regeo",
+        "location": [
+          29.573462,
+          106.532469
+        ]
+      },
+      {
+        "citycode": "023",
+        "name": "重庆市",
+        "source_ref": "geocode/regeo",
+        "location": [
+          29.557253,
+          106.575329
+        ]
+      }
+    ],
+    "distance_km": 6.206,
+    "distance_kind": "route",
+    "driving_min": null,
+    "transit_min": 31,
+    "walking_min": null,
+    "recommended": "transit",
+    "source": "amap",
+    "cost_per_person": 3.0,
+    "cost_note": "标准票价估算 ¥3/人；未计儿童/老人优惠及返程",
+    "summary": "观音桥(地铁站) → 解放碑步行街；公交约6.206公里 / 31分钟；轨道交通3号线(江北机场T2航站楼--鱼洞)：观音桥→牛角沱（约9分钟） → 步行227米（约7分钟） → 轨道交通2号线(鱼洞--较场口)：牛角沱→临江门（约10分钟） → 步行249米（约5分钟）；标准票价估算 ¥3/人；未计儿童/老人优惠及返程",
+    "segments": [
+      {
+        "mode": "transit",
+        "name": "轨道交通3号线(江北机场T2航站楼--鱼洞)",
+        "distance_m": 2050.0,
+        "duration_seconds": 540.0,
+        "departure_stop": "观音桥",
+        "arrival_stop": "牛角沱",
+        "via_num": "1",
+        "entrance": [],
+        "exit": []
+      },
+      {
+        "mode": "walking",
+        "distance_m": 227.0,
+        "duration_seconds": 374.0,
+        "origin": "106.542480,29.559196",
+        "destination": "106.542603,29.560677",
+        "instructions": [
+          "步行188米到达牛角沱"
+        ]
+      },
+      {
+        "mode": "transit",
+        "name": "轨道交通2号线(鱼洞--较场口)",
+        "distance_m": 3680.0,
+        "duration_seconds": 600.0,
+        "departure_stop": "牛角沱",
+        "arrival_stop": "临江门",
+        "via_num": "3",
+        "entrance": [],
+        "exit": {
+          "name": "3号口",
+          "location": "106.574541,29.557400"
+        }
+      },
+      {
+        "mode": "walking",
+        "distance_m": 249.0,
+        "duration_seconds": 289.0,
+        "origin": "106.575020,29.558352",
+        "destination": "106.575325,29.557253",
+        "instructions": [
+          "步行146米右转",
+          "步行1米到达目的地",
+          "步行3米右转",
+          "沿邹容支路步行37米右转进入左侧道路",
+          "步行63米到达目的地"
+        ]
+      }
+    ],
+    "walking_distance_m": 476.0,
+    "transfers": 1
+  },
+  "evidence": {
+    "evidence_id": "amap-route:37c9a0fe864e",
+    "source": "amap",
+    "source_ref": "direction/transit/integrated",
+    "claim": "观音桥(地铁站) → 解放碑步行街；公交约6.206公里 / 31分钟；轨道交通3号线(江北机场T2航站楼--鱼洞)：观音桥→牛角沱（约9分钟） → 步行227米（约7分钟） → 轨道交通2号线(鱼洞--较场口)：牛角沱→临江门（约10分钟） → 步行249米（约5分钟）；标准票价估算 ¥3/人；未计儿童/老人优惠及返程",
+    "payload": {
+      "origin": [
+        29.573462,
+        106.532469
+      ],
+      "origin_name": "观音桥(地铁站)",
+      "destination_place_id": "amap:B0FFG33I2E",
+      "destination_name": "解放碑步行街",
+      "requested_mode": "transit",
+      "requested_visit_date": "2026-09-11",
+      "requested_timezone": "Asia/Shanghai",
+      "departure_minute": 1080,
+      "cities": [
+        {
+          "citycode": "023",
+          "name": "重庆市",
+          "source_ref": "geocode/regeo",
+          "location": [
+            29.573462,
+            106.532469
+          ]
+        },
+        {
+          "citycode": "023",
+          "name": "重庆市",
+          "source_ref": "geocode/regeo",
+          "location": [
+            29.557253,
+            106.575329
+          ]
+        }
+      ],
+      "distance_km": 6.206,
+      "distance_kind": "route",
+      "driving_min": null,
+      "transit_min": 31,
+      "walking_min": null,
+      "recommended": "transit",
+      "source": "amap",
+      "cost_per_person": 3.0,
+      "cost_note": "标准票价估算 ¥3/人；未计儿童/老人优惠及返程",
+      "summary": "观音桥(地铁站) → 解放碑步行街；公交约6.206公里 / 31分钟；轨道交通3号线(江北机场T2航站楼--鱼洞)：观音桥→牛角沱（约9分钟） → 步行227米（约7分钟） → 轨道交通2号线(鱼洞--较场口)：牛角沱→临江门（约10分钟） → 步行249米（约5分钟）；标准票价估算 ¥3/人；未计儿童/老人优惠及返程",
+      "segments": [
+        {
+          "mode": "transit",
+          "name": "轨道交通3号线(江北机场T2航站楼--鱼洞)",
+          "distance_m": 2050.0,
+          "duration_seconds": 540.0,
+          "departure_stop": "观音桥",
+          "arrival_stop": "牛角沱",
+          "via_num": "1",
+          "entrance": [],
+          "exit": []
+        },
+        {
+          "mode": "walking",
+          "distance_m": 227.0,
+          "duration_seconds": 374.0,
+          "origin": "106.542480,29.559196",
+          "destination": "106.542603,29.560677",
+          "instructions": [
+            "步行188米到达牛角沱"
+          ]
+        },
+        {
+          "mode": "transit",
+          "name": "轨道交通2号线(鱼洞--较场口)",
+          "distance_m": 3680.0,
+          "duration_seconds": 600.0,
+          "departure_stop": "牛角沱",
+          "arrival_stop": "临江门",
+          "via_num": "3",
+          "entrance": [],
+          "exit": {
+            "name": "3号口",
+            "location": "106.574541,29.557400"
+          }
+        },
+        {
+          "mode": "walking",
+          "distance_m": 249.0,
+          "duration_seconds": 289.0,
+          "origin": "106.575020,29.558352",
+          "destination": "106.575325,29.557253",
+          "instructions": [
+            "步行146米右转",
+            "步行1米到达目的地",
+            "步行3米右转",
+            "沿邹容支路步行37米右转进入左侧道路",
+            "步行63米到达目的地"
+          ]
+        }
+      ],
+      "walking_distance_m": 476.0,
+      "transfers": 1
+    },
+    "observed_at": "2026-09-09T06:26:39.807661Z",
+    "expires_at": "2026-09-09T06:36:39.807661Z",
+    "confidence": 0.9
+  },
+  "model_calls": 0,
+  "business_actions": 0
+}

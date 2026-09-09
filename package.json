@@ -16,7 +16,7 @@
     "setup:backend": "python3 scripts/setup_backend.py",
     "backend": "conda run --no-capture-output -n plango python scripts/backend.py",
     "test:backend": "conda run --no-capture-output -n plango python -m pytest -q",
-    "test:ui": "tsx scripts/check-harness-ui.ts && tsx scripts/check-delivery-ui.ts",
+    "test:ui": "tsx scripts/check-harness-ui.ts && tsx scripts/check-delivery-ui.ts && tsx scripts/check-offer-ui.ts && tsx scripts/check-chat-history.ts",
     "test:transport": "tsx scripts/check-harness-transport.ts && tsx scripts/check-message-delivery.ts",
     "test:browser": "electron --no-sandbox scripts/browser-regression.cjs",
     "test:desktop": "electron --no-sandbox scripts/desktop-ui-smoke.cjs",

@@ -42,7 +42,8 @@ async def test_current_spec_and_current_run_turn_reports_reach_real_specialist_n
                     required_activities=["餐厅"], time_window_start="18:30")
     old_report = AdvocateReport(role="预算", turn_id=1, verdict="accept", rationale="OLD_REPORT_300")
     state = initial_state(run_id="current-run", user_id="fixture", input_text="不设预算，其他要求不变")
-    state.update(trip_spec=spec, advocate_reports=[old_report], trace=[{"event": "historical-user-budget", "payload": {"budget": 300}}])
+    state.update(trip_spec=spec, advocate_reports=[old_report], trace=[{"event": "historical-user-budget", "payload": {"budget": 300}}],
+                 clarification={"kind": "draft_review", "interrupt_id": "old-draft-approval"})
     resetting = StateGraph(PlanGoState)
     resetting.add_node("reset", lambda current: {**planning_reset(current), "turn_id": 2})
     resetting.add_edge(START, "reset")
@@ -50,6 +51,7 @@ async def test_current_spec_and_current_run_turn_reports_reach_real_specialist_n
     updated = await resetting.compile().ainvoke(state)
     assert updated["advocate_reports"] == [old_report], "operator.add with [] preserves audit reports"
     assert updated["trace"] == state["trace"]
+    assert updated["clarification"] is None, "A new clarification cannot inherit the old draft approval binding"
     assert updated["previous_spec"].goal == spec.goal
 
     now = datetime.now(timezone.utc)

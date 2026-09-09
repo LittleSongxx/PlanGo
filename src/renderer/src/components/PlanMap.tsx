@@ -60,7 +60,7 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
         pts.forEach((p) => {
           const isStart = p.kind === 'start'
           const isEnd = p.kind === 'end'
-          const color = isStart ? '#296c53' : isEnd ? '#4b668c' : '#b47a3e'
+          const color = isStart ? '#8a5a00' : isEnd ? '#4b668c' : '#b47a3e'
           const label = isStart ? '起' : isEnd ? '终' : String(++viaNo)
           const marker = new AMap.Marker({
             position: [p.lng, p.lat],
@@ -83,7 +83,7 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
         const mode = plan.travel_mode || 'driving'
         const Router = mode === 'walking' ? AMap.Walking : mode === 'driving' ? AMap.Driving : undefined
         if (pts.length >= 2) {
-          const segColors = ['#3e8966', '#4b7696', '#a58254', '#857198', '#56898d']
+          const segColors = ['#8a5a00', '#4b7696', '#a58254', '#857198', '#526779']
           for (let i = 0; i < pts.length - 1; i++) {
             const a = pts[i]
             const b = pts[i + 1]
@@ -160,7 +160,7 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
         <span>地图加载失败（网络/域名校验）</span>
         {openHref && (
           <button
-            className="px-3 py-2 rounded-lg bg-brand-strong text-white text-xs"
+            className="px-3 py-2 rounded-lg bg-brand text-brand-ink text-xs"
             onClick={() => window.plango.openExternal(openHref)}
           >
             在高德地图中打开
@@ -169,5 +169,5 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
       </div>
     )
   }
-  return <div className="mb-4"><div ref={ref} aria-label="行程地图" className="w-full h-56 rounded-2xl overflow-hidden border border-[var(--line)] bg-[#edf3ee]" />{estimated && <p className="text-[11px] text-amber-700 mt-2">虚线仅连接地点，实际道路与通行时间待核验。</p>}</div>
+  return <div className="mb-4"><div ref={ref} aria-label="行程地图" className="w-full h-56 rounded-2xl overflow-hidden border border-[var(--line)] bg-[var(--surface-soft)]" />{estimated && <p className="text-[11px] text-amber-700 mt-2">虚线仅连接地点，实际道路与通行时间待核验。</p>}</div>
 }

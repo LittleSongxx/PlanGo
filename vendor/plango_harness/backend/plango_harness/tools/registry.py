@@ -16,7 +16,7 @@ from plango_harness.agent.contracts import (
     PlanCandidate,
     TripSpec,
 )
-from plango_harness.domain.planning import PlanEngine, ToolBudgetExceeded
+from plango_harness.domain.planning import PlanEngine, ToolBudgetExceeded, parse_minute
 from plango_harness.memory.repository import MemoryRepository
 from plango_harness.observability import agent_span
 from plango_harness.persistence.actions import ActionLedger
@@ -225,7 +225,9 @@ class ToolRegistry:
         place = await ctx.world.get_place(args.place_id)
         if place is None:
             raise ValueError("place_not_found")
-        route, evidence = await ctx.world.estimate_route(ctx.trip_spec.location, place)
+        route, evidence = await ctx.world.estimate_route(ctx.trip_spec.location, place,
+            mode=ctx.trip_spec.travel_mode, visit_date=ctx.trip_spec.visit_date, timezone_name=ctx.trip_spec.timezone,
+            at_minute=parse_minute(ctx.trip_spec.time_window_start) if ctx.trip_spec.time_window_start else None)
         route["evidence"] = evidence.model_dump(mode="json")
         return route
 

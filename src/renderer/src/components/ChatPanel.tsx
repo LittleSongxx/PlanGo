@@ -44,6 +44,7 @@ export function ChatPanel(): JSX.Element {
   const [dismissed, setDismissed] = useState<string | null>(null)
   const [listening, setListening] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const followLatest = useRef(true)
   const fileRef = useRef<HTMLInputElement>(null)
   const recRef = useRef<any>(null)
   const supportsSpeech = typeof window !== 'undefined' && ((window as any).webkitSpeechRecognition || (window as any).SpeechRecognition)
@@ -70,9 +71,12 @@ export function ChatPanel(): JSX.Element {
     reader.readAsDataURL(f)
   }
 
+  const lastMessage = messages.at(-1)
+  const conversationChange = `${messages.length}:${lastMessage?.id || ''}:${lastMessage?.content || ''}`
+  useEffect(() => { followLatest.current = true }, [activeSessionId])
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
-  }, [messages, steps, pending?.status])
+    if (followLatest.current) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'auto' })
+  }, [activeSessionId, conversationChange, steps.length, pending?.status])
 
   useEffect(() => {
     return () => {
@@ -145,8 +149,8 @@ export function ChatPanel(): JSX.Element {
           <button onClick={newSession} title="新建对话" className="plango-icon-button bg-brand-soft text-brand-strong"><Plus size={18} /></button>
         </div>
       </div>
-      <div className="flex items-center justify-between gap-2 px-5 py-2.5 text-[11px] bg-[#f7faf7] border-b border-[var(--line)]">
-        <span role="status" className={backendReady ? 'text-[#607369]' : 'text-amber-700'}>{backendReady ? phaseLabel(run) : '未连接服务'}</span>
+      <div className="flex items-center justify-between gap-2 px-5 py-2.5 text-[11px] bg-[var(--surface-soft)] border-b border-[var(--line)]">
+        <span role="status" className={backendReady ? 'text-neutral-600' : 'text-amber-700'}>{backendReady ? phaseLabel(run) : '未连接服务'}</span>
         {run && !run.outcome && <button onClick={() => void cancelRun()} className="text-neutral-500 hover:text-red-600">停止任务</button>}
         {!run && <span className="text-[var(--muted)]">从你的需求开始</span>}
       </div>
@@ -181,12 +185,16 @@ export function ChatPanel(): JSX.Element {
         </div>
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-6 space-y-5" aria-label="对话记录">
+      <div ref={scrollRef} onScroll={event => {
+        const element = event.currentTarget
+        followLatest.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80
+      }} className="flex-1 overflow-y-auto px-5 py-6 space-y-5" aria-label="对话记录">
         {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in`}>
+          <div key={m.id || i} data-chat-role={m.role} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'} animate-in`}>
+            <span className="mb-1.5 px-1 text-[10px] font-medium text-[var(--muted)]">{m.role === 'user' ? '你' : 'PlanGo'}</span>
             <div
               className={`max-w-[94%] px-4 py-3.5 rounded-2xl text-[13px] leading-[1.75] ${
-                m.role === 'user' ? 'bg-brand-strong text-white rounded-br-md whitespace-pre-wrap shadow-card' : 'bg-[#f5f8f5] border border-[#e5ece6] text-[#34493c] rounded-tl-md'
+                m.role === 'user' ? 'bg-brand text-brand-ink rounded-br-md whitespace-pre-wrap shadow-card' : 'bg-[var(--surface-soft)] border border-[var(--line)] text-brand-ink rounded-tl-md'
               }`}
             >
               {m.role === 'user' ? m.content : <Markdown>{m.content}</Markdown>}
@@ -199,7 +207,7 @@ export function ChatPanel(): JSX.Element {
       {messages.length <= 1 && (
         <div className="px-5 pb-4 grid grid-cols-2 gap-2">
           {QUICK.map((q, index) => (
-            <button key={q} disabled={busy || !!pending || !composerReady} onClick={() => void send(q)} title={q} className="text-left text-[11px] p-3 rounded-xl bg-white hover:bg-brand-soft text-[#63756a] border border-[var(--line)] disabled:opacity-40">
+            <button key={q} disabled={busy || !!pending || !composerReady} onClick={() => void send(q)} title={q} className="text-left text-[11px] p-3 rounded-xl bg-white hover:bg-brand-soft text-neutral-600 border border-[var(--line)] disabled:opacity-40">
               <span className="flex items-center justify-between text-xs font-medium text-brand-ink">{['家庭周末', '好友聚会', '门店与优惠', '分享草案'][index]}<ArrowUpRight size={12} /></span><span className="block mt-1 truncate">{q}</span>
             </button>
           ))}
@@ -223,15 +231,15 @@ export function ChatPanel(): JSX.Element {
         </div>}
         {storageError && <div role="alert" className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">{storageError}<button className="ml-2 underline" onClick={() => void (composerReady ? persistComposer() : hydrateComposer())}>重试保存或恢复</button></div>}
         {draft?.image && <div className="mb-2 flex items-center gap-2 text-xs text-[var(--muted)]"><img src={draft.image} alt="待发送图片" className="h-12 w-12 rounded-lg object-cover" /><span>图片随本次要求一起发送</span><button aria-label="移除草稿图片" className="plango-icon-button ml-auto" onClick={() => setDraft({ image: undefined })}><X size={14} /></button></div>}
-        <div className="rounded-2xl border border-[#dce7df] bg-[#f7faf7] p-3 shadow-card focus-within:border-[#6a9d81] transition-colors">
+        <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-soft)] p-3 shadow-card focus-within:border-brand-strong transition-colors">
           <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={onPickImage} />
-          <textarea disabled={!composerReady} value={text} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit() } }} rows={2} aria-label="任务输入" placeholder="说说你的安排，或粘贴网页链接…" className="w-full bg-transparent outline-none text-[13px] leading-6 resize-none max-h-36 text-brand-ink placeholder:text-[#8a978e]" />
+          <textarea disabled={!composerReady} value={text} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit() } }} rows={2} aria-label="任务输入" placeholder="说说你的安排，或粘贴网页链接…" className="w-full bg-transparent outline-none text-[13px] leading-6 resize-none max-h-36 text-brand-ink placeholder:text-neutral-400" />
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-1"><button onClick={() => fileRef.current?.click()} disabled={busy || !!pending || !composerReady} title="上传图片（可先输入要求）" aria-label="上传图片" className="plango-icon-button disabled:opacity-40"><ImagePlus size={17} /></button>
               {supportsSpeech && <button onClick={toggleMic} disabled={busy} title={listening ? '停止语音' : '语音输入'} className={`plango-icon-button disabled:opacity-40 ${listening ? 'bg-red-50 text-red-600 animate-pulse' : ''}`}>{listening ? <MicOff size={17} /> : <Mic size={17} />}</button>}
               <span className="text-[10px] text-[var(--muted)] ml-1">Shift + Enter 换行</span>
             </div>
-            <button onClick={submit} disabled={busy || !!pending || !composerReady || !text.trim()} aria-label="发送消息" title="发送消息" className="h-9 w-9 flex items-center justify-center rounded-xl bg-brand-strong text-white disabled:opacity-40 hover:bg-brand-ink transition-colors"><Send size={16} /></button>
+            <button onClick={submit} disabled={busy || !!pending || !composerReady || !text.trim()} aria-label="发送消息" title="发送消息" className="h-9 w-9 flex items-center justify-center rounded-xl bg-brand text-brand-ink disabled:opacity-40 hover:bg-brand-hover transition-colors"><Send size={16} /></button>
           </div>
         </div>
         <p className="text-center text-[10px] text-[var(--muted)] mt-2.5">重要操作需你确认，任务可随时停止</p>

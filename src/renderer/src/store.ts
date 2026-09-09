@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent, RequirementEdit, HarnessDeliveryRequest, HarnessDeliveryResult } from '@shared/types'
-import { projectHarness, projectEvents, runBusy, canResolveAction, row } from './lib/harnessProjection'
+import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent, RequirementEdit, HarnessDeliveryRequest, HarnessDeliveryResult, OfferSelection } from '@shared/types'
+import { projectHarness, projectEvents, runBusy, canResolveAction, canSelectOffer, row } from './lib/harnessProjection'
 import { originFallback as computeOrigin } from './lib/cityCenter'
 import { migrateLocalStorage } from './lib/storageMigration'
 import { loadDraftImage, saveDraftImage } from './lib/draftImages'
@@ -116,6 +116,7 @@ interface State {
   cancelRun: () => Promise<void>
   resolveAction: (runId: string, actionId: string, status: 'SUCCEEDED' | 'FAILED', note: string, reference?: string) => Promise<void>
   selectPlan: (plan: Plan) => Promise<void>
+  selectOffer: (runId: string, selection: OfferSelection) => Promise<void>
   editRequirements: (edit: RequirementEdit) => Promise<void>
   decideDraft: (runId: string, interruptId: string, planId: string, planVersion: number, decision: 'save' | 'prepare') => Promise<void>
   resumeBrowser: () => Promise<void>
@@ -493,9 +494,20 @@ export const useStore = create<State>((set, get) => ({
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 
+  selectOffer: async (runId, selection) => {
+    const { run, activeSessionId } = get()
+    if (!run || run.run_id !== runId || !canSelectOffer(run, selection) || get().busy || get().pendingDelivery || !get().backendReady) return
+    set({ requestBusy: true, busy: true, backendError: '' })
+    try {
+      const snapshot = await window.plango.harness.selectOffer(runId, selection)
+      if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
+    } catch (error) { if (get().activeSessionId === activeSessionId) set({ backendError: String(error) }) }
+    finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
+  },
+
   editRequirements: async (edit) => {
     const { run, activeSessionId } = get()
-    if (!run || get().busy || !get().backendReady) return
+    if (!run || get().busy || get().pendingDelivery || !get().backendReady) return
     set({ requestBusy: true, busy: true, backendError: '' })
     try {
       const snapshot = await window.plango.harness.editRequirements(run.run_id, edit)

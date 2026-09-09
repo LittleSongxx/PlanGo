@@ -113,6 +113,8 @@ export interface PlanNode {
   reason: string
   locked: boolean
   transit_from_prev_min: number | null
+  transport_cost?: number | null
+  transport_summary?: string
   distance_km?: number | null
   distance_kind?: 'route' | 'straight_line_lower_bound'
   wait_min?: number | null
@@ -130,6 +132,7 @@ export interface Plan {
   title: string
   nodes: PlanNode[]
   total_cost: number | null
+  cost_breakdown?: { dining: number | null; activities: number | null; transport: number | null; pending: string[] }
   budget_limit?: number | null // null means explicitly no spending cap, never zero.
   radar: Record<string, number> // 省钱/好玩/便捷/合适/特色，0-100（移植 weplan 确定性五维打分）
   radar_reasons?: Record<string, string> // 每一维的自然语言理由（与雷达图严格对齐）
@@ -178,6 +181,7 @@ export interface AgentStep {
 
 export type ChatRole = 'user' | 'assistant' | 'system'
 export interface ChatMessage {
+  id?: string
   role: ChatRole
   content: string
 }
@@ -204,7 +208,42 @@ export type OutcomeCard =
   | { kind: 'confirm'; token: string; title: string; detail: string; danger: boolean }
   | { kind: 'takeout'; shopName: string; deliverTo: string; etaMin: number; deliveryFee: number; packFee: number; items: TakeoutItem[]; total: number; source: SourceTag }
   | { kind: 'discover'; city: string; groups: DiscoverGroup[]; source: SourceTag }
-  | { kind: 'groupbuy'; shopName: string; packages: GroupBuyPackage[]; source: SourceTag }
+  | { kind: 'groupbuy'; shopName: string; packages: GroupBuyPackage[]; source: SourceTag; comparison?: OfferComparison; runId?: string; version?: number }
+
+export interface OfferSourceRef { command_id: string; artifact_id: string }
+export interface OfferComparison {
+  source_ref: OfferSourceRef
+  merchant: { name: string; address: string }
+  source: { artifact_id: string; command_id: string; url: string; observed_at: string | null; expires_at: string | null; valid: boolean }
+  constraints: { party_size: number | null; visit_date: string | null; budget: number | null; per_person_budget: number | null; timezone: string }
+  entries: {
+    offer_index: number; offer_hash: string; name: string; grounded: boolean
+    kind: 'voucher' | 'package' | 'single_item' | 'unknown'
+    price_basis: 'per_person' | 'per_package' | 'voucher' | 'single_item' | 'unknown'
+    status: 'eligible' | 'ineligible' | 'unknown'
+    price: number | null; face_value: number | null; original_price: number | null; people: number | null
+    known_cost: number | null; total_cost: number | null; within_budget: boolean | null
+    reasons: string[]; missing_rules: string[]; quote: string
+    source_ref: { command_id: string; offer_index: number; offer_hash: string }
+  }[]
+  limitations: string[]
+  summary: string
+}
+export interface MerchantCandidates {
+  source_ref: OfferSourceRef
+  merchant: { name: string; address: string }
+  candidates: { poi_id: string; name: string; address: string; longitude: number; latitude: number }[]
+  observed_at: string
+  source?: 'amap'
+}
+export interface OfferSelection {
+  expected_version: number
+  source_ref: OfferSourceRef
+  offer_index: number
+  offer_hash: string
+  poi_id: string
+  identity_confirmed?: boolean
+}
 
 export interface GroupBuyPackage {
   name: string
@@ -316,6 +355,9 @@ export interface HarnessSnapshot {
   interrupt_id?: string | null
   command_pending?: boolean
   cancel_requested?: boolean
+  offer_comparison?: OfferComparison | null
+  offer_comparison_error?: string
+  selected_offer?: (OfferSourceRef & { offer_index: number; offer_hash: string; place_id: string }) | null
   preparation_resume?: HarnessPreparationResume | null
   draft_review?: HarnessDraftReview | null
   feedback?: HarnessFeedback[]
@@ -343,7 +385,7 @@ export interface ModelCheck {
 export interface ExecutionSummary {
   runtime_profile: 'desktop' | 'service'
   model: { name: string; provider_origin: string; key_configured: boolean; check: ModelCheck }
-  capabilities: { amap_configured: boolean; browser_vision_enabled: boolean; browser_strategy: 'dom_first'; image_input: 'model_dependent'; transit: 'limited' }
+  capabilities: { amap_configured: boolean; browser_vision_enabled: boolean; browser_strategy: 'dom_first'; image_input: 'model_dependent'; transit: 'limited' | 'same_city' }
   recent_task_model?: { run_id: string; name: string; status: string; recorded_at: string }
 }
 
@@ -371,6 +413,8 @@ export interface HarnessDeliveryResult {
 }
 
 export interface HarnessApi {
+  merchantCandidates: (runId: string, sourceRef: OfferSourceRef) => Promise<MerchantCandidates>
+  selectOffer: (runId: string, selection: OfferSelection) => Promise<HarnessSnapshot>
   deliver: (request: HarnessDeliveryRequest) => Promise<HarnessDeliveryResult>
   checkDelivery: (requestId: string) => Promise<HarnessDeliveryResult>
   editRequirements: (runId: string, edit: RequirementEdit) => Promise<HarnessSnapshot>
@@ -393,6 +437,8 @@ export interface RequirementFields {
   location_name?: string
   search_location_name?: string
   max_distance_km?: number | null
+  search_radius_km?: number | null
+  route_distance_km?: number | null
   visit_date?: string | null
   time_window_start?: string | null
   party_size?: number
@@ -403,6 +449,7 @@ export interface RequirementFields {
 
 export interface RequirementEdit {
   expected_version: number
+  offer_source?: OfferSourceRef
   fields?: RequirementFields
   stop_lock?: { plan_id: string; plan_version: number; place_id: string; locked: boolean }
 }

@@ -1,0 +1,111 @@
+{
+  "scope": "bounded real AMap adapter read, not a task/merchant transaction",
+  "destination": {
+    "id": "amap:B0FFG33I2E",
+    "name": "解放碑步行街"
+  },
+  "route": {
+    "origin": [
+      29.573462,
+      106.532469
+    ],
+    "origin_name": "观音桥(地铁站)",
+    "destination_place_id": "amap:B0FFG33I2E",
+    "destination_name": "解放碑步行街",
+    "requested_mode": "transit",
+    "requested_visit_date": "2026-09-11",
+    "requested_timezone": "Asia/Shanghai",
+    "departure_minute": 1080,
+    "cities": [
+      {
+        "citycode": "023",
+        "name": "重庆市",
+        "source_ref": "geocode/regeo",
+        "location": [
+          29.573462,
+          106.532469
+        ]
+      },
+      {
+        "citycode": "023",
+        "name": "重庆市",
+        "source_ref": "geocode/regeo",
+        "location": [
+          29.557253,
+          106.575329
+        ]
+      }
+    ],
+    "distance_km": 4.52,
+    "distance_kind": "straight_line_lower_bound",
+    "driving_min": null,
+    "transit_min": null,
+    "walking_min": null,
+    "recommended": "unknown",
+    "source": "amap",
+    "error_kind": "unsupported_transit_segment",
+    "cost_per_person": null,
+    "cost_note": "交通费待核验",
+    "summary": "观音桥(地铁站) → 解放碑步行街；路线待核验，直线距离至少4.52公里；交通费待核验"
+  },
+  "evidence": {
+    "evidence_id": "amap-error:direction/transit/integrated:0d47ae52d123",
+    "source": "amap",
+    "source_ref": "direction/transit/integrated",
+    "claim": "观音桥(地铁站) → 解放碑步行街；路线待核验，直线距离至少4.52公里；交通费待核验",
+    "payload": {
+      "primary_failed": true,
+      "fallback_used": false,
+      "error_kind": "unsupported_transit_segment",
+      "source": "amap",
+      "latency_ms": 320.41,
+      "observed_at": "2026-09-09T06:16:15.579720+00:00",
+      "expires_at": "2026-09-09T06:18:15.579720+00:00",
+      "origin": [
+        29.573462,
+        106.532469
+      ],
+      "origin_name": "观音桥(地铁站)",
+      "destination_place_id": "amap:B0FFG33I2E",
+      "destination_name": "解放碑步行街",
+      "requested_mode": "transit",
+      "requested_visit_date": "2026-09-11",
+      "requested_timezone": "Asia/Shanghai",
+      "departure_minute": 1080,
+      "cities": [
+        {
+          "citycode": "023",
+          "name": "重庆市",
+          "source_ref": "geocode/regeo",
+          "location": [
+            29.573462,
+            106.532469
+          ]
+        },
+        {
+          "citycode": "023",
+          "name": "重庆市",
+          "source_ref": "geocode/regeo",
+          "location": [
+            29.557253,
+            106.575329
+          ]
+        }
+      ],
+      "distance_km": 4.52,
+      "distance_kind": "straight_line_lower_bound",
+      "driving_min": null,
+      "transit_min": null,
+      "walking_min": null,
+      "recommended": "unknown",
+      "cost_per_person": null,
+      "cost_note": "交通费待核验",
+      "summary": "观音桥(地铁站) → 解放碑步行街；路线待核验，直线距离至少4.52公里；交通费待核验"
+    },
+    "observed_at": "2026-09-09T06:16:15.579720Z",
+    "expires_at": "2026-09-09T06:18:15.579720Z",
+    "confidence": 0.0
+  },
+  "model_calls": 0,
+  "business_actions": 0
+}

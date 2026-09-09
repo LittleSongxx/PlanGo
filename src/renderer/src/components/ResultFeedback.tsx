@@ -45,7 +45,7 @@ function FeedbackChoice({ runId, turn, records }: { runId: string; turn: number;
   return <div className="plango-card max-w-4xl mx-auto mb-5 px-4 py-3 flex flex-wrap items-center gap-3" aria-label="结果反馈">
     <div className="flex-1 min-w-[150px]"><p className="text-xs font-medium">这次结果有帮助吗？</p><p className="text-[10px] text-[var(--muted)] mt-1">反馈会保存为任务记录，不会自动变成偏好。</p></div>
     {(['helpful', 'unhelpful'] as const).map(rating => <button key={rating} onClick={() => void submit(rating)} disabled={busy} aria-pressed={saved?.rating === rating}
-      className={`inline-flex items-center gap-1.5 border rounded-lg px-3 py-2 text-xs disabled:opacity-50 ${saved?.rating === rating ? 'bg-brand-soft border-[#a0c6ae] text-brand-strong' : 'bg-white border-[var(--line)] text-[#63776a]'}`}>
+      className={`inline-flex items-center gap-1.5 border rounded-lg px-3 py-2 text-xs disabled:opacity-50 ${saved?.rating === rating ? 'bg-brand-soft border-brand text-brand-strong' : 'bg-white border-[var(--line)] text-neutral-600'}`}>
       {rating === 'helpful' ? <ThumbsUp size={13} /> : <ThumbsDown size={13} />}{rating === 'helpful' ? '有帮助' : '需改进'}
     </button>)}
     {busy ? <Loader2 size={14} className="animate-spin text-brand-strong" /> : saved && <span role="status" className="flex items-center gap-1 text-[10px] text-brand-strong"><Check size={12} />反馈已保存</span>}

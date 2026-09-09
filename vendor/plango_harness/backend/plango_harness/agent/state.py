@@ -238,7 +238,7 @@ def planning_reset(state: dict[str, Any]) -> dict[str, Any]:
         "place_candidates": state.get("place_candidates", []),
         "candidate_plans": [], "selected_plan": None, "verifier": None, "critique": None,
         "action_proposal": None, "action_results": [], "approval_decision": None,
-        "interrupt_id": None, "advocate_reports": [], "delegated_roles": [],
+        "interrupt_id": None, "clarification": None, "advocate_reports": [], "delegated_roles": [],
         "evidence": state.get("evidence", []), "weather": state.get("weather"),
         "memory_delta": [], "execution_goal": None, "execution_outcome": None,
         "preparation_restart": None,

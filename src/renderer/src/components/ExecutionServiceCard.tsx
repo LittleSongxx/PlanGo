@@ -38,21 +38,21 @@ export function ExecutionServiceCard({ revision = 0 }: { revision?: number }): J
         <dt className="text-[var(--muted)]">模型接口</dt><dd className="break-all">{model?.provider_origin}</dd>
         <dt className="text-[var(--muted)]">密钥状态</dt><dd>{model?.key_configured ? '已配置（不显示密钥）' : '未配置'}</dd>
       </dl>
-      <div role="status" className={`rounded-xl p-3 ${check?.status === 'passed' ? 'bg-green-50 text-green-800' : 'bg-[#f4f6f2] text-[var(--muted)]'}`}>
+      <div role="status" className={`rounded-xl p-3 ${check?.status === 'passed' ? 'bg-green-50 text-green-800' : 'bg-[var(--surface-soft)] text-[var(--muted)]'}`}>
         {check?.status === 'passed' ? '服务文本接口实测通过' : check?.status === 'failed' ? `服务文本接口实测失败：${checkErrors[check.category || ''] || '请核对服务配置'}` : check?.status === 'not_configured' ? '服务模型尚未配置完整' : '服务模型已配置，尚未实测'}
         {check?.checked_at && <div className="mt-1 text-[11px]">{new Date(check.checked_at).toLocaleString('zh-CN')}{check.total_tokens !== undefined ? ` · 本次诊断 ${check.total_tokens} tokens` : ''}</div>}
         <p className="mt-1 text-[11px]">文本测试只验证服务 API 的一次回复；任务工具调用和图像能力仍需按任务核验。{execution.runtime_profile === 'service' ? '摘要来自 API，独立 worker 当前配置尚未单独核对。' : ''}</p>
       </div>
       {recent && <p className="text-[11px] text-[var(--muted)] break-words">最近任务记录的模型：{recent.name || '未记录'} · {recent.status === 'ok' || recent.status === 'success' ? '调用成功' : `调用状态 ${recent.status}`}。记录更新于 {new Date(recent.recorded_at).toLocaleString('zh-CN')}；这是历史证据，不证明当前连接可用。</p>}
       <ul className="space-y-1.5 text-[var(--muted)]">
-        <li>高德：{execution.capabilities.amap_configured ? '服务已配置，支持地点、驾车/步行与有日期范围的天气查询' : '服务未配置，规划需补充带来源的地点/路线资料'}；公交覆盖有限，缺失路线和车费保留未知。</li>
+        <li>高德：{execution.capabilities.amap_configured ? '服务已配置，支持地点、驾车/步行与有日期范围的天气查询' : '服务未配置，规划需补充带来源的地点/路线资料'}；{execution.capabilities.transit === 'same_city' ? '配置后支持同城公交换乘与标准票价估算，跨城和未支持的路段保留未知' : '公交覆盖有限，缺失路线和车费保留未知'}。</li>
         <li>浏览器优先读 DOM；只读 Vision {execution.capabilities.browser_vision_enabled ? '已启用，需模型支持图片' : '未启用'}。上传图片另需模型支持，文本测试不证明支持图片。</li>
         <li>可读取公开资料、制作行程草案；App 专属规则需补充核对。表单输入逐项审批，提交/下单/支付另需具体授权。</li>
       </ul>
     </>}
     <div className="flex flex-wrap gap-2">
-      <button disabled={busy} onClick={() => void refresh()} className="px-3 py-2 rounded-lg border border-[var(--line)] bg-[#f7faf7] text-xs disabled:opacity-50">刷新服务状态</button>
-      <button disabled={busy || !status?.ready || !execution || !model?.key_configured || !model.name} onClick={() => void refresh(true)} className="px-3 py-2 rounded-lg border border-[var(--line)] bg-[#f7faf7] text-xs disabled:opacity-50">测试服务模型</button>
+      <button disabled={busy} onClick={() => void refresh()} className="px-3 py-2 rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] text-xs disabled:opacity-50">刷新服务状态</button>
+      <button disabled={busy || !status?.ready || !execution || !model?.key_configured || !model.name} onClick={() => void refresh(true)} className="px-3 py-2 rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] text-xs disabled:opacity-50">测试服务模型</button>
     </div>
     <p className="text-[11px] text-[var(--muted)]">模型测试会发起一次最多 10 秒的文本请求，可能产生少量用量。{independent ? '修改下方桌面配置不会更新独立服务；请在该服务的部署配置中修改并安全更新 API 与 worker。' : '下方桌面配置在保存后用于桌面启动的本地服务。'}</p>
   </section>

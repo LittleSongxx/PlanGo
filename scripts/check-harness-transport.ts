@@ -68,6 +68,8 @@ const server = createServer(async (req, res) => {
   }
   if (url.pathname.endsWith('/events')) return send({ events: Array.from({ length: state.event_seq }, (_, i) => ({ run_id: state.run_id, seq: i + 1, event_type: 'fixture', payload: {} })).filter(event => event.seq > Number(url.searchParams.get('after') || 0)) })
   if (url.pathname.endsWith('/plans/select')) { selected = JSON.parse(body); state = { ...state, phase: 'REPLANNING', version: 2, event_seq: 2 }; return send(state) }
+  if (url.pathname.endsWith('/merchant-candidates')) { const request = JSON.parse(body); selected = request; return send({ source_ref: request.source_ref, merchant: { name: '受控门店', address: '受控地址' }, candidates: [], observed_at: new Date().toISOString(), source: 'amap' }) }
+  if (url.pathname.endsWith('/offer-selection')) { selected = JSON.parse(body); state = { ...state, phase: 'REPLANNING', version: 3, event_seq: 3 }; return send({ accepted: true }) }
   if (url.pathname === '/api/v1/runs/run-test') return send(state)
   if (url.pathname === '/api/v1/runs') return send({ runs: [state] })
   res.statusCode = 404; send({ detail: 'not found' })
@@ -98,6 +100,13 @@ try {
   await client.selectPlan('run-test', 'candidate-test', 3)
   assert.deepEqual(selected, { plan_id: 'candidate-test', plan_version: 3 })
   assert.equal(activations, 1)
+  const sourceRef = { command_id: 'source-command', artifact_id: 'page:source-command' }
+  const candidates = await client.merchantCandidates('run-test', sourceRef)
+  assert.deepEqual(candidates.source_ref, sourceRef)
+  assert.equal(activations, 1, 'Read-only merchant lookup cannot activate browser actions')
+  const choice = { expected_version: 2, source_ref: sourceRef, offer_index: 1, offer_hash: 'a'.repeat(64), poi_id: 'canonical-poi', identity_confirmed: true }
+  await client.selectOffer('run-test', choice)
+  assert.deepEqual(selected, choice, 'Offer selection keeps exact source, index, content and plan version binding')
   await client.close()
 
   // Real HTTP SSE reconnect keeps Last-Event-ID and drains a terminal snapshot's tail.

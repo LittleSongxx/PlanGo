@@ -4,7 +4,10 @@ import asyncio
 import hashlib
 import json
 import logging
+import math
+import re
 import time
+import unicodedata
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -33,6 +36,7 @@ from .browser import BrowserBridge, bindings, commands, run_context
 from .graph import artifact, build_desktop_graph
 from .outcomes import ExecutionGoal, draft_review
 from .planning import BrowserPlanEngine
+from .requirements import OfferSourceRef
 from .skills import list_skill_adverts
 from .world import BrowserWorld
 
@@ -699,36 +703,200 @@ class DesktopRuntime(PlanGoRuntime):
 
     async def edit_requirements(self, run_id, edit):
         async with self._resume_lock:
-            row = await self.runs.get(run_id)
-            if not row:
-                raise KeyError(run_id)
+            row = await self._editable_row(run_id, edit.expected_version)
             state = row.get("state_json") or {}
-            if row["version"] != edit.expected_version:
-                raise ValueError("需求已变化，请刷新后再保存")
-            if row.get("pending_command") or row.get("cancel_requested") or (row.get("lease_until") and _utc(row["lease_until"]) > datetime.now(timezone.utc)):
-                raise ValueError("当前任务正在处理命令，请稍后再修改")
-            if not (state.get("trip_spec") or state.get("previous_spec")):
-                raise ValueError("请先在对话中确认行程需求")
-            if row["phase"] not in TERMINAL_PHASES | {"WAITING_APPROVAL"} and not (row["phase"] == "REQUIREMENTS_READY" and (state.get("clarification") or state.get("interrupt_id"))):
-                raise ValueError("请等待当前规划结束后再修改需求")
-            async with self.database.session() as session:
-                pending_browser = (await session.execute(select(commands.c.command_id).where(commands.c.run_id == run_id, commands.c.result.is_(None)).limit(1))).first()
-            if pending_browser or state.get("browser_receipt_pending") or any(action["status"] in {"RUNNING", "UNKNOWN"} for action in await self.runs.actions(run_id)):
-                raise ValueError("已有浏览器操作尚未确认，请先核对原操作结果")
             fields = edit.fields.model_dump(mode="json", exclude_unset=True)
+            source = edit.offer_source.model_dump() if edit.offer_source else (state.get("browser_task_context") or {}).get("offer_source")
+            if source:
+                await self._offer_page(run_id, source)
+            acceptance = InputAcceptance(uuid.uuid4().hex, hashlib.sha256(edit.model_dump_json().encode()).hexdigest(), expected_cancel_requested=False)
+            if not (state.get("trip_spec") or state.get("previous_spec")):
+                if not source or edit.stop_lock or fields.keys() - {"party_size", "visit_date", "budget", "per_person_budget"}:
+                    raise ValueError("请先在对话中确认行程需求；优惠比较可先修改人数、日期和预算")
+                context = {**(state.get("browser_task_context") or {}), "offer_source": source}
+                context.update({"total_budget" if key == "budget" else key: value for key, value in fields.items()})
+                context.update(party_ambiguous=False, budget_ambiguous=False)
+                state = {**state, "browser_task_context": context}
+                events, _ = await self.runs.save_state_and_events(state, expected_version=edit.expected_version, acceptance=acceptance,
+                    clear_pending_command=True, events=[{"phase": row["phase"], "event_type": "OFFER_REQUIREMENTS_EDITED", "agent_id": "runtime",
+                                                         "payload": {"fields": fields, "source_ref": source, "scope": "comparison_only"}}])
+                return {**await self.get_run(run_id), "accepted": True, "event_seq": events[-1].seq}
             lock = edit.stop_lock.model_dump() if edit.stop_lock else None
             if lock:
                 plan = state.get("selected_plan") or state.get("previous_plan") or {}
                 if (plan.get("plan_id"), plan.get("version")) != (lock["plan_id"], lock["plan_version"]) or not any(stop["place_id"] == lock["place_id"] for stop in plan.get("stops", [])):
                     raise ValueError("锁定目标不属于当前方案，请刷新后重试")
-            labels = {"location_name": "起点", "search_location_name": "搜索中心", "max_distance_km": "距离上限（公里）", "visit_date": "日期", "time_window_start": "开始时间", "party_size": "人数", "budget": "总预算", "per_person_budget": "人均预算", "travel_mode": "交通方式"}
+            labels = {"location_name": "起点", "search_location_name": "搜索中心", "max_distance_km": "距离上限（公里）", "search_radius_km": "搜索半径（公里）", "route_distance_km": "单段路程上限（公里）", "visit_date": "日期", "time_window_start": "开始时间", "party_size": "人数", "budget": "总预算", "per_person_budget": "人均预算", "travel_mode": "交通方式"}
             modes = {"walking": "步行", "driving": "驾车", "transit": "公共交通"}
             descriptions = [f"{labels[key]}：{modes.get(str(value), str(value)) if value is not None else '未设定'}" for key, value in fields.items()]
             if lock:
                 name = next(stop["name"] for stop in plan["stops"] if stop["place_id"] == lock["place_id"])
                 descriptions.append(f"{'锁定' if lock['locked'] else '解锁'}单站：{name}")
             reason = "修改行程需求；" + "；".join(descriptions)
-            return await super().replan(run_id, reason, requirement_edit={"fields": fields, "stop_lock": lock}, expected_version=edit.expected_version)
+            await super().replan(run_id, reason, requirement_edit={"fields": fields, "stop_lock": lock, **({"offer_source": source} if source else {})},
+                                 expected_version=edit.expected_version, acceptance=acceptance)
+            return {**await self.get_run(run_id), "accepted": True}
+
+    async def _editable_row(self, run_id, expected_version):
+        row = await self.runs.get(run_id)
+        if not row:
+            raise KeyError(run_id)
+        state = row.get("state_json") or {}
+        if row["version"] != expected_version:
+            raise ValueError("需求已变化，请刷新后再保存")
+        if row.get("pending_command") or row.get("cancel_requested") or (row.get("lease_until") and _utc(row["lease_until"]) > datetime.now(timezone.utc)):
+            raise ValueError("当前任务正在处理命令，请稍后再修改")
+        if row["phase"] not in TERMINAL_PHASES | {"WAITING_APPROVAL"} and not (row["phase"] == "REQUIREMENTS_READY" and (state.get("clarification") or state.get("interrupt_id"))):
+            raise ValueError("请等待当前规划结束后再修改需求")
+        async with self.database.session() as session:
+            pending_browser = (await session.execute(select(commands.c.command_id).where(commands.c.run_id == run_id, commands.c.result.is_(None)).limit(1))).first()
+        if pending_browser or state.get("browser_receipt_pending") or any(action.get("status") in {"RUNNING", "UNKNOWN"} for action in [*state.get("action_results", []), *await self.runs.actions(run_id)]):
+            raise ValueError("已有浏览器操作尚未确认，请先核对原操作结果")
+        return row
+
+    async def _offer_page(self, run_id, source, *, fresh=False):
+        source = OfferSourceRef.model_validate(source)
+        command = await self.bridge.get(source.command_id)
+        if not command or command["run_id"] != run_id:
+            raise ValueError("优惠来源不属于当前任务")
+        observation = command.get("result") or {}
+        processed = (command.get("payload") or {}).get("_processed")
+        if processed is None:
+            # Retained observations can predate processed payload persistence.
+            # Rebuild only literal DOM facts from this exact receipt; never rewrite it or call a model.
+            from .world import dianping_preview_data, table_data
+
+            parsed = dianping_preview_data(observation)
+            processed = (parsed if parsed is not None else table_data(observation)).model_dump(mode="json")
+        if (not observation.get("ok") or observation.get("command_id") != source.command_id
+                or not isinstance(processed, dict) or not isinstance(processed.get("offers"), list) or not processed["offers"] or not observation.get("observed_at")
+                or not observation.get("url") or not observation.get("snapshot_id")):
+            raise ValueError("优惠来源尚未完成可核验的读取，请重新读取原页面")
+        observed = _utc(observation["observed_at"])
+        age = (datetime.now(timezone.utc) - observed).total_seconds()
+        if age < -2 or fresh and age > 600:
+            raise ValueError("优惠来源已过期，请重新读取原门店页面；原记录仍保留")
+        return artifact(observation, processed)
+
+    @staticmethod
+    def _offer_constraints(state):
+        raw = state.get("trip_spec") or state.get("previous_spec")
+        if raw:
+            spec = TripSpec.model_validate(raw)
+            return {key: spec.model_dump(mode="json")[key] for key in ("party_size", "visit_date", "budget", "per_person_budget", "timezone")}
+        context = state.get("browser_task_context") or {}
+        return {"party_size": context.get("party_size"), "visit_date": context.get("visit_date"),
+                "budget": context.get("total_budget"), "per_person_budget": context.get("per_person_budget"), "timezone": context.get("timezone") or "Asia/Shanghai"}
+
+    async def _offer_comparison(self, run_id, state, artifacts):
+        from .offers import compare_offers
+
+        raw = state.get("trip_spec") or state.get("previous_spec") or {}
+        selected = raw.get("selected_offer")
+        context = state.get("browser_task_context") or {}
+        source = context.get("offer_source")
+        if not source and selected and context.get("kind") != "extract":
+            source = {key: selected[key] for key in ("command_id", "artifact_id")}
+        if not source:
+            pages = [item for item in artifacts if item.get("type") == "browser_page" and item.get("source") == "browser" and (item.get("data") or {}).get("offers")]
+            if not pages:
+                return None
+            latest = max(pages, key=lambda item: str(item.get("observed_at") or ""))
+            source = {"artifact_id": latest["artifact_id"], "command_id": latest["artifact_id"].removeprefix("page:")}
+        page = await self._offer_page(run_id, source)
+        return {**compare_offers(page, self._offer_constraints(state)), "source_ref": source}
+
+    async def merchant_candidates(self, run_id, source_ref):
+        from .offers import compare_offers
+
+        row = await self.runs.get(run_id)
+        if not row:
+            raise KeyError(run_id)
+        page = await self._offer_page(run_id, source_ref, fresh=True)
+        comparison = compare_offers(page, self._offer_constraints(row.get("state_json") or {}))
+        merchant = comparison["merchant"]
+        if not comparison["source"].get("valid") or not merchant.get("name") or not merchant.get("address"):
+            raise ValueError("网页缺少可核验的唯一门店名称或地址，请先补齐来源")
+        binding = await self.bridge.binding(run_id)
+        context = binding.get("location_context") or {}
+        city = context.get("city")
+        if not city:
+            raise ValueError("请先在位置设置中确认搜索城市")
+        assert self.world_service is not None
+        result = await self.world_service.provider.amap.search_pois(merchant["name"][:80], city=city, limit=5, refresh=True)
+        candidates = []
+        for poi in result.get("pois", [])[:5]:
+            try:
+                longitude, latitude = map(float, str(poi["location"]).split(","))
+                if not all(map(math.isfinite, (longitude, latitude))) or abs(longitude) > 180 or abs(latitude) > 90:
+                    continue
+                if not poi.get("id") or not isinstance(poi.get("name"), str) or not isinstance(poi.get("address"), str):
+                    continue
+                candidates.append({"poi_id": poi["id"], "name": poi["name"], "address": poi["address"], "longitude": longitude, "latitude": latitude})
+            except (KeyError, ValueError, TypeError):
+                continue
+        return {"source": "amap", "source_ref": OfferSourceRef.model_validate(source_ref).model_dump(), "merchant": merchant,
+                "candidates": candidates, "observed_at": result["observed_at"]}
+
+    async def select_offer(self, run_id, selection):
+        from .offers import compare_offers, offer_hash
+
+        async with self._resume_lock:
+            row = await self._editable_row(run_id, selection.expected_version)
+            source = selection.source_ref.model_dump()
+            page = await self._offer_page(run_id, source, fresh=True)
+            items = page["data"]["offers"]
+            if selection.offer_index >= len(items) or offer_hash(items[selection.offer_index]) != selection.offer_hash:
+                raise ValueError("优惠条目已变化，请刷新后重新选择")
+            comparison = compare_offers(page, self._offer_constraints(row["state_json"]))
+            merchant = comparison["merchant"]
+            entry = next((entry for entry in comparison["entries"] if entry["offer_index"] == selection.offer_index), None)
+            if not comparison["source"].get("valid") or not entry or not entry.get("grounded") or not merchant.get("name") or not merchant.get("address"):
+                raise ValueError("网页缺少可核验的唯一门店名称或地址")
+            canonical = await self.observe_selected_poi(selection.poi_id, "selected-poi:" + uuid.uuid4().hex)
+            def normalize(value):
+                return re.sub(r"\s+", "", unicodedata.normalize("NFKC", str(value or "")))
+            page_address, poi_address = normalize(merchant["address"]), normalize(canonical.get("address"))
+            # Only omitted city/district prefixes may differ. Nearby coordinates or a chain name are insufficient.
+            address_match = page_address == poi_address or (min(len(page_address), len(poi_address)) >= 8
+                and bool(re.search(r"\d+(?:号|弄|巷)", min((page_address, poi_address), key=len)))
+                and (page_address.endswith(poi_address) or poi_address.endswith(page_address)))
+            matched = normalize(merchant["name"]) == normalize(canonical["name"]) and bool(page_address and poi_address) and address_match
+            if not matched and selection.identity_confirmed:
+                names = [normalize(value) for value in (merchant["name"], canonical["name"])]
+                brands = [value.split("(", 1)[0] for value in names]
+                branches = [re.search(r"\(([^()]*)\)", value) for value in names]
+                branch_labels = [match[1] if match else "" for match in branches]
+                branch_compatible = not all(branch_labels) or branch_labels[0].endswith(branch_labels[1]) or branch_labels[1].endswith(branch_labels[0])
+                # ponytail: first literal street number and floor only; other address forms require a verified adapter.
+                cores = [match[0] if (match := re.search(r"([^省市区县]{2,}?(?:路|街|巷|道|弄))\d+(?:-\d+)?号", value)) else "" for value in (page_address, poi_address)]
+                floors = [match[1] if (match := re.search(r"(\d+)(?:楼|层|F)", value, re.I)) else "" for value in (page_address, poi_address)]
+                floor_compatible = not all(floors) or floors[0] == floors[1]
+                matched = bool(brands[0] and brands[0] == brands[1] and branch_compatible and all(cores)
+                               and len(cores[0]) >= 6 and cores[0] == cores[1] and floor_compatible)
+            if not matched:
+                raise ValueError("网页门店与高德分店名称或地址不一致，请核对；尚未加入行程")
+            # Do not renew the source timestamp while checking the canonical POI.
+            await self._offer_page(run_id, source, fresh=True)
+            state = row["state_json"]
+            fields = {} if state.get("trip_spec") or state.get("previous_spec") else self._offer_constraints(state)
+            reference = {**source, "offer_index": selection.offer_index, "offer_hash": selection.offer_hash, "place_id": canonical["place_id"], "identity_evidence_id": None}
+            edit = {"fields": fields, "offer_source": source, "offer_selection": reference, "selected_poi": canonical}
+            if selection.identity_confirmed:
+                identity = Evidence(evidence_id="user-merchant-link:" + uuid.uuid4().hex, source="user",
+                    claim="用户明确确认两份来源描述同一门店；这是身份对应声明，不是商家业务核验或交易授权。",
+                    source_ref=page["url"], observed_at=datetime.now(timezone.utc), confidence=1,
+                    payload={"kind": "merchant_identity_confirmation", "place_id": canonical["place_id"], "source_ref": source,
+                             "browser": {**merchant, "observed_at": page["observed_at"]},
+                             "canonical": {"name": canonical["name"], "address": canonical.get("address"),
+                                           "evidence_id": canonical["evidence"]["evidence_id"], "observed_at": canonical["evidence"]["observed_at"]},
+                             "user_confirmed": True, "business_verified": False, "transaction_authorized": False})
+                reference["identity_evidence_id"] = identity.evidence_id
+                edit["identity_evidence"] = identity.model_dump(mode="json")
+            acceptance = InputAcceptance(uuid.uuid4().hex, hashlib.sha256(selection.model_dump_json().encode()).hexdigest(), expected_cancel_requested=False)
+            await super().replan(run_id, "把明确选择的门店与优惠加入本次行程，按高德核对路线；优惠缺失规则仍需确认，不提交交易。",
+                                 requirement_edit=edit, expected_version=selection.expected_version, acceptance=acceptance)
+            return {**await self.get_run(run_id), "accepted": True}
 
     async def get_run(self, run_id):
         row = await self.runs.get(run_id)
@@ -752,6 +920,14 @@ class DesktopRuntime(PlanGoRuntime):
             ):
                 saved.append(artifact(obs, item["payload"].get("_processed")))
         result["state"]["browser_artifacts"] = saved
+        spec = result["state"].get("trip_spec") or result["state"].get("previous_spec") or {}
+        edit = result["state"].get("structured_requirement_edit") or {}
+        result["selected_offer"] = spec.get("selected_offer") or (edit.get("offer_selection") if edit.get("turn_id") == turn_id else None)
+        try:
+            result["offer_comparison"] = await self._offer_comparison(run_id, result["state"], saved)
+        except ValueError as error:
+            result["offer_comparison"] = None
+            result["offer_comparison_error"] = str(error)
         wait = result["state"].get("browser_wait") or {}
         waiting_command = next((item for item in observations if item["command_id"] == wait.get("command_id")), None)
         failure = (waiting_command or {}).get("result") or {}

@@ -113,6 +113,8 @@ def _grounded_price(price, quote, *, original=False, per_person=False):
         group = next(i for i in (1, 2, 3) if match.group(i) is not None)
         start, end = match.span(group)
         prefix, suffix = quote[max(0, start - 12) : start], quote[end : end + 8]
+        if re.search(r"(?:面值|抵用金额)\s*[:：]?\s*[¥￥]?\s*$", prefix) or re.match(r"\s*元\s*(?:代金|抵用|现金)券", suffix):
+            continue
         is_original = bool(re.search(rf"(?:{_ORIGINAL})\s*[:：]?\s*[¥￥]?\s*$", prefix))
         if is_original != original:
             continue
@@ -275,6 +277,8 @@ class BrowserWorld:
             elif re.search(r"(?:当前|这个|该|打开的)(?:网页|页面|浏览器)|(?:根据|按照?|参考|用|从).{0,8}(?:网页|页面|菜单)", text):
                 source = "browser"
         context["world_source"] = source
+        if spec and getattr(spec, "selected_offer", None):
+            context["world_source"] = "amap"
         previous_raw = state.get("previous_spec")
         previous = TripSpec.model_validate(previous_raw) if previous_raw else None
         context["world_geography_changed"] = bool(spec and previous and (
@@ -283,8 +287,10 @@ class BrowserWorld:
         if spec:
             context["geocode_city"] = (spec.search_location.city_code if spec.search_location else None) or spec.location.city_code or context.get("geocode_city")
             context["world_travel_mode"] = spec.travel_mode
+            context["world_visit_date"] = spec.visit_date
+            context["world_timezone"] = spec.timezone
             context["world_location"] = spec.search_location or spec.location
-            context["world_radius_km"] = spec.max_distance_km or 5.0
+            context["world_radius_km"] = spec.search_radius_km or 5.0
             if context["world_geography_changed"]:
                 context["places"] = {key: place for key, place in context.get("places", {}).items() if self._in_current_region(place)}
 
@@ -764,10 +770,16 @@ class BrowserWorld:
             expires_at=now + timedelta(minutes=2),
         )
 
-    async def estimate_route(self, origin, destination):
-        mode = run_context.get().get("world_travel_mode", "driving")
+    async def estimate_route(self, origin, destination, *, mode=None, visit_date=None,
+                             timezone_name=None, at_minute=None):
+        context = run_context.get()
+        mode = mode or context.get("world_travel_mode", "driving")
+        visit_date = visit_date or context.get("world_visit_date")
+        timezone_name = timezone_name or context.get("world_timezone", "Asia/Shanghai")
+
         async def amap_route():
-            return await self.amap.estimate_route(origin, destination) if mode == "driving" else await self.amap.estimate_route(origin, destination, mode=mode)
+            return await self.amap.estimate_route(origin, destination, mode=mode,
+                visit_date=visit_date, timezone_name=timezone_name, at_minute=at_minute)
         if not self._uses_browser():
             return await amap_route()
         observation = await self.page()
@@ -778,9 +790,12 @@ class BrowserWorld:
             route_origin.get(key) == getattr(origin, key) for key in ("latitude", "longitude")
         )
         mode_matches = isinstance(route, dict) and route.get(f"{mode}_min") is not None
-        if isinstance(route, dict) and mode_matches and (not run_context.get().get("world_geography_changed") or origin_matches):
+        departure_matches = mode != "transit" or (isinstance(route, dict)
+            and route.get("requested_visit_date") == (visit_date.isoformat() if visit_date else None)
+            and route.get("requested_timezone") == timezone_name and route.get("departure_minute") == at_minute)
+        if isinstance(route, dict) and mode_matches and origin_matches and departure_matches:
             observed_at = datetime.fromisoformat(observation["observed_at"])
-            return {**route, "source": "browser"}, Evidence(
+            return {**route, "source": "browser", "recommended": mode}, Evidence(
                 evidence_id=f"browser-route:{observation['command_id']}:{destination.place_id}",
                 source="browser",
                 source_ref=observation["url"],

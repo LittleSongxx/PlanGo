@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 
 from fastapi import HTTPException
+from plango_harness.providers.world import unique_geocode
 from pydantic import BaseModel, ConfigDict, Field
 
 from .location import LocationContext
@@ -80,10 +81,12 @@ def install_geo_routes(app, runtime, protected):
     @app.post("/api/v1/geo/geocode", dependencies=protected, response_model=GeoLocationResult)
     async def geocode(body: Geocode):
         data = await provider._get("geocode/geo", {"address": body.address, **({"city": body.city} if body.city else {})})
-        rows = (data or {}).get("geocodes") or []
-        if not isinstance(rows, list) or not rows or not isinstance(rows[0], dict):
+        try:
+            row = unique_geocode(data)
+        except ValueError as error:
+            raise HTTPException(409, str(error)) from None
+        if row is None:
             raise unavailable()
-        row = rows[0]
         try:
             longitude, latitude = map(float, str(row["location"]).split(","))
             location = GeoLocation(longitude=longitude, latitude=latitude,

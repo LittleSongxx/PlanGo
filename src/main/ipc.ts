@@ -19,6 +19,7 @@ import { projectHarness } from '../renderer/src/lib/harnessProjection'
 import type { AgentReply, DealRow, HarnessSnapshot, Plan, POISummary, UserProfile } from '@shared/types'
 
 const id = z.string().min(1).max(512)
+const offerSource = z.object({ command_id: id, artifact_id: id }).strict()
 const text = z.string().trim().min(1).max(4000)
 const image = z.string().max(12_000_000).regex(/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/).optional()
 const selectedPoi = z.object({ poi_id: id, name: z.string().min(1).max(200), address: z.string().max(500), longitude: z.number().finite().min(-180).max(180),
@@ -79,6 +80,15 @@ export function registerIpc(): void {
     if (operation === 'status') return harnessStatus(z.object({ checkModel: z.boolean().optional() }).parse(raw || {}).checkModel)
     const client = await getHarness()
     switch (operation) {
+      case 'merchantCandidates': {
+        const p = z.object({ runId: id, sourceRef: offerSource }).strict().parse(raw)
+        return client.merchantCandidates(p.runId, p.sourceRef)
+      }
+      case 'selectOffer': {
+        const p = z.object({ runId: id, selection: z.object({ expected_version: z.number().int().min(1), source_ref: offerSource,
+          offer_index: z.number().int().min(0).max(29), offer_hash: z.string().regex(/^[a-f0-9]{64}$/), poi_id: id, identity_confirmed: z.boolean().optional() }).strict() }).strict().parse(raw)
+        return client.selectOffer(p.runId, p.selection)
+      }
       case 'deliver': {
         const p = z.object({ requestId: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/), runId: id.optional(), text, image, selectedPoi }).strict().parse(raw)
         if (p.runId && p.selectedPoi) throw new Error('选店必须使用明确的任务入口')
@@ -110,9 +120,12 @@ export function registerIpc(): void {
       case 'editRequirements': {
         const p = z.object({ runId: id, edit: z.object({
           expected_version: z.number().int().min(1),
+          offer_source: offerSource.optional(),
           fields: z.object({
             location_name: z.string().trim().min(1).max(200).optional(), search_location_name: z.string().trim().min(1).max(200).optional(),
             max_distance_km: z.number().finite().min(0.1).max(50).nullable().optional(),
+            search_radius_km: z.number().finite().min(0.1).max(50).nullable().optional(),
+            route_distance_km: z.number().finite().min(0.1).max(1000).nullable().optional(),
             visit_date: z.string().date().nullable().optional(), time_window_start: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
             party_size: z.number().int().min(1).max(12).optional(), budget: z.number().finite().min(0).max(1_000_000).nullable().optional(),
             per_person_budget: z.number().finite().min(0).max(1_000_000).nullable().optional(), travel_mode: z.enum(['driving', 'walking', 'transit']).optional()
