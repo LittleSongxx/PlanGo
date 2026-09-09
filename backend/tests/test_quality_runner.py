@@ -77,6 +77,17 @@ def test_private_analysis_diagnostic_keeps_proposal_without_raw_transport(tmp_pa
     assert saved["usage"]["total_tokens"] == 7
 
 
+def test_owned_loopback_is_reachable_without_the_ambient_proxy(tmp_path, monkeypatch):
+    for key in ("HTTP_PROXY", "http_proxy"):
+        monkeypatch.setenv(key, "http://127.0.0.1:1")
+    for key in ("NO_PROXY", "no_proxy"):
+        monkeypatch.setenv(key, "")
+    settings = runner.project_settings(tmp_path, offline=True)
+    with runner.LocalAPI(runner.create_app(settings, token="offline-evaluator-only")) as api:
+        with httpx.Client(trust_env=False, timeout=2) as client:
+            assert client.get(api.url + "/health/live").json()["status"] == "ok"
+
+
 def test_model_egress_normalizes_default_https_port_and_blocks_other_origins(tmp_path):
     seen = []
 

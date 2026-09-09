@@ -39,12 +39,46 @@ def events(work):
 
 
 def invalid_attempts(work):
-    path = Path(work) / "invalidated-attempts.json"
-    if not path.exists():
-        return {}
-    ledger = runner.read(path)
-    assert ledger["adjudication_sha256"] == file_sha(Path(work) / "fixture-adjudication.json")
-    return {row["trial_id"]: row for row in ledger["attempts"]}
+    result = {}
+    for filename, review in (("invalidated-attempts.json", "fixture-adjudication.json"),
+                             ("preinput-invalidations.json", "startup-adjudication.json")):
+        path = Path(work) / filename
+        if path.exists():
+            ledger = runner.read(path)
+            assert ledger["adjudication_sha256"] == file_sha(Path(work) / review)
+            for row in ledger["attempts"]:
+                assert row["trial_id"] not in result
+                result[row["trial_id"]] = row
+    return result
+
+
+def adjudicate_preinput(work):
+    work = Path(work).resolve()
+    bundle = runner.read(work / "gold-bundle.json")
+    audit = runner.read(work / "startup-adjudication.json")
+    assert audit["origin"] == "independent_ai" and audit["human_reviewed"] is False
+    assert audit["dataset_sha"] == bundle["dataset_sha"] and audit["product_sha"] == bundle["product_sha"]
+    assert audit["decision"] == "invalidate_preinput_attempt" and audit["reason_category"] == "runner_error"
+    registry = [json.loads(x) for x in (work / "attempt-registry.jsonl").read_text().splitlines()]
+    affected = set(audit["affected_trial_ids"])
+    rows = []
+    for row in registry:
+        if row["trial_id"] not in affected:
+            continue
+        directory = (ROOT / row["directory"]).resolve()
+        assert directory.is_relative_to(work)
+        record = runner.read(directory / "collection.json")
+        initial = record["checkpoints"]["final"]["independent_state"]
+        assert record["model_invocations"] == 0 and initial["counts"]["input_acceptance"] == 0 and initial["turn_id"] == 1
+        assert not (directory / "desktop-config.json").exists() and not (directory / "initial.snapshot.json").exists()
+        assert runner.read(directory / "collector-error.json")["error_class"] == "ConnectTimeout"
+        rows.append({**row, "invalid_reason": {"category": "runner_error", "adjudicator": audit["reviewer"],
+            "detail": "Collector loopback connection failed before any declared input or desktop action; no actor/model call occurred."},
+            "raw_stop_reason": record["stop_reason"], "case_collection_sha256": file_sha(directory / "collection.json")})
+    assert {r["trial_id"] for r in rows} == affected
+    runner.write(work / "preinput-invalidations.json", {"adjudication_sha256": file_sha(work / "startup-adjudication.json"),
+                                                        "created_at": now(), "attempts": rows})
+    print(json.dumps({"preinput_invalid_attempts": len(rows), "old_evidence_retained": True}))
 
 
 def adjudicate_fixture(work):
@@ -199,7 +233,7 @@ def run(work, case_ids, *, gold_review=None):
                 "inputs": {name: file_sha(DATA / name) for name in session["source_files"]},
                 "adapters": {str(path.relative_to(ROOT)): file_sha(path) for path in adapter_paths},
                 "gold_review_sha256": file_sha(gold_review or work / "human-events.jsonl"),
-                "invalidations_sha256": file_sha(work / "invalidated-attempts.json") if invalid else None,
+                "invalidations_sha256": {p.name: file_sha(p) for p in (work / "invalidated-attempts.json", work / "preinput-invalidations.json") if p.exists()},
                 "reviewer_type": "independent_ai" if gold_review else "human",
                 "limits": {"calls": runner.MAX_BATCH_CALLS, "case_calls": runner.MAX_CASE_CALLS, "reported_tokens_stop": runner.MAX_BATCH_REPORTED_TOKENS}}
     frozen = manifest()
@@ -350,7 +384,7 @@ def bundle_outputs(work, target):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare", "run", "bundle", "adjudicate-fixture"))
+    parser.add_argument("action", choices=("prepare", "run", "bundle", "adjudicate-fixture", "adjudicate-preinput"))
     parser.add_argument("--work", required=True, type=Path)
     parser.add_argument("--cases", help="Predeclared subset, normally ten cases per serial batch")
     parser.add_argument("--output", type=Path)
@@ -363,6 +397,8 @@ def main():
         run(args.work, (args.cases or "").split(","), gold_review=args.gold_review)
     elif args.action == "adjudicate-fixture":
         adjudicate_fixture(args.work)
+    elif args.action == "adjudicate-preinput":
+        adjudicate_preinput(args.work)
     else:
         assert args.output, "bundle requires a new --output path"
         bundle_outputs(args.work, args.output)

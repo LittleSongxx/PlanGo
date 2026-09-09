@@ -245,6 +245,17 @@ class LocalAPI:
         if not self.server.started:
             raise RuntimeError("quality_api_start_failed")
         self.url = f"http://127.0.0.1:{self.port}"
+        # Owned loopback traffic must not inherit a machine-wide HTTP proxy.
+        # Confirm the actual HTTP path before importing any scenario state.
+        with httpx.Client(trust_env=False, timeout=2) as probe:
+            for attempt in range(3):
+                try:
+                    probe.get(self.url + "/health/live").raise_for_status()
+                    break
+                except httpx.HTTPError:
+                    if attempt == 2:
+                        self.__exit__()
+                        raise RuntimeError("quality_owned_api_unreachable") from None
         return self
 
     def call(self, coroutine):
@@ -369,7 +380,7 @@ def collect_case(case, packets, settings, directory, control, source_sha, case_i
             (directory / f"{stage}.export-error.log").write_text(process.stderr)
 
     with model_only_egress(settings, directory / "egress.jsonl"), business_clock(app.state.runtime, case, observation["observed_at"]) as clock, LocalAPI(app) as server:
-        with httpx.Client(base_url=server.url, headers={"Authorization": "Bearer " + token}, timeout=15) as client:
+        with httpx.Client(base_url=server.url, headers={"Authorization": "Bearer " + token}, timeout=15, trust_env=False) as client:
             def collect(stage, snapshot):
                 nonlocal rid
                 rid = snapshot["run_id"]
@@ -443,7 +454,7 @@ def collect_case(case, packets, settings, directory, control, source_sha, case_i
     # No main/sibling service is touched; reopen only this case's API and database.
     if driver == "save_restart" and rid and "before_restart" in checkpoints:
         with LocalAPI(create_app(settings, token=token)) as reopened:
-            with httpx.Client(base_url=reopened.url, headers={"Authorization": "Bearer " + token}) as client:
+            with httpx.Client(base_url=reopened.url, headers={"Authorization": "Bearer " + token}, trust_env=False) as client:
                 snapshot = client.get(f"/api/v1/runs/{rid}").json()
                 export("after_restart", {"snapshot": snapshot, "events": reopened.call(reopened.app.state.runtime.get_events(rid, 0)),
                        "checkpoint": {"id": "after_restart", "as_of": case.get("as_of"), "captured_at": datetime.now(timezone.utc).isoformat()}},
