@@ -1,0 +1,47 @@
+{
+  "collector_commit": "20dcd94",
+  "product_commit": "53d4ef50eb5b1adf6ba1230931ac96d9f8c94450",
+  "offline_tests_passed": 17,
+  "omitted_test": "owned_loopback (starts an API; existing check unrelated to this collector change)",
+  "js_syntax_passed": true,
+  "ruff_passed": true,
+  "actual_restore": {
+    "state_unchanged": true,
+    "model_invocations": 0,
+    "api_lifecycle_reopened": true,
+    "parent_python_process_restarted": false,
+    "desktop_restarted_after_api": true,
+    "cleanup": {
+      "desktop_closed": true,
+      "proxy_closed": true,
+      "backend_untouched": true,
+      "profile_preserved": true
+    },
+    "transport_counts": {
+      "message_post_attempts": 0,
+      "forwarded_message_posts": 0,
+      "draft_save_attempts": 0,
+      "forwarded_draft_saves": 0,
+      "lookup_attempts": 0,
+      "forwarded_lookups": 0,
+      "injected_lookup_503": 0,
+      "accepted_responses_dropped": 0,
+      "unexpected_write_attempts": 0,
+      "create_run_attempts": 0
+    },
+    "comparison": {
+      "baseline_hash": "4f140f63389fcdf648162b0a75b9f4b55af78deeb824aabf9766bca371d1650f",
+      "restored_hash": "4f140f63389fcdf648162b0a75b9f4b55af78deeb824aabf9766bca371d1650f",
+      "equal": true
+    }
+  },
+  "adjudicated_invalid_attempts": 1,
+  "preserved_other_valid_attempts": 11,
+  "product_source_changed": false,
+  "original_gold_changed": false,
+  "original_outputs_overwritten": false,
+  "replacement_attempts": 1,
+  "actor_model_calls_during_replacement": 0,
+  "test_commit": "fbaef21",
+  "offline_tests_deselected": 1
+}

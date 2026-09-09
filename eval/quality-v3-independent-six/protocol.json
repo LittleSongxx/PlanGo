@@ -1,0 +1,22 @@
+{
+  "version": "plango.controlled-bounded.v1",
+  "name": "PlanGo-independent-six-v1",
+  "evaluation_kind": "independent_controlled",
+  "planned_case_ids": [
+    "FRESH-01",
+    "FRESH-02",
+    "FRESH-03",
+    "FRESH-04",
+    "FRESH-05",
+    "FRESH-06"
+  ],
+  "primary_source_groups": 6,
+  "case_authoring": "冻结后独立隔离编题子代理/root/fresh_six_author于2026-09-09T16:18:31+00:00起草；只读quality-v3-stage-author-contract.md；未读产品、旧题或输出；原创虚构资料，gold待另一独立AI逐项审签，未进行人审。",
+  "execution_scope": "4 raw-observation reads + 1 real Electron edit + 1 real Electron save/restart, synthetic controlled sources",
+  "limits": {
+    "calls": 80,
+    "case_calls": 12,
+    "reported_tokens_stop": 120000
+  },
+  "budget_ledger": "output/quality-v3-stage/model-budget.jsonl"
+}

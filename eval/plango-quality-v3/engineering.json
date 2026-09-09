@@ -1,0 +1,32 @@
+{
+  "scope": "offline engineering checks; not TSR or merchant fulfillment",
+  "product_commit": "53d4ef50eb5b1adf6ba1230931ac96d9f8c94450",
+  "product_sha": "221adb3d444868e655989d5b8da293df70814d5f4f0214857d4bc8f3c153bfbb",
+  "pytest": {
+    "command": "/home/song/miniconda3/envs/plango/bin/python -m pytest -q",
+    "passed": 489,
+    "subtests_passed": 87,
+    "warnings": [
+      "existing Starlette anyio BlockingPortal deprecation"
+    ],
+    "private_log": "output/quality-v3-stage-engineering-pytest.txt"
+  },
+  "passed": [
+    "Ruff product tree",
+    "mypy 71 source files",
+    "npm run typecheck",
+    "npm run test:ui",
+    "npm run test:transport",
+    "npm run build"
+  ],
+  "targeted_runtime_continuity": "real PlanGoRuntime + compiled requirements subgraph + SQLite checkpoint; prior spec preserved across geo clarification and restart, old approval/plan/goal invalidated",
+  "quality_entry": "explicit dataset/freeze/work; legacy freeze rejection; input/gold separation; receipt/event/time binding; shared append-only stage budget",
+  "main_update": {
+    "private_backup": "output/quality-v3-main-20260910/",
+    "business_rows_preserved": 1413,
+    "profile_files_preserved": 3,
+    "business_tables_preserved": 17,
+    "pending_and_unknown": 0,
+    "trial_archive_rebuilt": false
+  }
+}

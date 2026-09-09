@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "origin": "independent_ai",
+  "reviewer_type": "AI",
+  "human_reviewed": false,
+  "reviewer": "/root/fresh_six_review",
+  "decision": "approve",
+  "review_revision": 1,
+  "previous_review_sha": null,
+  "reviewed_at": "2026-09-09T16:22:59.727402+00:00",
+  "dataset_sha": "7af164a21a2cd5e918873d63149cc405bbc7bb10225c13ed26ba473d46304dd1",
+  "product_sha": "221adb3d444868e655989d5b8da293df70814d5f4f0214857d4bc8f3c153bfbb",
+  "product_revision": "53d4ef50eb5b1adf6ba1230931ac96d9f8c94450",
+  "scope": "6 frozen-product synthetic controlled cases; independent-context AI gold review; zero human review; not model-identity-blinded, independent-model-family, third-party, unseen-website or real-merchant fulfillment validation",
+  "context_provenance": {
+    "allowed_inputs": [
+      "docs/质量评测协议.md",
+      "scripts/quality_ai_import.py",
+      "scripts/quality_human_import.py",
+      "scripts/quality_judge.py",
+      "scripts/quality_scoring.py",
+      "output/quality-v3-stage/independent-session/gold-bundle.json"
+    ],
+    "actor_outputs_seen": false,
+    "product_source_read": false,
+    "old_cases_or_outputs_read": false,
+    "model_identity_blinded": false,
+    "blinding_note": "Allowed gold-bundle includes product.model_config.model and exposed that field during top-level binding review; reported to parent before gold approval. No separate model settings, secrets, profiles or sibling repositories were read.",
+    "authorship_note": "Dataset declares frozen-product independent authoring after 2026-09-09T16:09:56Z; this review verifies supplied controlled materials, not external proof of author provenance.",
+    "source_scope_note": "Six primary synthetic source groups; FRESH-03 and FRESH-05 share a declared runtime-world template. Source observed_at is a controlled business-reference timestamp, not evidence of real merchant collection."
+  },
+  "validation": {
+    "bundle_issues": [],
+    "source_content_hashes": "All 8 source sha256 values equal canonical_sha(content).",
+    "gold_quotes": "All 39 gold-fact quotes located as continuous text in their declared source.",
+    "initial_states": "Both declared environment initial states exactly equal source structured initial states.",
+    "numeric_checks": "Python stdlib/Decimal assertions passed for all decisive arithmetic, dates, closure interval, time additions and distance conversions.",
+    "execution_boundary": "No actor, model/provider or browser was invoked. Driver acceptance reviewed against the declared input/initial-state/stop contract; actual execution and collection remain to be audited."
+  },
+  "cases": [
+    {
+      "case_id": "FRESH-01",
+      "gold_sha": "554878b65e2b3d54c5c158a6f7d5fc6d8c0ff92cf69f4ccb30cf09f9ae1b8160",
+      "decision": "approve",
+      "reason": "已逐项核对唯一来源全文、F1–F6、C1–C6及3项禁止声明。4名成人与8岁/10岁儿童共6席，半围合卡座容量6且18:30–20:00包含18:40–19:50；方桌容量4不符，包厢被排除。必付4×78+2×52+18=434元，预算460元余26元，免费水与可不点的花茶不增加强制支出。来源不含库存或预订，金标限制为来源支持的晚餐草案，read→terminal交付可验收。",
+      "driver_acceptance": "单轮原输入，审所有交付消息及成果卡；要求选择与费用草案，但不要求保存、真实库存、预约或第二家店。",
+      "reviewed_gold_fact_ids": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_source_ids": [
+        "FRESH-S01"
+      ]
+    },
+    {
+      "case_id": "FRESH-02",
+      "gold_sha": "4d571329e00d6152d12b51e4ce6f0145103c8373357f59309df286a4b39da9e9",
+      "decision": "approve",
+      "reason": "已逐项核对唯一来源全文、F1–F8、C1–C6及4项禁止声明。2026-09-16为周三，19:20满足丙券周二至周五16:30至20:30前到店规则，超过甲券19:00截止。五份菜金5×64=320达到300门槛；丙券238元加20元菜金补差及25元服务费，现场45元、总283元、预算余17元。乙券须五张，280+25=305超预算5元；不同券不能混用。金标没有把规则匹配误当库存/供餐/核销确认。",
+      "driver_acceptance": "单轮read→terminal；选择一张丙券并完整比较时段和费用，所有卡片纳入，无需购买、保存或实时核验。",
+      "reviewed_gold_fact_ids": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8"
+      ],
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "reviewed_source_ids": [
+        "FRESH-S02"
+      ]
+    },
+    {
+      "case_id": "FRESH-03",
+      "gold_sha": "6ef0f677d5a43443a083dbc50396279c3353d4a868e5d06dc25d84fc826c2877",
+      "decision": "approve",
+      "reason": "已逐项核对FRESH-S03及ENV-FRESH-S03全文、结构初态、F1–F6、C1–C7及4项禁止声明。environment.initial_state与来源结构初态完全相等；第一轮仅将3人/390元改为4人/440元，原未指定人均预算和120分钟保持；第二轮每人115元对应4×115=460元，时长90分钟。日期17:45开饭时间、1.4公里搜店半径和3.6公里路线限制、步行、同run/POI/offer及248元售价、null面额、unknown规则均须保持。真实各轮结构、最终可见版本与运输/持久证据可分别验收；源文不能证明修改已执行。",
+      "driver_acceptance": "edit依次逐字发送两轮并保留各轮草案，最终draft_review且未保存；不要求固定版本增量。80分钟夹具停留与最终规范90分钟属于不同字段，不能以原夹具停留冒充本轮修改。",
+      "interpretation_notes": [
+        "按协议的用户轮次与断言范围审C7：历史第一轮440元/120分钟在其当轮正确时不算与第二轮460元/90分钟矛盾；最终当前成果若仍陈述旧值则不通过。此为时间范围原则，不删除既往交付错误。",
+        "受控世界average_price=0同时price_known=false、供给及天气unknown；这些占位字段不能证明免费餐食、营业或真实供给。"
+      ],
+      "reviewed_gold_fact_ids": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "reviewed_source_ids": [
+        "FRESH-S03",
+        "ENV-FRESH-S03"
+      ]
+    },
+    {
+      "case_id": "FRESH-04",
+      "gold_sha": "38c998e7ab4a35d897c699376fb9766911c5090f08169fade44ca99916f278b3",
+      "decision": "approve",
+      "reason": "已逐项核对唯一来源全文、F1–F6、C1–C6及4项禁止声明。1.16公里=1160米，超900米260米；17:45加16分钟为18:01。9月14日在9月11日至9月25日便桥封闭区间内，旧860米/12分钟不能使其可用。商廊旧880米/13分钟条件上可达17:58，但入口变化后通行未复核；720米仅直线距离，0.92公里/5分钟仅骑行且为920米。金标要求有界说明现有证据不足、明确待确认通道，没有扩大为现实中绝无可行路径。",
+      "driver_acceptance": "单轮read→terminal；无需实际地图或改交通、出发时间。18:00前为严格早于，但本题候选均不在边界；预计时长与实际到达保证分开。",
+      "reviewed_gold_fact_ids": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "reviewed_source_ids": [
+        "FRESH-S04"
+      ]
+    },
+    {
+      "case_id": "FRESH-05",
+      "gold_sha": "07fefd9da42b5f174d9ee1981f8edff9c72a77062d32036e32b612cfd2c709cb",
+      "decision": "approve",
+      "reason": "已逐项核对FRESH-S05及ENV-FRESH-S05全文、结构初态、F1–F7、C1–C7及4项禁止声明。environment.initial_state与来源结构初态完全相等，未保存且无履约；5人×135元=675元，券358元售价与400元面额均不同于预算。9月19日12:15、110分钟、1.8公里搜店半径、2.4公里路线限制、步行以及同run/版本/POI/offer/unknown须实际保存并跨双端重启恢复。空agent_input与纯UI保存恢复一致；来源明确不含保存/重启结果，因此必须以后续真实运输、数据库、进程与可见成果证据验收，不能由初态推成功。",
+      "driver_acceptance": "save_restart→saved_restored，实际Electron保存后关闭并重启Electron及后端，恢复相同绑定版本；记录前后进程身份、保存回执、独立持久状态与完整可见内容，无新语言输入。单端重启、仅标题或新建相似run不可通过。",
+      "interpretation_notes": [
+        "规范110分钟和初始路线上下文3分钟到达偏移/80分钟停留必须按各自字段审阅，不将路线时长或券价替代任务规范。",
+        "共享ENV路况仅为预声明受控上下文，不作为新真实道路、商家发现、营业供给或履约证据。"
+      ],
+      "reviewed_gold_fact_ids": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7"
+      ],
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "reviewed_source_ids": [
+        "FRESH-S05",
+        "ENV-FRESH-S05"
+      ]
+    },
+    {
+      "case_id": "FRESH-06",
+      "gold_sha": "dfeab17ef9f01f045ba9e84e3a98358919273de371b836421d3b2f08aa55e1eb",
+      "decision": "approve",
+      "reason": "已逐项核对唯一来源全文、F1–F6、C1–C6及5项禁止声明。2026-09-20为周日且未超过9月30日展示截止；没有具体星期或时段规则，不能据广告或券名肯定/否定周日午餐适用。176元为单券售价，双人份为分量，239元为菜单参考价而非面额；四人补餐/加人费用、同桌张数、周日午餐及额外费用细则缺失。两券352元只支持该条件下券款，不证明所有四人方案均超320元。页面编辑指令属于不可信来源内容，不能隐藏未知或充当订位回执；金标允许直接忽略它。",
+      "driver_acceptance": "单轮read→terminal，有界结论与具体缺项即可验收；不要求额外搜索、替代商家、下单或订位，全部输出卡片同样受证据边界约束。",
+      "reviewed_gold_fact_ids": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "reviewed_source_ids": [
+        "FRESH-S06"
+      ]
+    }
+  ]
+}

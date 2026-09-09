@@ -1,0 +1,508 @@
+{
+  "schema_version": 1,
+  "report_kind": "independent_ai_reviewed_controlled",
+  "dataset_version": "PlanGo-independent-six-v1:7af164a21a2cd5e918873d63149cc405bbc7bb10225c13ed26ba473d46304dd1",
+  "system_revision": "53d4ef50eb5b1adf6ba1230931ac96d9f8c94450:221adb3d444868e655989d5b8da293df70814d5f4f0214857d4bc8f3c153bfbb",
+  "environment_level": "controlled_acceptance_independent_ai_review",
+  "annotations_origin": "ai_assisted",
+  "human_verified": false,
+  "gold_human_verified": false,
+  "provenance_notice": "Annotation provenance is declared by the input; aggregation does not independently certify human review or factual entailment.",
+  "planned": 6,
+  "attempted": 6,
+  "valid": 6,
+  "annotated": 6,
+  "pending_annotation": 0,
+  "successes": 1,
+  "failures": 5,
+  "tsr": 0.16666666666666666,
+  "tsr_wilson_95": [
+    0.030053369748306635,
+    0.5635028221864702
+  ],
+  "groundedness_macro": 0.8166666666666668,
+  "groundedness_tasks": 6,
+  "groundedness_na_tasks": 0,
+  "supported_claims": 162,
+  "factual_claims": 167,
+  "complete": true,
+  "attempt_records": 7,
+  "invalid_attempts": [
+    {
+      "case_id": "FRESH-05",
+      "trial_id": "FRESH-05:first",
+      "reason": {
+        "category": "runner_error",
+        "detail": "预注册FRESH-05 gold C2明确要求关闭并重启Electron和后端后，从持久化状态在桌面打开同一已保存任务。实际driver只完成Electron重启，随后关闭桌面，再由外层执行后端重启及API/DB读取；after_restart被明确标为actual_owned_backend_restart_desktop_closed，没有双端重启后的真实Electron恢复交付停点。这是评测器未执行已注册环境动作及验收停点，尚未给产品完成该流程的有效机会，不是因观察到产品失败而剔除。",
+        "adjudicator": "/root/fresh_six_review"
+      },
+      "replacement_for": null
+    }
+  ],
+  "unresolved_invalid_cases": [],
+  "not_run_cases": [],
+  "completeness": "complete",
+  "score_scope": "valid_primary_tasks; incomplete batches are partial results, not the planned-batch score",
+  "confidence_interval_scope": "Wilson 95% uses valid primary task counts only; descriptive, not an independence guarantee. No claim-level CI or bootstrap is inferred.",
+  "shared_source_groups": [],
+  "source_correlation_notice": "No shared registered groups detected; this does not prove independence or population representativeness.",
+  "by_class": {
+    "delivery": {
+      "planned": 4,
+      "attempted": 4,
+      "valid": 4,
+      "annotated": 4,
+      "pending_annotation": 0,
+      "successes": 1,
+      "failures": 3,
+      "tsr": 0.25,
+      "tsr_wilson_95": [
+        0.04558726080970055,
+        0.6993581574175981
+      ],
+      "groundedness_macro": 0.725,
+      "groundedness_tasks": 4,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 103,
+      "factual_claims": 108,
+      "complete": true
+    },
+    "bounded_answer": {
+      "planned": 2,
+      "attempted": 2,
+      "valid": 2,
+      "annotated": 2,
+      "pending_annotation": 0,
+      "successes": 0,
+      "failures": 2,
+      "tsr": 0.0,
+      "tsr_wilson_95": [
+        0.0,
+        0.6576197724933469
+      ],
+      "groundedness_macro": 1.0,
+      "groundedness_tasks": 2,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 59,
+      "factual_claims": 59,
+      "complete": true
+    }
+  },
+  "by_family": {
+    "boundaries": {
+      "planned": 1,
+      "attempted": 1,
+      "valid": 1,
+      "annotated": 1,
+      "pending_annotation": 0,
+      "successes": 0,
+      "failures": 1,
+      "tsr": 0.0,
+      "tsr_wilson_95": [
+        0.0,
+        0.7934506856227626
+      ],
+      "groundedness_macro": 1.0,
+      "groundedness_tasks": 1,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 27,
+      "factual_claims": 27,
+      "complete": true
+    },
+    "edits": {
+      "planned": 1,
+      "attempted": 1,
+      "valid": 1,
+      "annotated": 1,
+      "pending_annotation": 0,
+      "successes": 0,
+      "failures": 1,
+      "tsr": 0.0,
+      "tsr_wilson_95": [
+        0.0,
+        0.7934506856227626
+      ],
+      "groundedness_macro": 0.9,
+      "groundedness_tasks": 1,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 36,
+      "factual_claims": 40,
+      "complete": true
+    },
+    "offers": {
+      "planned": 1,
+      "attempted": 1,
+      "valid": 1,
+      "annotated": 1,
+      "pending_annotation": 0,
+      "successes": 0,
+      "failures": 1,
+      "tsr": 0.0,
+      "tsr_wilson_95": [
+        0.0,
+        0.7934506856227626
+      ],
+      "groundedness_macro": 1.0,
+      "groundedness_tasks": 1,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 37,
+      "factual_claims": 37,
+      "complete": true
+    },
+    "reading": {
+      "planned": 1,
+      "attempted": 1,
+      "valid": 1,
+      "annotated": 1,
+      "pending_annotation": 0,
+      "successes": 0,
+      "failures": 1,
+      "tsr": 0.0,
+      "tsr_wilson_95": [
+        0.0,
+        0.7934506856227626
+      ],
+      "groundedness_macro": 0.0,
+      "groundedness_tasks": 1,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 0,
+      "factual_claims": 1,
+      "complete": true
+    },
+    "recovery": {
+      "planned": 1,
+      "attempted": 1,
+      "valid": 1,
+      "annotated": 1,
+      "pending_annotation": 0,
+      "successes": 1,
+      "failures": 0,
+      "tsr": 1.0,
+      "tsr_wilson_95": [
+        0.20654931437723745,
+        1.0
+      ],
+      "groundedness_macro": 1.0,
+      "groundedness_tasks": 1,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 30,
+      "factual_claims": 30,
+      "complete": true
+    },
+    "routes": {
+      "planned": 1,
+      "attempted": 1,
+      "valid": 1,
+      "annotated": 1,
+      "pending_annotation": 0,
+      "successes": 0,
+      "failures": 1,
+      "tsr": 0.0,
+      "tsr_wilson_95": [
+        0.0,
+        0.7934506856227626
+      ],
+      "groundedness_macro": 1.0,
+      "groundedness_tasks": 1,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 32,
+      "factual_claims": 32,
+      "complete": true
+    }
+  },
+  "cases": [
+    {
+      "case_id": "FRESH-01",
+      "case_class": "delivery",
+      "family": "reading",
+      "group_ids": [
+        "fresh-source:01",
+        "entity:篱汀慢饭屋"
+      ],
+      "trial_ids": [
+        "FRESH-01:first"
+      ],
+      "main_trial_id": "FRESH-01:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 0,
+        "factual_claims": 1,
+        "groundedness": 0.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 0,
+          "unsupported": 0,
+          "unverifiable": 1
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "checks:C4",
+        "checks:C5",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "FRESH-02",
+      "case_class": "delivery",
+      "family": "offers",
+      "group_ids": [
+        "fresh-source:02",
+        "entity:桑湾纸灯食堂"
+      ],
+      "trial_ids": [
+        "FRESH-02:first"
+      ],
+      "main_trial_id": "FRESH-02:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 37,
+        "factual_claims": 37,
+        "groundedness": 1.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 37,
+          "unsupported": 0,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "checks:C4",
+        "checks:C5"
+      ]
+    },
+    {
+      "case_id": "FRESH-03",
+      "case_class": "delivery",
+      "family": "edits",
+      "group_ids": [
+        "fresh-source:03",
+        "entity:枫渡小碟馆"
+      ],
+      "trial_ids": [
+        "FRESH-03:first"
+      ],
+      "main_trial_id": "FRESH-03:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 36,
+        "factual_claims": 40,
+        "groundedness": 0.9,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 3,
+          "duplicate": 1,
+          "non_factual": 3,
+          "supported": 36,
+          "unsupported": 1,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C3",
+        "checks:C6",
+        "checks:C7",
+        "false_completion_absent",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "FRESH-04",
+      "case_class": "bounded_answer",
+      "family": "routes",
+      "group_ids": [
+        "fresh-source:04",
+        "entity:苔岬砂锅坊"
+      ],
+      "trial_ids": [
+        "FRESH-04:first"
+      ],
+      "main_trial_id": "FRESH-04:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 32,
+        "factual_claims": 32,
+        "groundedness": 1.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 32,
+          "unsupported": 0,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "checks:C4"
+      ]
+    },
+    {
+      "case_id": "FRESH-05",
+      "case_class": "delivery",
+      "family": "recovery",
+      "group_ids": [
+        "fresh-source:05",
+        "entity:澄坞蒸味铺"
+      ],
+      "trial_ids": [
+        "FRESH-05:first",
+        "FRESH-05:replacement-1"
+      ],
+      "main_trial_id": "FRESH-05:replacement-1",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 1,
+      "claims": {
+        "supported": 30,
+        "factual_claims": 30,
+        "groundedness": 1.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 1,
+          "supported": 30,
+          "unsupported": 0,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": []
+    },
+    {
+      "case_id": "FRESH-06",
+      "case_class": "bounded_answer",
+      "family": "boundaries",
+      "group_ids": [
+        "fresh-source:06",
+        "entity:砾橙炭盘馆"
+      ],
+      "trial_ids": [
+        "FRESH-06:first"
+      ],
+      "main_trial_id": "FRESH-06:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 27,
+        "factual_claims": 27,
+        "groundedness": 1.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 27,
+          "unsupported": 0,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C4",
+        "checks:C6"
+      ]
+    }
+  ],
+  "reviewer_type": "AI",
+  "scope": "6 controlled independent_controlled cases; independent-context AI review; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark",
+  "release": {
+    "schema": "plango.independent-ai-controlled-review.v1",
+    "scope": "6 controlled independent_controlled cases; independent-context AI review; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark",
+    "dataset_sha": "7af164a21a2cd5e918873d63149cc405bbc7bb10225c13ed26ba473d46304dd1",
+    "product_sha": "221adb3d444868e655989d5b8da293df70814d5f4f0214857d4bc8f3c153bfbb",
+    "collection_sha": "594c2e2e24ec299d8f92293b63a1c3d2997f6b1859c04f00d336d2e334919f85",
+    "bundle_sha": "7e090f88708865eb06b65175a9616125ef9ddca24c23e2a1fdc2abde1a315b15",
+    "gold_review_sha": "3e4e48aa0920e60e8ba0e34146a3bc4fa0cfa2f6eedc2ed3b3eceb67991d8e01",
+    "output_review_sha": "3dad132190765a02c570f94cf608effa8adbfd975133274f8dc1a001dd1c4b0e",
+    "annotations_sha": "29b138dff95f2a62f0db524e755fc4b505faeb47b6a2a32e7db4325533d61150",
+    "review_receipts": [
+      {
+        "case_id": "FRESH-01",
+        "trial_id": "FRESH-01:first",
+        "gold_sha": "554878b65e2b3d54c5c158a6f7d5fc6d8c0ff92cf69f4ccb30cf09f9ae1b8160",
+        "packet_sha": "6432787c8aabc1b16d1fbd4a0e0a0eb184e5a5e4bc63ec9cd38db79cc8b1042b",
+        "gold_case_review_sha": "b6a5ae7041330524d04257ff31ec2fca36b4f49e22c1a2e3c07039ecf1122f41",
+        "output_case_review_sha": "ab424360a66b8b51a7c4ae8a8aefb17255983b22bdf778659d797f3a5ee14746"
+      },
+      {
+        "case_id": "FRESH-02",
+        "trial_id": "FRESH-02:first",
+        "gold_sha": "4d571329e00d6152d12b51e4ce6f0145103c8373357f59309df286a4b39da9e9",
+        "packet_sha": "034fe82a64e783929ed3c116809385b0d3a1717e921b065623f96e9dd139ffa7",
+        "gold_case_review_sha": "37cbb21e127460fe0a746999d60b7b08f9088607df24c56243919bf5e1fe0806",
+        "output_case_review_sha": "5fedf4b68922110e0779be46b7d63b974ee5084393e9709243024db3f07aa6d6"
+      },
+      {
+        "case_id": "FRESH-03",
+        "trial_id": "FRESH-03:first",
+        "gold_sha": "6ef0f677d5a43443a083dbc50396279c3353d4a868e5d06dc25d84fc826c2877",
+        "packet_sha": "ea2be9bf358d8201cebd3b5245de73f6b2d756b4246681f79a0fb4bd4d30100d",
+        "gold_case_review_sha": "97169ba1e4857a0158b68cc807a1ec6f1619082e74678f2bb4183711437dda1a",
+        "output_case_review_sha": "f5e2dede3899cda85723ec55b612657070732a92bfb94227193b38da182b2d21"
+      },
+      {
+        "case_id": "FRESH-04",
+        "trial_id": "FRESH-04:first",
+        "gold_sha": "38c998e7ab4a35d897c699376fb9766911c5090f08169fade44ca99916f278b3",
+        "packet_sha": "01bf23c5cc00c2321b0efe509cd6db7d2a17ce3e2d0d1432ffa6b462dff9be62",
+        "gold_case_review_sha": "5f3b32aec6a9a82e26dda95a3153fdd7ea244e37413d3f7b51c5a63802aff34d",
+        "output_case_review_sha": "b69d64ffca87a907bfa8ba23746110afd4c3c036329233e7e7b77ee1c8a25f37"
+      },
+      {
+        "case_id": "FRESH-05",
+        "trial_id": "FRESH-05:replacement-1",
+        "gold_sha": "07fefd9da42b5f174d9ee1981f8edff9c72a77062d32036e32b612cfd2c709cb",
+        "packet_sha": "e629db9abf6a33430a226b9cab4d1b0250c54353429ea7e77e01869275340b28",
+        "gold_case_review_sha": "ca556efae4702d8314bef42245261adfb38a754e5f8b94c232ea0cf0f4b0b5fa",
+        "output_case_review_sha": "b2dc49f0c3f88629168bd742489af9c61952143d0b11780d8012a31c4009d70d"
+      },
+      {
+        "case_id": "FRESH-06",
+        "trial_id": "FRESH-06:first",
+        "gold_sha": "dfeab17ef9f01f045ba9e84e3a98358919273de371b836421d3b2f08aa55e1eb",
+        "packet_sha": "d6c694b923b89bf6b30576c941dd052e2c81e9ac05ad5e718c31154d016e53c6",
+        "gold_case_review_sha": "b3f490204ebde324a8a15bcb8918aba94c49e584669e546f9ce857bf0f137a0d",
+        "output_case_review_sha": "5731f5f2d06c2f1bd96e32c8244b7a453a882ecf4390a05f2945a3c705fe3b95"
+      }
+    ],
+    "reviewer_type": "AI",
+    "reviewer": "/root/fresh_six_review",
+    "human_verified": false,
+    "gold_human_verified": false,
+    "human_calibrated": false,
+    "context_provenance": "Reviewer context isolation is established by the orchestration record, not inferred from hashes or model agreement"
+  },
+  "tsr_percent": 16.666666666666664,
+  "groundedness_percent": 81.66666666666667
+}

@@ -1,0 +1,66 @@
+{
+  "dataset": "quality-v3-regression-six",
+  "planned_cases": 6,
+  "attempts": 6,
+  "valid_attempts": 6,
+  "invalid_attempts": 0,
+  "model_invocations": 21,
+  "reported_tokens": 14443,
+  "usage_missing_invocations": 0,
+  "cases": [
+    {
+      "case_id": "NEW-01",
+      "trial_id": "NEW-01:first",
+      "model_invocations": 5,
+      "reported_tokens": 3400,
+      "stop_reason": "completed",
+      "usage_missing_invocations": 0,
+      "valid_attempt": true
+    },
+    {
+      "case_id": "NEW-07",
+      "trial_id": "NEW-07:first",
+      "model_invocations": 5,
+      "reported_tokens": 3166,
+      "stop_reason": "completed",
+      "usage_missing_invocations": 0,
+      "valid_attempt": true
+    },
+    {
+      "case_id": "NEW-14",
+      "trial_id": "NEW-14:first",
+      "model_invocations": 4,
+      "reported_tokens": 2322,
+      "stop_reason": "completed",
+      "usage_missing_invocations": 0,
+      "valid_attempt": true
+    },
+    {
+      "case_id": "NEW-18",
+      "trial_id": "NEW-18:first",
+      "model_invocations": 2,
+      "reported_tokens": 1871,
+      "stop_reason": "unscripted_clarification",
+      "usage_missing_invocations": 0,
+      "valid_attempt": true
+    },
+    {
+      "case_id": "NEW-21",
+      "trial_id": "NEW-21:first",
+      "model_invocations": 3,
+      "reported_tokens": 1730,
+      "stop_reason": "completed",
+      "usage_missing_invocations": 0,
+      "valid_attempt": true
+    },
+    {
+      "case_id": "NEW-29",
+      "trial_id": "NEW-29:first",
+      "model_invocations": 2,
+      "reported_tokens": 1954,
+      "stop_reason": "unscripted_clarification",
+      "usage_missing_invocations": 0,
+      "valid_attempt": true
+    }
+  ]
+}

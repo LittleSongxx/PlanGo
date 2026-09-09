@@ -1,0 +1,29 @@
+{
+  "product_unchanged": true,
+  "public_package_recomputation": [
+    {
+      "dataset": "quality-v3-regression-six",
+      "status": "complete",
+      "issues": 0,
+      "tsr_percent": 0.0,
+      "groundedness_percent": 91.17794486215539,
+      "valid": 6,
+      "annotated": 6,
+      "collection_sha": "0ceba8a7828b02c21906a39684518d17eed03b11672c4666a9989a9aafc562e6"
+    },
+    {
+      "dataset": "quality-v3-independent-six",
+      "status": "complete",
+      "issues": 0,
+      "tsr_percent": 16.666666666666664,
+      "groundedness_percent": 82.08333333333333,
+      "valid": 6,
+      "annotated": 6,
+      "collection_sha": "594c2e2e24ec299d8f92293b63a1c3d2997f6b1859c04f00d336d2e334919f85"
+    }
+  ],
+  "credential_matches": 0,
+  "public_files_scanned": 44,
+  "protected_original_sha256": "4e63df2f9bf469b142ce6fc03b321f04da8337bf6d0a9ad817433197dca3a70d",
+  "old_quality_v2_package_untouched": true
+}

@@ -1,12 +1,12 @@
 # PlanGo 当前实施交接
 
-更新：2026-09-09，30例质量基线交付后。仓库：`/home/song/code/Agent/multi-agent/PlanGo`。写本次交接前HEAD：`bed0aac`；之后可能只有交接文档提交，以实际Git为准。
+更新：2026-09-10，共享质量修复及6旧+6新有界复测后。仓库：`/home/song/code/Agent/multi-agent/PlanGo`。产品提交`53d4ef5`，采集器修复`20dcd94`；之后的报告/交接提交以实际Git为准。
 
 ## 0. 新对话应接什么
 
-**当前主任务：根据已完成的30例受控评测，实施系统层面的质量优化，再做有界回归与新的独立评测。** 直接落实工作，不仅输出分析，不再询问“是否开始”。本次最后只写交接，没有启动下一轮优化或模型复测。
+**当前主线仍是系统性质量优化，不能转回D7或只写简历。** 本轮已实施共享修改并完成6题旧集回归及6题独立新资料评测，详细结果见第9节。工程检查通过，但回归TSR仍0/6，新集仅保存恢复1/6，尚未证明可靠交付；接续应修共同交付与稀疏修改机制，不按题号加规则。
 
-先读本文件，尤其第1节约束、第4节基线、第5–7节优化与复测入口；再读根[AGENTS.md](../AGENTS.md)、[架构决策](架构决策.md)、[Agent架构与选型](Agent架构与选型.md)、[质量协议](质量评测协议.md)、[30例报告](../eval/quality-v2-30/README.md)及[实施进度](实施进度.md)末尾。简版入口是[接手提示词](CODEX_接手提示词.md)。
+先读本文件，尤其第1节约束、第4节基线、第5–7节优化与复测入口和第9节最新结果；再读根[AGENTS.md](../AGENTS.md)、[架构决策](架构决策.md)、[Agent架构与选型](Agent架构与选型.md)、[质量协议](质量评测协议.md)、[30例报告](../eval/quality-v2-30/README.md)及[实施进度](实施进度.md)末尾。简版入口是[接手提示词](CODEX_接手提示词.md)。
 
 用户长期方向是**秋招AI应用／Agent开发岗位**。项目需要可演示、可解释、可复验的工程与质量证据；当前优先改产品和评测，不改成只写简历。用户没有指定80%、90%或100%目标，不能自行设好看分数倒逼改题、删失败或放宽标准。
 
@@ -37,8 +37,8 @@
 
 | 项目 | 状态 |
 | --- | --- |
-| 分支／写文档前HEAD | `feat/planora-browser-harness`／`bed0aac` |
-| 工作树 | 写交接前仅保护原文未跟踪，无未交付产品改动 |
+| 分支／写文档前HEAD | `feat/planora-browser-harness`／`20dcd94`（报告提交另查Git） |
+| 工作树 | 产品与采集器已提交；本轮报告/交接随后提交，保护原文保持未跟踪 |
 | 主Compose | `plango`，目录标签归属本仓库；API/PG/Redis healthy，worker运行 |
 | 主API／DB | `http://127.0.0.1:8011`；PostgreSQL database/role均为`plango` |
 | 主任务 | 8条：6 SUCCEEDED、1 REQUIREMENTS_READY、1 PARTIAL_FAILED；只读/草案终态不是6次交易 |
@@ -46,7 +46,7 @@
 | 桌面／临时评测 | lifecycle未发现主桌面；本仓库未发现活跃评测Electron driver、独立Uvicorn或人工审核UI服务 |
 | 隔离Compose | `plango-e2e`所有容器停止；原trial容器已移除，卷/profile/备份保留 |
 | Python | `/home/song/miniconda3/envs/plango/bin/python`，独立`plango` conda |
-| WSL本次采样 | 内存约36GB、可用约12GB；swap64GB、已用约4.5GB，仅代表当时负载 |
+| WSL本次采样 | 内存约36GB、可用约11GB；swap64GB、已用约5GB，仅代表当时负载 |
 | 旁支工作树 | `output/friendly-errors-worktree`，detached `4e8a429`，改动已合入；仅遗留未跟踪node_modules符号链接，不重复合并或提交它 |
 
 **区分三个产品版本：**
@@ -54,12 +54,12 @@
 | 版本 | 范围 |
 | --- | --- |
 | 30例冻结被测版 | `de37fecd3dc4d1792fe9efb11108126d4bfd5ef1`，140个产品/构建/依赖文件和安全模型配置；10.0%／54.3%绑定此版 |
-| 当前源码／部署版 | `b55371d`共用友好提示，`a7b8b53`实际桌面验证及测试导入兼容；桌面已构建，主API/worker runtime源码hash与仓库一致；**新版尚无新质量批次成绩** |
+| 当前源码／部署版 | `53d4ef5`包含友好提示、TaskIntent、需求出处校验与规范保留；桌面已构建，主API/worker的71个后端源码hash一致；本轮6+6结果见第9节，不能套用旧30题成绩 |
 | 最新既有试用包 | `release/plango-0.1.0-linux-x64-booking-preview.tar.gz`，产品提交`a308b20`；含预约参数保护，不含后续质量驱动修复和最新友好提示，未重打包/发布 |
 
 评测提交：`b1434b0`冻结/独立审核管线，`23c6201`来源契约/无效替代，`d29b7b1`回环检查，`0707335`运输证据，`4215d9f`观测时间校验，`ca920ca`审核范围。它们不是新产品成绩。
 
-主数据：Docker卷`plango_postgres-data`、`plango_redis-data`、`plango_runtime-data`，桌面`~/.config/plango/`。最近更新备份`output/friendly-errors-main-20260909/`含一致性SQL与行/profile指纹。更新后原18表1414行（含迁移表）中的17业务表1413行及3个Cookie/身份/回执文件保持，迁移0013未变，见[连续性记录](../eval/plango-friendly-errors/main-continuity.json)。旧备份不覆盖，历史脚本先读硬编码输出路径再复用。
+主数据：Docker卷`plango_postgres-data`、`plango_redis-data`、`plango_runtime-data`，桌面`~/.config/plango/`。最近备份`output/quality-v3-main-20260910/`含一致性SQL与行/profile指纹，旧备份仍保留。更新后原18表1414行（含迁移表）中的17业务表1413行及3个Cookie/身份/回执文件保持，见[连续性记录](../eval/plango-quality-v3/main-continuity.json)。旧备份不覆盖，历史脚本先读硬编码输出路径再复用。
 
 ## 3. 已有产品成果与未完成边界
 
@@ -120,13 +120,13 @@ dataset SHA=`21cb25bcc71a695b020bba54c51cec7db68a42f2e57dbdd7eaa3ac00f5602e5a`�
 
 ## 5. 后续系统优化顺序
 
-先用证据复现共同路径，再落地可解释的共享改动。以下是待实施方向，不是已经完成的新架构。
+先用证据复现共同路径，再落地可解释的共享改动。53d4ef5已修复部分共享边界，以下仍是未完成的质量方向；本轮真实失败优先看第9节，不把新契约存在当正确泛化。
 
 ### 5.1 保护用户意图与需求状态
 
 共同症状：人数/时长漏改，半径与路程混写，总预算/人均混淆，未要求字段被设置，澄清时清空原规范。
 
-追踪`ChatPanel → store → preload/IPC → HarnessClient → app/runtime → graph → RequirementAgent → TripSpec合并/依赖刷新 → persistence`。重点读`vendor/plango_harness/backend/plango_harness/agent/subagents/requirement.py`的`_stabilize_explicit_fields/_fallback`，以及`agent/requirements.py`、`agent/contracts.py`、`backend/plango/requirements.py`和`runtime.py`。稳定化当前会用规则结果覆盖部分模型字段，需分清“未识别”和“明确清除/未知”，不能仅扩大词表。
+追踪`ChatPanel → store → preload/IPC → HarnessClient → app/runtime → graph → RequirementAgent → TripSpec合并/依赖刷新 → persistence`。重点读`vendor/plango_harness/backend/plango_harness/agent/subagents/requirement.py`的`_grounded_patch/_stabilize_explicit_fields/_fallback`和`agent/decisions.py::RequirementOutput.field_evidence`，以及`agent/requirements.py`、`agent/contracts.py`、`backend/plango/requirements.py`和`runtime.py`。新版真实模型补丁已有出处校验，旧fallback仅在适配器确实返回fallback时使用。继续检查空/default字段、完整子句门槛和部分成功修改为何仍触发额外澄清；没有保存的原模型提案不能靠失败状态倒推。仍需分清未识别、未提及、清除与未知，不能扩大词表。
 
 验收不变量：只应用本轮有依据的稀疏修改；未提及及“其余不变”保留；预算口径不明不擅选；澄清不丢原TripSpec；POI/优惠/审批版本/请求身份/累计预算连续。模型负责语言理解，确定性边界负责类型、单位、证据、权限、幂等和落库，两者职责明确。
 
@@ -148,19 +148,17 @@ dataset SHA=`21cb25bcc71a695b020bba54c51cec7db68a42f2e57dbdd7eaa3ac00f5602e5a`�
 
 修复后复跑已揭示30题只能报告“回归集结果”。新泛化评测须先冻结产品，再让未读产品/开发结果的独立上下文按来源组采样，先审gold，再运行，再审完整输出。同源改人数/同题改写不跨dev/test。保持指标和停止条件；真实oracle/采集错误独立裁定、保留原版并明确修订，不因低分改标准。
 
-## 6. 新会话首轮应实际完成什么
+## 6. 接续应实际完成什么
 
-1. 只读核实第2节和Git，保留已有未提交工作；不启动旧商家或主profile。
-2. 用第7节离线命令复算最终附录包/审核；不调用模型或浏览器。
-3. 读失败证据，沿5.1/5.2复现一个跨表达/字段的共同问题，区分产品失败、初始化错误、评审遗漏；实施共享修复和必要反例，不只写建议。
-4. 完成工程检查，再接新版采集/回归入口，不先对所有题反复跑模型。每阶段声明版本、范围、累计预算，保留结果。
-5. 有界回归/独立审核后报告真实百分比、分母、范围、Token及剩余类别；未完成全批就明确部分/待审，不报最终全批分数。更新进度、交接和使用文档，可本地提交后继续。
+1. 只读重查Git、归属、未决及第9节，保留本轮所有有效失败/无效尝试/原包，不重跑迁移、登录或主任务。
+2. 离线复算原30基线及本轮两个最终包；旧集、新集和工程测试分别解释。
+3. 沿共享语义补丁与目标交付路径复现共同问题。优先处理已知参数有效修改却无法形成草案、资料已取得却没有计算/比较/结论；必要诊断应记录原模型结构化提案至既有私有日志，不能把它作为评分来源或凭结果猜原提案。
+4. 完成针对性工程检查后再冻结下一版。本轮两组6题均已揭示，只能作回归；新泛化资料仍须冻结后独立按来源组起草、审gold、运行和审输出。
+5. 保持实际预算及共享累计账本，不追加样本/改gold/放宽停点追分；本轮没有达到一个用户指定的通过率，也没有自行设置目标。
 
-**当前新版复测入口尚需接线，不能当现成命令：** `scripts/quality_acceptance.py`的`DATA`固定为`eval/quality-v2-30`，`product()`校验原源码/构建/模型冻结，原registry禁止替换有效尝试。当前产品已更新，直接跑旧`prepare/run/bundle`会被冻结不匹配拒绝，这是保护，不是服务故障。`quality_runner.py --run-dev`默认绑定v1，也不是v2或新版入口。
+**新版接线已实现，不要重复实现：** `quality_acceptance.py freeze/prepare/run/bundle`支持显式`--dataset/--freeze/--work`，新数据集须有`plango.controlled-bounded.v1`协议及完整计划/审核，旧默认仍是30题。路径、产品文件清单、模型配置、初态、gold和运输证据均绑定hash；原目录/有效attempt禁止覆盖。`quality_runner.py --run-dev`仍默认v1，不能冒充本轮入口。
 
-需做最小显式数据集/冻结路径接线，贯穿materials、manifest、fixture来源及工作目录，复用collector/driver/评分器、保留旧默认兼容。先离线检查不同路径、旧冻结拒绝、原目录不覆盖、输入/gold隔离、回执事件完整和证据时间，再给出真正可用的新命令。**不改旧`product-freeze.json`、删registry或移除hash断言来让重跑通过，不另建评分框架。** 这项接线及系统修复是下一轮工作，本次只完成交接。
-
-现有独立AI汇总入口还要求计划30例和完整审核。小批回归可分阶段收集，但不能填充假案例、拼接旧版本结果或把部分计分说成30例最终成绩；若确需另一规模，必须显式版本化评测协议和校验规则。
+保存恢复采集器已在API重开后增加原profile/run的只读桌面恢复，明确禁止再保存/发消息/新任务/模型。原API/UI附件按真实捕获时间组包，不称独立SQL，也不回证早期输出。`adjudicate-transport`只用于已有独立裁定及原hash匹配的采集错误；不是产品失败重跑入口。
 
 ## 7. 可用命令、预算与验证范围
 
@@ -175,6 +173,21 @@ docker exec plango-postgres-1 psql -U plango -d plango -Atc "SELECT count(*) FRO
 ```
 
 桌面用`scripts/lifecycle.py::desktop_processes()`核对cwd、开始时间/boot ID和父子关系，不按通用进程名kill。`./start.sh`/`./stop.sh`校验归属并保留卷，但优化不必启动主桌面或停止全栈。
+
+**本轮两个最终包可直接离线复算：**
+
+```bash
+quality_score_dir=$(mktemp -d output/quality-v3-score-XXXXXX)
+for dataset in quality-v3-regression-six quality-v3-independent-six; do
+  /home/song/miniconda3/envs/plango/bin/python scripts/quality_ai_import.py \
+    --bundle "eval/$dataset/review/bundle.json" \
+    --gold-review "eval/$dataset/review/gold-review.json" \
+    --output-review "eval/$dataset/review/output-review.json" \
+    --output "$quality_score_dir/$dataset.json"
+done
+```
+
+预期两包均`complete`、`issues=0`；回归0/6与91.1779448622%，独立新集1/6与82.0833333333%。这是数学/格式/证据定位复算，不调用模型，也不证明审核语义无误。
 
 **可直接执行：离线复算，创建新输出目录。**
 
@@ -206,10 +219,36 @@ npm run build
 
 最近检查：旧dev产品修复阶段完整426pytest+58subtests、后续23项定向；友好提示阶段TS、UI/运输、LLM/历史定向、构建、隔离API投影1项、Ruff/mypy和实际Electron通过；评测补证/时序/AI聚合12项+29subtests，最后观测时间兼容定向3项通过。**这是各自提交的检查，不是当前全树新跑的一次总数，也不是TSR。**
 
-默认每轮12000tokens/48tools/300执行秒，模型timeout45秒/retry1，高德timeout8秒，以实际配置为准。collector另限每case12次、每次run调用80次模型/120000已报告tokens阈值；不是跨所有分批自动共享总账，下一轮预先声明阶段累计上限，不拆批绕预算。受控业务时间可固定，SQL租约/超时/真实捕获时间不可冻结；单次响应超阈值照实计入。
+默认每轮12000tokens/48tools/300执行秒，模型timeout45秒/retry1，高德timeout8秒，以实际配置为准。旧v1 collector仍按单run计批次；本轮新版协议另限每attempt12次，并对绑定同一账本的分批共享80次模型/120000已报告tokens停止阈值，下一轮仍须预先声明并保留阶段累计，不拆批绕预算。本轮两数据集共用`output/quality-v3-stage/model-budget.jsonl`，上限80调用/120000已报告tokens，已用42/37018；日志/无效记录不删除。受控业务时间可固定，SQL租约/超时/真实捕获时间不可冻结；单次响应超阈值照实计入。
 
-主服务确需更新时：重新核对归属/未决，备份SQL/profile指纹到新目录，静止后仅更新本项目API/worker，核对源码与原行/登录连续；PG/Redis卷不重建，主profile不做隔离试验。旧辅助脚本可能写固定证据目录，先读后复制修改输出路径。本次交接没有重启服务。
+主服务确需更新时：重新核对归属/未决，备份SQL/profile指纹到新目录，静止后仅更新本项目API/worker，核对源码与原行/登录连续；PG/Redis卷不重建，主profile不做隔离试验。旧辅助脚本可能写固定证据目录，先读后复制修改输出路径。本轮已经按该流程更新API/worker，连续性记录见第9节；后续不要无必要再重启。
 
 ## 8. 阶段收尾
 
 区分源码修复、工程回归、旧集复测、新集评测、真实商家验收及部署/安装包版本。保留失败/invalid/附录和累计消耗，缺审核不补百分比，UI文案变化不回写旧输出。关闭不用的临时窗口/专属服务、保留数据，最后核对Git、主未决及保护原文hash；更新本文件、进度与接手提示词，本地提交，不push/PR/发布。
+
+
+## 9. 2026-09-10 最新一轮：已完成与仍失败
+
+产品`53d4ef5`冻结158个文件；产品SHA=`221adb3d444868e655989d5b8da293df70814d5f4f0214857d4bc8f3c153bfbb`。共享TaskIntent负责本轮目标分类；field_evidence验证本轮稀疏修改，规范在Runtime重入/澄清中保留，旧计划/审批仍失效；增加严格单位/时间边界、显式来源过期判断及中性费用/场所类别。不添加门店/题号分支、事实库或Agent框架。
+
+| 批次 | TSR | Groundedness任务宏平均 | 事实计数／N/A | Actor |
+| --- | --- | --- | --- | --- |
+| 已揭示6题回归 | 0/6（0.0%） | 91.18% | 105/116；0 | 21调用／14443tokens |
+| 冻结后独立6题受控新资料 | 1/6（16.7%） | 82.08% | 163/167；0 | 21调用／22575tokens |
+
+两个最终包均经新独立上下文AI逐项审核、原聚合器复算complete/0issues；人工0、非模型身份盲审、没有独立模型家族交叉验证。新集6来源组与旧集无重合；四例观测注入+两例Electron。原6回归同样没有整题通过，当前不能声称TSR提升；高G主要来自资料摘录，未代替所需交付。两小集也不能与旧30题直接相减当总体泛化提升。
+
+共同失败仍在：资料核算/比较/时段判断缺交付，FRESH01仍误入坐标澄清；NEW29明确4人未落盘；NEW18字段19:20/120分钟正确且运输通过，但未到draft_review；FRESH03多轮字段部分正确却停在额外澄清，没有最终草案。FRESH05仅保存恢复通过，不代表商家履约或语义能力整体可靠。
+
+区分两类评测修复：一是已有完整UI正文/API状态遗漏组包，统一按原hash/时间追加，API不是独立SQL，无重渲染/Actor重跑。回归初审94.33%及原包保留，完整UI补审后为91.18%。二是FRESH05原采集器未执行双端重开后的桌面读取，独立裁定为runner_error invalid；`20dcd94`修通用流程后仅替代一次，0模型。共13尝试=12有效+1无效，所有原件保留；累计42调用/37018tokens，无缺usage，无预算扩大。后端重启是LocalAPI生命周期退出、新app/DB重开，不是父Python进程退出或WSL重启。
+
+证据入口：[总报告](../eval/plango-quality-v3/README.md)、[回归包](../eval/quality-v3-regression-six/README.md)、[独立新包](../eval/quality-v3-independent-six/README.md)。私有原模型日志、SQLite/profile、所有初审/裁定/原包在`output/quality-v3-stage/`，不清理或重置。
+
+工程检查：产品版全量489pytest+87subtests、Ruff/mypy71、TS/UI/运输/构建通过；采集器后续17项定向及实际只读恢复通过，不能合称为一次新的全树全量检查。主API/worker已部署产品53d4ef5，71后端源码hash匹配；API/PG/Redis健康、worker运行，原17业务表1413行/3身份文件保持、8任务及未决0。新备份`output/quality-v3-main-20260910/`，旧trial包仍为a308b20、未重打包/发布。临时桌面/API/代理全部关闭，资料保留。
+
+[独立作品集/复杂度审查](作品集主线与复杂度审查.md)结论：主线清楚且窄场景开发闭环已有证据，独立使用与泛化交付尚不足；核心checkpoint/审批/回执/UNKNOWN/SSE有必要，旧IPC/空IM入口、重复子图声明和两个未用直接依赖有收缩空间。本轮仅审查这些删减，不用外围清理抢质量主线。README和三分钟演示已聚焦选店优惠→改条件→核依据→保存→中断继续，未改成仅写简历。
+
+新集最终审核另有一次语义标签更正（旧文件保留，未改gold/Actor输出）：FRESH03的budget=null与4人/每人115元仍表达460元有效上限，不能称预算漏算。原金标C3绑定具体表示的局限已独立注明；该题因无最终草案仍失败。纠正一条事实及误报完成标签后G为82.08%，TSR不变。后续不要为匹配该字段金标给产品写冗余约束；需改gold时必须另行独立裁定、版本化及统一重判。
+
+收尾时另出现未跟踪文件`AI应用_AI全栈_Agent_Java后端面试知识图谱.md`，本轮未创建、读取、修改或提交；与保护的融合原文一起保留，接续不要使用git add全目录误收。

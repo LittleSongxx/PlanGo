@@ -1,0 +1,71 @@
+{
+  "status": "complete",
+  "issues": [],
+  "release": {
+    "schema": "plango.independent-ai-controlled-review.v1",
+    "scope": "6 controlled independent_controlled cases; independent-context AI review; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark",
+    "dataset_sha": "7af164a21a2cd5e918873d63149cc405bbc7bb10225c13ed26ba473d46304dd1",
+    "product_sha": "221adb3d444868e655989d5b8da293df70814d5f4f0214857d4bc8f3c153bfbb",
+    "collection_sha": "594c2e2e24ec299d8f92293b63a1c3d2997f6b1859c04f00d336d2e334919f85",
+    "bundle_sha": "7e090f88708865eb06b65175a9616125ef9ddca24c23e2a1fdc2abde1a315b15",
+    "gold_review_sha": "3e4e48aa0920e60e8ba0e34146a3bc4fa0cfa2f6eedc2ed3b3eceb67991d8e01",
+    "output_review_sha": "4c7f7d53451b157767f3310278b3b11685c8b2a356cce7e3c7bac13c810557bf",
+    "annotations_sha": "e1d5ef821b5642695f575c9a63de384b7f9ab86355cc7776e8344b30f62c7883",
+    "review_receipts": [
+      {
+        "case_id": "FRESH-01",
+        "trial_id": "FRESH-01:first",
+        "gold_sha": "554878b65e2b3d54c5c158a6f7d5fc6d8c0ff92cf69f4ccb30cf09f9ae1b8160",
+        "packet_sha": "6432787c8aabc1b16d1fbd4a0e0a0eb184e5a5e4bc63ec9cd38db79cc8b1042b",
+        "gold_case_review_sha": "b6a5ae7041330524d04257ff31ec2fca36b4f49e22c1a2e3c07039ecf1122f41",
+        "output_case_review_sha": "ab424360a66b8b51a7c4ae8a8aefb17255983b22bdf778659d797f3a5ee14746"
+      },
+      {
+        "case_id": "FRESH-02",
+        "trial_id": "FRESH-02:first",
+        "gold_sha": "4d571329e00d6152d12b51e4ce6f0145103c8373357f59309df286a4b39da9e9",
+        "packet_sha": "034fe82a64e783929ed3c116809385b0d3a1717e921b065623f96e9dd139ffa7",
+        "gold_case_review_sha": "37cbb21e127460fe0a746999d60b7b08f9088607df24c56243919bf5e1fe0806",
+        "output_case_review_sha": "5fedf4b68922110e0779be46b7d63b974ee5084393e9709243024db3f07aa6d6"
+      },
+      {
+        "case_id": "FRESH-03",
+        "trial_id": "FRESH-03:first",
+        "gold_sha": "6ef0f677d5a43443a083dbc50396279c3353d4a868e5d06dc25d84fc826c2877",
+        "packet_sha": "ea2be9bf358d8201cebd3b5245de73f6b2d756b4246681f79a0fb4bd4d30100d",
+        "gold_case_review_sha": "97169ba1e4857a0158b68cc807a1ec6f1619082e74678f2bb4183711437dda1a",
+        "output_case_review_sha": "cd2706ffbed879ff4009c2fa3f09e819fe11fece97d41a3b5b975efc750a8a7d"
+      },
+      {
+        "case_id": "FRESH-04",
+        "trial_id": "FRESH-04:first",
+        "gold_sha": "38c998e7ab4a35d897c699376fb9766911c5090f08169fade44ca99916f278b3",
+        "packet_sha": "01bf23c5cc00c2321b0efe509cd6db7d2a17ce3e2d0d1432ffa6b462dff9be62",
+        "gold_case_review_sha": "5f3b32aec6a9a82e26dda95a3153fdd7ea244e37413d3f7b51c5a63802aff34d",
+        "output_case_review_sha": "b69d64ffca87a907bfa8ba23746110afd4c3c036329233e7e7b77ee1c8a25f37"
+      },
+      {
+        "case_id": "FRESH-05",
+        "trial_id": "FRESH-05:replacement-1",
+        "gold_sha": "07fefd9da42b5f174d9ee1981f8edff9c72a77062d32036e32b612cfd2c709cb",
+        "packet_sha": "e629db9abf6a33430a226b9cab4d1b0250c54353429ea7e77e01869275340b28",
+        "gold_case_review_sha": "ca556efae4702d8314bef42245261adfb38a754e5f8b94c232ea0cf0f4b0b5fa",
+        "output_case_review_sha": "b2dc49f0c3f88629168bd742489af9c61952143d0b11780d8012a31c4009d70d"
+      },
+      {
+        "case_id": "FRESH-06",
+        "trial_id": "FRESH-06:first",
+        "gold_sha": "dfeab17ef9f01f045ba9e84e3a98358919273de371b836421d3b2f08aa55e1eb",
+        "packet_sha": "d6c694b923b89bf6b30576c941dd052e2c81e9ac05ad5e718c31154d016e53c6",
+        "gold_case_review_sha": "b3f490204ebde324a8a15bcb8918aba94c49e584669e546f9ce857bf0f137a0d",
+        "output_case_review_sha": "5731f5f2d06c2f1bd96e32c8244b7a453a882ecf4390a05f2945a3c705fe3b95"
+      }
+    ],
+    "reviewer_type": "AI",
+    "reviewer": "/root/fresh_six_review",
+    "human_verified": false,
+    "gold_human_verified": false,
+    "human_calibrated": false,
+    "context_provenance": "Reviewer context isolation is established by the orchestration record, not inferred from hashes or model agreement"
+  }
+}

@@ -38,6 +38,8 @@ PlanGo 是 **集中式 Agent Workflow：行程层先规划、校验、审批，�
 
 桌面入口是 `task_context` → `image_entry`。上下文判断当前任务是行程规划、页面读取、写操作还是执行准备。纯图片读取也有独立来源验收，用户图片不能冒充当前网页。
 
+2026-09-10：每个新自然语言轮次通过现有 ModelAdapter 产生 `TaskIntent`，区分规划、摘录、资料判断、操作与继续原目标；分类结果持久到同轮上下文，结构化需求卡直接走原字段入口。目标分类占用原轮次预算，不新增授权；阶段推进仍由确定性协调器完成。分类失败时保留原有界 fallback，语义判断是否可靠由受控评测检查，不能仅凭新增模型调用声称问题已解决。用户文字分类可以发生在页面读取之前，登录观测仍在 PageData、BrowserDecision 或 Vision 处理前暂停。
+
 行程规划路径为：`load_memory` → `requirements` → `supervisor` → `discovery` → 可选 `advocate_fanout/advocate_worker` → `synthesis` → `verify` → `browser_variants` → `supervisor` → `propose_actions/approval`。协调器根据实际产物选择阶段，缺证据、地点冲突等可以进入澄清；有界修复后仍失败则保留原因。
 
 `browser_variants` 对“没有已知硬冲突、但事实尚不完整”的计划进入 `browser_draft_review`，不要求用户回答实时排队或库存。该 interrupt 复用持久命令和现有 checkpoint；`draft-decision` 同时绑定 interrupt、plan ID 与版本。用户可保存 `draft_ready` 草案，或在人数、日期、当前门店身份与地址来源足够时明确选择“仅准备表单”。后者的 ExecutionGoal 带 `plan_verification=draft` 与全部 `pending_checks`；原 Verifier 仍为不可执行。未知值不会升级为已核验，已知硬冲突不能走这个准备入口。
@@ -69,6 +71,8 @@ PlanGo 是 **集中式 Agent Workflow：行程层先规划、校验、审批，�
 ## 4. 需求、地点与事实如何保持一致
 
 `RequirementOutput` 表达稀疏补丁：未提及保留，明确修改设置，明确取消清除，未知仍保留未知。`RequirementOutput.to_trip_spec` 合并旧规范，随后 `agent/requirements.py::requirement_delta` 比较规范字段，最后才决定刷新。`planning_reset` 统一用户编辑、重规划和澄清回答的失效边界。
+
+2026-09-10：真实模型的修改须携带 `field_evidence`，引用本轮完整原文子句；共享边界核对出处、类型、单位和清除冲突，不再用 fallback 的空值覆盖带依据的模型字段。只有适配器实际返回原 fallback 对象才使用旧解析；缺依据则保留条件并澄清。`planning_reset` 与 Runtime 重入共用规范保留规则，清除旧计划、校验与审批产物，解析或地理暂停不再清空原 TripSpec。规划转资料判断也保留已接受人数、预算、日期和时间。完整子句校验是否过严、未提及默认字段是否干扰有效修改，仍需结合真实输出继续检查；出处存在不等于语义蕴含证明。
 
 Planner、Advocate 和 Critic 的模型输入不再包含累积的 `TripSpec.goal` 原文，只传当前结构化规范；例如预算已取消时，模型看到 `budget=null/per_person_budget=null`，人数、日期、当前硬约束和明确偏好照常保留。原消息及 goal 仍持久保存用于需求合并与审计。Advocate 报告/角色列表采用追加 reducer，重规划写入 `[]` 不会清掉历史；因此实际工作流按 run/turn 选择当前报告，worker 绑定真实任务、轮次和分派角色，模型不能自行改归属。旧 checkpoint 未携带 run ID 的报告按所在任务归属兼容，仍受轮次过滤。
 

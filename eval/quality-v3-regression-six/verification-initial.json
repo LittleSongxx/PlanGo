@@ -1,0 +1,71 @@
+{
+  "status": "complete",
+  "issues": [],
+  "release": {
+    "schema": "plango.independent-ai-controlled-review.v1",
+    "scope": "6 controlled regression cases; independent-context AI review; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark",
+    "dataset_sha": "93878dd106b7e114508122503a6d468d46ef784f6cac679c214b20245aeddf91",
+    "product_sha": "221adb3d444868e655989d5b8da293df70814d5f4f0214857d4bc8f3c153bfbb",
+    "collection_sha": "c8194ad4c4175399a0030050a7d36bd87e139466c775c12a7c85c068668f5ca6",
+    "bundle_sha": "679492a379ae418f025f63adf792f5b8c39fa8cb226c9e6de7939041f7ccd426",
+    "gold_review_sha": "8756add12328a884158a63a6781677a50e2a3e9ac9d7242f6bd4ec18a58088e7",
+    "output_review_sha": "e92e9458d3ab8e4942a474b642320bc2999004953be88c8f50d9a4f8f40e02d1",
+    "annotations_sha": "592c47991fb057559f32d9831dbf3199344fe66a55978e8387a64829ed50d9f3",
+    "review_receipts": [
+      {
+        "case_id": "NEW-01",
+        "trial_id": "NEW-01:first",
+        "gold_sha": "1741041e018a447d464f3ab82fc94a1b65e1c89fb16fee08483f5d69ad3f5998",
+        "packet_sha": "249cc91267ee4de50f9d3431b7db6e58614599bc0bc52b3b6b3131d9e91538bc",
+        "gold_case_review_sha": "f953c99b947dcaa5a9519bd7b0dd13548969b8496d83b20c3f157fbbfab07c63",
+        "output_case_review_sha": "4cbccc5444f63994384a2a45e409ff13c4f133c7e1d4fd4c446fb5bd5f9c2cde"
+      },
+      {
+        "case_id": "NEW-07",
+        "trial_id": "NEW-07:first",
+        "gold_sha": "0daccab206815a65ed121ad8bb134cacf9f9260f3817dbf09c08547d7e952732",
+        "packet_sha": "3583808202d867f2b53f48db598f155f2dba3fee6ae1f6b8e454c03db86c5a04",
+        "gold_case_review_sha": "dc6afc508e8fced98283f07bd9ac05fe2ee69db630c93d22f40052c0d8ebeb5b",
+        "output_case_review_sha": "a81ee0e7eb239f532cbe3f6fc85a861433586e44f2e076b0776b53a96374d256"
+      },
+      {
+        "case_id": "NEW-14",
+        "trial_id": "NEW-14:first",
+        "gold_sha": "dd54350dde7ca72628af6aef9b6f44811524432313400cd94ba49a8834ac1eb7",
+        "packet_sha": "412ff82af3e76e18c6b9a2ff5dc1a01ce547ff2b38090bdd79568639c7ad24e6",
+        "gold_case_review_sha": "e6ff3c095717451108552a2f0920bd42a67c83dd66e969cd02a9da81c7305944",
+        "output_case_review_sha": "c13f0556cd602c1dc3de290a993f3cf2d3e643b4f0eb0368b9e333bb21871812"
+      },
+      {
+        "case_id": "NEW-18",
+        "trial_id": "NEW-18:first",
+        "gold_sha": "723bf9bf8c8e31fdd3d3462215673357483e96c6e144d696bf000f0f2a390024",
+        "packet_sha": "2f053e4dcb763b18443e1b8c9a7b9879b72015d56b2da5f74396e91f4c549c9d",
+        "gold_case_review_sha": "b60348954cafabfc91bef02db1cc1eabb53dc67cf91d49587ac92b344f3afab5",
+        "output_case_review_sha": "00a9ca1ac2e979e1f12206f72a6816d2182b0188a556e6f5a83924456b120cfb"
+      },
+      {
+        "case_id": "NEW-21",
+        "trial_id": "NEW-21:first",
+        "gold_sha": "f0babc5daaaf7d3eb96a304cde9a447c89ee45a9917a6f1c799c8b0880a3c3c4",
+        "packet_sha": "824af302bba3b7cffb3af3fdfbb9b0f47964af0b94d2b9768fe68676a0f21215",
+        "gold_case_review_sha": "09f73992188dd537f76ad33efe0568d0f6b6dc8703a99d05f30b16c8ae9d26e8",
+        "output_case_review_sha": "f29d890255de1aec1f7600a845f69adeaa78b56403221de233ef105d9a17a45b"
+      },
+      {
+        "case_id": "NEW-29",
+        "trial_id": "NEW-29:first",
+        "gold_sha": "d8a49aaf89e3a752426ba529b7d2a6437131702551ef2abd0873dca7d176da65",
+        "packet_sha": "0d29b7bbfe95e6a4e735b701ea43c2e8044613e0e7a808b6711587bc6f75cce4",
+        "gold_case_review_sha": "3400403b54a0db47250c16a8dc1061fdcb8f00be7b8eef5fa70083f7f8125cb8",
+        "output_case_review_sha": "b60df57aa3f118c6285f498b1ed885578cc790f39e88cf73c7ab4db463a9f5cb"
+      }
+    ],
+    "reviewer_type": "AI",
+    "reviewer": "/root/regression_review",
+    "human_verified": false,
+    "gold_human_verified": false,
+    "human_calibrated": false,
+    "context_provenance": "Reviewer context isolation is established by the orchestration record, not inferred from hashes or model agreement"
+  }
+}
