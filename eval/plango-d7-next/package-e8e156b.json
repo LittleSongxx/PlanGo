@@ -1,0 +1,21 @@
+{
+  "archive": "release/plango-0.1.0-linux-x64-product-next.tar.gz",
+  "sha256": "20f866880d600943eccb1674e8b8c6c2ec40c8e3cb3e47d5a7a2c76796dfafea",
+  "bytes": 112859193,
+  "manifest": {
+    "format": 1,
+    "version": "0.1.0",
+    "revision": "e8e156b",
+    "source_dirty": false,
+    "implementation_sha256": "80f983a7e2de09e27ec88aab3db7f9b753cfe19c46101fcd5436095a9772e1c0",
+    "platform": "linux-x64",
+    "electron": "33.4.11",
+    "created_at": "2026-09-09T07:53:59.702335+00:00"
+  },
+  "secret_scan": true,
+  "profile_excluded": true,
+  "provenance_retained": true,
+  "author": "Xiaonian",
+  "license": "MIT",
+  "scope": "New local archive; not a repeat of the installation/upgrade/restore acceptance and not published"
+}

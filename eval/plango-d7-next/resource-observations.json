@@ -1,0 +1,19 @@
+{
+  "scope": "Two passive samples during actual website browsing; not a soak or leak/root-cause test",
+  "samples": [
+    {
+      "at": "2026-09-09T07:56:24.283Z",
+      "label": "resources-start",
+      "processes": 4,
+      "summed_working_set_kib": 516204
+    },
+    {
+      "at": "2026-09-09T08:00:37.253Z",
+      "label": "resources-end",
+      "processes": 6,
+      "summed_working_set_kib": 780800
+    }
+  ],
+  "closed_after_inspection": true,
+  "limitations": "RSS sums can double-count shared pages; before/after differ in loaded websites and process count. Not evidence of a leak, leak absence, or WSL crash cause."
+}
