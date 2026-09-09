@@ -465,6 +465,67 @@
           "equals": 2583
         }
       ]
+    },
+    {
+      "id": "dianping-logged-in-read-preview",
+      "classification": "real_logged_in_page_electron_and_same_run",
+      "recorded_status": "verified_with_scope",
+      "run_ids": [
+        "f8f8ad2719074b0a9c62cbb08367892f"
+      ],
+      "private_original_store": "output/merchant-next/session-C0ovDv/data/runs.sqlite",
+      "sources": [
+        "eval/plango-merchant-live/read-result.json",
+        "eval/plango-merchant-live/ui-restored.json"
+      ],
+      "prior_failure": "Short-page Readability omitted merchant/offer facts; generic extraction dropped address/prices; out-of-order raw receipt backfill hid structured cards. Earlier failures retained privately and in the before-order-fix screenshot.",
+      "expectations": [
+        "Only current page/snapshot satisfies current-page field requirements.",
+        "Coupon face value and crossed-out values do not replace the explicit selling price.",
+        "Recommended dishes and preview terms do not complete hidden menu/detail terms.",
+        "Newest structured data survives raw command backfill; all temporary windows close when unused."
+      ],
+      "necessary_read_only_steps": [
+        "Use the preserved independent profile, let the user handle any new verification, and continue the original read only.",
+        "Inspect the same historical source time; the read is partial and no business action was executed."
+      ],
+      "recorded_checks": [
+        {
+          "source": "eval/plango-merchant-live/read-result.json",
+          "pointer": "/offers/0/price",
+          "equals": 47
+        },
+        {
+          "source": "eval/plango-merchant-live/read-result.json",
+          "pointer": "/offers/1/price",
+          "equals": 98
+        },
+        {
+          "source": "eval/plango-merchant-live/read-result.json",
+          "pointer": "/offers/2/price",
+          "equals": 19.9
+        },
+        {
+          "source": "eval/plango-merchant-live/read-result.json",
+          "pointer": "/result/status",
+          "equals": "needs_evidence"
+        },
+        {
+          "source": "eval/plango-merchant-live/read-result.json",
+          "pointer": "/durable_actions",
+          "equals": 0
+        },
+        {
+          "source": "eval/plango-merchant-live/ui-restored.json",
+          "pointer": "/hasPrices",
+          "equals": true
+        },
+        {
+          "source": "eval/plango-merchant-live/ui-restored.json",
+          "pointer": "/hasAddress",
+          "equals": true
+        }
+      ]
     }
   ]
 }

@@ -191,12 +191,13 @@ export type OutcomeCard =
       entries: { name: string; address: string; partySize?: number; date: string; time: string; timezone: string }[];
       issues: { name: string; detail: string; mismatch: boolean }[] }
   | { kind: 'evidence'; items: HarnessEvidence[] }
-  | { kind: 'browser_page'; title: string; url: string; text: string; source?: SourceTag; observedAt?: string; scope?: 'visual_observation' | 'image_text'; limitations?: string[] }
+  | { kind: 'browser_page'; title: string; rawTitle?: string; url: string; text: string; source?: SourceTag; observedAt?: string; scope?: 'visual_observation' | 'image_text'; limitations?: string[];
+      menuCount?: number; offerCount?: number; places?: { name: string; address?: string; averagePrice?: number; priceUnit?: string; quote?: string }[] }
   | { kind: 'plan'; plan: Plan }
   | { kind: 'plans'; variants: { plan: Plan; styleLabel: string; per: number | null; overBudget?: number }[]; city: string; budget?: number }
   | { kind: 'deal'; title: string; rows: DealRow[] }
   | { kind: 'price_comparison'; title: string; source: SourceTag; data: PriceComparison }
-  | { kind: 'dishes'; shopName: string; dishes: DishReco[]; mode?: 'menu' | 'recommendation'; source?: SourceTag }
+  | { kind: 'dishes'; shopName: string; dishes: DishReco[]; mode?: 'menu' | 'recommended_dishes' | 'excerpt' | 'recommendation'; source?: SourceTag }
   | { kind: 'queue'; shopName: string; number: string; ahead: number; etaMin: number; source: SourceTag }
   | { kind: 'consensus'; planId: string; question: string; options: string[] }
   | { kind: 'receipt'; items: ReceiptItem[]; shareMessage: string }
@@ -211,6 +212,7 @@ export interface GroupBuyPackage {
   originalPrice: number | null
   includes: string[]
   fitPeople: string
+  quote?: string
   sold?: string
   recommended?: boolean
 }
@@ -243,6 +245,7 @@ export interface DealRow {
 export interface DishReco {
   name: string
   price?: number
+  priceUnit?: string
   reason: string
   excluded?: boolean // 避雷菜（命中人群硬约束，建议避开）
   signature?: boolean // 招牌/店内推荐

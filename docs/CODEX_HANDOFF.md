@@ -4,7 +4,17 @@
 
 这是新 Codex 对话的当前交接入口。**R0→P3 本轮核心实施已完成并本地提交；不要重新更名、迁移目录或重建环境。N2结构化需求编辑和Linux试用交付已在接续中补齐；整个产品仍有真实商家登录后读取/准备等未完成范围。** 本文件区分已实现、已验证和建议后续范围，不能把受控测试当作真实商家履约。
 
-## 0. 最新接续结果（优先于下方带旧时间的快照）
+## 0. 最新门店与UI接续（2026-09-09，优先于以下旧状态）
+
+用户已完成扫码及一次网站安全验证。**当前没有需要用户操作的临时窗口，独立桌面/SQLite后端已关闭，登录态和原任务保留。** 调试窗口不用时及时关闭的约定已写入AGENTS，不能做成产品空闲自动退出。
+
+- 默认启动窗口由1500×940改为1800×1120，并限制在屏幕工作区；主界面以门店/地址/人均、优惠价格与条件优先，原文和长标题折叠，推荐菜分组可展开，反馈移到最后。旧raw命令补投影不再盖住较新的结构化卡片。
+- N1原run `f8f8ad2719074b0a9c62cbb08367892f` 位于原 `output/merchant-next/session-C0ovDv/`。真实只读取到顺风123(观音桥大融城店)地址、人均62、10道推荐菜及售价47/98/19.9的3条优惠；面值不当售价，划线价保持未知。详见[真实门店与界面](../eval/plango-merchant-live/README.md)。
+- 原任务仍为PARTIAL_FAILED/needs_evidence、read_only、business_completed=false：完整菜单与使用细则需平台App，当前页面没有原生预约表单；全历史11个extract，click/type/业务动作均0。**不再需要重复要求用户扫码来推进已经读到的预览；后续真实预约准备需实际可操作网页入口。** 重开若网站要求验证仍由用户手动处理，不绕过或复制Cookie。
+- 累计12152tokens/5tools，最后一轮3343tokens/2tools，旧失败全部保留。模型budget fallback来自保守入场估算及预留，baseline没有丢失；没有增加预算或清计数。新的首站确定性抽取、共享持久处理和App预览停止已有离线验证，不把它们说成另一次0模型真实对照。
+- 当前schema无新增数据库迁移。最终本地提交、主服务更新和新版试用包见本文件末尾；旧0.1.0归档及历史交接保留，不覆盖旧交付证据。第0节以下的“等待扫码/窗口保留”属于上一轮快照，已由本节替代。
+
+## 上一轮接续结果（历史快照）
 
 用户已授权直接推进第7节。接续从 `ad686e7` 开始，保留全部历史、用户融合原文与项目配置；未新建/重命名 conda 环境、未动兄弟 Planora、未清库、未push/PR/发布。证据集中在 [N1→N4验收](../eval/plango-next/README.md)。
 
@@ -218,3 +228,9 @@ PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plang
 - 最终本地包：`release/plango-0.1.0-linux-x64.tar.gz`，112832483字节（约108MiB），旁边有`.sha256`。包内revision=`87f18e9`、`source_dirty=false`、Electron33.4.11；SHA256为 `36124dc05aae06e4e6662f59dfb7069e4d9cdf0b64d30a3603f96ba6d24c46bc`。
 - [最终包检查](../eval/plango-next/final-package.json)：本机配置密钥扫描通过、用户融合原文排除、固定上游档案/作者/许可证保持。该clean包另装入 `output/trial-final-check`（plango-final-artifact-check/28013），诊断全通过，未启动服务或新建profile；完整桌面/升级/恢复验收仍单独看此前trial-install.json，不虚称再次跑了全部测试。
 - 保留原主库SQL备份 `output/next-maintenance/before-update.sql` 与前后行指纹，测试源/恢复冷备在 `output/trial-check/`。这些私有备份包含身份和数据，不提交或分发；可分发的试用归档没有本项目配置密钥。
+
+## 10. 本轮门店/UI收尾状态
+
+最终全量pytest264+43subtests、Ruff/mypy67文件、TS/构建、浏览器80项及隔离桌面/键盘交互通过；9场景54条归档断言通过。主API/worker已更新门店/UI接续源码，17表原始行与主profile49Cookie/身份/回执保持，健康且无待命令，见[本轮连续性](../eval/plango-merchant-live/main-data-continuity.json)。
+
+原N1读取任务当前PARTIAL_FAILED/read_only，保留真实取得字段与未覆盖范围；所有临时窗口、独立后端已关闭，不存在待用户扫码的活动窗口。`output/merchant-next/session-C0ovDv/`保留真实登录态与数据，重开需要先核实归属；只有遇到新的真实安全验证时再请用户处理。实际UI恢复未新增模型用量。新的本地实现/包路径在最终交付记录中补充；不覆盖上一归档，不push或发布。

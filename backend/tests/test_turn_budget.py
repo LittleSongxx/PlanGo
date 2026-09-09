@@ -2,18 +2,45 @@
 
 import asyncio
 import time
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 from fastapi.testclient import TestClient
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 from plango.app import create_app
+from plango.graph import BrowserDecision
+from plango.settings import DesktopSettings
 from plango_harness.agent.contracts import Location, RunPhase
 from plango_harness.agent.decisions import RequirementOutput
+from plango_harness.agent.model_adapter import ModelAdapter
 from plango_harness.agent.state import PlanGoState, _budget_checkpoint
 from plango_harness.runtime import PlanGoRuntime
 from plango_harness.settings import Settings
 from test_browser_harness import TOKEN, settings, wait_for
+
+
+def test_browser_model_admission_uses_remaining_turn_budget_not_cumulative_total():
+    async def exercise():
+        decision = BrowserDecision(operation="snapshot", rationale="读取同一页面的当前状态")
+        invoke = AsyncMock(return_value={"parsed": decision, "raw": SimpleNamespace(usage_metadata={"total_tokens": 321})})
+        provider = SimpleNamespace(with_structured_output=lambda *args, **kwargs: SimpleNamespace(ainvoke=invoke))
+        adapter = ModelAdapter(DesktopSettings(_env_file=None, max_model_tokens=12000), model=provider)
+        adapter.reset_run(12152, call_count=6)
+        adapter.set_run_budget(None, token_baseline=8809)
+        assert adapter.token_limit == 20809 and adapter._remaining_tokens() == 6657
+        fallback = BrowserDecision(rationale="范围尚未完成")
+        result = await adapter.structured(BrowserDecision, system="读取网页", user="读取商家菜单", fallback=fallback)
+        assert result == decision and invoke.await_count == 1
+        assert adapter.total_tokens == 12473 and adapter.call_count == 7
+        assert adapter.token_baseline == 8809 and adapter.last_error is None
+        # An overlarge next prompt can still be rejected before billing despite an unspent turn cap.
+        blocked = await adapter.structured(BrowserDecision, system="读取网页", user="页面原文" * 2000, fallback=fallback)
+        assert blocked is fallback and invoke.await_count == 1
+        assert adapter.last_error == "model_token_budget" and adapter._remaining_tokens() > 0
+        assert adapter.total_tokens == 12473 and adapter.call_count == 7
+
+    asyncio.run(exercise())
 
 
 def test_new_user_edits_receive_budget_without_resetting_cumulative_usage(tmp_path):

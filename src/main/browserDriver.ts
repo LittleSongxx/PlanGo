@@ -100,6 +100,7 @@ const selectorSource = `(() => {
     if(controls.some(el=>(['INPUT','TEXTAREA'].includes(el.tagName)||el.isContentEditable)&&(/captcha|验证码|验证代码|安全验证/i.test([el.getAttribute('aria-label'),el.getAttribute('name'),el.getAttribute('placeholder'),...(el.labels?Array.from(el.labels,label=>label.innerText):[])].join(' '))||el.getAttribute('autocomplete')==='one-time-code')))gate='captcha';
     const text=(document.body?document.body.innerText:'').trim().slice(0,1000);
     if(location.hostname==='account.dianping.com'&&location.pathname==='/pclogin'&&/扫描二维码登录|扫码[，,\\s]*享.{0,10}免登录|扫码登录/.test(text))gate='login';
+    if(location.hostname==='verify.meituan.com'&&location.pathname==='/v2/app/general_page')gate='captcha';
     if(/^(安全验证|人机验证|验证码|Just a moment[.]*|Checking your browser|Verify (you are|you're) human)(\\s*[|–-].*)?$/i.test(document.title.trim())||/^(请完成(人机|安全|身份)验证|请验证您是真人)/.test(text))gate='captcha';
     return gate;
   }
@@ -164,7 +165,7 @@ const selectorSource = `(() => {
       }
     }
     let text=(document.body?document.body.innerText:'').slice(0,9000);
-    if(p.extract)try{const article=new Readability(document.cloneNode(true),{charThreshold:200}).parse();if(article&&article.textContent&&article.textContent.replace(/\\s/g,'').length>120)text=article.textContent.replace(/\\n{3,}/g,'\\n\\n').trim().slice(0,9000);}catch{}
+    if(p.extract&&text.length===9000)try{const article=new Readability(document.cloneNode(true),{charThreshold:200}).parse();if(article&&article.textContent&&article.textContent.replace(/\\s/g,'').length>120)text=article.textContent.replace(/\\n{3,}/g,'\\n\\n').trim().slice(0,9000);}catch{}
     const s={id:p.id,owner:p.owner,epoch:p.epoch,doc:document,url:location.href,version:p.version,refs,elements,meanings:refs.map(meaning),viewport:viewport(),roots:rs,fingerprint:fingerprint(rs),dirty:false,observers:[],armed:null,dispatched:false,prevented:false};
     for(const root of rs){const observer=new MutationObserver(()=>{s.dirty=true});observer.observe(root,{subtree:true,childList:true,characterData:true,attributes:true});s.observers.push(observer);}
     current=s;

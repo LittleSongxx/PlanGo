@@ -1,6 +1,6 @@
 // Offline integration fixture, not a real-world task success measurement.
 // npm run build && env -u ELECTRON_RUN_AS_NODE xvfb-run -a node_modules/.bin/electron --no-sandbox scripts/desktop-ui-smoke.cjs
-const { app, BrowserWindow, session } = require('electron')
+const { app, BrowserWindow, screen, session } = require('electron')
 const assert = require('node:assert/strict')
 const { createServer } = require('node:http')
 const { mkdirSync, mkdtempSync, rmSync, writeFileSync, cpSync } = require('node:fs')
@@ -21,7 +21,7 @@ process.env.PLANGO_BACKEND_TOKEN = 'offline-smoke-only'
 process.env.PLANGO_DATA_DIR = join(work, 'harness')
 let snapshot, command, observation, snapshotReads = 0
 const input = '读取当前浏览器页面的真实菜单'
-const fixture = '<!doctype html><html><head><title>菜单界面回归样本</title></head><body><h1>菜单界面回归样本</h1><table><tr><th>菜品</th><th>价格</th></tr><tr><td>真实读取的双人套餐</td><td>128 元</td></tr><tr><td>时价菜</td><td>询价</td></tr></table><input placeholder="搜索"></body></html>'
+const fixture = '<!doctype html><html><head><title>菜单界面回归样本</title></head><body><h1>菜单界面回归样本</h1><table><tr><th>菜品</th><th>价格</th></tr><tr><td>真实读取的双人套餐</td><td>128 元</td></tr><tr><td>时价菜</td><td>询价</td></tr>' + Array.from({ length: 8 }, (_, index) => `<tr><td>回归菜品 ${index + 3}</td><td>询价</td></tr>`).join('') + '</table><input placeholder="搜索"></body></html>'
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1')
   if (url.pathname === '/fixture') { res.setHeader('content-type', 'text/html; charset=utf-8'); res.end(fixture); return }
@@ -49,7 +49,8 @@ const server = createServer(async (req, res) => {
     observation = data
     snapshot = { ...snapshot, phase: 'SUCCEEDED', outcome: 'SUCCEEDED', version: 2, event_seq: 2, interrupt_id: null, state: {
       messages: [{ type: 'human', content: input }], reason: '页面观测已保存', browser_wait: null,
-      execution_outcome: { status: 'satisfied', data: { scope: 'read_only', business_completed: false } },
+      execution_goal: { kind: 'menu_read', request: input, source: 'browser' },
+      execution_outcome: { kind: 'menu_read', status: 'satisfied', evidence_ids: ['fixture-page'], data: { scope: 'read_only', business_completed: false, observed_fields: ['menu'] } },
       browser_artifacts: [{ artifact_id: 'fixture-page', type: 'menu', source: 'browser', url: data.url, title: data.title, snapshot_id: data.snapshot_id, observed_at: data.observed_at,
         data: { text: data.text, tables: data.tables, menu: data.tables[0].rows.map(([name, raw]) => ({ name, price: raw === '128 元' ? 128 : null, quote: name + ' ' + raw })) } }]
     } }
@@ -85,8 +86,13 @@ async function main() {
   process.chdir(work)
   await import(pathToFileURL(resolve(root, 'out/main/index.js')).href)
   await waitFor('application window', () => { window = BrowserWindow.getAllWindows()[0]; return !!window })
+  const workArea = screen.getPrimaryDisplay().workAreaSize
+  const expectedSize = [Math.min(1800, workArea.width), Math.min(1120, workArea.height)]
+  // Electron/X11 may trim one pixel when the initial window fills the display.
+  assert(window.getSize().every((value, index) => value <= expectedSize[index] && value >= expectedSize[index] - 1), 'default window grows within the screen work area')
+  assert.deepEqual(window.getMinimumSize(), [Math.min(1180, workArea.width), Math.min(740, workArea.height)], 'minimum window size fits smaller screens')
   await waitFor('renderer hydration', () => js("!!document.querySelector('textarea') && !document.body.innerText.includes('未连接服务')"))
-  const uiEvidence = join(root, 'eval/plango-ui')
+  const uiEvidence = join(root, 'output/desktop-ui-smoke', String(Date.now()))
   mkdirSync(uiEvidence, { recursive: true })
   await sleep(250)
   writeFileSync(join(uiEvidence, '01-workspace-empty.png'), (await window.webContents.capturePage()).toPNG())
@@ -146,6 +152,13 @@ async function main() {
   await fill('textarea', input)
   await waitFor('real browser observation', () => !!observation)
   await waitFor('projected menu in full UI', () => js("document.body.innerText.includes('菜单摘录') && document.body.innerText.includes('价格待核验') && document.body.innerText.includes('¥128')"))
+  assert.equal(await js("document.body.innerText.includes('回归菜品 10')"), false, 'Long menu excerpts start compact')
+  await js("[...document.querySelectorAll('summary')].find(el=>el.innerText.includes('展开其余 2 道菜品')).focus()")
+  window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' })
+  window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' })
+  await waitFor('keyboard expands remaining dishes', () => js("document.body.innerText.includes('回归菜品 10')"))
+  await js("[...document.querySelectorAll('summary')].find(el=>el.innerText==='查看菜品原文证据').click()")
+  assert.equal(await js("[...document.querySelectorAll('details[open] blockquote')].some(el=>el.innerText==='回归菜品 10 询价')"), true, 'Collapsed source quotes remain available')
   const before = guest.id
   await js("document.querySelector('button[title=\"浏览器\"]').click()")
   await sleep(100)

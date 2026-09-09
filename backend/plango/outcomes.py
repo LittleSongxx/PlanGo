@@ -49,11 +49,42 @@ def preparation_click_forbidden(state, operation, target):
     return preparing and operation == "click" and (not target or target.get("tag") != "a" or not target.get("href"))
 
 
+ReadField = Literal["merchant", "address", "menu", "recommended_dishes", "offers", "offer_conditions"]
+_READ_FIELDS: dict[ReadField, tuple[str, str]] = {
+    "merchant": ("门店身份", r"(?:门店|商家|餐厅|店铺)(?:的)?(?:信息|详情|名称|身份|地址)|店名"),
+    "address": ("门店地址", r"地址"),
+    "menu": ("菜单详情", r"菜单|餐单|菜价|\bmenu\b"),
+    "recommended_dishes": ("推荐菜", r"推荐菜|网友推荐"),
+    "offers": ("套餐条目", r"套餐|团购"),
+    "offer_conditions": ("套餐使用条件", r"(?:套餐|团购).{0,8}(?:条件|规则|须知)|使用条件|使用规则|购买须知"),
+}
+
+
 class ReadGoal(BaseModel):
     model_config = ConfigDict(extra="forbid")
     kind: Literal["page_read", "menu_read"]
     request: str
     source: Literal["browser", "user_image"] = "browser"
+    required_fields: list[ReadField] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def requested_fields(self):
+        # Old checkpoints carry only request/kind; derive the same bounded contract without a migration.
+        if not self.required_fields and self.source == "browser":
+            for field, (_, pattern) in _READ_FIELDS.items():
+                requested = False
+                for clause in re.split(r"[，。；！？\n]", self.request):
+                    if field == "address":
+                        clause = re.sub(r"(?:网页|页面|来源|链接|URL)(?:的)?地址", "", clause, flags=re.I)
+                        if "merchant" not in self.required_fields and not re.search(r"门店|商家|餐厅|餐馆|饭店|店铺|这家店|本店|该店", clause):
+                            continue
+                    if re.search(pattern, clause, re.I):
+                        requested = not bool(re.match(r"\s*(?:不要|不用|无需|不需要|不必|别|取消)", clause))
+                if requested:
+                    self.required_fields.append(field)
+            if self.kind == "menu_read" and not self.required_fields:
+                self.required_fields.append("menu")
+        return self
 
 
 class ExecutionOutcome(BaseModel):
@@ -140,7 +171,64 @@ def _fresh_artifact(item, now):
 def browser_manual_error(observation):
     dom = (observation.get("fields") or {}).get("dom")
     gate = dom.get("manual_gate") if isinstance(dom, dict) else None
+    try:
+        page = urlsplit(str(observation.get("url") or ""))
+        if page.hostname == "verify.meituan.com" and page.path == "/v2/app/general_page":
+            gate = "captcha"
+    except ValueError:
+        pass
     return "authentication_required" if gate == "login" else "captcha_required" if gate == "captcha" else None
+
+
+def _read_page_fields(data, title):
+    """Count literal merchant fields, retaining recommendation/condition previews as narrower reads."""
+    from .world import _grounded_price
+
+    text = str(data.get("text") or "")
+    tables = [table for table in data.get("tables") or [] if isinstance(table, dict)]
+    original = text + "\n" + "\n".join(" | ".join(map(str, row)) for table in tables for row in table.get("rows") or [] if isinstance(row, list))
+    fields: set[ReadField] = set()
+    menu_rows = {" | ".join(map(str, row)) for table in tables
+                 if any(str(header).strip() in {"菜品", "菜名", "餐品", "菜肴"} for header in table.get("headers") or [])
+                 for row in table.get("rows") or [] if isinstance(row, list)}
+
+    def grounded(row):
+        return (isinstance(row, dict) and isinstance(row.get("quote"), str) and bool(row["quote"])
+                and row["quote"] in original and isinstance(row.get("name"), str) and bool(row["name"])
+                and row["name"] in row["quote"])
+
+    for place in data.get("places") or []:
+        if grounded(place):
+            fields.add("merchant")
+            if place.get("address") and place["address"] in place["quote"]:
+                fields.add("address")
+    for row in data.get("menu") or []:
+        if not grounded(row):
+            continue
+        # A heading after the dish (e.g. '菜单(9) 去App查看') does not supply its menu context.
+        sections = []
+        for occurrence in re.finditer(re.escape(row["name"]), text):
+            headings = list(re.finditer(r"推荐菜|网友推荐|菜单|餐单|团购套餐|团购|代金券", text[:occurrence.start()]))
+            sections.append(headings[-1].group() if headings else "菜单" if re.search(r"菜单|餐单", title) else "")
+        if any(section in {"推荐菜", "网友推荐"} for section in sections):
+            fields.add("recommended_dishes")
+        if (row["quote"] in menu_rows or any(section in {"菜单", "餐单"} for section in sections)
+                or (not any(sections) and row.get("price") is not None and _grounded_price(row["price"], row["quote"]))):
+            fields.add("menu")
+    offers = [row for row in data.get("offers") or [] if grounded(row)]
+    partial_conditions = False
+    if offers:
+        fields.add("offers")
+        details = []
+        for row in offers:
+            conditions = [condition for condition in row.get("conditions") or []
+                          if isinstance(condition, str) and condition.strip() and condition in row["quote"]
+                          and not re.search(r"(?:App|APP|详情|待确认|未知)", condition)]
+            partial_conditions |= bool(conditions)
+            details.append(bool(conditions and re.search(r"使用条件|使用规则|使用须知|购买须知", row["quote"])))
+        if all(details):
+            fields.add("offer_conditions")
+    return fields, partial_conditions and "offer_conditions" not in fields
 
 
 def read_outcome(state, now=None):
@@ -152,8 +240,10 @@ def read_outcome(state, now=None):
     observation = state.get("browser_observation") or {}
     if browser_manual_error(observation):
         return ExecutionOutcome(kind=goal.kind, status="needs_evidence", summary="页面需要人工登录或验证；尚未取得目标内容。",
-                                data={"scope": "read_only", "business_completed": False})
+                                data={"scope": "read_only", "business_completed": False, "missing_fields": goal.required_fields})
     evidence = []
+    observed_fields: set[ReadField] = set()
+    partial_conditions = False
     visual = current_visual_observation(state)
     for item in state.get("browser_artifacts", []):
         data = item.get("data") or {}
@@ -169,26 +259,32 @@ def read_outcome(state, now=None):
             continue
         if item.get("source") != "browser" or not item.get("url"):
             continue
-        if goal.kind == "page_read":
+        if goal.required_fields and item.get("type") == "browser_page":
+            if re.search(r"当前(?:浏览器)?(?:中|上|里)?的?(?:页面|网页)", goal.request) and (
+                    item.get("url") != observation.get("url") or item.get("snapshot_id") != observation.get("snapshot_id")):
+                continue
+            fields, partial = _read_page_fields(data, item.get("title") or "")
+            observed_fields.update(fields)
+            partial_conditions |= partial
+            if fields:
+                evidence.append(item["artifact_id"])
+        elif goal.kind == "page_read":
             if visual is not None and item is visual:
                 evidence.append(item["artifact_id"])
             elif (item.get("type") == "browser_page" and item.get("snapshot_id") == observation.get("snapshot_id")
                     and item.get("url") == observation.get("url") and str(data.get("text") or "").strip()):
                 evidence.append(item["artifact_id"])
-        elif item.get("type") == "browser_page":
-            original = str(data.get("text") or "") + "\n" + "\n".join(
-                " | ".join(map(str, row)) for table in data.get("tables") or [] if isinstance(table, dict)
-                for row in table.get("rows") or [] if isinstance(row, list)
-            )
-            from .world import _grounded_price
-
-            menu_table = any(any(str(header).strip() in {"菜品", "菜名", "餐品", "菜肴"} for header in table.get("headers") or [])
-                             for table in data.get("tables") or [] if isinstance(table, dict))
-            if any(isinstance(row, dict) and isinstance(row.get("quote"), str) and row["quote"]
-                   and row["quote"] in original and row.get("name") and row["name"] in row["quote"]
-                   and (menu_table or _grounded_price(row.get("price"), row["quote"]))
-                   for row in data.get("menu") or []):
-                evidence.append(item["artifact_id"])
+    if goal.source == "browser" and goal.required_fields:
+        missing = [field for field in goal.required_fields if field not in observed_fields]
+        observed = [field for field in _READ_FIELDS if field in observed_fields]
+        partial = ["offer_conditions"] if partial_conditions and "offer_conditions" not in observed_fields else []
+        summary = "已读取有来源的" + "、".join(_READ_FIELDS[field][0] for field in observed) if observed else "尚未读取到请求的结构化内容"
+        if partial:
+            summary += "；已保留页面展示的部分套餐条件"
+        summary += "；仍缺" + "、".join(_READ_FIELDS[field][0] for field in missing) if missing else "；请求的读取范围已覆盖"
+        return ExecutionOutcome(kind=goal.kind, status="needs_evidence" if missing else "satisfied", summary=summary + "。未公开价格仍为未知。",
+                                evidence_ids=list(dict.fromkeys(evidence)), data={"scope": "read_only", "business_completed": False,
+                                "required_fields": goal.required_fields, "observed_fields": observed, "missing_fields": missing, "partial_fields": partial})
     return ExecutionOutcome(
         kind=goal.kind, status="satisfied" if evidence else "needs_evidence", evidence_ids=list(dict.fromkeys(evidence)),
         summary=("已保留用户图片的识别文字；实时商家和价格信息仍需另行核对。" if goal.source == "user_image" else "已读取有来源的菜单条目；未公开价格仍为未知。" if goal.kind == "menu_read" else "已读取有来源的页面或图像文字，内容已保留。") if evidence else

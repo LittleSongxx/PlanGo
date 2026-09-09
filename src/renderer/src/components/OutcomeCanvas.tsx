@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
-import { canResolveAction } from '../lib/harnessProjection'
+import { canResolveAction, readProgress } from '../lib/harnessProjection'
 import type { OutcomeCard, Plan, DealRow, DishReco, ReceiptItem, SourceTag, TakeoutItem, DiscoverGroup, POISummary, GroupBuyPackage, HarnessEvidence } from '@shared/types'
 import { SourceBadge } from './SourceBadge'
 import { PlanMap } from './PlanMap'
@@ -17,6 +17,7 @@ export function OutcomeCanvas(): JSX.Element {
   const run = useStore((s) => s.run)
   const setView = useStore((s) => s.setView)
   const refreshRun = useStore((s) => s.refreshRun)
+  const reading = readProgress(run)
   return (
     <div className="h-full flex flex-col bg-[#f7f9f6]">
       <div className="min-h-[52px] shrink-0 flex items-center gap-2 px-5 border-b border-[var(--line)] bg-white/75">
@@ -36,7 +37,10 @@ export function OutcomeCanvas(): JSX.Element {
       </div>
       <div className="flex-1 overflow-y-auto p-5 lg:p-6">
         <RequirementsCard />
-        <ResultFeedback />
+        {!!(reading.observed.length || reading.missing.length) && <div aria-label="资料读取范围" className="max-w-4xl mx-auto plango-card p-4 mb-5 text-sm leading-6 space-y-2">
+          {!!reading.observed.length && <div className="flex items-start gap-3"><span className="text-brand-strong font-medium shrink-0">已读</span><span>{reading.observed.join('、')}</span></div>}
+          {!!reading.missing.length && <div className="flex items-start gap-3"><span className="text-amber-800 font-medium shrink-0">仍需核对</span><span className="text-neutral-600">{reading.missing.map(field => `${field}${reading.partial.includes(field) ? '（仅取得部分条件）' : ''}`).join('、')}</span></div>}
+        </div>}
         {cards.length === 0 && run?.outcome ? <div className="max-w-4xl mx-auto plango-card p-6"><h2 className="text-base font-semibold">本轮尚无可展示的成果</h2><p className="text-sm text-[var(--muted)] leading-6 mt-3">{String(run.state.reason || '你可以在对话中查看任务记录，调整需求后继续。')}</p></div> : cards.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-5">
             <div aria-hidden="true" className="relative w-32 h-28 mb-7"><div className="absolute left-4 top-3 w-20 h-24 rounded-2xl border border-[#d5e4d9] bg-[#eaf3ec] rotate-[-10deg]" /><div className="absolute right-3 top-1 w-20 h-24 rounded-2xl border border-[#d6e6db] bg-white shadow-panel rotate-[8deg] flex items-center justify-center"><FileText size={30} className="text-[#5a8a6c]" /></div><span className="absolute bottom-0 right-0 h-10 w-10 rounded-2xl bg-brand-strong text-white flex items-center justify-center"><Sparkles size={18} /></span></div>
@@ -53,6 +57,7 @@ export function OutcomeCanvas(): JSX.Element {
             ))}
           </div>
         )}
+        {run?.outcome && <div className="mt-5"><ResultFeedback /></div>}
       </div>
     </div>
   )
@@ -77,7 +82,7 @@ function CardView({ card }: { card: OutcomeCard }): JSX.Element {
         {card.resume && !card.resume.can_resume && !!card.resume.blockers.length && <p className="mt-3 text-xs text-amber-700">{card.resume.blockers.join('；')}</p>}
       </Card>
     case 'browser_page':
-      return <Card><div className="flex gap-2 items-center text-sm font-semibold">{card.title}<SourceBadge source={card.source || 'browser'} /></div><div className="text-[11px] text-[var(--muted)] mt-1.5">{card.observedAt ? new Date(card.observedAt).toLocaleString('zh-CN') : '观测时间未知'}</div>{card.scope === 'image_text' && <p className="text-xs text-amber-700 my-2">图片识别：内容来自你提供的图片，价格和商家信息尚未实时核验。</p>}{card.scope === 'visual_observation' && <p className="text-xs text-amber-700 my-2">截图理解：仅描述画面，不代表已核验商家事实或完成业务操作。</p>}<pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words text-[13px] leading-6 text-[#425748] bg-[#f6f9f6] rounded-xl border border-[#e8eee8] p-4 mt-3">{card.text}</pre>{card.limitations?.map((limitation, index) => <p key={index} className="text-xs text-neutral-500 mt-1">{limitation}</p>)}{/^https?:\/\//i.test(card.url) && <button onClick={() => useStore.getState().navigateInApp(card.url)} className="text-xs font-medium text-brand-strong underline underline-offset-4 mt-3">查看原始页面</button>}</Card>
+      return <BrowserPageCard card={card} />
     case 'evidence':
       return <EvidenceCard items={card.items} />
     case 'plan':
@@ -111,6 +116,30 @@ function CardView({ card }: { card: OutcomeCard }): JSX.Element {
 
 function Card({ children, accent }: { children: React.ReactNode; accent?: boolean }): JSX.Element {
   return <div className={`plango-card ${accent ? 'border-[#bfd8c8] shadow-panel' : ''} p-5 animate-in`}>{children}</div>
+}
+
+function BrowserPageCard({ card }: { card: Extract<OutcomeCard, { kind: 'browser_page' }> }): JSX.Element {
+  const structured = !!(card.places?.length || card.menuCount || card.offerCount)
+  return <Card>
+    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="plango-kicker">{card.scope ? '识别记录' : '页面资料'}</div><h3 className="mt-1 text-lg leading-7 font-semibold break-words">{card.title}</h3></div><SourceBadge source={card.source || 'browser'} /></div>
+    <div className="text-xs text-[var(--muted)] mt-2">读取于 {card.observedAt ? new Date(card.observedAt).toLocaleString('zh-CN') : '时间未知'}</div>
+    {card.scope === 'image_text' && <p className="text-sm leading-6 text-amber-700 mt-3">图片识别：内容来自你提供的图片，价格和商家信息尚未实时核验。</p>}
+    {card.scope === 'visual_observation' && <p className="text-sm leading-6 text-amber-700 mt-3">截图理解：仅描述画面，不代表已核验商家事实或完成业务操作。</p>}
+    {card.places?.map((place, index) => <div key={index} className="mt-4 rounded-xl border border-[var(--line)] bg-[#f7faf7] p-4 text-sm leading-6">
+      {card.places!.length > 1 && <h4 className="font-semibold mb-2">{place.name}</h4>}
+      <div className="flex items-start gap-2"><MapPin size={16} className="mt-1 shrink-0 text-brand-strong" /><span>{place.address || '门店地址待核验'}</span></div>
+      <div className="mt-2 flex items-center gap-2"><Wallet size={16} className="shrink-0 text-brand-strong" /><span>{place.averagePrice === undefined ? '人均费用待核验' : `页面人均 ¥${place.averagePrice}`}</span></div>
+    </div>)}
+    {structured && <div className="mt-4 flex flex-wrap gap-2 text-xs"><span className="rounded-lg bg-brand-soft px-3 py-2 text-brand-ink">菜品摘录 {card.menuCount || 0} 项</span><span className="rounded-lg bg-brand-soft px-3 py-2 text-brand-ink">{card.offerCount ? `套餐摘录 ${card.offerCount} 项` : '套餐条件待核验'}</span>{!card.places?.length && <span className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">门店地址待核验</span>}</div>}
+    <details open={!structured} className="mt-4 border-t border-[var(--line)] pt-3 text-sm">
+      <summary className="cursor-pointer text-[var(--muted)] py-1">查看原始网页摘录与来源</summary>
+      {card.rawTitle && <p className="mt-3 text-xs leading-6 text-neutral-500 break-words">网页原标题：{card.rawTitle}</p>}
+      {card.places?.filter(place => place.quote).map((place, index) => <blockquote key={index} className="mt-3 border-l-2 border-brand/40 pl-3 text-sm leading-6 text-neutral-600 whitespace-pre-wrap break-words">{place.quote}</blockquote>)}
+      <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words font-sans text-sm leading-7 text-[#425748] bg-[#f6f9f6] rounded-xl border border-[#e8eee8] p-4 mt-3">{card.text}</pre>
+    </details>
+    {card.limitations?.map((limitation, index) => <p key={index} className="text-sm leading-6 text-neutral-600 mt-2">{limitation}</p>)}
+    {/^https?:\/\//i.test(card.url) && <button onClick={() => useStore.getState().navigateInApp(card.url)} className="text-sm font-medium text-brand-strong underline underline-offset-4 mt-4">查看原始页面</button>}
+  </Card>
 }
 
 // SVG 五维雷达图（移植 weplan ui.js radar）。scores 为 0-100，labels 省钱/好玩/便捷/合适/特色。
@@ -502,28 +531,25 @@ function DealCard({ title, rows }: { title: string; rows: DealRow[] }): JSX.Elem
   )
 }
 
-function DishesCard({ shopName, dishes, mode = 'recommendation', source }: { shopName: string; dishes: DishReco[]; mode?: 'menu' | 'recommendation'; source?: SourceTag }): JSX.Element {
+function DishesCard({ shopName, dishes, mode = 'recommendation', source }: { shopName: string; dishes: DishReco[]; mode?: 'menu' | 'recommended_dishes' | 'excerpt' | 'recommendation'; source?: SourceTag }): JSX.Element {
   const send = useStore((s) => s.send)
   const recos = dishes.filter((d) => !d.excluded)
   const avoids = dishes.filter((d) => d.excluded)
+  const allPricesUnknown = recos.every(dish => dish.price === undefined)
+  const excerpt = mode !== 'recommendation'
+  const list = (items: DishReco[]) => <ul className="grid sm:grid-cols-2 gap-x-6">{items.map((dish, index) => <li key={index} className="py-3 border-b border-[var(--line)] text-sm leading-6 min-w-0">
+    <div className="flex items-baseline justify-between gap-3"><span className="font-medium break-words">{dish.name}{dish.signature && <span className="ml-2 rounded bg-brand-soft px-1.5 py-0.5 text-xs text-brand-ink">招牌</span>}</span><span className={`shrink-0 tabular-nums ${dish.price === undefined ? 'text-[var(--muted)] text-xs' : 'text-brand-ink font-semibold'}`}>{dish.price === undefined ? allPricesUnknown ? '—' : '价格待核验' : `¥${dish.price}${dish.priceUnit ? ` / ${dish.priceUnit}` : ''}`}</span></div>
+    {!excerpt && dish.reason && <p className="mt-1 text-[var(--muted)]">{dish.reason}</p>}
+  </li>)}</ul>
   return (
     <Card>
-      <div className="flex items-center gap-1.5 mb-2 font-semibold text-sm">
-        <Utensils size={14} className="text-brand-ink" /> {mode === 'menu' ? '菜单摘录' : '点菜建议'} · {shopName}{source && <SourceBadge source={source} />}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0"><div className="flex items-center gap-2 text-xs text-[var(--muted)]"><Utensils size={15} />{mode === 'recommended_dishes' ? '推荐菜摘录' : mode === 'menu' ? '菜单摘录' : mode === 'excerpt' ? '菜品摘录' : '点菜建议'} · {recos.length} 项</div><h3 className="mt-1 text-lg leading-7 font-semibold break-words">{shopName}</h3></div>{source && <SourceBadge source={source} />}
       </div>
-      <div className="space-y-1.5">
-        {recos.map((d, i) => (
-          <div key={i} className="flex items-start gap-2 text-xs">
-            {mode === 'menu' ? <span className="text-neutral-400 shrink-0">·</span> : <CheckCircle2 size={13} className="text-green-500 mt-0.5 shrink-0" />}
-            <div className="flex-1">
-              <span className="font-medium">{d.name}</span>
-              {d.signature ? <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-brand/15 text-brand-ink align-middle">招牌</span> : null}
-              {d.price !== undefined ? <span className="text-neutral-400 ml-1">¥{d.price}</span> : <span className="text-neutral-400 ml-1">价格待核验</span>}
-              <span className="text-neutral-500 ml-1">— {d.reason}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+      {allPricesUnknown && <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">价格待核验 · 当前摘录仅确认菜名，暂无法计算用餐费用。</p>}
+      {list(excerpt ? recos.slice(0, 8) : recos)}
+      {excerpt && recos.length > 8 && <details className="mt-3 text-sm"><summary className="cursor-pointer py-1 text-brand-strong">展开其余 {recos.length - 8} 道菜品</summary>{list(recos.slice(8))}</details>}
+      {excerpt && recos.some(dish => dish.reason) && <details className="mt-3 text-sm"><summary className="cursor-pointer py-1 text-[var(--muted)]">查看菜品原文证据</summary><div className="mt-2 max-h-60 overflow-auto space-y-2">{recos.filter(dish => dish.reason).map((dish, index) => <blockquote key={index} className="border-l-2 border-brand/40 pl-3 text-sm leading-6 text-neutral-600 break-words">{dish.reason}</blockquote>)}</div></details>}
       {avoids.length > 0 && (
         <div className="mt-2 pt-2 border-t border-neutral-100">
           <div className="text-[11px] text-red-500 font-medium mb-1">避雷菜（按人群约束建议避开）</div>
@@ -534,8 +560,8 @@ function DishesCard({ shopName, dishes, mode = 'recommendation', source }: { sho
           </div>
         </div>
       )}
-      <button onClick={() => void send(`「${shopName}」单点 vs 团购套餐，哪个更划算？`)} className="mt-2 w-full py-1.5 text-xs rounded-lg bg-neutral-100 hover:bg-brand/20 border border-neutral-200">
-        对比单点 vs 团购套餐
+      <button disabled={allPricesUnknown} title={allPricesUnknown ? '先取得单品价格，再比较套餐费用' : undefined} onClick={() => void send(`「${shopName}」单点 vs 团购套餐，哪个更划算？`)} className="mt-4 w-full py-2.5 text-sm rounded-xl bg-neutral-50 enabled:hover:bg-brand-soft border border-[var(--line)] disabled:text-[var(--muted)] disabled:cursor-not-allowed">
+        {allPricesUnknown ? '单品价格待核验' : '对比单点与团购套餐'}
       </button>
     </Card>
   )
@@ -545,36 +571,36 @@ function GroupBuyCard({ shopName, packages, source }: { shopName: string; packag
   const send = useStore((s) => s.send)
   return (
     <Card accent>
-      <div className="flex items-center gap-1.5 mb-2">
-        <Ticket size={15} className="text-brand-ink" />
-        <span className="font-semibold text-[15px]">{shopName} · 团购套餐</span>
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="min-w-0"><div className="flex items-center gap-2 text-xs text-[var(--muted)]"><Ticket size={15} />到店优惠 · {packages.length} 项</div><h3 className="mt-1 font-semibold text-lg leading-7 break-words">{shopName}</h3></div>
         <SourceBadge source={source} />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-3">
         {packages.map((p, i) => (
-          <div key={i} className={`rounded-xl border p-2.5 ${p.recommended ? 'border-brand bg-brand/5' : 'border-neutral-200'}`}>
+          <div key={i} className={`rounded-xl border p-4 ${p.recommended ? 'border-brand bg-brand/5' : 'border-[var(--line)] bg-[#f7faf7]'}`}>
             <div className="flex items-center gap-1.5">
-              <span className="font-medium text-sm">{p.name}</span>
+              <span className="font-semibold text-base leading-6">{p.name}</span>
               {p.recommended && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-brand text-brand-ink">推荐</span>}
               {p.sold && <span className="ml-auto text-[10px] text-neutral-400">{p.sold}</span>}
             </div>
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-brand-ink font-bold text-lg">{p.price === null ? '价格待核验' : `¥${p.price}`}</span>
+            <div className="mt-3 flex flex-wrap items-baseline gap-2">
+              <span className={`font-semibold tabular-nums ${p.price === null ? 'text-amber-800 text-sm' : 'text-brand-ink text-2xl'}`}>{p.price === null ? '价格待核验' : `¥${p.price}`}</span>
               {p.originalPrice !== null && <span className="text-[11px] text-neutral-400 line-through">¥{p.originalPrice}</span>}
               {p.originalPrice !== null && p.price !== null && p.originalPrice > p.price && <span className="text-[10px] text-green-600">省¥{p.originalPrice - p.price}</span>}
-              <span className="ml-auto text-[11px] text-neutral-500">{p.fitPeople}</span>
+              <span className="ml-auto text-sm text-neutral-600">{p.fitPeople}</span>
             </div>
-            {p.includes?.length ? <div className="mt-1 text-[11px] text-neutral-500">含：{p.includes.join('、')}</div> : null}
+            <div className="mt-3 text-sm leading-6 text-neutral-600"><h4 className="font-medium text-brand-ink">使用条件</h4>{p.includes?.length ? <ul className="list-disc pl-5 mt-1 space-y-1">{p.includes.map((condition, index) => <li key={index}>{condition}</li>)}</ul> : <p className="mt-1 text-amber-800">使用日期、预约要求及其他限制待核验。</p>}</div>
+            {p.quote && <details className="mt-3 text-sm"><summary className="cursor-pointer py-1 text-[var(--muted)]">查看套餐原文证据</summary><blockquote className="mt-2 border-l-2 border-brand/40 pl-3 leading-6 text-neutral-600 whitespace-pre-wrap break-words">{p.quote}</blockquote></details>}
             <button
-              onClick={() => void send(`买「${shopName}」的「${p.name}」团购套餐，帮我下单`)}
-              className="mt-2 w-full py-1.5 rounded-lg bg-brand-strong text-white text-xs font-medium hover:brightness-95"
+              onClick={() => void send(`请核对「${shopName}」的「${p.name}」套餐价格、适用人数与使用条件；只读，不下单。`)}
+              className="mt-4 w-full py-2.5 rounded-xl bg-brand-strong text-white text-sm font-medium hover:brightness-95"
             >
-              买这个套餐
+              核对这个套餐
             </button>
           </div>
         ))}
       </div>
-      <div className="mt-2 text-[10px] text-neutral-400">价格来自记录的页面；请核对适用人数和使用条件。下单前会单独确认，未适配的网站可由你接管。</div>
+      <div className="mt-4 text-xs leading-6 text-[var(--muted)]">价格来自读取时的页面，尚未确认实时可用。当前仅核对资料；下单前需要单独确认。</div>
     </Card>
   )
 }

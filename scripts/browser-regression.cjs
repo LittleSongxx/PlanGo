@@ -9,12 +9,14 @@ const work = mkdtempSync(join(tmpdir(), 'plango-browser-regression-'))
 app.setPath('userData', work)
 app.commandLine.appendSwitch('remote-debugging-address', '127.0.0.1')
 app.commandLine.appendSwitch('remote-debugging-port', '0')
-app.commandLine.appendSwitch('host-resolver-rules', 'MAP fixture.meituan.com 127.0.0.1, MAP frame.meituan.com 127.0.0.1, MAP account.dianping.com 127.0.0.1')
+app.commandLine.appendSwitch('host-resolver-rules', 'MAP fixture.meituan.com 127.0.0.1, MAP frame.meituan.com 127.0.0.1, MAP account.dianping.com 127.0.0.1, MAP verify.meituan.com 127.0.0.1')
 app.commandLine.appendSwitch('no-proxy-server')
 app.commandLine.appendSwitch('disable-gpu')
 const fixture = '<!doctype html><html><body><h1>真实菜单测试页</h1><table><tr><th>菜品</th><th>价格</th></tr><tr><td>双人套餐</td><td>128 元</td></tr></table><button id="submit" onclick="window.submits=(window.submits||0)+1">预约</button><input id="search" placeholder="搜索"><p id="result"></p></body></html>'
 let slowRequests = 0
 const server = createServer((req,res) => {
+  if (req.url === '/v2/app/general_page') { res.setHeader('Content-Type','text/html; charset=utf-8'); res.end('<title>验证中心</title><p>请在当前浏览器中完成安全验证</p>'); return }
+  if (req.url === '/merchant-preview') { res.setHeader('Content-Type','text/html; charset=utf-8'); res.end('<header><h1>受控短页餐厅</h1><p>地址：重庆市受控地址1号</p></header><section><h2>精选双人餐</h2><p>周一至周日 随时退 ¥98</p></section><article><h2>推荐菜</h2><p>'+'受控推荐菜名与介绍。'.repeat(30)+'</p></article>'); return }
   if (req.url === '/pclogin') { res.setHeader('Content-Type','text/html; charset=utf-8'); res.end('<title>大众点评网</title><h1>登录</h1><p>APP扫码，享七天免登录</p><p>打开大众点评APP</p><p>扫描二维码登录</p>'); return }
   if (req.url === '/forms-frame') { res.setHeader('Content-Type','text/html; charset=utf-8'); res.end('<form id="booking" action="/frame-book"><h2>框架门店</h2><label>人数<input name="party" value="2"></label><button type="submit">框架提交</button></form>'); return }
   if (req.url === '/forms') {
@@ -299,10 +301,18 @@ async function main() {
   await formsTab.contents.executeJavaScript("const field=document.createElement('textarea');field.name='long';field.value='x'.repeat(2001);document.querySelector('#booking').appendChild(field);true")
   const truncatedForm = await execute(command('snapshot', {}, { run_id: 'forms-run', tab_id: formsTab.id }))
   assert(truncatedForm.fields.dom.forms.find(form => form.action_url === url + 'book').truncated === true, 'bounded form truncation remains explicit rather than pretending a complete check')
+  const merchantTab = await createBrowserTab(url + 'merchant-preview')
+  await waitFor(() => !merchantTab.contents.isLoading())
+  const merchantRead = await execute(command('extract', {}, { run_id: 'merchant-run', tab_id: merchantTab.id }))
+  assert(merchantRead.ok && merchantRead.text.includes('受控短页餐厅') && merchantRead.text.includes('重庆市受控地址1号') && merchantRead.text.includes('¥98'), 'short business pages retain merchant/address/offer facts outside the article')
   const qrTab = await createBrowserTab(`http://account.dianping.com:${server.address().port}/pclogin`)
   await waitFor(() => !qrTab.contents.isLoading())
   const qrRead = await execute(command('extract', {}, { run_id: 'qr-run', tab_id: qrTab.id }))
   assert(qrRead.ok && qrRead.fields.dom.manual_gate === 'login', 'observed Dianping QR-only login is a manual gate even without password or OTP inputs')
+  const securityTab = await createBrowserTab(`http://verify.meituan.com:${server.address().port}/v2/app/general_page`)
+  await waitFor(() => !securityTab.contents.isLoading())
+  const securityRead = await execute(command('extract', {}, { run_id: 'security-run', tab_id: securityTab.id }))
+  assert(securityRead.ok && securityRead.fields.dom.manual_gate === 'captcha', 'the observed Meituan verification-center route requires manual handling without a password/OTP control')
   const publicTab = await createBrowserTab(url + 'pclogin')
   await waitFor(() => !publicTab.contents.isLoading())
   const publicRead = await execute(command('extract', {}, { run_id: 'public-run', tab_id: publicTab.id }))

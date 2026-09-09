@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, session as electronSession } from 'electron'
+import { app, shell, screen, BrowserWindow, session as electronSession } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'node:url'
 import { registerIpc } from './ipc'
@@ -31,11 +31,12 @@ const rendererUrl = process.env.ELECTRON_RENDERER_URL || pathToFileURL(join(__di
 export function isTrustedRendererUrl(url: string): boolean { return sameRendererDocument(url, rendererUrl) }
 
 function createWindow(): void {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize
   mainWindow = new BrowserWindow({
-    width: 1500,
-    height: 940,
-    minWidth: 1180,
-    minHeight: 740,
+    width: Math.min(1800, width),
+    height: Math.min(1120, height),
+    minWidth: Math.min(1180, width),
+    minHeight: Math.min(740, height),
     show: false,
     autoHideMenuBar: true,
     title: 'PlanGo · AI 本地生活浏览器',

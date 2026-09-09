@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { projectHarness, runBusy, canResolveAction, phaseLabel } from '../src/renderer/src/lib/harnessProjection'
+import { projectHarness, runBusy, canResolveAction, phaseLabel, readProgress } from '../src/renderer/src/lib/harnessProjection'
 import type { HarnessSnapshot } from '../src/shared/types'
 
 const plan = { plan_id: 'plan-1', version: 2, label: '真实方案', total_cost: 0, party_size: 4,
@@ -210,7 +210,7 @@ assert.equal(projectHarness(userConfirmed).cards.find(card => card.kind === 'rec
 const verifiedBusiness = projectHarness({ ...snapshot, state: { ...snapshot.state, action_results: [{ action_id: 'verified', status: 'SUCCEEDED', result: { source: 'browser', scope: 'business_receipt', receipt: { identity_verified: true } } }] } }).cards.find(card => card.kind === 'receipt')!.items[0]
 assert.equal(verifiedBusiness.business_confirmed, true)
 const menuExcerpt = projectHarness({ ...snapshot, state: { browser_artifacts: [{ source: 'browser', title: '真实菜单', data: { menu: [{ name: '时价菜', price: null, quote: '时价菜 询价' }] } }] } }).cards.find(card => card.kind === 'dishes')!
-assert.equal(menuExcerpt.mode, 'menu', 'Raw observed dishes must not claim recommendation selection')
+assert.equal(menuExcerpt.mode, 'excerpt', 'Unclassified historical dishes cannot infer menu scope from their title')
 assert.equal(menuExcerpt.source, 'browser')
 assert.equal(menuExcerpt.dishes[0].price, undefined)
 console.log('Scoped browser completion and menu excerpt checks passed')
@@ -274,6 +274,9 @@ assert.equal(latestPages.cards.filter(c => c.kind === 'browser_page').at(-1)?.ob
 assert.equal(latestPages.cards.filter(c => c.kind === 'price_comparison').length, 2, 'Non-page comparison artifacts remain separate')
 assert.deepEqual(pageObservations, originalObservations, 'Projection must preserve all raw audit artifacts and evidence')
 assert.deepEqual(latestPages.evidence, projected.evidence)
+const backfilledPages = structuredClone(pageObservations)
+backfilledPages.state.browser_artifacts.push({ type: 'browser_page', source: 'browser', url: 'https://example.org/a', title: '迟到的旧命令', observed_at: '2026-09-08T13:00:00Z', data: { text: '旧命令仅有原文' } })
+assert.deepEqual(projectHarness(backfilledPages).cards, latestPages.cards, 'An older raw command appended by recovery cannot hide the latest structured merchant cards')
 console.log('Latest browser page observation projection checks passed')
 const visual = projectHarness({ ...snapshot, state: { browser_artifacts: [{ type: 'browser_visual', source: 'browser', url: 'https://example.org/visual', observed_at: '2026-09-09T01:00:00Z', data: { visual_text: '截图显示一张菜单', limitations: ['小字无法辨认'], scope: 'visual_observation', screenshot: { data_url: 'must-not-render-image-payload', width: 800 } } }] } })
 const visualCard = visual.cards.find(card => card.kind === 'browser_page')!
@@ -288,7 +291,44 @@ const preparationComplete = { ...snapshot, phase: 'SUCCEEDED', state: { executio
 assert.equal(phaseLabel(preparationComplete), '准备就绪 · 待核对')
 assert.equal(phaseLabel({ ...preparationComplete, phase: 'WAITING_APPROVAL' }), '等待确认', 'Stored outcomes must not hide a current approval')
 assert.equal(phaseLabel({ ...preparationComplete, state: { execution_outcome: { status: 'satisfied', data: { scope: 'image_text', business_completed: false } } } }), '图片识别已完成')
+for (const [scope, label] of [['read_only', '资料读取待补充'], ['image_text', '图片识别待补充'], ['ready_to_review', '准备事项待完善'], ['draft_ready', '草案保存待核对']]) {
+  assert.equal(phaseLabel({ ...preparationComplete, phase: 'PARTIAL_FAILED', state: { execution_outcome: { status: 'satisfied', data: { scope, business_completed: false } } } }), label, 'A satisfied sub-result must not override the overall partial failure')
+}
 assert.equal(projectHarness({ ...snapshot, state: { browser_artifacts: [{ type: 'image', source: 'user', data: { text: '图片内价格 128 元' } }] } }).cards.find(card => card.kind === 'browser_page')?.scope, 'image_text')
+
+const merchantSource: HarnessSnapshot = { ...snapshot, state: { browser_artifacts: [{ artifact_id: 'page:merchant', type: 'browser_page', source: 'browser', title: '【测试门店】电话_地址 - [undefined] - 示例网站', url: 'https://example.org/shop', data: {
+  text: '测试门店 地址已读取；套餐限工作日', places: [{ name: '测试门店', address: '示例路 1 号', average_price: null, quote: '测试门店 示例路 1 号' }],
+  menu: [{ name: '时价菜', price: null, unit: '份', quote: '时价菜 询价' }], offers: [{ name: '双人套餐', price: 128, people: 2, conditions: ['限工作日'], quote: '双人套餐128元，限工作日' }]
+} }] } }
+const merchantBefore = structuredClone(merchantSource)
+const merchantCards = projectHarness(merchantSource).cards
+const merchantPage = merchantCards.find(card => card.kind === 'browser_page')!
+assert.equal(merchantPage.title, '测试门店')
+assert.match(merchantPage.rawTitle!, /\[undefined\]/, 'Original page titles remain available as source evidence')
+assert.equal(merchantPage.places![0].address, '示例路 1 号')
+assert.equal(merchantPage.places![0].averagePrice, undefined, 'Unknown merchant prices must not become zero')
+assert.equal(merchantPage.menuCount, 1)
+assert.equal(merchantPage.offerCount, 1)
+assert.equal(merchantCards.find(card => card.kind === 'dishes')!.dishes[0].priceUnit, '份')
+assert.equal(merchantCards.find(card => card.kind === 'groupbuy')!.packages[0].quote, '双人套餐128元，限工作日')
+assert.equal(merchantCards.find(card => card.kind === 'groupbuy')!.shopName, '测试门店')
+assert.deepEqual(merchantSource, merchantBefore, 'Compact display must preserve the canonical source data')
+const partialMerchant = { ...merchantSource, phase: 'PARTIAL_FAILED', interrupt_id: null, state: { ...merchantSource.state, execution_goal: { kind: 'menu_read' }, execution_outcome: { kind: 'menu_read', status: 'needs_evidence', evidence_ids: ['page:merchant'], data: { scope: 'read_only', business_completed: false,
+  observed_fields: ['merchant', 'address', 'recommended_dishes', 'offers'], missing_fields: ['menu', 'offer_conditions'], partial_fields: ['offer_conditions'] } } } }
+assert.deepEqual(readProgress(partialMerchant), { observed: ['门店身份', '门店地址', '推荐菜', '套餐条目'], missing: ['菜单详情', '套餐使用条件'], partial: ['套餐使用条件'] })
+assert.equal(projectHarness(partialMerchant).cards.find(card => card.kind === 'dishes')!.mode, 'recommended_dishes', 'Observed recommendations cannot imply complete menu access')
+assert.deepEqual(readProgress({ ...partialMerchant, phase: 'RUNNING' }), { observed: [], missing: [], partial: [] }, 'A previous read outcome must not label the next running task')
+const currentMenu = { ...partialMerchant, phase: 'SUCCEEDED', state: { ...partialMerchant.state,
+  browser_artifacts: [...merchantSource.state.browser_artifacts as Record<string, unknown>[], { artifact_id: 'page:other-shop', type: 'browser_page', source: 'browser', title: '历史乙店推荐菜', url: 'https://example.org/other-shop', data: { text: '推荐菜：清蒸鱼', menu: [{ name: '清蒸鱼', quote: '清蒸鱼' }] } }],
+  execution_outcome: { ...partialMerchant.state.execution_outcome, status: 'satisfied', data: { ...partialMerchant.state.execution_outcome.data, observed_fields: ['menu'], missing_fields: [] } }
+} }
+const currentMenuCards = projectHarness(currentMenu).cards.filter(card => card.kind === 'dishes')
+assert.equal(currentMenuCards.find(card => card.shopName === '测试门店')!.mode, 'menu', 'Current evidence keeps its explicit menu scope')
+assert.equal(currentMenuCards.find(card => card.shopName === '历史乙店推荐菜')!.mode, 'excerpt', 'Current menu coverage cannot classify another shop’s historical recommendations')
+for (const changed of [{ command_pending: true }, { phase: 'RUNNING' }, { interrupt_id: 'pending-read' }, { cancel_requested: true }, { state: { ...currentMenu.state, execution_goal: { kind: 'itinerary_preparation' } } }]) {
+  assert(projectHarness({ ...currentMenu, ...changed }).cards.filter(card => card.kind === 'dishes').every(card => card.mode === 'excerpt'), 'Pending or changed goals cannot reuse a previous read classification')
+}
+console.log('Merchant source hierarchy, unknown price and partial status checks passed')
 
 const draftSnapshot: HarnessSnapshot = { ...snapshot, phase: 'REQUIREMENTS_READY', interrupt_id: 'draft:run-1:plan-1:2',
   draft_review: { interrupt_id: 'draft:run-1:plan-1:2', plan_id: 'plan-1', plan_version: 2, can_prepare: true, preparation_blockers: [], unknowns: [{ name: 'queue', detail: '排队时间未核验' }], conflicts: [], scope: 'draft_ready' },

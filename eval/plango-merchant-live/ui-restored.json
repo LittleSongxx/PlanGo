@@ -1,0 +1,12 @@
+{
+  "phase": "PARTIAL_FAILED",
+  "tokens": 12152,
+  "hasAddress": true,
+  "hasPrices": true,
+  "bounds": {
+    "x": 1026,
+    "y": 547,
+    "width": 1800,
+    "height": 1120
+  }
+}

@@ -9,18 +9,26 @@ const strings = (value: unknown): string[] => Array.isArray(value) ? value.filte
 const source = (value: unknown): SourceTag => ['real', 'browser', 'amap', 'user', 'unknown', 'dataset', 'simulated', 'cache', 'fallback'].includes(str(value)) ? value as SourceTag : 'unknown'
 const time = (value: unknown): string => num(value) === undefined ? '时间待确认' : `${String(Math.floor(Number(value) / 60)).padStart(2, '0')}:${String(Number(value) % 60).padStart(2, '0')}`
 
+export function readProgress(run: HarnessSnapshot | null): { observed: string[]; missing: string[]; partial: string[] } {
+  const data = row(row(run?.state.execution_outcome).data)
+  const labels: Record<string, string> = { merchant: '门店身份', address: '门店地址', menu: '菜单详情', recommended_dishes: '推荐菜', offers: '套餐条目', offer_conditions: '套餐使用条件' }
+  const fields = (name: string) => data.scope === 'read_only' && ['SUCCEEDED', 'PARTIAL_FAILED'].includes(run?.phase || '') ? strings(data[name]).map(field => labels[field]).filter(Boolean) : []
+  return { observed: fields('observed_fields'), missing: fields('missing_fields'), partial: fields('partial_fields') }
+}
+
 export function phaseLabel(run: HarnessSnapshot | null): string {
   if (!run) return '准备就绪'
   if (run.command_pending) return '处理中'
   if (!run.outcome && !['FAILED', 'CANCELLED', 'INFEASIBLE', 'PARTIAL_FAILED', 'SUCCEEDED'].includes(run.phase) && run.draft_review && run.interrupt_id === run.draft_review.interrupt_id) return '草案待核对'
   if (!run.outcome && !['FAILED', 'CANCELLED', 'INFEASIBLE', 'PARTIAL_FAILED', 'SUCCEEDED'].includes(run.phase) && Object.keys(row(run.state.browser_wait)).length) return '等待浏览器处理'
   const outcome = row(run.state.execution_outcome), result = row(outcome.data)
+  const completed = run.phase === 'SUCCEEDED' && outcome.status === 'satisfied'
   if (['SUCCEEDED', 'PARTIAL_FAILED'].includes(run.phase) && result.business_completed === false) {
-    if (result.scope === 'draft_ready') return '草案已保存 · 待核验'
-    if (result.scope === 'ready_to_review' && outcome.status === 'satisfied') return '准备就绪 · 待核对'
+    if (result.scope === 'draft_ready') return completed ? '草案已保存 · 待核验' : '草案保存待核对'
+    if (result.scope === 'ready_to_review') return completed ? '准备就绪 · 待核对' : '准备事项待完善'
     if (result.scope === 'preparation_incomplete') return '准备事项待完善'
-    if (result.scope === 'image_text') return outcome.status === 'satisfied' ? '图片识别已完成' : '图片识别待补充'
-    if (result.scope === 'read_only') return outcome.status === 'satisfied' ? '资料读取已完成' : '资料读取待补充'
+    if (result.scope === 'image_text') return completed ? '图片识别已完成' : '图片识别待补充'
+    if (result.scope === 'read_only') return completed ? '资料读取已完成' : '资料读取待补充'
   }
   return ({ CREATED: '已接收', PENDING: '排队中', RUNNING: '运行中', REQUIREMENTS_READY: '已理解需求', RESEARCHING: '查找真实信息', PLAN_DRAFTED: '方案已生成', REVIEWING: '校验方案', WAITING_APPROVAL: '等待确认', WAITING_BROWSER: '等待浏览器', EXECUTING: '执行中', REPLANNING: '重新规划', SUCCEEDED: '已完成', PARTIAL_FAILED: '部分完成', INFEASIBLE: '当前约束下不可行', FAILED: '运行失败', CANCELLED: '已取消' } as Record<string, string>)[run.phase] || run.phase
 }
@@ -93,6 +101,10 @@ function projectPlan(candidate: Row, run: HarnessSnapshot, evidence: HarnessEvid
 export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; messages: ChatMessage[]; evidence: HarnessEvidence[] } {
   const state = row(run.state)
   const evidence = evidenceOf(state)
+  const readOutcome = row(state.execution_outcome), readGoal = row(state.execution_goal)
+  const currentRead = ['SUCCEEDED', 'PARTIAL_FAILED'].includes(run.phase) && !run.command_pending && !run.cancel_requested && !run.interrupt_id && !state.browser_wait
+    && ['page_read', 'menu_read'].includes(str(readOutcome.kind)) && readGoal.kind === readOutcome.kind && row(readOutcome.data).scope === 'read_only'
+  const readEvidenceIds = currentRead ? strings(readOutcome.evidence_ids) : []
   const cards: OutcomeCard[] = []
   const candidateRows = rows(state.candidate_plans)
   const selected = row(state.selected_plan)
@@ -107,15 +119,16 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
   else if (plans.length) cards.push({ kind: 'plan', plan: plans[0] })
   if (evidence.length) cards.push({ kind: 'evidence', items: evidence })
 
-  // Show the last page observation without changing the append-only audit artifacts.
-  const seenPages = new Set<string>()
-  const artifacts = rows(state.browser_artifacts).reverse().filter(artifact => {
-    if (artifact.type !== 'browser_page' || !str(artifact.url)) return true
-    const key = JSON.stringify([str(artifact.source), artifact.type, artifact.url])
-    if (seenPages.has(key)) return false
-    seenPages.add(key)
-    return true
-  }).reverse()
+  // Receipt backfill may append an older command after the canonical latest observation.
+  const observed = rows(state.browser_artifacts), latestPages = new Map<string, Row>()
+  const pageKey = (artifact: Row) => artifact.type === 'browser_page' && str(artifact.url) ? JSON.stringify([str(artifact.source), artifact.type, artifact.url]) : ''
+  const capturedAt = (artifact: Row) => Date.parse(str(artifact.observed_at)) || 0
+  const isCurrentPage = (artifact: Row) => !!str(row(state.browser_observation).snapshot_id) && artifact.snapshot_id === row(state.browser_observation).snapshot_id && artifact.url === row(state.browser_observation).url
+  for (const artifact of observed) {
+    const key = pageKey(artifact), previous = latestPages.get(key)
+    if (key && (!previous || capturedAt(artifact) > capturedAt(previous) || (capturedAt(artifact) === capturedAt(previous) && (isCurrentPage(artifact) || !isCurrentPage(previous))))) latestPages.set(key, artifact)
+  }
+  const artifacts = observed.filter(artifact => !pageKey(artifact) || latestPages.get(pageKey(artifact)) === artifact)
   // A guarded stop can persist its preparation outcome before an optional artifact is emitted.
   // The current canonical outcome wins over an older success artifact for the same goal.
   const preparation = row(state.execution_outcome), preparationGoal = row(state.execution_goal)
@@ -163,11 +176,15 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
     }
     const menu = rows(data.menu)
     const offers = rows(data.offers)
-    if (menu.length) cards.push({ kind: 'dishes', mode: 'menu', source: source(artifact.source), shopName: str(artifact.title), dishes: menu.filter(x => str(x.name)).map(x => ({ name: str(x.name), price: num(x.price), reason: [str(x.unit), str(x.quote)].filter(Boolean).join(' · ') })) })
-    if (offers.length) cards.push({ kind: 'groupbuy', shopName: str(artifact.title), source: 'browser', packages: offers.filter(x => str(x.name)).map(x => ({ name: str(x.name), price: num(x.price) ?? null, originalPrice: num(x.original_price) ?? null, includes: strings(x.conditions), fitPeople: num(x.people) ? `适用 ${x.people} 人` : '适用人数待确认' })) })
-    if (str(data.text) || data.tables || (!menu.length && !offers.length)) {
+    const places = rows(data.places).filter(place => str(place.name))
+    const title = (places.length === 1 ? str(places[0].name) : '') || str(artifact.title).match(/^【([^】]+)】/)?.[1] || str(artifact.title) || (artifact.type === 'image' ? '图片识别' : '页面观测')
+    const readFields = readEvidenceIds.includes(str(artifact.artifact_id)) ? strings(row(readOutcome.data).observed_fields) : []
+    if (menu.length) cards.push({ kind: 'dishes', mode: readFields.includes('menu') ? 'menu' : readFields.includes('recommended_dishes') ? 'recommended_dishes' : 'excerpt', source: source(artifact.source), shopName: title, dishes: menu.filter(x => str(x.name)).map(x => ({ name: str(x.name), price: num(x.price), priceUnit: str(x.unit) || undefined, reason: str(x.quote) })) })
+    if (offers.length) cards.push({ kind: 'groupbuy', shopName: title, source: source(artifact.source), packages: offers.filter(x => str(x.name)).map(x => ({ name: str(x.name), price: num(x.price) ?? null, originalPrice: num(x.original_price) ?? null, includes: strings(x.conditions), fitPeople: num(x.people) ? `适用 ${x.people} 人` : '适用人数待确认', quote: str(x.quote) || undefined })) })
+    if (str(data.text) || data.tables || places.length || (!menu.length && !offers.length)) {
       const tableText = rows(data.tables).map(table => [strings(table.headers).join(' · '), ...(Array.isArray(table.rows) ? table.rows.filter(Array.isArray).map(cells => cells.map(value => String(value ?? '')).join(' · ')) : [])].filter(Boolean).join('\n')).filter(Boolean).join('\n\n')
-      cards.push({ kind: 'browser_page', title: str(artifact.title) || (artifact.type === 'image' ? '图片识别' : '页面观测'), scope: artifact.type === 'image' ? 'image_text' : undefined, url: str(artifact.url), text: str(data.text) || tableText || '此页面暂无可直接显示的文字摘录，可在浏览器中继续查看。', source: source(artifact.source), observedAt: str(artifact.observed_at) })
+      cards.push({ kind: 'browser_page', title, rawTitle: str(artifact.title), scope: artifact.type === 'image' ? 'image_text' : undefined, url: str(artifact.url), text: str(data.text) || tableText || '此页面暂无可直接显示的文字摘录，可在浏览器中继续查看。', source: source(artifact.source), observedAt: str(artifact.observed_at),
+        menuCount: menu.length, offerCount: offers.length, places: places.map(place => ({ name: str(place.name), address: str(place.address) || undefined, averagePrice: num(place.average_price), priceUnit: str(place.price_unit) || undefined, quote: str(place.quote) || undefined })) })
     }
   }
 

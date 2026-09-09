@@ -1,0 +1,210 @@
+{
+  "scope": "Actual logged-in Dianping merchant page, user-completed login/security challenge, same persistent PlanGo task. Read-only partial result; no booking or purchase.",
+  "run_id": "f8f8ad2719074b0a9c62cbb08367892f",
+  "source_url": "https://www.dianping.com/shop/HaQlfCl5X2CeJdSs",
+  "observed_at": "2026-09-09T02:11:57.530065+00:00",
+  "snapshot_id": "9d7d7373256287b597f484a50a3e639d2227aa3c",
+  "phase": "PARTIAL_FAILED",
+  "result": {
+    "kind": "menu_read",
+    "status": "needs_evidence",
+    "summary": "已读取有来源的门店身份、门店地址、推荐菜、套餐条目；已保留页面展示的部分套餐条件；仍缺菜单详情、套餐使用条件。未公开价格仍为未知。",
+    "evidence_ids": [
+      "page:9d7d7373256287b597f484a50a3e639d2227aa3c"
+    ],
+    "data": {
+      "scope": "read_only",
+      "business_completed": false,
+      "required_fields": [
+        "merchant",
+        "address",
+        "menu",
+        "offers",
+        "offer_conditions"
+      ],
+      "observed_fields": [
+        "merchant",
+        "address",
+        "recommended_dishes",
+        "offers"
+      ],
+      "missing_fields": [
+        "menu",
+        "offer_conditions"
+      ],
+      "partial_fields": [
+        "offer_conditions"
+      ]
+    }
+  },
+  "merchant": [
+    {
+      "name": "顺风123(观音桥大融城店)",
+      "address": "观音桥步行街8号附5号大融城6楼6-010",
+      "category": "餐厅",
+      "average_price": 62,
+      "price_unit": "人均",
+      "quote": "顺风123(观音桥大融城店)\n★\n★\n★\n★\n★\n4.4\n11700条¥62/人\n观音桥川菜馆\n口味:4.4 环境:4.7 服务:4.6\n观音桥川菜回头客榜 · 第2名\n休息中11:00开始营业\n有包厢\n有大桌\n付费停车\n观音桥步行街8号附5号大融城6楼6-010\n距地铁3号线观音桥站4口步行170m\n到店\n2万+",
+      "open_minute": null,
+      "close_minute": null,
+      "estimated_wait_min": null,
+      "reservable": null,
+      "open_now": null,
+      "seats_left": null
+    }
+  ],
+  "offers": [
+    {
+      "name": "50元代金券",
+      "price": 47,
+      "original_price": null,
+      "unit": null,
+      "people": null,
+      "conditions": [
+        "随时退",
+        "过期自动退"
+      ],
+      "quote": "50元代金券\n随时退\n过期自动退\n¥\n47\n9.4折"
+    },
+    {
+      "name": "【馋嘴实惠】精选双人餐#直播间领卷下单更优惠",
+      "price": 98,
+      "original_price": null,
+      "unit": null,
+      "people": 2,
+      "conditions": [
+        "周一至周日",
+        "随时退",
+        "过期自动退"
+      ],
+      "quote": "【馋嘴实惠】精选双人餐#直播间领卷下单更优惠\n周一至周日\n随时退\n过期自动退\n¥\n98\n8.2折\n￥120"
+    },
+    {
+      "name": "【必点招牌】顺风冷面鸡",
+      "price": 19.9,
+      "original_price": null,
+      "unit": null,
+      "people": null,
+      "conditions": [
+        "周一至周日",
+        "随时退",
+        "过期自动退"
+      ],
+      "quote": "【必点招牌】顺风冷面鸡\n周一至周日\n随时退\n过期自动退\n¥\n19.9\n6.3折\n￥32"
+    }
+  ],
+  "recommended_dishes": [
+    {
+      "name": "顺风冷面鸡",
+      "price": null,
+      "original_price": null,
+      "unit": null,
+      "people": null,
+      "conditions": [],
+      "quote": "顺风冷面鸡"
+    },
+    {
+      "name": "青元粉蒸肉",
+      "price": null,
+      "original_price": null,
+      "unit": null,
+      "people": null,
+      "conditions": [],
+      "quote": "青元粉蒸肉"
+    },
+    {
+      "name": "淇淋面包",
+      "price": null,
+      "original_price": null,
+      "unit": null,
+      "people": null,
+      "conditions": [],
+      "quote": "淇淋面包"
+    },
+    {
+      "name": "青椒鱼",
+      "price": null,
+      "original_price": null,
+      "unit": null,
+      "people": null,
+      "conditions": [],
+      "quote": "青椒鱼"
+    },
+    {
+      "name": "小炒牛肉",
+      "price": null,
+      "original_price": null,
+      "unit": null,
+      "people": null,
+      "conditions": [],
+      "quote": "小炒牛肉"
+    },
+    {
+      "name": "鱼香肉丝",
+      "price": null,
+      "original_price": null,
+      "unit": null,
+      "people": null,
+      "conditions": [],
+      "quote": "鱼香肉丝"
+    },
+    {
+      "name": "干煸四季豆",
+      "price": null,
+      "original_price": null,
+      "unit": null,
+      "people": null,
+      "conditions": [],
+      "quote": "干煸四季豆"
+    },
+    {
+      "name": "蛋黄玉米",
+      "price": null,
+      "original_price": null,
+      "unit": null,
+      "people": null,
+      "conditions": [],
+      "quote": "蛋黄玉米"
+    },
+    {
+      "name": "擂钵茄子",
+      "price": null,
+      "original_price": null,
+      "unit": null,
+      "people": null,
+      "conditions": [],
+      "quote": "擂钵茄子"
+    },
+    {
+      "name": "蒜泥白肉",
+      "price": null,
+      "original_price": null,
+      "unit": null,
+      "people": null,
+      "conditions": [],
+      "quote": "蒜泥白肉"
+    }
+  ],
+  "native_forms_observed": 0,
+  "cumulative_usage": {
+    "tokens": 12152,
+    "tools": 5,
+    "model_calls": 6
+  },
+  "last_round": {
+    "token_baseline": 8809,
+    "tool_baseline": 3
+  },
+  "command_operations_all_history": {
+    "extract": 11
+  },
+  "durable_actions": 0,
+  "limitations": [
+    "Only 10 separately rendered recommendation names retained; the concatenated tail was not split into fabricated menu entries.",
+    "Prices are the page observations at the recorded time. Coupon face value is not selling price; crossed-out values remain unverified as original_price.",
+    "Weekdays/refund tags are a preview, not a complete set of use/booking rules. Menu detail is directed to the platform App.",
+    "No native booking form was observed on this page. No click/type/order/payment/message was performed.",
+    "This real round used one BrowserDecision request (3343 tokens), a second page extraction, and a later model_token_budget fallback; the later App-download-only stopping fix has controlled regression, no fabricated zero-call live result. Budget baseline was correct; the fallback used conservative prompt/schema/system estimation plus a 2000-token reserve, not cumulative-budget reset."
+  ],
+  "private_state": "output/merchant-live/final-run-private.json"
+}

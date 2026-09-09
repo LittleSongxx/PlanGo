@@ -686,10 +686,15 @@ def build_desktop_graph(runtime, deps, checkpointer):
         evaluated = preparation_outcome(state) if preparing else read_outcome(state) if context.get("kind") == "extract" else None
         # Current read facts and prepared forms complete only their own declared scope.
         complete_preparation = bool(evaluated and evaluated.kind == "itinerary_preparation" and evaluated.status == "satisfied")
+        app_preview_only = bool(context.get("kind") == "extract" and evaluated
+                                and "menu" in evaluated.data.get("missing_fields", [])
+                                and all(element.get("tag") == "a" and re.match(r"https://(?:www\.)?dianping\.com/app/download(?:\?|$)", str(element.get("href") or ""))
+                                        for element in observation.get("elements") or [])
+                                and re.search(r"(?:去|打开|前往).{0,24}(?:App|APP).{0,12}查看菜单详情", str(observation.get("text") or "")))
         # Verified arithmetic already answers this bounded goal; another model decision adds no evidence.
         correction = preparation_correction(state, evaluated) if preparing else None
         decision = BrowserDecision(operation="type", **correction) if correction else BrowserDecision()
-        if not complete_answer and not complete_preparation and correction is None:
+        if not complete_answer and not complete_preparation and not app_preview_only and correction is None:
             try:
                 context_text = browser_context({**state, "execution_outcome": evaluated.model_dump(mode="json") if evaluated else None})
             except ValueError:
@@ -734,7 +739,8 @@ def build_desktop_graph(runtime, deps, checkpointer):
                     or not vision_reason_supported(state, vision_reason)):
                 return {"browser_next": BrowserDecision().model_dump(), "phase": RunPhase.PARTIAL_FAILED, "outcome": "PARTIAL_FAILED",
                         "execution_outcome": evaluated.model_dump(mode="json") if evaluated else None,
-                        "reason": "当前截图理解不可用、已使用或不满足DOM优先条件；请人工核对，不通过视觉重试操作。"}
+                        "reason": (evaluated.summary + " 已保留读取结果，当前页面无法继续补充这些内容。") if evaluated else
+                                  "已保留当前页面内容；暂时无法从画面补充所需信息，请在网页核对后继续。"}
             return {"browser_next": BrowserDecision().model_dump(), "browser_vision_reason": vision_reason,
                     "execution_outcome": evaluated.model_dump(mode="json") if evaluated else None,
                     "browser_vision_turn": turn, "phase": RunPhase.RESEARCHING, "reason": "DOM观测仍有空缺，正在请求一次只读截图理解。"}
@@ -769,6 +775,8 @@ def build_desktop_graph(runtime, deps, checkpointer):
                     else "已读取真实页面，结果与来源已保存在画布。"
                 ),
             )
+            if app_preview_only and evaluated is not None:
+                update["reason"] = evaluated.summary + " 页面提示菜单详情需在商家平台 App 查看；这里保留已公开的门店和套餐预览，不把缺失内容当作已核验。"
         elif decision.operation in {"click", "type"}:
             if not observation.get("snapshot_id") or not observation.get("tab_id"):
                 raise ValueError("write_requires_current_browser_snapshot")
