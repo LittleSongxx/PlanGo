@@ -97,6 +97,15 @@ def _time_minutes(match: re.Match[str]) -> float | None:
 def _total_count_events(text: str) -> list[tuple[int, float | None]]:
     events = [(m.end(), _hours(m.group(1))) for m in re.finditer(r"(?:(?:总人数|同行人数|一共|总共|我们|共)\s*(?:改成|改为|调整为|是|为|有|一共|总共)?\s*|同行\s*|(?:^|[，,；;。])\s*(?:安排|改为|改成|给)?\s*)(" + _PEOPLE_AMOUNT + r")\s*(?:个)?人", text)]
     events.extend((m.end(), None) for m in re.finditer(r"(?:总人数|同行人数)\s*(?:改成|改为|还是|暂时)?\s*(?:待定|未定|不确定|没定)", text))
+    # A bare 人数 label is a total; 朋友人数/儿童人数 belongs to that role.
+    label = r"(?:(?<![\u4e00-\u9fff])|(?<=把)|(?<=将))人数"
+    assignment = r"\s*(?:改成|改为|调整为|调整到|设为|为|是|[:：])?\s*"
+    for match in re.finditer(label + assignment + r"(" + _PEOPLE_AMOUNT + r"|待定|未定|不确定|没定)(?:\s*(?:个)?人)?(?=$|[\s，,；;。]|其他|其余|同时|一起)", text):
+        prefix = re.split(r"[，,；;。]", text[:match.start()])[-1].rstrip()
+        if re.search(r"[\u4e00-\u9fff]$", prefix) and not prefix.endswith(("把", "将")):
+            continue  # Space-separated role labels still belong to the role.
+        if not re.search(r"(?:不|不要|别|勿|不能|不想|不需要|不用|无需|不必)\s*(?:把|将)?$", prefix):
+            events.append((match.end(), _hours(match[1])))
     return [(position, value if value is not None and value.is_integer() and 1 <= value <= 12 else None) for position, value in events]
 
 
@@ -933,8 +942,10 @@ class RequirementAgent:
         generic_locations = {"附近", "周边", "周围", "这边", "那里", "室内", "户外", "公园", "动物园", "餐厅", "展览", "电影", "咖啡", "博物馆", "电影院", "城市漫步", "明天", "今天", "后天", "周末", "时间", "预算"}
         for location_match in location_matches:
             candidate = location_match.group(1).strip("的")
-            clause_prefix = re.split(r"[，,；;。]", value[:location_match.start()])[-1]
+            clause_prefix = re.split(r"[，,；;。]|但是|但|而且|且|同时|然后", value[:location_match.start()])[-1]
             if re.fullmatch(r"[+\-\d.零一二两三四五六七八九十百千万半]+(?:元|块|人|个人|分钟|小时|公里|米)?", candidate):
+                continue
+            if re.fullmatch(r"\d{4}年\d{1,2}月\d{1,2}日?", candidate):
                 continue
             if re.fullmatch(r"(?:步行(?!街)|走路|公交|公共交通|地铁|驾车|开车|打车)(?:[\d.零一二两三四五六七八九十半]*\s*(?:公里|km|米)?(?:内|以内|方式|模式|出行)?)?", candidate, re.I):
                 continue
@@ -952,7 +963,7 @@ class RequirementAgent:
                 else:
                     search_location_reference, search_location_name = reference, None
                 continue
-            if location_match[0].startswith(("改到", "改成", "改为", "换到", "调整到", "更正为")) and re.search(r"预算|人均|人数|排队|时长|时间", clause_prefix):
+            if location_match[0].startswith(("改到", "改成", "改为", "换到", "调整到", "更正为")) and re.search(r"预算|人均|人数|排队|时长|时间|日期|日子", clause_prefix):
                 continue
             if re.search(r"(?:排|放)$", value[:location_match.start()]) and re.search(r"(?:前|后)$", candidate):
                 continue

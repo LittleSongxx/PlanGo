@@ -67,6 +67,56 @@ def test_group_counts_no_budget_and_selected_venue_references_are_sparse():
     assert RequirementAgent._fallback("改到解放碑", [], spec).search_location_name == "解放碑"
 
 
+def test_explicit_total_headcount_survives_model_stabilization_and_sparse_merge():
+    previous = TripSpec(goal="原用餐草案", party_size=2, budget=250, per_person_budget=125,
+                        visit_date=date(2026, 9, 11), must_visit_place_ids=["chosen"])
+    for text in ("把人数改成3人，同时取消总预算和人均预算限制。日期、时间、已选门店、优惠和其他条件都保持。",
+                 "人数改为3人，其他不变", "请将人数调整到三人，其他不变", "人数：3"):
+        fallback = RequirementAgent._fallback(text, [], previous)
+        for model_size in (None, 3, 9):
+            output = RequirementAgent._stabilize_explicit_fields(
+                RequirementOutput(party_size=model_size), fallback, text=text, previous_spec=previous)
+            edited = output.to_trip_spec(text, previous)
+            assert edited.party_size == 3 and not output.clarification_needed
+            assert edited.visit_date == previous.visit_date and edited.location == previous.location
+            assert edited.must_visit_place_ids == previous.must_visit_place_ids
+            expected = None if "取消" in text else previous.budget
+            assert edited.budget == expected
+            assert edited.per_person_budget == (None if "取消" in text else previous.per_person_budget)
+    for text in ("人数改为0人", "人数改为13人", "人数改为1.5人", "人数待定"):
+        output = RequirementAgent._fallback(text, [], previous)
+        assert output.party_size is None and output.party_size_unknown and output.clarification_needed
+    for text in ("不要把人数改成3人", "不需要把人数改成3人", "不把人数改成3人", "不要把 人数改成3人"):
+        assert RequirementAgent._fallback(text, [], previous).party_size is None
+    group = previous.model_copy(update={"goal": "我和1个孩子一起出行", "party_counts": {"用户": 1, "孩子": 1},
+                                        "party": [PartyMember(role="用户"), PartyMember(role="孩子")]})
+    for text in ("孩子人数改为3人", "孩子 人数改为3人"):
+        role = RequirementAgent._fallback(text, [], group)
+        assert role.party_counts["孩子"] == 3 and role.party_size == 4 and not role.clarification_needed
+
+
+def test_date_edits_do_not_become_geographic_searches():
+    previous = TripSpec(goal="原用餐草案", party_size=2, budget=250, visit_date=date(2026, 9, 11),
+                        search_radius_km=0.5, max_distance_km=2,
+                        location=Location(name="观音桥步行街", latitude=29.57, longitude=106.57))
+    for text in ("再把日期改成2026年9月12日，取消单段路程上限；搜索半径仍是0.5公里。",
+                 "改成2026年9月12日", "日期改为下周日"):
+        fallback = RequirementAgent._fallback(text, [], previous, reference_at="2026-09-09T12:00:00+08:00")
+        output = RequirementAgent._stabilize_explicit_fields(
+            RequirementOutput(location_name="模型猜测的地区", search_location_name="2026年9月12日"),
+            fallback, text=text, previous_spec=previous)
+        assert output.location_name is None and output.search_location_name is None
+        assert output.to_trip_spec(text, previous).location == previous.location
+    text = "再把日期改成2026年9月12日，取消单段路程上限；搜索半径仍是0.5公里。"
+    fallback = RequirementAgent._fallback(text, [], previous)
+    edited = RequirementAgent._stabilize_explicit_fields(RequirementOutput(), fallback, text=text, previous_spec=previous).to_trip_spec(text, previous)
+    assert edited.visit_date == date(2026, 9, 12) and edited.max_distance_km is None and edited.search_radius_km == 0.5
+    assert RequirementAgent._fallback("起点改为重庆观音桥步行街，日期保持", [], previous).location_name == "重庆观音桥步行街"
+    for text in ("日期不变但起点改为观音桥", "日期保持且起点改为观音桥"):
+        assert RequirementAgent._fallback(text, [], previous).location_name == "观音桥"
+    assert RequirementAgent._fallback("改到九月艺术中心", [], previous).search_location_name == "九月艺术中心"
+
+
 def test_discovery_reuses_candidates_and_advocate_receives_original_evidence():
     async def exercise():
         now = datetime.now(timezone.utc)
