@@ -58,6 +58,7 @@ export function BrowserPane(): JSX.Element {
       <Star size={12} className="text-brand-ink shrink-0" />
       {FAVORITES.map(favorite => <button key={favorite.url} onClick={() => go(favorite.url)} className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[11px] text-neutral-600 hover:bg-brand/10 hover:text-brand-ink" title={favorite.url}><span>{favorite.emoji}</span>{favorite.label}</button>)}
     </div>
+    {active?.previewProtected && <div role="status" className="mx-3 my-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs leading-5 text-amber-900">此标签仅预览预约条件：网站购物车、空位查询及预约请求已阻断，不能据此确认有位。可核对预填人数、日期和时间；如需浏览其他网站，请新建标签。</div>}
     <div ref={content} data-browser-viewport className="flex-1 relative min-h-0 mx-3 mb-3" onClick={() => action('focus')}>
       {!tabs.length && <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 text-center px-8">
         <div className="w-20 h-20 rounded-[26px] bg-brand-soft border border-brand/50 shadow-card rotate-[-5deg] flex items-center justify-center"><Compass size={26} className="text-brand-ink" /></div>

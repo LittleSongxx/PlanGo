@@ -190,12 +190,13 @@ export interface ChatMessage {
 export interface DraftReviewCardDetails { runId: string; interruptId: string; planId: string; planVersion: number; unknowns: string[]; canPrepare: boolean; blockedReason?: string }
 
 export type OutcomeCard =
+  | { kind: 'booking_preview'; complete: boolean; partySize?: number; date: string; time: string; labels: string[]; observedAt: string; sourceUrl: string }
   | { kind: 'draft_review'; draft: DraftReviewCardDetails }
   | { kind: 'preparation'; ready: boolean; current?: boolean; summary: string; observedAt?: string; pendingChecks?: string[]; resume?: HarnessPreparationResume & { run_id: string };
       entries: { name: string; address: string; partySize?: number; date: string; time: string; timezone: string }[];
       issues: { name: string; detail: string; mismatch: boolean }[] }
   | { kind: 'evidence'; items: HarnessEvidence[] }
-  | { kind: 'browser_page'; title: string; rawTitle?: string; url: string; text: string; source?: SourceTag; observedAt?: string; scope?: 'visual_observation' | 'image_text'; limitations?: string[];
+  | { kind: 'browser_page'; title: string; rawTitle?: string; url: string; text: string; source?: SourceTag; observedAt?: string; scope?: 'visual_observation' | 'image_text' | 'booking_parameters'; limitations?: string[];
       menuCount?: number; offerCount?: number; places?: { name: string; address?: string; averagePrice?: number; priceUnit?: string; quote?: string }[] }
   | { kind: 'plan'; plan: Plan }
   | { kind: 'plans'; variants: { plan: Plan; styleLabel: string; per: number | null; overBudget?: number }[]; city: string; budget?: number }

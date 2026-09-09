@@ -26,7 +26,7 @@ CURRENT_PAGE = re.compile(r"(?:当前|这个|此)(?:浏览器)?(?:中|上|里)?�
 def intent_text(text: str) -> str:
     """Exclude prohibitions from routing without removing them from the model's task."""
     clauses = re.split(r"[，。；！？\n]|(?:但是|不过|但|然后)", text)
-    return "，".join(re.sub(r"(?:不要|不用|不必|无需|不需要|禁止|避免|别|不(?=登录|下单|支付|付款|提交|预约|预订|订位|订座|取号|领号|发送|购买|取消订单)).*$", "", clause) for clause in clauses)
+    return "，".join(re.sub(r"(?:不要|不用|不必|无需|不需要|禁止|避免|别|不(?=查询|登录|下单|支付|付款|提交|预约|预订|订位|订座|取号|领号|发送|购买|取消订单)).*$", "", clause) for clause in clauses)
 
 
 class ExecutionGoal(BaseModel):

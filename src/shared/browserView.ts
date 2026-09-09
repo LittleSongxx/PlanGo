@@ -8,6 +8,7 @@ export interface BrowserTabState {
   zoom: number
   popup: boolean
   error?: string
+  previewProtected?: boolean
 }
 export interface BrowserViewState { seq: number; activeTabId: string | null; tabs: BrowserTabState[] }
 export interface BrowserLayout { x: number; y: number; width: number; height: number; visible: boolean }

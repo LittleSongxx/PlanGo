@@ -7,6 +7,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import { chromium, selectors, type Browser, type CDPSession, type Frame, type Page } from 'playwright-core'
 import { getBrowserTabBounds, loadBrowserURL } from './browserView'
 import readabilitySource from '@mozilla/readability/Readability.js?raw'
+import { isBookingPreviewUrl } from '../shared/bookingPreview'
+import { bookingPreviewProtection } from './bookingPreviewGuard'
 import { allowedBrowserSite, browserCommandGuard, isBrowserWrite, validateBrowserCommand, type BrowserCommand, type BrowserObservation, type ScreenshotEvidence } from '../shared/browser'
 
 export interface BrowserDriverContext {
@@ -169,7 +171,12 @@ const selectorSource = `(() => {
     const s={id:p.id,owner:p.owner,epoch:p.epoch,doc:document,url:location.href,version:p.version,refs,elements,meanings:refs.map(meaning),viewport:viewport(),roots:rs,fingerprint:fingerprint(rs),dirty:false,observers:[],armed:null,dispatched:false,prevented:false};
     for(const root of rs){const observer=new MutationObserver(()=>{s.dirty=true});observer.observe(root,{subtree:true,childList:true,characterData:true,attributes:true});s.observers.push(observer);}
     current=s;
-    return metadata({url:s.url,title:document.title,text,elements,tables,forms:formData(rs,refs),version:s.version,manual_gate:manualGate(rs),canvas_count:rs.reduce((count,root)=>count+root.querySelectorAll('canvas').length,0)});
+    let booking_preview;
+    if(p.bookingPreview){
+      const label=id=>{const matches=Array.from(document.querySelectorAll('[data-testid]')).filter(el=>el.getAttribute('data-testid')===id&&visible(el));return matches.length===1?(matches[0].innerText||'').trim().slice(0,120):'';};
+      booking_preview={adapter:'szuo_tealounge_v1',merchant_label:label('Landing Venue Panel Opener Button'),party_label:label('Landing Pax Panel Opener Button'),date_label:label('Landing Date Panel Opener Button'),time_label:label('Landing Time Panel Opener Button')};
+    }
+    return metadata({url:s.url,title:document.title,text,elements,tables,forms:formData(rs,refs),booking_preview,version:s.version,manual_gate:manualGate(rs),canvas_count:rs.reduce((count,root)=>count+root.querySelectorAll('canvas').length,0)});
   }
   // This guard also catches mutations during Playwright's actionability waits.
   // Once an input event has begun, any uncertainty is reported as UNKNOWN upstream.
@@ -355,6 +362,8 @@ export async function executeBrowserOperation(contents: WebContents, raw: Browse
       const snapshot: Snapshot = { id: command.command_id, owner: ctx.owner, epoch: ctx.epoch, url: page.url(), page, frames: [], refs: [], consumed: false, manualGate: null }
       const elements: NonNullable<BrowserObservation['elements']> = [], tables: NonNullable<BrowserObservation['tables']> = [], texts: string[] = []
       const forms: DomForm[] = []
+      let bookingPreview: Record<string, unknown> | undefined
+      const protection = bookingPreviewProtection(contents)
       let canvasCount = 0
       const frames = page.frames()
       if (frames.length > 32) throw new Error('page_too_complex')
@@ -363,7 +372,9 @@ export async function executeBrowserOperation(contents: WebContents, raw: Browse
           const element = await step(() => frame.frameElement())
           try { if (!(await step(() => element.isVisible()))) continue } finally { await element.dispose() }
         }
-        const observed = await step(() => data<{ url: string; version: string; manual_gate: 'login' | 'captcha' | null; canvas_count: number; text: string; elements: ElementInfo[]; tables: NonNullable<BrowserObservation['tables']>; forms: DomForm[] }>(frame, selector('capture', snapshot, { version: randomUUID(), extract: command.operation === 'extract' || command.operation === 'extract_tables' }), signal))
+        const preview = !frame.parentFrame() && protection.enabled && isBookingPreviewUrl(frame.url())
+        const observed = await step(() => data<{ url: string; version: string; manual_gate: 'login' | 'captcha' | null; canvas_count: number; text: string; elements: ElementInfo[]; tables: NonNullable<BrowserObservation['tables']>; forms: DomForm[]; booking_preview?: Record<string, unknown> }>(frame, selector('capture', snapshot, { version: randomUUID(), extract: command.operation === 'extract' || command.operation === 'extract_tables', bookingPreview: preview }), signal))
+        if (preview && observed.booking_preview) bookingPreview = { ...observed.booking_preview, protected: true, blocked_requests: protection.blocked_requests }
         snapshot.frames.push({ frame, url: observed.url, version: observed.version })
         texts.push(observed.text); tables.push(...observed.tables); canvasCount += observed.canvas_count
         if (observed.manual_gate === 'captcha' || !snapshot.manualGate) snapshot.manualGate = observed.manual_gate
@@ -387,7 +398,7 @@ export async function executeBrowserOperation(contents: WebContents, raw: Browse
       snapshots.set(contents, snapshot)
       // ponytail: retain 64 tab snapshots; an evicted tab must be read again before action.
       if (snapshots.size > 64) snapshots.delete(snapshots.keys().next().value!)
-      return { ...base, ok: true, outcome: 'observed', snapshot_id: snapshot.id, page_version: pageVersion(snapshot), fields: { dom: { canvas_count: canvasCount, manual_gate: snapshot.manualGate, forms } }, elements, text: texts.join('\n\n').slice(0,9000), ...(['extract', 'extract_tables'].includes(command.operation) ? { tables: tables.slice(0,6) } : {}) }
+      return { ...base, ok: true, outcome: 'observed', snapshot_id: snapshot.id, page_version: pageVersion(snapshot), fields: { dom: { canvas_count: canvasCount, manual_gate: snapshot.manualGate, forms }, ...(bookingPreview ? { booking_preview: bookingPreview } : {}) }, elements, text: texts.join('\n\n').slice(0,9000), ...(['extract', 'extract_tables'].includes(command.operation) ? { tables: tables.slice(0,6) } : {}) }
     }
     const snapshot = snapshots.get(contents)
     if (command.operation === 'scroll') {

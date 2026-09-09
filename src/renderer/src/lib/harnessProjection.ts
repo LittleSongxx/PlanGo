@@ -63,6 +63,7 @@ export function phaseLabel(run: HarnessSnapshot | null): string {
     if (result.scope === 'preparation_incomplete') return '准备事项待完善'
     if (result.scope === 'image_text') return completed ? '图片识别已完成' : '图片识别待补充'
     if (result.scope === 'read_only') return completed ? '资料读取已完成' : '资料读取待补充'
+    if (result.scope === 'booking_parameters') return completed ? '参数预览已核对 · 未查询空位' : '参数预览待核对'
   }
   return ({ CREATED: '已接收', PENDING: '排队中', RUNNING: '运行中', REQUIREMENTS_READY: '已理解需求', RESEARCHING: '查找真实信息', PLAN_DRAFTED: '方案已生成', REVIEWING: '校验方案', WAITING_APPROVAL: '等待确认', WAITING_BROWSER: '等待浏览器', EXECUTING: '执行中', REPLANNING: '重新规划', SUCCEEDED: '已完成', PARTIAL_FAILED: '部分完成', INFEASIBLE: '当前约束下不可行', FAILED: '运行失败', CANCELLED: '已取消' } as Record<string, string>)[run.phase] || run.phase
 }
@@ -150,6 +151,14 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
     && ['page_read', 'menu_read'].includes(str(readOutcome.kind)) && readGoal.kind === readOutcome.kind && row(readOutcome.data).scope === 'read_only'
   const readEvidenceIds = currentRead ? strings(readOutcome.evidence_ids) : []
   const cards: OutcomeCard[] = []
+  const preview = row(readOutcome.data)
+  const bookingPreview = readOutcome.kind === 'page_read' && preview.scope === 'booking_parameters' && preview.business_completed === false && preview.availability_checked === false
+  if (bookingPreview) {
+    const requested = row(preview.requested), labels = row(preview.visible_labels)
+    cards.push({ kind: 'booking_preview', complete: run.phase === 'SUCCEEDED' && !run.command_pending && readOutcome.status === 'satisfied',
+      partySize: num(requested.party_size), date: str(requested.date), time: str(requested.time), labels: [str(labels.party_label), str(labels.date_label), str(labels.time_label)],
+      observedAt: str(preview.observed_at), sourceUrl: str(preview.source_url) })
+  }
   const candidateRows = rows(state.candidate_plans)
   const selected = row(state.selected_plan)
   const plans = (candidateRows.length ? candidateRows : selected.plan_id ? [selected] : []).map(p => projectPlan(p, run, evidence))
@@ -227,7 +236,7 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
     if (offers.length && (!run.offer_comparison || artifact.artifact_id !== run.offer_comparison.source_ref.artifact_id)) cards.push({ kind: 'groupbuy', shopName: title, source: source(artifact.source), packages: offers.filter(x => str(x.name)).map(x => ({ name: str(x.name), price: num(x.price) ?? null, originalPrice: num(x.original_price) ?? null, includes: strings(x.conditions), fitPeople: num(x.people) ? `适用 ${x.people} 人` : '适用人数待确认', quote: str(x.quote) || undefined })) })
     if (str(data.text) || data.tables || places.length || (!menu.length && !offers.length)) {
       const tableText = rows(data.tables).map(table => [strings(table.headers).join(' · '), ...(Array.isArray(table.rows) ? table.rows.filter(Array.isArray).map(cells => cells.map(value => String(value ?? '')).join(' · ')) : [])].filter(Boolean).join('\n')).filter(Boolean).join('\n\n')
-      cards.push({ kind: 'browser_page', title, rawTitle: str(artifact.title), scope: artifact.type === 'image' ? 'image_text' : undefined, url: str(artifact.url), text: str(data.text) || tableText || '此页面暂无可直接显示的文字摘录，可在浏览器中继续查看。', source: source(artifact.source), observedAt: str(artifact.observed_at),
+      cards.push({ kind: 'browser_page', title, rawTitle: str(artifact.title), scope: artifact.type === 'image' ? 'image_text' : bookingPreview ? 'booking_parameters' : undefined, url: str(artifact.url), text: str(data.text) || tableText || '此页面暂无可直接显示的文字摘录，可在浏览器中继续查看。', source: source(artifact.source), observedAt: str(artifact.observed_at),
         menuCount: menu.length, offerCount: offers.length, places: places.map(place => ({ name: str(place.name), address: str(place.address) || undefined, averagePrice: num(place.average_price), priceUnit: str(place.price_unit) || undefined, quote: str(place.quote) || undefined })) })
     }
   }

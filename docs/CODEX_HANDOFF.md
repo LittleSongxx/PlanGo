@@ -6,7 +6,7 @@
 
 用户希望新 Codex **按最近讨论的“项目本身推进计划”直接实施**，不要重新输出泛化分析或询问“是否开始”。主线是：用户选择门店与优惠 → 修改人数/日期/预算 → 系统解释适用性与缺失规则 → 保存行程 → 中断后继续原任务。
 
-**D1/D2已提交，D3/D4已在原真实门店任务完成选择→修改→保存→重启；D5已做单站输入收窄与180秒循环，D6已实现独立距离语义、有限同城公交及费用范围。** 用户随后要求修复聊天只剩最后回复并改明黄色主题；本轮继续实现持久回复事件、按轮次恢复和黄色/暖白配色。下一步是D7真实表单/独立使用验收，以及有实际长会话样本时继续D5稳定性；不能把180秒循环算长期稳定或已解释WSL崩溃。复用已有持久命令、规范补丁、证据和审批机制，按小阶段验证与本地提交；不要重复首批实现或为了形式统一重建架构。
+**D1/D2已提交，D3/D4已在原真实门店任务完成选择→修改→保存→重启；D5已做单站输入收窄与180秒循环，D6已实现独立距离语义、有限同城公交及费用范围。** 用户随后要求修复聊天只剩最后回复并改明黄色主题；本轮继续实现持久回复事件、按轮次恢复和黄色/暖白配色。D7后续用户已授权悦廊2人、9月11日15:00，但要求不提交预约/不影响真实业务；已实现受保护参数预览及原任务恢复，cart/查询接口仍阻断。下一步是真正有只读契约的空位接口或新入口、独立使用验收，以及有实际长会话样本时继续D5稳定性；不能把180秒循环算长期稳定或已解释WSL崩溃。复用已有持久命令、规范补丁、证据和审批机制，按小阶段验证与本地提交；不要重复首批实现或为了形式统一重建架构。
 
 用户主投方向已确认 **AI应用／Agent开发**；[秋招与作品集建议](秋招与作品集推进建议.md)是辅助背景，不能据此把本次产品实施改成写简历或发布作品集。20个评估任务、3–5个独立试用者等仍是建议数量，尚未执行；**完整质量指标测评继续暂停**。
 
@@ -50,7 +50,7 @@
 | 主profile | `~/.config/plango`，`persist:plango`；Cookie在 `Partitions/plango/Cookies` |
 | 主桌面身份/回执 | profile下 `harness/desktop-identity.json`、`browser-receipts.json`，不能替换成新身份 |
 | 原迁移私有备份 | `output/r0-backup/`；含配置、SQL/卷/profile，不提交、不公开打印 |
-| 最近主库更新备份 | `output/conversation-final/before-main-update.sql`、`before-main-rows.json`（回复持久化更新）；D3–D6的`output/product-final/`和D1/D2的`output/delivery-next/`和此前备份照常保留 |
+| 最近主库更新备份 | `output/d7-preview-final/before-main-update.sql`、`before-main-rows.json`（参数预览更新）；此前`output/conversation-final/`（回复持久化更新）；D3–D6的`output/product-final/`和D1/D2的`output/delivery-next/`和此前备份照常保留 |
 | 原真实PG/Redis测试 | `plango-e2e`卷、`output/live-ui/profile/`、`output/live-ui/final-backup/plango-e2e.sql`；当前停止，不是空库 |
 | 商家原任务 | `output/merchant-next/session-C0ovDv/`，数据库 `data/runs.sqlite`、profile `electron/`；原后台端口已停，不固定端口恢复 |
 | 结构化需求原任务 | `output/requirements-next/session-kfOEZ5/`，`data/runs.sqlite`与独立profile，已停止 |
@@ -158,7 +158,7 @@
 
 原顺风123的大众点评/高德/携程调查仍未找到原生网页预约表单，原记录保留。后续4搜索/5页面读取找到另一候选：重庆尼依格罗酒店悦廊，官网Book A Table链接至`https://www.szuo.com/en/shops/niccolo-chongqing-tealounge/reserve`。独立实际Electron打开成功，经商家须知页进入`/en/niccolo-chongqing-tealounge/reserve/landing`，人数/日期/时间/Find availability控件可见；未填写、查询空位或提交，未创建业务run/调用模型，原顺风123任务未改。详见[新入口证据](../eval/plango-d7-next/README.md)。
 
-**D7入口已找到，自动准备尚未完成。** 当前页面为自定义控件，没有原生form；szuo不在现有自动写入站点列表，当前Preparation后验不能直接判ready_to_review。下一步先等待用户明确是否选此候选及人数/日期/时间与只准备范围，然后沿已有授权/回执做有界适配和验证，不把默认2人/当天当用户选择，不为通过验收伪造native form或放宽提交权限。页面存在2025旧优惠限制，不能当当前优惠。
+**D7已进一步完成受保护参数预览，真实空位查询/完整表单准备仍未完成。** 当前页面为自定义控件，没有原生form；szuo不在现有自动写入站点列表，当前Preparation后验不能直接判ready_to_review。用户随后已授权悦廊2人、2026-09-11 15:00，只准备/查询且不产生真实业务影响，不重复询问相同授权。现场脚本发现landing自动cart/init、Find availability创建/更新cart，私有API无法证明不占位；这些接口全部阻断。使用官方pax/start_date/start_time预填链接，主进程捕获真实控件，结果scope=booking_parameters/business_completed=false/availability_checked=false，不伪造native form或扩大click/type权限。页面存在2025旧优惠限制，不能当当前优惠。
 
 后续先找到一个真实可操作网页表单再适配；当前大众点评页面仅公开预览，不无限撞登录/风控，不编造预订URL。复用同form参数、plan/version审批与恢复；用户具体批准输入后核对，submit=0；真实提交/支付仍另行授权。找不到就按只读范围交付，不用fixture假装商家验收。
 
@@ -168,7 +168,7 @@
 
 1. 读根AGENTS、本文件、架构决策、Agent架构与选型、进度末尾；只读核实本文件第2节的归属与待任务。
 2. 不重做D1–D4和D6：先查看产品接续证据与原商家v4；保持当前优惠来源过期提示及原任务/预算，恢复显示不新增模型调用。
-3. D7已有悦廊的真实订位入口，先看新证据并等待用户确认候选与输入范围，再有界适配；具体输入沿逐项审批，提交另行授权。原店规则需App，不重复扫码/无限风控探测。独立用户验收等用户安排真实使用者，不擅自联系。
+3. D7悦廊参数范围已有授权，先看eval/plango-booking-preview；不能为查询而放行未知cart/锁位接口。仅在取得可证无业务副作用的入口/契约后继续空位查询，仍禁止预约提交。原店规则需App，不重复扫码/无限风控探测。独立用户验收等用户安排真实使用者，不擅自联系。
 4. D5长时稳定只在实际长会话或复现线索下继续；64GB swap不证明WSL根因解决。多个项目运行时测试串行、单窗口，不自动开启sweep或长期压力任务。
 5. 保持故障恢复/版本/UNKNOWN契约；通过必要检查后更新进度/交接/使用文档并本地提交。新版d7-ready包已就绪，配套docs/独立试用验收.md；等待用户安排实际使用者，不重做环境或清库。
 
@@ -214,4 +214,6 @@ PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plang
 
 新证据使用新目录/文件名，公开材料脱敏；原始SQL/profile/配置留私有output。完成后关闭临时窗口与专属测试进程，保留数据，最后核对Git与用户原文哈希。**D1–D4/D6已有代码及相应受控或真实只读验收；D5长时稳定、D7真实表单/独立用户仍未完成。**
 
-D7新只读会话：`output/d7-next/tealounge-brha972n/`，原顺风123保持原目录；当前无新业务run。临时窗口/SQLite后端关闭，独立profile及现场日志保留；不得依据旧PID/端口重新操作。独立试用尚未安排完成，验收单为空，未代发邀请。两次被动资源采样仅供定位参考，不证明长期稳定。
+D7新只读会话：`output/d7-next/tealounge-brha972n/`，原顺风123保持原目录；新增参数预览run `82c0f6fbcb394a8eaba38f3c8d6990ea`：SUCCEEDED/booking_parameters，第1轮initial预算、2240tokens/3tools，4条持久命令含1次旧标签失败；无待命令/UNKNOWN。须知暂停和保存结果均经历真实重启，累计用量保留，原顺风123不变。临时窗口/SQLite后端关闭，独立profile及现场日志保留；不得依据旧PID/端口重新操作。独立试用尚未安排完成，验收单为空，未代发邀请。两次被动资源采样仅供定位参考，不证明长期稳定。
+
+本轮[参数预览证据](../eval/plango-booking-preview/README.md)包括先于页面导航的网络保护、真实参数、失败/同任务恢复及工程检查。主服务更新备份`output/d7-preview-final/`；旧试用包不含此保护，新包以该证据目录package.json及实际文件为准。

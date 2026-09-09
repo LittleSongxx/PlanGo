@@ -209,3 +209,9 @@ ReadGoal兼容旧checkpoint，由明确请求推导门店身份/地址、菜单�
 `search_radius_km`独立于路线约束`max_distance_km`；旧checkpoint/旧字段保留兼容，新UI/API以`route_distance_km`明确路程语义。多结果geocode拒绝默认取第一项。同城公交通过两端真实citycode查询，按bus/walking段合计距离和时长，单人标准票价乘人数一次；缺费用保留null，真实铁路/出租车和跨城路线仍未知。PlanStop中的交通费用及说明随原计划保存，方案/分享使用已知估算小计与未估项，不以总预算通过冒充完整消费保证。
 
 用户可见回复以`ASSISTANT_MESSAGE`写入已有事件账本，与状态投影同一SQL事务；不添加到模型messages或另建对话事实表。前端以完整连续事件序列按接受顺序重建问答，旧任务只恢复已存GRAPH_INTERRUPTED问题，保留已有AI消息；缺日志时回退原消息，不编造回答。重放按同轮/内容/阶段去重，新轮相同内容仍独立；当前输入未执行时不将旧reason当新答复。
+
+## 13. 无业务副作用的参数预览
+
+实际TableCheck页面的landing和Find availability会调用私有cart接口，不能仅以“未点最终提交”定义只读。本轮对已核实悦廊入口采用导航前主进程网络保护，仅允许精确页面和已核对静态资源GET/HEAD；拒绝所有API/cart/checkout/查询与未知流量，关闭标签后仍拒绝无归属延迟请求。没有加入自动写入站点白名单。
+
+官方URL参数预填后，可信隔离DOM读取实际按钮文字并携带主进程保护标记；后端与原请求参数/当前快照/时间核对，结果为booking_parameters，始终availability_checked=false/business_completed=false。年份仅来自URL，不伪装原生form或完整预约准备。网站须知暂停复用既有interrupt/继续/预算/回执，重启后下一次只读观测绑定当前可见标签并重新核对来源；历史失败不删，完整交易权限不变。

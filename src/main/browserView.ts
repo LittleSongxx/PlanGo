@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { browserUrl, allowedBrowserSite } from '../shared/browser'
 import { IPC } from '../shared/ipc'
 import type { BrowserActivity, BrowserIntent, BrowserLayout, BrowserViewState } from '../shared/browserView'
+import { bookingPreviewProtection, installBookingPreviewGuard, protectBookingPreview } from './bookingPreviewGuard'
 
 type Tab = { id: string; contents: WebContents; view?: WebContentsView; popup?: BrowserWindow; url: string; visible: boolean; visibility: AbortController; closing?: boolean; error?: string }
 const tabs = new Map<string, Tab>()
@@ -18,6 +19,7 @@ export function onBrowserPopup(handler: (parentId: string, childId: string) => v
 export async function loadBrowserURL(contents: WebContents, raw: string, signal?: AbortSignal, navigate: (url: string) => Promise<unknown> = url => contents.loadURL(url)): Promise<void> {
   const url = browserUrl(raw)
   if (contents.isDestroyed()) throw new Error('tab_closed')
+  protectBookingPreview(contents, url)
   if (signal?.aborted) throw new Error('navigation_cancelled')
   loads.get(contents)?.abort()
   const controller = new AbortController()
@@ -40,7 +42,7 @@ export function getBrowserState(): BrowserViewState {
   return { seq, activeTabId: activeId, tabs: [...tabs.values()].filter(tab => !tab.contents.isDestroyed()).map(tab => ({
     id: tab.id, url: tab.url, title: tab.contents.getTitle() || '新标签', loading: tab.contents.isLoading(),
     canGoBack: tab.contents.navigationHistory.canGoBack(), canGoForward: tab.contents.navigationHistory.canGoForward(),
-    zoom: tab.contents.getZoomFactor(), popup: !!tab.popup, error: tab.error
+    zoom: tab.contents.getZoomFactor(), popup: !!tab.popup, error: tab.error, previewProtected: bookingPreviewProtection(tab.contents).enabled
   })) }
 }
 function publish(): void {
@@ -186,6 +188,7 @@ export async function handleBrowserIntent(intent: BrowserIntent): Promise<Browse
 }
 export function initializeBrowserViews(window: BrowserWindow): void {
   host = window
+  installBookingPreviewGuard(session.fromPartition('persist:plango'), publish)
   window.on('resize', applyLayout)
   window.on('show', applyLayout)
   window.on('hide', applyLayout)

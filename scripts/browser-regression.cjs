@@ -317,6 +317,34 @@ async function main() {
   await waitFor(() => !publicTab.contents.isLoading())
   const publicRead = await execute(command('extract', {}, { run_id: 'public-run', tab_id: publicTab.id }))
   assert(publicRead.ok && publicRead.fields.dom.manual_gate === null, 'QR login text on an unrelated public page does not impersonate the site-specific login route')
+  // The document is a local protocol fixture. Restore real HTTPS transport
+  // before testing requests, which target only our loopback listener.
+  const previewSession = publicTab.contents.session
+  const previewUrl = 'https://www.szuo.com/en/niccolo-chongqing-tealounge/reserve/landing?pax=2&start_date=2026-09-11&start_time=15%3A00'
+  await previewSession.protocol.handle('https', () => new Response('<div data-testid="Landing Page Root"><button data-testid="Landing Venue Panel Opener Button">The Tea Lounge</button><button data-testid="Landing Pax Panel Opener Button">2 Guests</button><button data-testid="Landing Date Panel Opener Button">Fri Sep 11</button><button data-testid="Landing Time Panel Opener Button">3:00 pm</button></div>', { headers: { 'content-type': 'text/html' } }))
+  const protectedTab = await createBrowserTab(previewUrl)
+  await waitFor(() => !protectedTab.contents.isLoading())
+  await previewSession.protocol.unhandle('https')
+  let previewConnections = 0
+  const countConnection = () => previewConnections++
+  server.on('connection', countConnection)
+  const loopbackApi = `https://127.0.0.1:${server.address().port}/v2/booking/cart/init`
+  await protectedTab.contents.executeJavaScript(`Promise.all([fetch(${JSON.stringify(loopbackApi)},{method:'POST'}).catch(()=>null),fetch(${JSON.stringify(loopbackApi.replace('/cart/init','/calendar'))},{method:'POST'}).catch(()=>null)])`)
+  assert(previewConnections === 0, 'guard blocks cart/calendar before even connecting to a controlled loopback endpoint')
+  assert(api.getBrowserState().tabs.find(tab => tab.id === protectedTab.id).previewProtected, 'the actual guarded tab reports preview-only protection')
+  const previewRead = await execute(command('extract', {}, { run_id: 'preview-run', tab_id: protectedTab.id }))
+  assert(previewRead.ok && previewRead.fields.booking_preview.protected && previewRead.fields.booking_preview.blocked_requests >= 2 && previewRead.fields.booking_preview.party_label === '2 Guests' && previewRead.fields.booking_preview.time_label === '3:00 pm', 'trusted snapshot captures actual widget labels with main-process protection')
+  assert(previewRead.fields.dom.forms.length === 0, 'custom widget is not fabricated as a native form')
+  const rejectedClick = await execute(command('click', { idx: 0 }, { run_id: 'preview-run', tab_id: protectedTab.id, expected_snapshot_id: previewRead.snapshot_id, approved_action_id: 'not-a-site-write-grant' }))
+  assert(rejectedClick.error_kind === 'site_not_allowed', 'booking preview does not expand automatic click authority')
+  await api.loadBrowserURL(protectedTab.contents, loopbackApi).catch(() => {})
+  assert(previewConnections === 0, 'redirecting a protected tab cannot release protection')
+  await handleBrowserIntent({ kind: 'close', id: protectedTab.id })
+  await previewSession.fetch(loopbackApi, { method: 'POST' }).catch(() => {})
+  assert(previewConnections === 0, 'detached requests remain blocked after the protected tab closes')
+  server.removeListener('connection', countConnection)
+  const stillNormal = await makeTab('after-preview')
+  assert((await stillNormal.page('document.body.innerText')).includes('真实菜单测试页'), 'other owned ordinary tabs continue to load')
   console.log(`Browser regression: ${checks} assertions passed (real WebContentsView + trusted bridge + Playwright)`)
 }
 async function finish(code) {

@@ -11,7 +11,7 @@ import { RequirementsCard } from './RequirementsCard'
 import { OfferComparisonCard } from './OfferComparisonCard'
 import { MapPin, Clock, Utensils, Ticket, Users, CheckCircle2, XCircle, AlertTriangle, Send, ListChecks, Tag, Wallet, Globe, Navigation, Mic, MicOff, Compass, ArrowRight, Sparkles, FileText } from 'lucide-react'
 
-const cardPriority = (card: OutcomeCard): number => card.kind === 'confirm' || card.kind === 'draft_review' ? 2 : card.kind === 'preparation' && card.current ? 1 : 0
+const cardPriority = (card: OutcomeCard): number => card.kind === 'confirm' || card.kind === 'draft_review' ? 2 : card.kind === 'booking_preview' || card.kind === 'preparation' && card.current ? 1 : 0
 
 export function OutcomeCanvas(): JSX.Element {
   const cards = useStore((s) => s.cards)
@@ -70,6 +70,14 @@ function CardView({ card }: { card: OutcomeCard }): JSX.Element {
   const decideDraft = useStore(state => state.decideDraft)
   const resumePreparation = useStore(state => state.resumePreparation)
   switch (card.kind) {
+    case 'booking_preview':
+      return <Card accent>
+        <div className="flex items-center justify-between gap-3"><div><div className="plango-kicker">预约条件预览</div><h3 className="mt-1 font-semibold text-lg">悦廊 · {card.complete ? '参数显示已核对' : '参数尚待核对'}</h3></div><SourceBadge source="browser" /></div>
+        <div className="my-4 rounded-xl border border-[var(--line)] bg-[var(--surface-soft)] p-4"><p className="font-medium">{card.partySize ?? '待确认'} 人 · {card.date} {card.time} · 北京时间</p><p className="mt-2 text-xs leading-6 text-[var(--muted)]">网页显示：{card.labels.filter(Boolean).join(' · ') || '尚未取得完整控件'}<br />年份来自预填链接，网页控件只显示星期、月、日。</p></div>
+        <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-6 text-amber-900">未查询空位，未提交预约。网站购物车和查询流程已阻断；这些参数不能证明有位或预订成功。</p>
+        <p className="mt-3 text-xs text-[var(--muted)]">核对记录：{card.observedAt ? new Date(card.observedAt).toLocaleString('zh-CN') : '时间未知'}</p>
+        <button onClick={() => useStore.getState().navigateInApp(card.sourceUrl)} className="mt-3 text-sm font-medium text-brand-strong underline underline-offset-4">打开受保护的参数页面</button>
+      </Card>
     case 'draft_review':
       return <DraftReviewCard draft={card.draft} busy={busy} onDecision={decision => void decideDraft(card.draft.runId, card.draft.interruptId, card.draft.planId, card.draft.planVersion, decision)} />
     case 'preparation':
@@ -122,18 +130,19 @@ function Card({ children, accent }: { children: React.ReactNode; accent?: boolea
 }
 
 function BrowserPageCard({ card }: { card: Extract<OutcomeCard, { kind: 'browser_page' }> }): JSX.Element {
-  const structured = !!(card.places?.length || card.menuCount || card.offerCount)
+  const preview = card.scope === 'booking_parameters'
+  const structured = preview || !!(card.places?.length || card.menuCount || card.offerCount)
   return <Card>
-    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="plango-kicker">{card.scope ? '识别记录' : '页面资料'}</div><h3 className="mt-1 text-lg leading-7 font-semibold break-words">{card.title}</h3></div><SourceBadge source={card.source || 'browser'} /></div>
+    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="plango-kicker">{preview ? '参数页面来源' : card.scope ? '识别记录' : '页面资料'}</div><h3 className="mt-1 text-lg leading-7 font-semibold break-words">{card.title}</h3></div><SourceBadge source={card.source || 'browser'} /></div>
     <div className="text-xs text-[var(--muted)] mt-2">读取于 {card.observedAt ? new Date(card.observedAt).toLocaleString('zh-CN') : '时间未知'}</div>
     {card.scope === 'image_text' && <p className="text-sm leading-6 text-amber-700 mt-3">图片识别：内容来自你提供的图片，价格和商家信息尚未实时核验。</p>}
     {card.scope === 'visual_observation' && <p className="text-sm leading-6 text-amber-700 mt-3">截图理解：仅描述画面，不代表已核验商家事实或完成业务操作。</p>}
-    {card.places?.map((place, index) => <div key={index} className="mt-4 rounded-xl border border-[var(--line)] bg-[var(--surface-soft)] p-4 text-sm leading-6">
+    {!preview && card.places?.map((place, index) => <div key={index} className="mt-4 rounded-xl border border-[var(--line)] bg-[var(--surface-soft)] p-4 text-sm leading-6">
       {card.places!.length > 1 && <h4 className="font-semibold mb-2">{place.name}</h4>}
       <div className="flex items-start gap-2"><MapPin size={16} className="mt-1 shrink-0 text-brand-strong" /><span>{place.address || '门店地址待核验'}</span></div>
       <div className="mt-2 flex items-center gap-2"><Wallet size={16} className="shrink-0 text-brand-strong" /><span>{place.averagePrice === undefined ? '人均费用待核验' : `页面人均 ¥${place.averagePrice}`}</span></div>
     </div>)}
-    {structured && <div className="mt-4 flex flex-wrap gap-2 text-xs"><span className="rounded-lg bg-brand-soft px-3 py-2 text-brand-ink">菜品摘录 {card.menuCount || 0} 项</span><span className="rounded-lg bg-brand-soft px-3 py-2 text-brand-ink">{card.offerCount ? `套餐摘录 ${card.offerCount} 项` : '套餐条件待核验'}</span>{!card.places?.length && <span className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">门店地址待核验</span>}</div>}
+    {!preview && structured && <div className="mt-4 flex flex-wrap gap-2 text-xs"><span className="rounded-lg bg-brand-soft px-3 py-2 text-brand-ink">菜品摘录 {card.menuCount || 0} 项</span><span className="rounded-lg bg-brand-soft px-3 py-2 text-brand-ink">{card.offerCount ? `套餐摘录 ${card.offerCount} 项` : '套餐条件待核验'}</span>{!card.places?.length && <span className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">门店地址待核验</span>}</div>}
     <details open={!structured} className="mt-4 border-t border-[var(--line)] pt-3 text-sm">
       <summary className="cursor-pointer text-[var(--muted)] py-1">查看原始网页摘录与来源</summary>
       {card.rawTitle && <p className="mt-3 text-xs leading-6 text-neutral-500 break-words">网页原标题：{card.rawTitle}</p>}

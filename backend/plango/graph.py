@@ -26,6 +26,7 @@ from plango_harness.agent.model_adapter import ModelProviderUnavailable
 from plango_harness.agent.requirements import temporal_patch
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .booking_preview import booking_preview_outcome
 from .browser import BrowserScreenshot
 from .outcomes import (
     CURRENT_PAGE,
@@ -105,6 +106,7 @@ def artifact(observation, data=None):
             "elements": observation.get("elements", []),
             **(data or {}),
             **form_evidence(observation),
+            **({"booking_preview": observation["fields"]["booking_preview"]} if (observation.get("fields") or {}).get("booking_preview") else {}),
         },
     }
 
@@ -692,7 +694,16 @@ def build_desktop_graph(runtime, deps, checkpointer):
         reasoning_goal = context.get("kind") == "reasoning"
         comparison = price_comparison(state) if reasoning_goal else None
         complete_answer = comparison is not None and comparison.get("complete") is True
-        evaluated = preparation_outcome(state) if preparing else read_outcome(state) if context.get("kind") == "extract" else None
+        preview = booking_preview_outcome(state) if context.get("kind") == "extract" else None
+        evaluated = preview or (preparation_outcome(state) if preparing else read_outcome(state) if context.get("kind") == "extract" else None)
+        if preview is not None and not observation.get("snapshot_id"):
+            return {"browser_next": BrowserDecision(operation="extract").model_dump(), "execution_goal": active_read_goal}
+        if preview is not None and urlsplit(str(observation.get("url") or "")).path.endswith("/reserve/message"):
+            interrupt({"type": "browser", "id": "browser:" + observation["command_id"], "command_id": observation["command_id"],
+                       "error_kind": "booking_notice", "paused_at": time.time(),
+                       "message": "请先阅读网站商家须知并进入参数页，再点“已处理，继续”核对预填条件。此页的购物车、查询和预约请求保持阻断。"})
+            return {"browser_next": BrowserDecision(operation="extract").model_dump(), "browser_wait": None, "interrupt_id": None,
+                    "browser_observation": {}, "browser_before_action": {}}
         # Current read facts and prepared forms complete only their own declared scope.
         complete_preparation = bool(evaluated and evaluated.kind == "itinerary_preparation" and evaluated.status == "satisfied")
         app_preview_only = bool(context.get("kind") == "extract" and evaluated
@@ -703,7 +714,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
         # Verified arithmetic already answers this bounded goal; another model decision adds no evidence.
         correction = preparation_correction(state, evaluated) if preparing else None
         decision = BrowserDecision(operation="type", **correction) if correction else BrowserDecision()
-        if not complete_answer and not complete_preparation and not app_preview_only and correction is None:
+        if preview is None and not complete_answer and not complete_preparation and not app_preview_only and correction is None:
             try:
                 context_text = browser_context({**state, "execution_outcome": evaluated.model_dump(mode="json") if evaluated else None})
             except ValueError:
@@ -731,7 +742,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
             )
         vision_reason = decision.vision_reason
         turn = state.get("turn_id", 1)
-        if (vision_reason is None and decision.operation == "finish"
+        if (preview is None and vision_reason is None and decision.operation == "finish"
                 and state.get("browser_vision_turn") != turn and vision_reason_supported(state, "no_semantic_target")):
             vision_reason = "no_semantic_target"
         if (vision_reason and state.get("browser_vision_turn") == turn and decision.operation == "finish"
