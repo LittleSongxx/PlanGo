@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "scope": "User-facing failures and preserved delivery contracts; not a quality benchmark",
+  "product_commit": "a7b8b53ed6d94ecc6a6485010ebf41e6872ef03b",
+  "checks": {
+    "typecheck": "passed",
+    "ui_projection_and_delivery": "passed",
+    "transport_idempotence": "passed",
+    "build": "passed",
+    "isolated_API_projection": "1 passed",
+    "actual_desktop_smoke": "passed",
+    "ruff": "passed",
+    "mypy_runtime": "passed"
+  },
+  "deployed_source_matches": {
+    "plango-api-1": true,
+    "plango-worker-1": true
+  },
+  "frozen_quality_bundle_sha256": "587253bb9a9ce32475a002215b9ed9fc38a9410fa3f7de5981f1e833520fc3ea",
+  "quality_outputs_rerendered": false,
+  "real_business_actions": 0,
+  "new_model_calls": 0,
+  "desktop_evidence": "output/desktop-ui-smoke/1788965715213",
+  "legacy_error_ui_covered": true
+}

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "independent_ai_import_issues": 0,
+  "valid_attempts": 30,
+  "invalid_attempts": 9,
+  "reviewed_cases": 30,
+  "human_reviewed": false,
+  "math_cross_check": {
+    "successes": 3,
+    "tsr_denominator": 30,
+    "groundedness_tasks": 30,
+    "supported_claims": 384,
+    "factual_claims": 541,
+    "groundedness_macro_percent": 54.29325578944003
+  },
+  "files_sha256": {
+    "review/bundle.json": "9563a350e9dcf876642d7b3ca5e9af1b6eecffb970c3d5c193b77413d41aece5",
+    "review/gold-review.json": "50306c3de5ddf611d06644362cd8fd69f19486e76e356fe73793f6e00fb884ed",
+    "review/output-review.json": "6cb599b07d8f9b37b3f1b3aa564a6e5de21e49b22d661ff1876eddb115388eda",
+    "scores.json": "e4abb4878674ddcd433039bd22f6ea02731d89ae68686f433b45e87a7aedc61e",
+    "usage.json": "ea89f334aaafaa5dbe1b78a21bf7baf949cd2e2c03760d38a67847118a2c1e9b",
+    "transport-evidence-amendment.json": "1b4269652307b252fded7356cefe8189c9a867b65c1b937d1314756a6e20bccf",
+    "transport-evidence-adjudication.json": "ccf0c60777dd40fc03782eedcb463833cc4d493fa3b0b22a36776ebe9622d4b8"
+  },
+  "no_actor_reruns_for_evidence_appendix": true,
+  "raw_collection_preserved": true,
+  "full_bundle_credentials_scan_passed": true
+}

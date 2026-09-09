@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "collected_evidence_appendix",
+  "original_bundle_sha256": "587253bb9a9ce32475a002215b9ed9fc38a9410fa3f7de5981f1e833520fc3ea",
+  "amended_bundle_sha256": "9563a350e9dcf876642d7b3ca5e9af1b6eecffb970c3d5c193b77413d41aece5",
+  "original_collection_sha": "12c26365d9d638b9d6a6909a5ebedfaba3d539b636b90a5e2042c472fe98323a",
+  "amended_collection_sha": "ea2f16a56a8b6ef99aaae55170cc6bdbe34b2c122cd2b044fdea4b1c1f044029",
+  "changed_cases": [
+    "NEW-09",
+    "NEW-10",
+    "NEW-11",
+    "NEW-12",
+    "NEW-17",
+    "NEW-18",
+    "NEW-19",
+    "NEW-20",
+    "NEW-29",
+    "NEW-30"
+  ],
+  "unchanged": [
+    "task",
+    "gold",
+    "source_packets",
+    "outputs",
+    "independent_state",
+    "attempt_outcome",
+    "capture_audit",
+    "original transport fields",
+    "attempt registry and invalid decisions"
+  ],
+  "added_fields": [
+    "desktop.run_id",
+    "desktop.started_at",
+    "desktop.finished_at",
+    "desktop.backend_restarted",
+    "desktop.message_responses",
+    "desktop.acceptances",
+    "desktop.acceptance",
+    "desktop.saved_baseline",
+    "desktop.checkpoints",
+    "desktop.checkpoint_events"
+  ],
+  "all_original_artifact_hashes_verified": true,
+  "actor_reruns": 0,
+  "reason": "Original collected desktop receipt metadata and captured durable events were omitted by the review packet transport whitelist. All desktop cases receive the same additive extraction; no grade is assigned here."
+}

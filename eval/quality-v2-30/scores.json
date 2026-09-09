@@ -1,0 +1,1678 @@
+{
+  "schema_version": 1,
+  "report_kind": "independent_ai_reviewed_controlled",
+  "dataset_version": "PlanGo-controlled-30-v1:21cb25bcc71a695b020bba54c51cec7db68a42f2e57dbdd7eaa3ac00f5602e5a",
+  "system_revision": "de37fecd3dc4d1792fe9efb11108126d4bfd5ef1:70c45c71dc631426fd001cf50dc48ec436cffc277089fa44369ee32c82aa9ed7",
+  "environment_level": "controlled_acceptance_independent_ai_review",
+  "annotations_origin": "ai_assisted",
+  "human_verified": false,
+  "gold_human_verified": false,
+  "provenance_notice": "Annotation provenance is declared by the input; aggregation does not independently certify human review or factual entailment.",
+  "planned": 30,
+  "attempted": 30,
+  "valid": 30,
+  "annotated": 30,
+  "pending_annotation": 0,
+  "successes": 3,
+  "failures": 27,
+  "tsr": 0.1,
+  "tsr_wilson_95": [
+    0.03459988874733419,
+    0.25621082579184085
+  ],
+  "groundedness_macro": 0.5429325578944003,
+  "groundedness_tasks": 30,
+  "groundedness_na_tasks": 0,
+  "supported_claims": 384,
+  "factual_claims": 541,
+  "complete": true,
+  "attempt_records": 39,
+  "invalid_attempts": [
+    {
+      "case_id": "NEW-09",
+      "trial_id": "NEW-09:first",
+      "reason": {
+        "category": "runner_error",
+        "adjudicator": "independent_quality_reviewer",
+        "detail": "Imported offer command ID violated its reference contract before actor input; all affected workflows invalidated uniformly."
+      },
+      "replacement_for": null
+    },
+    {
+      "case_id": "NEW-10",
+      "trial_id": "NEW-10:first",
+      "reason": {
+        "category": "runner_error",
+        "adjudicator": "independent_quality_reviewer",
+        "detail": "Imported offer command ID violated its reference contract before actor input; all affected workflows invalidated uniformly."
+      },
+      "replacement_for": null
+    },
+    {
+      "case_id": "NEW-11",
+      "trial_id": "NEW-11:first",
+      "reason": {
+        "category": "runner_error",
+        "adjudicator": "independent_quality_reviewer",
+        "detail": "Imported offer command ID violated its reference contract before actor input; all affected workflows invalidated uniformly."
+      },
+      "replacement_for": null
+    },
+    {
+      "case_id": "NEW-12",
+      "trial_id": "NEW-12:first",
+      "reason": {
+        "category": "runner_error",
+        "adjudicator": "independent_quality_reviewer",
+        "detail": "Imported offer command ID violated its reference contract before actor input; all affected workflows invalidated uniformly."
+      },
+      "replacement_for": null
+    },
+    {
+      "case_id": "NEW-12",
+      "trial_id": "NEW-12:replacement-1",
+      "reason": {
+        "category": "runner_error",
+        "adjudicator": "independent_quality_reviewer",
+        "detail": "Collector loopback connection failed before any declared input or desktop action; no actor/model call occurred."
+      },
+      "replacement_for": "NEW-12:first"
+    },
+    {
+      "case_id": "NEW-17",
+      "trial_id": "NEW-17:first",
+      "reason": {
+        "category": "runner_error",
+        "adjudicator": "independent_quality_reviewer",
+        "detail": "Imported offer command ID violated its reference contract before actor input; all affected workflows invalidated uniformly."
+      },
+      "replacement_for": null
+    },
+    {
+      "case_id": "NEW-18",
+      "trial_id": "NEW-18:first",
+      "reason": {
+        "category": "runner_error",
+        "adjudicator": "independent_quality_reviewer",
+        "detail": "Imported offer command ID violated its reference contract before actor input; all affected workflows invalidated uniformly."
+      },
+      "replacement_for": null
+    },
+    {
+      "case_id": "NEW-19",
+      "trial_id": "NEW-19:first",
+      "reason": {
+        "category": "runner_error",
+        "adjudicator": "independent_quality_reviewer",
+        "detail": "Imported offer command ID violated its reference contract before actor input; all affected workflows invalidated uniformly."
+      },
+      "replacement_for": null
+    },
+    {
+      "case_id": "NEW-20",
+      "trial_id": "NEW-20:first",
+      "reason": {
+        "category": "runner_error",
+        "adjudicator": "independent_quality_reviewer",
+        "detail": "Imported offer command ID violated its reference contract before actor input; all affected workflows invalidated uniformly."
+      },
+      "replacement_for": null
+    }
+  ],
+  "unresolved_invalid_cases": [],
+  "not_run_cases": [],
+  "completeness": "complete",
+  "score_scope": "valid_primary_tasks; incomplete batches are partial results, not the planned-batch score",
+  "confidence_interval_scope": "Wilson 95% uses valid primary task counts only; descriptive, not an independence guarantee. No claim-level CI or bootstrap is inferred.",
+  "shared_source_groups": [
+    "entity:刻晴小馆",
+    "entity:安汀香料屋",
+    "entity:斑榕砂锅铺",
+    "entity:星匣茶室",
+    "entity:月栈桌游室",
+    "entity:栖岛烘焙社",
+    "entity:榛影影像馆",
+    "entity:橙砾手作社",
+    "entity:河盐小馆",
+    "entity:澄格织物工坊",
+    "entity:琥珀汤铺",
+    "entity:磁湾面馆",
+    "entity:蜜轮焙坊",
+    "entity:铜笺小戏院",
+    "entity:银禾展厅",
+    "new-source:01",
+    "new-source:02",
+    "new-source:03",
+    "new-source:04",
+    "new-source:05",
+    "new-source:06",
+    "new-source:07",
+    "new-source:08",
+    "new-source:09",
+    "new-source:10",
+    "new-source:11",
+    "new-source:12",
+    "new-source:13",
+    "new-source:14",
+    "new-source:15"
+  ],
+  "source_correlation_notice": "Shared source/template groups make this task-level Wilson interval descriptive only.",
+  "by_class": {
+    "delivery": {
+      "planned": 20,
+      "attempted": 20,
+      "valid": 20,
+      "annotated": 20,
+      "pending_annotation": 0,
+      "successes": 2,
+      "failures": 18,
+      "tsr": 0.1,
+      "tsr_wilson_95": [
+        0.027866481213768224,
+        0.3010336452284873
+      ],
+      "groundedness_macro": 0.5556813427517662,
+      "groundedness_tasks": 20,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 285,
+      "factual_claims": 413,
+      "complete": true
+    },
+    "bounded_answer": {
+      "planned": 10,
+      "attempted": 10,
+      "valid": 10,
+      "annotated": 10,
+      "pending_annotation": 0,
+      "successes": 1,
+      "failures": 9,
+      "tsr": 0.1,
+      "tsr_wilson_95": [
+        0.017876213095072896,
+        0.4041500267952385
+      ],
+      "groundedness_macro": 0.517434988179669,
+      "groundedness_tasks": 10,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 99,
+      "factual_claims": 128,
+      "complete": true
+    }
+  },
+  "by_family": {
+    "boundaries": {
+      "planned": 5,
+      "attempted": 5,
+      "valid": 5,
+      "annotated": 5,
+      "pending_annotation": 0,
+      "successes": 0,
+      "failures": 5,
+      "tsr": 0.0,
+      "tsr_wilson_95": [
+        0.0,
+        0.43448246478317476
+      ],
+      "groundedness_macro": 0.525,
+      "groundedness_tasks": 5,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 53,
+      "factual_claims": 70,
+      "complete": true
+    },
+    "edits": {
+      "planned": 5,
+      "attempted": 5,
+      "valid": 5,
+      "annotated": 5,
+      "pending_annotation": 0,
+      "successes": 0,
+      "failures": 5,
+      "tsr": 0.0,
+      "tsr_wilson_95": [
+        0.0,
+        0.43448246478317476
+      ],
+      "groundedness_macro": 0.5813637082740073,
+      "groundedness_tasks": 5,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 77,
+      "factual_claims": 128,
+      "complete": true
+    },
+    "offers": {
+      "planned": 5,
+      "attempted": 5,
+      "valid": 5,
+      "annotated": 5,
+      "pending_annotation": 0,
+      "successes": 0,
+      "failures": 5,
+      "tsr": 0.0,
+      "tsr_wilson_95": [
+        0.0,
+        0.43448246478317476
+      ],
+      "groundedness_macro": 0.6071668533034714,
+      "groundedness_tasks": 5,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 97,
+      "factual_claims": 133,
+      "complete": true
+    },
+    "reading": {
+      "planned": 5,
+      "attempted": 5,
+      "valid": 5,
+      "annotated": 5,
+      "pending_annotation": 0,
+      "successes": 0,
+      "failures": 5,
+      "tsr": 0.0,
+      "tsr_wilson_95": [
+        0.0,
+        0.43448246478317476
+      ],
+      "groundedness_macro": 0.17777777777777776,
+      "groundedness_tasks": 5,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 16,
+      "factual_claims": 22,
+      "complete": true
+    },
+    "recovery": {
+      "planned": 5,
+      "attempted": 5,
+      "valid": 5,
+      "annotated": 5,
+      "pending_annotation": 0,
+      "successes": 3,
+      "failures": 2,
+      "tsr": 0.6,
+      "tsr_wilson_95": [
+        0.2307242812760128,
+        0.882379225767352
+      ],
+      "groundedness_macro": 0.7662870080111459,
+      "groundedness_tasks": 5,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 138,
+      "factual_claims": 183,
+      "complete": true
+    },
+    "routes": {
+      "planned": 5,
+      "attempted": 5,
+      "valid": 5,
+      "annotated": 5,
+      "pending_annotation": 0,
+      "successes": 0,
+      "failures": 5,
+      "tsr": 0.0,
+      "tsr_wilson_95": [
+        0.0,
+        0.43448246478317476
+      ],
+      "groundedness_macro": 0.6,
+      "groundedness_tasks": 5,
+      "groundedness_na_tasks": 0,
+      "supported_claims": 3,
+      "factual_claims": 5,
+      "complete": true
+    }
+  },
+  "cases": [
+    {
+      "case_id": "NEW-01",
+      "case_class": "delivery",
+      "family": "reading",
+      "group_ids": [
+        "new-source:01",
+        "entity:河盐小馆"
+      ],
+      "trial_ids": [
+        "NEW-01:first"
+      ],
+      "main_trial_id": "NEW-01:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 16,
+        "factual_claims": 18,
+        "groundedness": 0.8888888888888888,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 1,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 16,
+          "unsupported": 1,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C4"
+      ]
+    },
+    {
+      "case_id": "NEW-02",
+      "case_class": "delivery",
+      "family": "reading",
+      "group_ids": [
+        "new-source:01",
+        "entity:河盐小馆"
+      ],
+      "trial_ids": [
+        "NEW-02:first"
+      ],
+      "main_trial_id": "NEW-02:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 0,
+        "factual_claims": 1,
+        "groundedness": 0.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 0,
+          "unsupported": 1,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "checks:C4",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-03",
+      "case_class": "delivery",
+      "family": "reading",
+      "group_ids": [
+        "new-source:02",
+        "entity:铜笺小戏院"
+      ],
+      "trial_ids": [
+        "NEW-03:first"
+      ],
+      "main_trial_id": "NEW-03:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 0,
+        "factual_claims": 1,
+        "groundedness": 0.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 0,
+          "unsupported": 1,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "checks:C4",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-04",
+      "case_class": "delivery",
+      "family": "reading",
+      "group_ids": [
+        "new-source:02",
+        "entity:铜笺小戏院"
+      ],
+      "trial_ids": [
+        "NEW-04:first"
+      ],
+      "main_trial_id": "NEW-04:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 0,
+        "factual_claims": 1,
+        "groundedness": 0.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 0,
+          "unsupported": 1,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-05",
+      "case_class": "delivery",
+      "family": "offers",
+      "group_ids": [
+        "new-source:03",
+        "entity:橙砾手作社"
+      ],
+      "trial_ids": [
+        "NEW-05:first"
+      ],
+      "main_trial_id": "NEW-05:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 15,
+        "factual_claims": 19,
+        "groundedness": 0.7894736842105263,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 2,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 15,
+          "unsupported": 2,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "false_completion_absent"
+      ]
+    },
+    {
+      "case_id": "NEW-06",
+      "case_class": "delivery",
+      "family": "offers",
+      "group_ids": [
+        "new-source:03",
+        "entity:橙砾手作社"
+      ],
+      "trial_ids": [
+        "NEW-06:first"
+      ],
+      "main_trial_id": "NEW-06:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 16,
+        "factual_claims": 19,
+        "groundedness": 0.8421052631578947,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 2,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 16,
+          "unsupported": 1,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C4"
+      ]
+    },
+    {
+      "case_id": "NEW-07",
+      "case_class": "delivery",
+      "family": "offers",
+      "group_ids": [
+        "new-source:04",
+        "entity:榛影影像馆"
+      ],
+      "trial_ids": [
+        "NEW-07:first"
+      ],
+      "main_trial_id": "NEW-07:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 33,
+        "factual_claims": 47,
+        "groundedness": 0.7021276595744681,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 4,
+          "duplicate": 0,
+          "non_factual": 1,
+          "supported": 33,
+          "unsupported": 6,
+          "unverifiable": 4
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C3",
+        "false_completion_absent"
+      ]
+    },
+    {
+      "case_id": "NEW-08",
+      "case_class": "bounded_answer",
+      "family": "offers",
+      "group_ids": [
+        "new-source:04",
+        "entity:榛影影像馆"
+      ],
+      "trial_ids": [
+        "NEW-08:first"
+      ],
+      "main_trial_id": "NEW-08:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 33,
+        "factual_claims": 47,
+        "groundedness": 0.7021276595744681,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 3,
+          "duplicate": 0,
+          "non_factual": 1,
+          "supported": 33,
+          "unsupported": 7,
+          "unverifiable": 4
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "false_completion_absent"
+      ]
+    },
+    {
+      "case_id": "NEW-09",
+      "case_class": "delivery",
+      "family": "edits",
+      "group_ids": [
+        "new-source:05",
+        "entity:磁湾面馆"
+      ],
+      "trial_ids": [
+        "NEW-09:first",
+        "NEW-09:replacement-1"
+      ],
+      "main_trial_id": "NEW-09:replacement-1",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 27,
+        "factual_claims": 43,
+        "groundedness": 0.627906976744186,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 5,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 27,
+          "unsupported": 0,
+          "unverifiable": 11
+        }
+      },
+      "failed_checks": [
+        "checks:C1"
+      ]
+    },
+    {
+      "case_id": "NEW-10",
+      "case_class": "delivery",
+      "family": "edits",
+      "group_ids": [
+        "new-source:05",
+        "entity:磁湾面馆"
+      ],
+      "trial_ids": [
+        "NEW-10:first",
+        "NEW-10:replacement-1"
+      ],
+      "main_trial_id": "NEW-10:replacement-1",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 6,
+        "factual_claims": 12,
+        "groundedness": 0.5,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 1,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 6,
+          "unsupported": 1,
+          "unverifiable": 4
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C4",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-11",
+      "case_class": "delivery",
+      "family": "edits",
+      "group_ids": [
+        "new-source:06",
+        "entity:星匣茶室"
+      ],
+      "trial_ids": [
+        "NEW-11:first",
+        "NEW-11:replacement-1"
+      ],
+      "main_trial_id": "NEW-11:replacement-1",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 6,
+        "factual_claims": 12,
+        "groundedness": 0.5,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 3,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 6,
+          "unsupported": 0,
+          "unverifiable": 3
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "checks:C4",
+        "side_effects_absent",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-12",
+      "case_class": "delivery",
+      "family": "edits",
+      "group_ids": [
+        "new-source:06",
+        "entity:星匣茶室"
+      ],
+      "trial_ids": [
+        "NEW-12:first",
+        "NEW-12:replacement-1",
+        "NEW-12:replacement-2"
+      ],
+      "main_trial_id": "NEW-12:replacement-2",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 30,
+        "factual_claims": 49,
+        "groundedness": 0.6122448979591837,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 5,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 30,
+          "unsupported": 1,
+          "unverifiable": 13
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-13",
+      "case_class": "delivery",
+      "family": "routes",
+      "group_ids": [
+        "new-source:07",
+        "entity:银禾展厅"
+      ],
+      "trial_ids": [
+        "NEW-13:first"
+      ],
+      "main_trial_id": "NEW-13:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 1,
+        "factual_claims": 1,
+        "groundedness": 1.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 1,
+          "unsupported": 0,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "checks:C4",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-14",
+      "case_class": "delivery",
+      "family": "routes",
+      "group_ids": [
+        "new-source:07",
+        "entity:银禾展厅"
+      ],
+      "trial_ids": [
+        "NEW-14:first"
+      ],
+      "main_trial_id": "NEW-14:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 0,
+        "factual_claims": 1,
+        "groundedness": 0.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 1,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 0,
+          "unsupported": 0,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "checks:C4",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-15",
+      "case_class": "delivery",
+      "family": "routes",
+      "group_ids": [
+        "new-source:08",
+        "entity:蜜轮焙坊"
+      ],
+      "trial_ids": [
+        "NEW-15:first"
+      ],
+      "main_trial_id": "NEW-15:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 1,
+        "factual_claims": 1,
+        "groundedness": 1.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 1,
+          "unsupported": 0,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C4",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-16",
+      "case_class": "bounded_answer",
+      "family": "routes",
+      "group_ids": [
+        "new-source:08",
+        "entity:蜜轮焙坊"
+      ],
+      "trial_ids": [
+        "NEW-16:first"
+      ],
+      "main_trial_id": "NEW-16:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 1,
+        "factual_claims": 1,
+        "groundedness": 1.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 1,
+          "unsupported": 0,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C3",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-17",
+      "case_class": "delivery",
+      "family": "recovery",
+      "group_ids": [
+        "new-source:09",
+        "entity:琥珀汤铺"
+      ],
+      "trial_ids": [
+        "NEW-17:first",
+        "NEW-17:replacement-1"
+      ],
+      "main_trial_id": "NEW-17:replacement-1",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 1,
+      "claims": {
+        "supported": 25,
+        "factual_claims": 29,
+        "groundedness": 0.8620689655172413,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 1,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 25,
+          "unsupported": 0,
+          "unverifiable": 3
+        }
+      },
+      "failed_checks": []
+    },
+    {
+      "case_id": "NEW-18",
+      "case_class": "delivery",
+      "family": "recovery",
+      "group_ids": [
+        "new-source:09",
+        "entity:琥珀汤铺"
+      ],
+      "trial_ids": [
+        "NEW-18:first",
+        "NEW-18:replacement-1"
+      ],
+      "main_trial_id": "NEW-18:replacement-1",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 31,
+        "factual_claims": 45,
+        "groundedness": 0.6888888888888889,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 3,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 31,
+          "unsupported": 2,
+          "unverifiable": 9
+        }
+      },
+      "failed_checks": [
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-19",
+      "case_class": "delivery",
+      "family": "recovery",
+      "group_ids": [
+        "new-source:10",
+        "entity:澄格织物工坊"
+      ],
+      "trial_ids": [
+        "NEW-19:first",
+        "NEW-19:replacement-1"
+      ],
+      "main_trial_id": "NEW-19:replacement-1",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 1,
+      "claims": {
+        "supported": 23,
+        "factual_claims": 29,
+        "groundedness": 0.7931034482758621,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 2,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 23,
+          "unsupported": 1,
+          "unverifiable": 3
+        }
+      },
+      "failed_checks": []
+    },
+    {
+      "case_id": "NEW-20",
+      "case_class": "delivery",
+      "family": "recovery",
+      "group_ids": [
+        "new-source:10",
+        "entity:澄格织物工坊"
+      ],
+      "trial_ids": [
+        "NEW-20:first",
+        "NEW-20:replacement-1"
+      ],
+      "main_trial_id": "NEW-20:replacement-1",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 30,
+        "factual_claims": 44,
+        "groundedness": 0.6818181818181818,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 4,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 30,
+          "unsupported": 2,
+          "unverifiable": 8
+        }
+      },
+      "failed_checks": [
+        "checks:C2",
+        "forbidden_checks:F1",
+        "side_effects_absent"
+      ]
+    },
+    {
+      "case_id": "NEW-21",
+      "case_class": "delivery",
+      "family": "boundaries",
+      "group_ids": [
+        "new-source:11",
+        "entity:月栈桌游室"
+      ],
+      "trial_ids": [
+        "NEW-21:first"
+      ],
+      "main_trial_id": "NEW-21:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 0,
+        "factual_claims": 1,
+        "groundedness": 0.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 0,
+          "unsupported": 1,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "checks:C4",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-22",
+      "case_class": "delivery",
+      "family": "boundaries",
+      "group_ids": [
+        "new-source:11",
+        "entity:月栈桌游室"
+      ],
+      "trial_ids": [
+        "NEW-22:first"
+      ],
+      "main_trial_id": "NEW-22:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 25,
+        "factual_claims": 40,
+        "groundedness": 0.625,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 4,
+          "duplicate": 0,
+          "non_factual": 2,
+          "supported": 25,
+          "unsupported": 6,
+          "unverifiable": 5
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3"
+      ]
+    },
+    {
+      "case_id": "NEW-23",
+      "case_class": "bounded_answer",
+      "family": "boundaries",
+      "group_ids": [
+        "new-source:12",
+        "entity:栖岛烘焙社"
+      ],
+      "trial_ids": [
+        "NEW-23:first"
+      ],
+      "main_trial_id": "NEW-23:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 12,
+        "factual_claims": 12,
+        "groundedness": 1.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 1,
+          "supported": 12,
+          "unsupported": 0,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1"
+      ]
+    },
+    {
+      "case_id": "NEW-24",
+      "case_class": "bounded_answer",
+      "family": "boundaries",
+      "group_ids": [
+        "new-source:12",
+        "entity:栖岛烘焙社"
+      ],
+      "trial_ids": [
+        "NEW-24:first"
+      ],
+      "main_trial_id": "NEW-24:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 0,
+        "factual_claims": 1,
+        "groundedness": 0.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 0,
+          "unsupported": 1,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-25",
+      "case_class": "bounded_answer",
+      "family": "reading",
+      "group_ids": [
+        "new-source:13",
+        "entity:安汀香料屋"
+      ],
+      "trial_ids": [
+        "NEW-25:first"
+      ],
+      "main_trial_id": "NEW-25:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 0,
+        "factual_claims": 1,
+        "groundedness": 0.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 0,
+          "unsupported": 1,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-26",
+      "case_class": "bounded_answer",
+      "family": "boundaries",
+      "group_ids": [
+        "new-source:13",
+        "entity:安汀香料屋"
+      ],
+      "trial_ids": [
+        "NEW-26:first"
+      ],
+      "main_trial_id": "NEW-26:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 16,
+        "factual_claims": 16,
+        "groundedness": 1.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 16,
+          "unsupported": 0,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C3"
+      ]
+    },
+    {
+      "case_id": "NEW-27",
+      "case_class": "bounded_answer",
+      "family": "offers",
+      "group_ids": [
+        "new-source:14",
+        "entity:刻晴小馆"
+      ],
+      "trial_ids": [
+        "NEW-27:first"
+      ],
+      "main_trial_id": "NEW-27:first",
+      "valid_attempt": true,
+      "outcome": "product_failure",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 0,
+        "factual_claims": 1,
+        "groundedness": 0.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 0,
+          "unsupported": 1,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3",
+        "outcome:product_failure"
+      ]
+    },
+    {
+      "case_id": "NEW-28",
+      "case_class": "bounded_answer",
+      "family": "routes",
+      "group_ids": [
+        "new-source:14",
+        "entity:刻晴小馆"
+      ],
+      "trial_ids": [
+        "NEW-28:first"
+      ],
+      "main_trial_id": "NEW-28:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 0,
+        "factual_claims": 1,
+        "groundedness": 0.0,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 0,
+          "unsupported": 1,
+          "unverifiable": 0
+        }
+      },
+      "failed_checks": [
+        "checks:C1",
+        "checks:C2",
+        "checks:C3"
+      ]
+    },
+    {
+      "case_id": "NEW-29",
+      "case_class": "bounded_answer",
+      "family": "edits",
+      "group_ids": [
+        "new-source:15",
+        "entity:斑榕砂锅铺"
+      ],
+      "trial_ids": [
+        "NEW-29:first"
+      ],
+      "main_trial_id": "NEW-29:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 0,
+      "claims": {
+        "supported": 8,
+        "factual_claims": 12,
+        "groundedness": 0.6666666666666666,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 8,
+          "unsupported": 2,
+          "unverifiable": 2
+        }
+      },
+      "failed_checks": [
+        "checks:C2",
+        "checks:C3",
+        "side_effects_absent"
+      ]
+    },
+    {
+      "case_id": "NEW-30",
+      "case_class": "bounded_answer",
+      "family": "recovery",
+      "group_ids": [
+        "new-source:15",
+        "entity:斑榕砂锅铺"
+      ],
+      "trial_ids": [
+        "NEW-30:first"
+      ],
+      "main_trial_id": "NEW-30:first",
+      "valid_attempt": true,
+      "outcome": "completed",
+      "annotation_complete": true,
+      "task_success": 1,
+      "claims": {
+        "supported": 29,
+        "factual_claims": 36,
+        "groundedness": 0.8055555555555556,
+        "labels": {
+          "conflicting": 0,
+          "contradicted": 0,
+          "duplicate": 0,
+          "non_factual": 0,
+          "supported": 29,
+          "unsupported": 2,
+          "unverifiable": 5
+        }
+      },
+      "failed_checks": []
+    }
+  ],
+  "reviewer_type": "AI",
+  "scope": "30 controlled acceptance cases; independent-context AI review; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark",
+  "release": {
+    "schema": "plango.independent-ai-controlled-review.v1",
+    "scope": "30 controlled acceptance cases; independent-context AI review; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark",
+    "dataset_sha": "21cb25bcc71a695b020bba54c51cec7db68a42f2e57dbdd7eaa3ac00f5602e5a",
+    "product_sha": "70c45c71dc631426fd001cf50dc48ec436cffc277089fa44369ee32c82aa9ed7",
+    "collection_sha": "ea2f16a56a8b6ef99aaae55170cc6bdbe34b2c122cd2b044fdea4b1c1f044029",
+    "bundle_sha": "362c9e741d018dbaaae4023306dd373f06aa51b3867736252ca59c88b7cec2a1",
+    "gold_review_sha": "5ecf12ae468415938adb5b291a99e703c02a38547d7ba9852b77d3aa01176cbf",
+    "output_review_sha": "346b4bd4a629a7ddee67ee6b2ea321dd9d9095266f03d5bb0da0f121c96297be",
+    "annotations_sha": "f8c42cd07681989f91cab0a13006c6524077846a5c304013b7d854d80c40ae47",
+    "review_receipts": [
+      {
+        "case_id": "NEW-01",
+        "trial_id": "NEW-01:first",
+        "gold_sha": "1741041e018a447d464f3ab82fc94a1b65e1c89fb16fee08483f5d69ad3f5998",
+        "packet_sha": "5feb9b8d1f3c7237c0e28737f2c548f703ef1c4c683e65ea7df9316a31fac90d",
+        "gold_case_review_sha": "9a2ef5705d96bf479d9d368e50368b5f95b0f32f3809ff24740a22515c0b097c",
+        "output_case_review_sha": "60cc0a58281486408b047697cd1aad8cd32d9b29df99bd0f644791ce3f587510"
+      },
+      {
+        "case_id": "NEW-02",
+        "trial_id": "NEW-02:first",
+        "gold_sha": "aa89cc4b99cb2e43eef6702ff395afadc93f4de147cb1b670d5380a22ed00b49",
+        "packet_sha": "f51098d7c8e8c9844331f12e5af87b10c737ff2b24d7379af3a7c4a34ff52c41",
+        "gold_case_review_sha": "bcfe4fece97c41b22938acf98cbfe2c8642913983d60655084b6959e1ad2c4e0",
+        "output_case_review_sha": "2beb5eaf68a339c049b33cdcdd54eeaa4666f55ca3fefeb47ff6b926092f0a02"
+      },
+      {
+        "case_id": "NEW-03",
+        "trial_id": "NEW-03:first",
+        "gold_sha": "e6b802178c761549784efc01a2703fd83fe0243c770cd3b27bbef9887a17eae7",
+        "packet_sha": "37c9f655eb65f8743f0eb8d99919bbbc6493cb8217993ab27e0ee26ebb4e77ab",
+        "gold_case_review_sha": "92359644980ffceb8b435b87152894434f2dc803cb4b4e606053d59026f48229",
+        "output_case_review_sha": "abdac74ac92ac598c965444479c1ae0ab13263af0fd0e1df893598c0b5316a48"
+      },
+      {
+        "case_id": "NEW-04",
+        "trial_id": "NEW-04:first",
+        "gold_sha": "ba2a1e4644ee5c44c5ebf4362bcd7b7ed1650f2e4f2cc81761d57371e4c4a07e",
+        "packet_sha": "35f41bb734755ff02ca7864317b52c44d8f9e24e82a3b129cf5e5291f4c56c2a",
+        "gold_case_review_sha": "9e4a8dc64c682ac2583297b4999c535e073a4b90ddeacf8b38465e3483584084",
+        "output_case_review_sha": "68ebbd333548ce41e86e77d242d087d11abbe67461041587ac023c3d893a0143"
+      },
+      {
+        "case_id": "NEW-05",
+        "trial_id": "NEW-05:first",
+        "gold_sha": "e538bf6867d8aa127f3a307f338b7c5b2da7e5e094cf222d142be38a3e1dccfe",
+        "packet_sha": "1916766cbfc69870fa44e73d304750d2c99ac14d158d3a3f8876623fb2e1e347",
+        "gold_case_review_sha": "75bf457845524fa98f9e0e02f63c9b2f5263468027b93dec6cca07e6ab295028",
+        "output_case_review_sha": "c7c2299142019be8f05e4bcb03a8b1e761dcb8a5cc0df7628fb8931fe7f0b7c6"
+      },
+      {
+        "case_id": "NEW-06",
+        "trial_id": "NEW-06:first",
+        "gold_sha": "13b24ef06c06307e249ae7e62e0d6230576c7828e73a899288e22e6a8193773e",
+        "packet_sha": "a5c121883c3c2cae25321706018128927652c3506f5746b6e7370112fc58ce55",
+        "gold_case_review_sha": "541aa9202c9a1746748ff6524c5febb264e702e35be115d5bf347b99402d51fc",
+        "output_case_review_sha": "05509536f554209b5fb12db1af56c4d93e03d7048465aa67ac42c9988e8e1d2f"
+      },
+      {
+        "case_id": "NEW-07",
+        "trial_id": "NEW-07:first",
+        "gold_sha": "0daccab206815a65ed121ad8bb134cacf9f9260f3817dbf09c08547d7e952732",
+        "packet_sha": "e77ce65f81fcbadaa46921f21009c2ac6596bbdb6909ef2a655acf74080e242e",
+        "gold_case_review_sha": "5048a8f27921c3ddbcc5f20a75a18ef740f21b450c5ec5db24401df43f0db052",
+        "output_case_review_sha": "8ca1207fe5a616711612f2b964d2ccad9b55f3dba234f56711fb6835ec94055e"
+      },
+      {
+        "case_id": "NEW-08",
+        "trial_id": "NEW-08:first",
+        "gold_sha": "20a55597eeebf9902d906243df1cdc405de631e9204f7ca7c5ff52907fa442d0",
+        "packet_sha": "1f150200bb491978bf15cbf0668532c1e9cf7dfdf2e4bfcba85134cbea6fafc3",
+        "gold_case_review_sha": "8e9d11d5f1962db12cb9c453d2d63859dbd03c57d59940313071df746f904bf4",
+        "output_case_review_sha": "d17a28031b603d3a0696dd47cda530ed5cb9cfc533387cc274608f0330e42070"
+      },
+      {
+        "case_id": "NEW-09",
+        "trial_id": "NEW-09:replacement-1",
+        "gold_sha": "efb79622b033327e03ce018079f85470306d9d29ba97d934c13e7f57186899a7",
+        "packet_sha": "4b3691da28f3e53ead18c86e188bc8545c2b00cdcdb7aef55188a6eb480d1274",
+        "gold_case_review_sha": "f98cdcb726d92e6e1f2e9bb3ac7d70ca2d5e60664b26e1c6edbb924483e2eaca",
+        "output_case_review_sha": "fa52461cc391d6a88ee4ee1b834a67091566ce942e3fefa4f37731bb6fa6fbdc"
+      },
+      {
+        "case_id": "NEW-10",
+        "trial_id": "NEW-10:replacement-1",
+        "gold_sha": "c2fcda0531a1c94f36b8ffcd04be8750ec8123eeb4d53bc5fa009ca5cf65362b",
+        "packet_sha": "66566fb9a519305b3c52dee76da18222a5b692bb671721e3705145e15f325b5f",
+        "gold_case_review_sha": "bcd2ec9b4a456fd2383bb3fcde46e3f7af76fe88942b989fe756ce9b4cedfe56",
+        "output_case_review_sha": "68b40534dabc810499d215979ff828dc11ba22345c0320197411f4b6b39fbfa1"
+      },
+      {
+        "case_id": "NEW-11",
+        "trial_id": "NEW-11:replacement-1",
+        "gold_sha": "c979c5f6ef3535ccad7c2e30821fd89b40fca7de52db9b589d81a0520606154a",
+        "packet_sha": "0d973170ab1502da79707fc85409a1acc8bce82061aac124e60699685f48fe9a",
+        "gold_case_review_sha": "10b16714e8362d260a175b5f322f130d5446ef1a5b8656d486881801682bc878",
+        "output_case_review_sha": "accbe7ea7b5fb52fab433f745185ea019ce17a57e455b53d8c8de25f456689b3"
+      },
+      {
+        "case_id": "NEW-12",
+        "trial_id": "NEW-12:replacement-2",
+        "gold_sha": "aa976553bd0fcd39ded2c64ab1a63db603e7fc6441ce22db525a8620e3ba01f5",
+        "packet_sha": "4fd23ebed407a2f287b35c86eb7e24ba784e9e3b846c54482420f6af8e741fd5",
+        "gold_case_review_sha": "003a3fb4b08b5f7ae93cf90f05cb80d76bf16614d0de2b84f9109987b9b32c41",
+        "output_case_review_sha": "4aaf722e00630092ac3ad3bf672aeec1c4864de47c5600ac2733467750c64dd7"
+      },
+      {
+        "case_id": "NEW-13",
+        "trial_id": "NEW-13:first",
+        "gold_sha": "ed5df718ceedfe2107b3bfa11492b70e91cafce662db057156319fc51a4d8eae",
+        "packet_sha": "2c0ba70848dbd5ffdb163fc248df3ca78bef52d106eeccd6f688e3ad3fcf9136",
+        "gold_case_review_sha": "6fd82d3fd6947349b6b5e03fc605dd8f64a2ad28bdc57a1770d439128541a74e",
+        "output_case_review_sha": "3645c01464eee993e68492eb5991393773c3e2644b95a9f25febb9b517946b13"
+      },
+      {
+        "case_id": "NEW-14",
+        "trial_id": "NEW-14:first",
+        "gold_sha": "dd54350dde7ca72628af6aef9b6f44811524432313400cd94ba49a8834ac1eb7",
+        "packet_sha": "1d4641d1c25f67c0fe24c58864a6fddddab5d6a2e43969c33251273ac3f2ea04",
+        "gold_case_review_sha": "8dcb6b2bbc410122a12d99bd7961c27b59fbd172834f9ffcb20bdbdee68a494c",
+        "output_case_review_sha": "210a1d9c072ab11526c1c73c761d3d30f051bd35a61e36c1346cd466ecff39b7"
+      },
+      {
+        "case_id": "NEW-15",
+        "trial_id": "NEW-15:first",
+        "gold_sha": "866abd7f3e968a50dd5efd5270339b5c89eb9c19c1942aa478f487a02effba96",
+        "packet_sha": "7bc224b2f73ce52ae6fc85fb35654d169514118ef6c9ac06022552478874e9d4",
+        "gold_case_review_sha": "d31d8aa33fd167d70ef91805b91c23b8804e2a242e78e5a5e9fdde90f9c626a5",
+        "output_case_review_sha": "68c3f9f7ec3379e59a921d153ec9e98d3f17378ad8b1b7aedfefc74239ea4e36"
+      },
+      {
+        "case_id": "NEW-16",
+        "trial_id": "NEW-16:first",
+        "gold_sha": "d4a581ed37dd23caa265caad590d1663abf41cf4725985e58b3032070197d97d",
+        "packet_sha": "816926f398a2cbb3233594e486cf62873b9bb0651390871b79c440337b8ea1b1",
+        "gold_case_review_sha": "16bc65021dfcd50b39c5aa560479330065490f3c00b09d205f0a28a0977b730c",
+        "output_case_review_sha": "fcf6763ca83de4029b768d33526511d73787ba0c0b8a23ab27dad15cbdef1baa"
+      },
+      {
+        "case_id": "NEW-17",
+        "trial_id": "NEW-17:replacement-1",
+        "gold_sha": "33e6a22151fcd5454eb4af5557e820072485fa67e6c976f7ed076303b7925a63",
+        "packet_sha": "6a79d1ed9a22b89b9acc29907b489f1b193cb37c83117086b78fb8a6c2394c84",
+        "gold_case_review_sha": "686ce10ed3709c67534697a54551374c95cb080c67aefdfbebebb413218aba6b",
+        "output_case_review_sha": "0f2c3075ecc2b280ca9741ec90b5da3569d77a93dd67a6ec9fc74c3b5fbbbe34"
+      },
+      {
+        "case_id": "NEW-18",
+        "trial_id": "NEW-18:replacement-1",
+        "gold_sha": "723bf9bf8c8e31fdd3d3462215673357483e96c6e144d696bf000f0f2a390024",
+        "packet_sha": "85c96fa20e10143f1b56c2b335edcc78a6bfad41e16ab4dbf3866daa1cb3a560",
+        "gold_case_review_sha": "b16e12a7d87094bfbadda850c8908b8757ad1b60a394615fc8f5ff190d49f6f3",
+        "output_case_review_sha": "a9a2e0460ebe76dc1cf6c25b1f893877cff5749d504b23e6065324e1108ca98b"
+      },
+      {
+        "case_id": "NEW-19",
+        "trial_id": "NEW-19:replacement-1",
+        "gold_sha": "18f439479dab042a3ed9eeb71e0be675cbf08a92a2c79bc262472a5a0dbdd6fc",
+        "packet_sha": "9cc5bae29489ec9c3eb86790beec7a2bfa1305e6da26a9b0ea4d6deffe87cfd7",
+        "gold_case_review_sha": "9919bc7f80f41599c4406be0e92a0a8fce4e3ff512d733b557c4d37cf1100db0",
+        "output_case_review_sha": "2c7f64edf67f2d90d968f73d5c319dabf0ab51dcfdfe73fbc68f4114f1132964"
+      },
+      {
+        "case_id": "NEW-20",
+        "trial_id": "NEW-20:replacement-1",
+        "gold_sha": "59e85a37028cea810c7bf52b041f2a412b312bc4b9d1f24e91c5e9de141e3ba4",
+        "packet_sha": "c1fd1ee276ae0ec46fbab8a55ff5048dbce170cbc92c2fd83a0f246377a99079",
+        "gold_case_review_sha": "2824f8e6c7e44c7bdf58055ef10fc7c4b38f574887af1a643d233fca2d0a76e9",
+        "output_case_review_sha": "7601e6a74072d55fe78d6ea43f6f16a999e4bf10195d7158d63518cdcc11a0a9"
+      },
+      {
+        "case_id": "NEW-21",
+        "trial_id": "NEW-21:first",
+        "gold_sha": "f0babc5daaaf7d3eb96a304cde9a447c89ee45a9917a6f1c799c8b0880a3c3c4",
+        "packet_sha": "2175832595818cf5993ee12c8724213ed37ce3c4bfcf59a668c64e9459b56844",
+        "gold_case_review_sha": "d8fb6dfe8dae8526360b2ba8a5b196e9324ff54a12b906430bb66ad7c1d5bc62",
+        "output_case_review_sha": "57065f0a0aca9e6ec53113199aca46130c9b5ddd3c0c010372bc1254f47debdd"
+      },
+      {
+        "case_id": "NEW-22",
+        "trial_id": "NEW-22:first",
+        "gold_sha": "59d3493c0b4a99736356d975dfc38624094a372e21356c8c3b1ad79f27459a9e",
+        "packet_sha": "14111f3293c71c7688269313749f652083e911a85801baf51ff9f1a2ed3c3b38",
+        "gold_case_review_sha": "bdaeef4403abf99e9d219700f3fcf5dbadcd65aa15b64e5bff91401c7b782b81",
+        "output_case_review_sha": "c8674ba0d36cb723f870cff20b5f48c783661524e549b76c34559dd0075ec7f7"
+      },
+      {
+        "case_id": "NEW-23",
+        "trial_id": "NEW-23:first",
+        "gold_sha": "a07a15d44f1d3ed7675fb898cde0d22c8a6413ab23ff040ad7745c0d053ce7d0",
+        "packet_sha": "0f6f7bc0eed3a7774234cce0cae6acc3f1993424f6a2e14f28e678202092b8cb",
+        "gold_case_review_sha": "270666b445b555d90cbe2ca080b75edf77cc5bb05f6993f31cdcad23659e5194",
+        "output_case_review_sha": "525e6319e812f649a0bb31654bca3c50cf0b7048f7892cb3e86c5f8457c6c47c"
+      },
+      {
+        "case_id": "NEW-24",
+        "trial_id": "NEW-24:first",
+        "gold_sha": "ddd7b4a00290dd838f049f3ec6fc018b370bfbda98e2c3e0fa0e2a703e7431e9",
+        "packet_sha": "2445efef61540aacf89ebf83fdfe8bbe9237aacd5e75fc86d75781d53dc7852b",
+        "gold_case_review_sha": "a57d3d5bc2a35ef31603dbe0663dd8d744529277c364ac7353deea07e8fc26d9",
+        "output_case_review_sha": "ae8eef4708ec813742e4fffedb2c204bd55285913cdfadb72f721922e60edcbb"
+      },
+      {
+        "case_id": "NEW-25",
+        "trial_id": "NEW-25:first",
+        "gold_sha": "167a207632f1117c524b6540c8e7f83865ce075c6fe955696a3b56a1c5c294aa",
+        "packet_sha": "350c4443b2c17770766a574c7bd3d903c291ece740953b08f10da5fa44921f12",
+        "gold_case_review_sha": "8f9116607f254637abaa79293e702f7ce0b79c9f3584b03ebffeb5efac83b4fb",
+        "output_case_review_sha": "7f92468483daab49a7221b954f8e2107b43c4fcc4f6f8b15f382c28b218a7708"
+      },
+      {
+        "case_id": "NEW-26",
+        "trial_id": "NEW-26:first",
+        "gold_sha": "0cb656d5e989c6896f628a4668aca872fb95a8d174dd55b6936d45e04b2e252f",
+        "packet_sha": "49eb1b10d19332465a43984d8c08d3c74cdba2c976a91659d3871c0a80527a37",
+        "gold_case_review_sha": "be782c068f9a048e21ed5ad2484fc5cd42e0d0016961a01cb3d486e5f14082a7",
+        "output_case_review_sha": "320ba3275daec536cdfe440d7b2bb6505e4f15172624c0a91d50121a0f7aecd2"
+      },
+      {
+        "case_id": "NEW-27",
+        "trial_id": "NEW-27:first",
+        "gold_sha": "24aae9cfd6cf45b53360c143b89c2f29cff9fa14dc96d3e48d1b3ecd012571b5",
+        "packet_sha": "a8dc05e28f38ce8b16f41efa204e90cbdc48fe4384ee55bac830ada6e097bfa1",
+        "gold_case_review_sha": "89b7bc39a937985edf9488a3f8bec5dba01bfbaafb88db3aeb20e9678bafd838",
+        "output_case_review_sha": "da8c16e6c91f1c7c3d74297ac2f25b9f60cfeab3d86c63865027fb93ea66d681"
+      },
+      {
+        "case_id": "NEW-28",
+        "trial_id": "NEW-28:first",
+        "gold_sha": "08ab2b56e5ace9b360a7bf7fc45e41fdb569138c918da3e664908cdac8759531",
+        "packet_sha": "01c2adb188211e2a8bf94b856c0097cd861c4166f40cb4e026e27e809ed20979",
+        "gold_case_review_sha": "5fe7fb76dfec8fcda200e4e3686ad20bcc790101e1a1c2a24148c212302d6458",
+        "output_case_review_sha": "12c1395411a639bc81947b5de2abed6d3b0e4bf130cac7c02e3bfc626e578b6c"
+      },
+      {
+        "case_id": "NEW-29",
+        "trial_id": "NEW-29:first",
+        "gold_sha": "d8a49aaf89e3a752426ba529b7d2a6437131702551ef2abd0873dca7d176da65",
+        "packet_sha": "50592db13a280f4bbc3b6491885a7c9559ea69585ae74726e8c8449898328433",
+        "gold_case_review_sha": "97a2c42dc33aa3def816da8db9e974cde160ea9f1b667458d410ad6587a4a108",
+        "output_case_review_sha": "074321371496a20d973b288425b9c0af11a6ddf3772ce9098632e90cdd7f621a"
+      },
+      {
+        "case_id": "NEW-30",
+        "trial_id": "NEW-30:first",
+        "gold_sha": "94ae06c01d39331fa51873e2a3a7e41e43aa78049d5a05d5abb08a6b0b938b6b",
+        "packet_sha": "12f7085f126621e7830b5ccd2ab7b4e10f11170665b4c9963324cd3d00eb1592",
+        "gold_case_review_sha": "ed643449a5a7cb9458c3b47e907d5ce934b337abcd162fe82e5fcabb05a876d7",
+        "output_case_review_sha": "e9661311d3e9a363c3d0ea4bccc37654674d7e0481a0e5723952e8cb8d7e8699"
+      }
+    ],
+    "reviewer_type": "AI",
+    "reviewer": "independent_quality_reviewer",
+    "human_verified": false,
+    "gold_human_verified": false,
+    "human_calibrated": false,
+    "context_provenance": "Reviewer context isolation is established by the orchestration record, not inferred from hashes or model agreement"
+  },
+  "tsr_percent": 10.0,
+  "groundedness_percent": 54.29325578944003
+}
