@@ -1,43 +1,37 @@
 # PlanGo 新 Codex 接手提示词
 
-更新：2026-09-09。完整交接见 [CODEX_HANDOFF.md](CODEX_HANDOFF.md)。复制下面文本到本项目的新Codex对话；它要求实施最近的产品推进计划，不重复更名/安装或陷在已验证的商家登录环节。
+更新：2026-09-09，质量优化与复测。复制下面代码块到本项目新Codex对话；完整事实、操作入口及历史证据见[当前handoff](CODEX_HANDOFF.md)。
 
 ```text
-请接手 /home/song/code/Agent/multi-agent/PlanGo 项目，按当前handoff直接实施后续计划，不要只输出分析或询问“是否开始”。
+请接手 /home/song/code/Agent/multi-agent/PlanGo，直接实施后续系统性质量优化与有界复测，不要只分析或询问“是否开始”。
 
-先读 AGENTS.md、docs/CODEX_HANDOFF.md（第0节目标、第5节D1–D7顺序、第6节首轮动作）、docs/架构决策.md、docs/Agent架构与选型.md，以及 docs/实施进度.md 末尾最新交接记录。docs/CODEX_HANDOFF_2026-09-09_门店UI归档.md 和 docs/CODEX_实施交接.md 仅是历史，不能把“尚未登录/需求卡待做/安装待做”等旧状态当当前任务。
+先读 AGENTS.md、docs/CODEX_HANDOFF.md（重点0/1/4/5/6/7节）、docs/架构决策.md、docs/Agent架构与选型.md、docs/质量评测协议.md、eval/quality-v2-30/README.md及docs/实施进度.md末尾。旧handoff的D7优先、尚未登录/安装、所有测评暂停或无百分比不是当前状态。
 
-当前分支预计 feat/planora-browser-harness；D1/D2提交34eb7d0，D3–D6及聊天/黄色主题提交e8e156b，后续交接以实际Git为准。先只读核实已有改动、主/隔离服务和进程归属、租约、待命令及UNKNOWN。写交接时主plango API/PG/Redis健康、worker运行，8条任务，无有效租约/待命令/未回执浏览器命令/未决动作；没有主桌面和隔离测试进程。plango-e2e停止，trial容器已移除但卷/profile/备份保留；不要依据历史PID或CDP端口操作。
+用户要用于秋招AI应用/Agent开发作品集，优先落实产品与可复验证据，不改成仅写简历。当前主线是选门店/优惠→改人数日期预算→有来源的适用性判断→保存→中断后继续。已有局部流程不代表新表达/新资料可靠。
 
-R0更名/目录迁移/独立conda plango、P0–P3核心、结构化需求卡/单站锁定、Linux试用/升级/冷备恢复、1800×1120窗口与主要UI、真实门店只读预览已经完成。不要重复创建环境、迁目录、重建空库或重做这些入口。
+最重要的优化原则：避免逐badcase加关键词、门店名、题号或专用分支。沿共享调用链找共同根因，从任务路由、需求稀疏修改/状态合并、事实与费用范围的交付边界修复；允许修补影响整个系统的共享契约小问题。用同义表达、否定、单位/口径变化、歧义、其余不变、多轮/重启等反例验证，不通过改gold或删失败涨分。不另建事实库/评分框架。
 
-用户最新UI偏好：使用明黄色（关联美团/大众点评）、暖白底、深色字，替换大面积墨绿。聊天按持久事件显示每轮回复，旧任务仅恢复已有澄清，不编造历史回答；不要改回只显示当前reason。
+当前分支 feat/planora-browser-harness，交接前HEAD bed0aac，后续可能只有文档提交，以实际Git为准。先只读核实工作树、资源归属、有效租约/pending/未回执/UNKNOWN。写交接时主plango API/PG/Redis健康、worker运行、8任务，未决均0；无主桌面和活跃隔离评测服务。plango-e2e停止，trial卷/profile/备份保留。主17业务表1413行及3个Cookie/身份/回执文件保持，最近私有备份output/friendly-errors-main-20260909/。不按旧PID/CDP操作。
 
-主线里程碑：用户选定门店和优惠 → 改人数/日期/预算 → 系统给适用性与缺失规则依据 → 保存行程 → 中断后继续原任务。
+30例基线已完成独立AI审核：TSR 10.0%（3/30），Groundedness 54.3%（30题宏平均，384/541事实有支持，N/A=0）。15组虚构来源、6家族各5题、20交付/10范围判断；20题原始观测注入、10题实际Electron状态流程。是同模型家族独立上下文AI审核，人工0，不称真实网站盲测、人工校准或第三方成绩。用户已明确让新开独立子Agent代为审核，延续该偏好，不再次卡在人审；新对话重新开隔离上下文，不假设旧Agent ID可复用。
 
-当前交付与接续顺序：
-1. D1/D2已实现并验证：稳定request_id/内容指纹与事务幂等接受，草稿/图片/选店恢复，未送达/待核实/已接收待取回；真实执行服务/模型/能力与桌面ping分开。保持同文独立轮和UNKNOWN不重放。
-2. D3/D4已在原真实任务完成：同店3优惠比较，显式核对canonical POI及地址后选择47元券；同一TripSpec/版本/审批保存并重启恢复。双人98元不能算3人够用，缺规则/过期仍未知，优惠未自动抵扣。
-3. D5仅有界完成：单站改人数的候选21→1、当前证据23→3；180秒桌面循环通过，但没有长期稳定/严格性能对照。保留身份/天气/路线必须刷新。用户三个项目同时运行并多次WSL崩溃，刚将swap扩为64GB；检查继续串行、单窗口，不操作其他项目，不宣称已证明根因。
-4. D6已实现并验证：搜索半径和单段路程独立，旧规范兼容；多结果地址不取第一项，公交限完整解析的同城公交/步行，标准单人票价只乘人数一次。真实高德读取31分钟/6.206km/3元每人；缺路线/费用保留未知，预算显示已知估算小计。
-5. 接下来D7：原店大众点评/高德/携程有界调查未找到已验证原生网页预约表单；后续已找到另一候选：重庆尼依格罗悦廊官网链接szuo/TableCheck，在独立可见浏览器可见人数/日期/时间控件。当前无native form且不在自动写入列表，尚不能报准备完成；用户已授权2人/2026-09-11 15:00且不产生真实业务影响；已实现官方参数预填及同任务恢复，私有cart/查询接口因副作用不明全部阻断。结果仅booking_parameters、不查空位、不提交，原顺风123不换店，不重复索要相同参数授权。逐项输入沿审批，提交/支付需具体授权。独立用户使用验收尚未发生，需用户安排，不擅自联系。不要用受控fixture充当真实商家成功。
+区分版本：基线绑定冻结de37fecd3dc4d1792fe9efb11108126d4bfd5ef1。当前b55371d/a7b8b53已部署共用中文故障提示并构建桌面，尚无新版质量成绩；旧试用包来自a308b20，不含最新修复。原30题输出封存后才改UI，没有重渲染旧结果。
 
-用户已完成大众点评扫码及一次安全验证。原run f8f8ad2719074b0a9c62cbb08367892f 在 output/merchant-next/session-C0ovDv/，已到v4 SUCCEEDED/draft_ready，累计36243tokens/28tools。2人、2026-09-11 18:30、120分钟、预算250、半径0.5km/路程上限2km/步行，canonical POI B00178UE0C。真实路线0.255km/4分钟，已知估算120元、交通0；优惠未抵扣，旧来源已过期，完整菜单/规则仍需App。实际重启后同规范/优惠/用量不变。旧PARTIAL_FAILED/12152tokens的失败和历史保留，不另建任务造成功。临时窗口和SQLite后端已关闭，profile与真实登录态保留。不要重复要求扫码或无限撞风控；新验证才交用户处理，禁止自动解验证码、复制Cookie或编造预订URL。旧受控准备任务不是真实商家交易。
+39次尝试=30有效+9独立裁定无效；无效为8次来源ID初始化违约与NEW12一次输入前连接错误，统一替代且保留旧记录。有效54调用/63702tokens，含无效共76调用/97924tokens，无缺usage，不含Codex审核消耗。另有原运输证据补包：只补已采集回执/事件、无Actor重跑，不能混作产品失败或新尝试。NEW17/19/30整题通过；NEW18运输和字段已通过，但未达声明draft_review停点，仍失败，不放宽标准。
 
-用户长期求职方向是AI应用/Agent开发，docs/秋招与作品集推进建议.md作为辅助背景；本轮优先落实项目产品计划，并保留可展示的证据，不改成仅写简历。完整质量指标测评继续暂停；不自动启动20任务/角色收益/DOM-Vision大sweep。适量真实模型/高德只读与必要有界功能验证已有授权，预算保持本项目配置，保留失败和累计用量。
+最终可复算包为eval/quality-v2-30/review/bundle.json及同目录gold-review.json/output-review.json，collection SHA ea2f16a56a8b6ef99aaae55170cc6bdbe34b2c122cd2b044fdea4b1c1f044029；scores/usage/verification在上级目录。原包、初审、无效记录、SQLite/profile/模型日志在output/quality-v2-30/session-20260909-r2/保留。先按handoff第7节新目录离线复算，不启动模型。旧12例和已揭示30例后续只能叫开发/回归集，新泛化评测须先冻结新版，再独立按来源组采样/审gold/运行/审输出。
 
-保持PlanGo/plango/PLANGO_及默认重庆、本项目现有模型/高德配置；不输出或提交密钥。只改本仓库及专属资源，禁止修改、依赖或重启兄弟../Planora仓库/服务/测评或原conda planora环境。用户原文 docs/YOYU_Planora_融合方案.md 保持未跟踪，不修改/删除/提交；保留作者、许可证、固定上游与历史证据。
+复测入口尚需最小接线：quality_acceptance.py的DATA固定v2，product()检查旧冻结，原registry禁止替换有效attempt；当前新版直接调用旧prepare/run/bundle会被拒绝。不要改旧freeze、删registry或移除hash保护。沿现有collector/driver加显式新数据集/冻结路径及新工作目录，先离线检查输入/gold隔离、路径/hash、运输证据/时间，再给真实可用命令；quality_runner.py --run-dev默认是v1，不能冒充v2。不要先无差别重跑30例。
 
-保留Electron+React、真实可见浏览器、WebContentsView+已验证Playwright/CDP、DOM-first与只读Vision，共用会话及Harness授权/回执。集中式工作流、外层Plan-and-Execute、浏览器有界ReAct；single/multi是视角策略，不扩自治多Agent团队。MCP/新框架/OpenAPI生成/OTel仅在明确需要时引入。
+R0更名/独立conda/迁移、P0–P3、D1/D2幂等恢复与执行配置、D3/D4选用保存、D6距离公交、聊天历史、明黄暖白主题及共用自然语言错误提示已做，不重复。源码仍有约束漏改/误写/规范清空、无关坐标澄清、费用/来源范围混淆等跨案例问题；优先沿handoff第5节实施。保持原请求身份、同文不同轮、预算、审批、UNKNOWN与来源时效契约。
 
-完整保留数据库、profile、任务、checkpoint、审批、幂等与UNKNOWN；不清库，不用新建任务/重新授权/重放不确定写入造成功。只读、图片、草案、准备待核对与业务完成分别报告。真实预约提交、下单、支付、外部消息仍需具体授权；准备输入沿现有逐项审批，不包含提交。
+用户三个项目在WSL运行并曾崩溃，swap64GB；串行检查、单临时窗口，不猜崩溃根因、不做额外长压测。常规实现、必要有界模型/高德只读和优化复测已授权；保留本项目实际预算（默认每轮12000tokens/48tools/300执行秒），记录跨分批累计，不能拆批或涨预算凑成功。大规模质量、旧20任务、角色收益、DOM/Vision sweep仍暂停。没有用户指定的目标通过率，不自设好看指标。
 
-测试使用归属明确的独立数据库/profile。调试中遇到不友好UI要顺手改善美观/可读性；临时窗口不用就及时关闭，需用户扫码/验证/审批时明确说明，关闭保留数据，不做产品空闲自动退出。不要给用户留一堆不知是否需要操作的窗口。
+只改本仓库及专属资源，禁止修改/依赖/重启../Planora或原planora环境。保持PlanGo/plango/PLANGO_、默认重庆、现有模型/高德配置，Python用/home/song/miniconda3/envs/plango/bin/python；不输出/提交密钥，保留作者许可证固定上游。docs/YOYU_Planora_融合方案.md保持未跟踪，不修改/删除/提交。不清库/重置profile/另建任务/重授权/重放UNKNOWN造成功。
 
-最终npm check375pytest+43subtests及类型/构建通过，Ruff/mypy70文件通过；证据eval/plango-product-next/。主API/worker已更新，原17业务表1413行和Cookie/身份/回执保持，备份output/product-final/。新本地booking-preview包已从a308b20干净源码生成并扫描（包含网络保护与参数预览），未发布；试用单docs/独立试用验收.md待真实使用者填写。入口与包证据eval/plango-d7-next/，临时会话output/d7-next/tealounge-brha972n保留但已关闭。
+保留Electron+React、可见浏览器、WCV+Playwright/CDP、DOM-first与按需只读Vision；集中式工作流、外层Plan-and-Execute、浏览器有界ReAct，single/multi不是自治团队。UI用明黄色暖白，聊天保留每轮回复；异常以普通用户能懂的语言解释，未送达/已接收/待核实分开，不引导不确定写入重试。
 
-完成必要验证后更新 docs/实施进度.md、当前handoff及使用文档，可分阶段本地提交，再继续后续阶段；不自动push、PR、发布或发送消息。不要把局部完成当成全项目完成，也不要未经要求创建新的goal工具目标。
+大众点评已扫码且原run f8f8ad2719074b0a9c62cbb08367892f已到v4草案并重启恢复，真实profile保留，完整菜单/规则需App；不要重新扫码、撞风控、复制Cookie或编造URL。悦廊参数run82c0f6fbcb394a8eaba38f3c8d6990ea已预填2人/2026-09-11 15:00，但只booking_parameters，私有cart/查询因副作用不明仍阻断。D7/独立试用和长时稳定是支线，不抢本轮质量主线。
 
-补充：参数预览原run 82c0f6fbcb394a8eaba38f3c8d6990ea，第1轮initial预算，2240tokens/3tools；4条持久浏览器命令中1次旧标签失败保留。证据eval/plango-booking-preview/，main备份output/d7-preview-final/。不得将已预填参数当作查到空位或ready_to_review。
-
+用户只允许不提交预约、不影响真实业务的验证。真实预约/下单/支付/锁位/外部消息无授权，准备输入仍逐项审批。测试仅独立DB/profile，临时窗口不用就关并保留资料，不做产品闲置自动退出，不留用途不明窗口。必要验证后更新进度/handoff/使用文档，可本地提交并继续；不push/PR/发布/发消息，不新建goal工具目标，不把阶段完成说成全项目完成。
 ```
