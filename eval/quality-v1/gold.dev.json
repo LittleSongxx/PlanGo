@@ -1,0 +1,960 @@
+[
+  {
+    "case_id": "DEV-01",
+    "status": "draft_pending_human_review",
+    "annotation_status": "ai_authored_draft",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "R1",
+        "description": "门店名称与地址对应原始页面，不把附近店铺或其他分店混入。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-DP-RAW: /text"
+      },
+      {
+        "id": "R2",
+        "description": "三个优惠均覆盖：50元代金券、精选双人餐、顺风冷面鸡；售价分别47、98、19.9元。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-DP-RAW: /text"
+      },
+      {
+        "id": "R3",
+        "description": "50元仅标券面值，47元标售价；98元标双人套餐，19.9元标单项。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-DP-RAW: /text"
+      },
+      {
+        "id": "R4",
+        "description": "保留原文出现的120/32参考金额，但在人工确认原DOM价格语义前不称已核实原价；不得声称原文没有这些金额。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-DP-RAW: /text；原DOM/截图待人审"
+      },
+      {
+        "id": "R5",
+        "description": "回答明确是历史快照内容，不提升为当前价格、可购买性或已成交。",
+        "check_at": "final_visible_output",
+        "oracle_source": "用户请求；SRC-DP-RAW: /observed_at"
+      }
+    ],
+    "forbidden_claims": [
+      "券售价50元",
+      "98元是单人价格",
+      "19.9元包含完整用餐",
+      "原页面没有120元或32元金额",
+      "已核实当前可以购买"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "门店地址为观音桥步行街8号附5号大融城6楼6-010。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；锚点“观音桥步行街8号附5号大融城6楼6-010”",
+        "derivation": null
+      },
+      {
+        "id": "F2",
+        "proposition": "代金券面值为50元。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；锚点“50元代金券”",
+        "derivation": null
+      },
+      {
+        "id": "F3",
+        "proposition": "该代金券页面售价为47元。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；“50元代金券”之后的“¥\\n47”",
+        "derivation": null
+      },
+      {
+        "id": "F4",
+        "proposition": "精选双人餐页面售价为98元。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；“精选双人餐”之后的“¥\\n98”",
+        "derivation": null
+      },
+      {
+        "id": "F5",
+        "proposition": "顺风冷面鸡页面售价为19.9元。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；“【必点招牌】顺风冷面鸡”之后的“¥\\n19.9”",
+        "derivation": null
+      }
+    ],
+    "accepted_variations": [
+      "门店/优惠名称允许省去营销后缀，但不能改分店、人数或价格口径。",
+      "参考价格的确切原价语义由人工核对后再冻结，不能按当前解析器null反推gold。"
+    ],
+    "contamination_note": "公开开发集：本任务由已参与开发的AI依据已可见资料起草，可用于修正规范与调试；不是未见留出或人审金标，后续不能改名当盲测。"
+  },
+  {
+    "case_id": "DEV-02",
+    "status": "draft_pending_human_review",
+    "annotation_status": "ai_authored_draft",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "R1",
+        "description": "分别识别两家受控门店；雾岚价格未知，杉木参考人均66元。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-SYN-EDGE: DEV-02 environment.initial_state.evidence[0].text"
+      },
+      {
+        "id": "R2",
+        "description": "不把杉木的66元归给雾岚。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-SYN-EDGE: DEV-02 environment.initial_state.evidence[0].text"
+      },
+      {
+        "id": "R3",
+        "description": "如计算198元，必须明确它是3×参考人均66元的估算，不能作为完整用餐保证。",
+        "check_at": "final_visible_output",
+        "oracle_source": "用户请求；SRC-SYN-EDGE: DEV-02 environment.initial_state.evidence[0].text"
+      },
+      {
+        "id": "R4",
+        "description": "明确缺少雾岚价格与实际用餐明细，不能可靠比较两家总价或确定最便宜者。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-SYN-EDGE: DEV-02 environment.initial_state.evidence[0].text"
+      },
+      {
+        "id": "R5",
+        "description": "给出下一步需取得的具体信息，不能仅输出泛化拒绝。",
+        "check_at": "final_visible_output",
+        "oracle_source": "用户请求；SRC-SYN-EDGE: DEV-02 environment.initial_state.evidence[0].text"
+      }
+    ],
+    "forbidden_claims": [
+      "雾岚餐厅人均66元",
+      "杉木一定比雾岚便宜",
+      "3人198元保证够吃且不会超预算"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "雾岚餐厅的人均价未公开。",
+        "source_id": "SRC-SYN-EDGE",
+        "locator": "tasks.dev.json#/1/environment/initial_state/evidence/0/text",
+        "derivation": null
+      },
+      {
+        "id": "F2",
+        "proposition": "杉木餐厅页面参考人均为66元。",
+        "source_id": "SRC-SYN-EDGE",
+        "locator": "tasks.dev.json#/1/environment/initial_state/evidence/0/text",
+        "derivation": null
+      },
+      {
+        "id": "F3",
+        "proposition": "按3人乘以参考人均66元得到198元估算，非完整账单。",
+        "source_id": "SRC-SYN-EDGE",
+        "locator": "tasks.dev.json#/1/environment/initial_state/evidence/0/text",
+        "derivation": "用户明确3人；3×66=198，仅算术估算。"
+      }
+    ],
+    "accepted_variations": [
+      "可省略参考总价计算；必须保留已知的66元与缺少哪家价格，不能靠不回答获取可信度。"
+    ],
+    "contamination_note": "公开开发集：本任务由已参与开发的AI依据已可见资料起草，可用于修正规范与调试；不是未见留出或人审金标，后续不能改名当盲测。"
+  },
+  {
+    "case_id": "DEV-03",
+    "status": "draft_pending_human_review",
+    "annotation_status": "ai_authored_draft",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "O1",
+        "description": "识别98元为双人套餐价格，页面仅明确覆盖2人。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-DP-RAW: /text"
+      },
+      {
+        "id": "O2",
+        "description": "不能把98÷3的人均数解释为3人用餐已满足；也不能断言商家禁止第3人进入。",
+        "check_at": "final_visible_output",
+        "oracle_source": "用户请求；SRC-DP-RAW: /text"
+      },
+      {
+        "id": "O3",
+        "description": "区分页面标注周一至周日与尚缺的有效期、节假日、加人/加菜/必付费用等信息。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-DP-RAW: /text"
+      },
+      {
+        "id": "O4",
+        "description": "明确仅凭页面不能给出3人完整费用或保证总预算150元满足。",
+        "check_at": "final_visible_output",
+        "oracle_source": "用户请求；SRC-DP-RAW: /text"
+      },
+      {
+        "id": "O5",
+        "description": "必要交付同时包括已知98元/2人和具体待补信息，不能全部回答未知。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-DP-RAW: /text"
+      }
+    ],
+    "forbidden_claims": [
+      "98元双人餐足够3人",
+      "每人32.67元所以3人肯定满足预算",
+      "页面没有星期使用范围",
+      "商家明确禁止第3人用餐",
+      "3人全部餐费确定是98元"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "套餐名称明确为双人餐。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；锚点“【馋嘴实惠】精选双人餐”",
+        "derivation": null
+      },
+      {
+        "id": "F2",
+        "proposition": "该套餐页面售价98元。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；双人餐标题后“¥\\n98”",
+        "derivation": null
+      },
+      {
+        "id": "F3",
+        "proposition": "该套餐预览标注周一至周日。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；双人餐标题后“周一至周日”",
+        "derivation": null
+      },
+      {
+        "id": "F4",
+        "proposition": "该快照未给出第3人的加人费用或额外点单金额。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；限定为所提供全文的缺失性检查",
+        "derivation": null
+      },
+      {
+        "id": "F5",
+        "proposition": "仅凭双人餐信息不能推出3人完整用餐费用。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；双人餐标题与缺失加人信息",
+        "derivation": "请求人数3，大于文中明确覆盖的2；来源缺少补足第3人的费用。"
+      }
+    ],
+    "accepted_variations": [
+      "可写“单份套餐不能判够3人”“3人适用性尚不满足可确认条件”；不强制产品枚举值ineligible/unknown的字面形式。"
+    ],
+    "contamination_note": "公开开发集：本任务由已参与开发的AI依据已可见资料起草，可用于修正规范与调试；不是未见留出或人审金标，后续不能改名当盲测。"
+  },
+  {
+    "case_id": "DEV-04",
+    "status": "draft_pending_human_review",
+    "annotation_status": "ai_authored_draft",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "O1",
+        "description": "给出适用结论，不能在全部相关条件都给定时机械拒绝或全标未知。",
+        "check_at": "final_visible_output",
+        "oracle_source": "用户请求；SRC-SYN-EDGE: DEV-04 environment.initial_state.evidence[0].text"
+      },
+      {
+        "id": "O2",
+        "description": "人数、日期、18:30使用时间及不叠加条件均正确匹配。",
+        "check_at": "final_visible_output",
+        "oracle_source": "用户请求；SRC-SYN-EDGE: DEV-04 environment.initial_state.evidence[0].text"
+      },
+      {
+        "id": "O3",
+        "description": "总价为一份98元；不按2人再乘一次，不额外假设优惠。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-SYN-EDGE: DEV-04 environment.initial_state.evidence[0].text"
+      },
+      {
+        "id": "O4",
+        "description": "正确说明98元不超过120元预算，余额22元，限定在本合成条款范围。",
+        "check_at": "final_visible_output",
+        "oracle_source": "用户请求；SRC-SYN-EDGE: DEV-04 environment.initial_state.evidence[0].text"
+      },
+      {
+        "id": "O5",
+        "description": "不得购买、预约、支付或宣称已成交；清楚这是受控评测资料。",
+        "check_at": "tool_trace_and_final_visible_output",
+        "oracle_source": "用户请求；SRC-SYN-EDGE: DEV-04 fixture_kind"
+      }
+    ],
+    "forbidden_claims": [
+      "完整条款仍不足所以无法作任何判断",
+      "套餐总价196元",
+      "已替你购买套餐",
+      "这家真实商家当前保证有位"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "受控套餐A售价为98元/份，完整覆盖2名成人。",
+        "source_id": "SRC-SYN-EDGE",
+        "locator": "tasks.dev.json#/3/environment/initial_state/evidence/0/text",
+        "derivation": null
+      },
+      {
+        "id": "F2",
+        "proposition": "受控条款允许2026年9月11日17:00至21:00使用。",
+        "source_id": "SRC-SYN-EDGE",
+        "locator": "tasks.dev.json#/3/environment/initial_state/evidence/0/text",
+        "derivation": null
+      },
+      {
+        "id": "F3",
+        "proposition": "98元已经包含本任务全部餐品和必付费用。",
+        "source_id": "SRC-SYN-EDGE",
+        "locator": "tasks.dev.json#/3/environment/initial_state/evidence/0/text",
+        "derivation": null
+      },
+      {
+        "id": "F4",
+        "proposition": "本任务条件下总价98元，低于120元预算22元。",
+        "source_id": "SRC-SYN-EDGE",
+        "locator": "tasks.dev.json#/3/environment/initial_state/evidence/0/text",
+        "derivation": "一份×98=98；120−98=22，用户的2人/日期/时间满足完整条款。"
+      }
+    ],
+    "accepted_variations": [
+      "可使用表格或短文；不要求特定工具顺序，但上述充分证据下必须实际作出判断。"
+    ],
+    "contamination_note": "公开开发集：本任务由已参与开发的AI依据已可见资料起草，可用于修正规范与调试；不是未见留出或人审金标，后续不能改名当盲测。"
+  },
+  {
+    "case_id": "DEV-05",
+    "status": "draft_pending_human_review",
+    "annotation_status": "ai_authored_draft",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "E1",
+        "description": "人数最终为3，总预算和人均预算都为空/无约束，不是0或保留旧值。",
+        "check_at": "persisted_spec",
+        "oracle_source": "用户请求；SRC-SYN-EDIT: DEV-05 environment.initial_state.spec"
+      },
+      {
+        "id": "E2",
+        "description": "日期、18:30、120分钟、步行、两个距离字段保持原值。",
+        "check_at": "persisted_spec",
+        "oracle_source": "SRC-SYN-EDIT: DEV-05 environment.initial_state.spec"
+      },
+      {
+        "id": "E3",
+        "description": "selected_poi与selected_offer身份和来源引用保持；不静默选新店或新券。",
+        "check_at": "persisted_spec",
+        "oracle_source": "SRC-SYN-EDIT: DEV-05 environment.initial_state.spec"
+      },
+      {
+        "id": "E4",
+        "description": "在初始别名绑定的同一真实run内形成新版本，旧版本仍可追溯；不重复创建任务或用户轮次。",
+        "check_at": "independent_db_read",
+        "oracle_source": "独立DB读：运行前后run/spec/version/用户输入记录；用户请求"
+      },
+      {
+        "id": "E5",
+        "description": "最终可见确认与落库规范一致，规则未知仍保留，不能声称优惠已抵扣。",
+        "check_at": "final_visible_output_and_persisted_spec",
+        "oracle_source": "SRC-SYN-EDIT: DEV-05 environment.initial_state；独立DB读"
+      }
+    ],
+    "forbidden_claims": [
+      "预算已取消但后端仍为250/125",
+      "取消预算等于预算0元",
+      "自动换成另一家店",
+      "优惠已核实并抵扣"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "初始人数为2，用户要求改为3。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/4/environment/initial_state/spec/party_size",
+        "derivation": "结合DEV-05 user_turns[0]，目标人数3。"
+      },
+      {
+        "id": "F2",
+        "proposition": "初始总预算250、人均预算125，用户要求两者清除。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/4/environment/initial_state/spec",
+        "derivation": "结合DEV-05 user_turns[0]，目标两种预算均无约束。"
+      },
+      {
+        "id": "F3",
+        "proposition": "原日期为2026-09-11，开始18:30、时长120分钟。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/4/environment/initial_state/spec",
+        "derivation": null
+      },
+      {
+        "id": "F4",
+        "proposition": "已选优惠规则状态为unknown，修改人数不提供新的规则证据。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/4/environment/initial_state/spec/selected_offer",
+        "derivation": null
+      }
+    ],
+    "accepted_variations": [
+      "数据库版本号按现有契约递增即可，不硬编码必须只加1；必须保留同run及旧记录。",
+      "无约束可用null或规范定义的等价表示，不能只改展示文字。",
+      "初态run/POI/offer/version是评测别名，按真实初始化映射比较同一记录，不要求实际持久ID为fixture字符串。"
+    ],
+    "contamination_note": "公开开发集：本任务由已参与开发的AI依据已可见资料起草，可用于修正规范与调试；不是未见留出或人审金标，后续不能改名当盲测。"
+  },
+  {
+    "case_id": "DEV-06",
+    "status": "draft_pending_human_review",
+    "annotation_status": "ai_authored_draft",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "E1",
+        "description": "首轮落库搜索半径0.5公里、单段路程上限2公里；不能互相覆盖。",
+        "check_at": "after_turn_1_persisted_spec",
+        "oracle_source": "用户请求；SRC-SYN-EDIT: DEV-06 environment.initial_state.spec"
+      },
+      {
+        "id": "E2",
+        "description": "次轮日期为2026-09-12，路程上限清除，搜索半径仍0.5公里。",
+        "check_at": "after_turn_2_persisted_spec",
+        "oracle_source": "用户请求；SRC-SYN-EDIT: DEV-06 environment.initial_state.spec"
+      },
+      {
+        "id": "E3",
+        "description": "人数、预算、起始时间、时长、交通及选店优惠均保持。",
+        "check_at": "after_each_turn_persisted_spec",
+        "oracle_source": "SRC-SYN-EDIT: DEV-06 environment.initial_state.spec"
+      },
+      {
+        "id": "E4",
+        "description": "两次新用户输入属于同run的两个独立轮次，旧版本可追溯。",
+        "check_at": "independent_db_read",
+        "oracle_source": "独立DB读：run/turn/version；用户请求"
+      },
+      {
+        "id": "E5",
+        "description": "回复清楚区分发现候选的范围与单段实际路线限制，且与最终状态一致。",
+        "check_at": "final_visible_output_and_persisted_spec",
+        "oracle_source": "用户请求；独立DB读"
+      }
+    ],
+    "forbidden_claims": [
+      "将搜索半径0.5公里写成实际路线距离保证",
+      "取消路程上限同时取消搜索半径",
+      "第二轮日期修改丢掉已选优惠"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "初始搜索半径为1公里，单段路程上限为3公里。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/5/environment/initial_state/spec",
+        "derivation": null
+      },
+      {
+        "id": "F2",
+        "proposition": "首轮目标是半径0.5公里、路程上限2公里。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/5/environment/initial_state/spec",
+        "derivation": "DEV-06 user_turns[0]的两个独立稀疏补丁。"
+      },
+      {
+        "id": "F3",
+        "proposition": "次轮最终半径0.5公里，路程上限无约束，日期2026-09-12。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/5/environment/initial_state/spec",
+        "derivation": "依次应用两条用户请求；未被第二条修改的半径保留。"
+      }
+    ],
+    "accepted_variations": [
+      "允许不同等价界面措辞；不能只用一句“已修改”跳过目标值与持久状态核验。",
+      "初态run/POI/offer/version是评测别名，按真实初始化映射比较同一记录，不要求实际持久ID为fixture字符串。"
+    ],
+    "contamination_note": "公开开发集：本任务由已参与开发的AI依据已可见资料起草，可用于修正规范与调试；不是未见留出或人审金标，后续不能改名当盲测。"
+  },
+  {
+    "case_id": "DEV-07",
+    "status": "draft_pending_human_review",
+    "annotation_status": "ai_authored_draft",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "T1",
+        "description": "只解释transits[0]；起终点坐标与原route一致，不偷换为另一候选方案。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-AMAP-RAW: /origin,/destination,/transits/0"
+      },
+      {
+        "id": "T2",
+        "description": "3号线观音桥→牛角沱、步行227米、2号线牛角沱→临江门、步行249米正确覆盖。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-AMAP-RAW: /transits/0/segments"
+      },
+      {
+        "id": "T3",
+        "description": "该公交方案距离6206米；不把顶层route.distance=5947误写成此公交方案距离。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-AMAP-RAW: /distance,/transits/0/distance"
+      },
+      {
+        "id": "T4",
+        "description": "耗时基于原始1803秒，票价按每人3元×3人=9元且仅单程标准票，不再乘人数。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-AMAP-RAW: /transits/0/cost,/transits/0/duration；用户请求"
+      },
+      {
+        "id": "T5",
+        "description": "明确历史响应缺少完整请求时刻元数据，不能断言当前/某指定日期仍有此路线或此票价。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-AMAP-RAW: 原始route子树；用户请求"
+      }
+    ],
+    "forbidden_claims": [
+      "公交方案全程5.947公里",
+      "三人标准单程票价3元或27元",
+      "已经实时确认2026年9月11日18:00有此线路",
+      "缺失请求元数据已由系统结果字段证明"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "第一个公交方案原始票价字段为3.0。",
+        "source_id": "SRC-AMAP-RAW",
+        "locator": "/transits/0/cost",
+        "derivation": null
+      },
+      {
+        "id": "F2",
+        "proposition": "第一个公交方案距离为6206米。",
+        "source_id": "SRC-AMAP-RAW",
+        "locator": "/transits/0/distance",
+        "derivation": null
+      },
+      {
+        "id": "F3",
+        "proposition": "第一个公交方案原始耗时为1803秒。",
+        "source_id": "SRC-AMAP-RAW",
+        "locator": "/transits/0/duration",
+        "derivation": null
+      },
+      {
+        "id": "F4",
+        "proposition": "第一个公交方案两段步行合计476米。",
+        "source_id": "SRC-AMAP-RAW",
+        "locator": "/transits/0/segments/1/walking/distance；/transits/0/segments/2/walking/distance",
+        "derivation": "227+249=476；亦可核对/transits/0/walking_distance。"
+      },
+      {
+        "id": "F5",
+        "proposition": "3名均购标准票的成人单程票价合计9元。",
+        "source_id": "SRC-AMAP-RAW",
+        "locator": "/transits/0/cost",
+        "derivation": "用户明确3人均购标准票；3×3=9元，不含返程。"
+      }
+    ],
+    "accepted_variations": [
+      "1803秒可显示30分3秒、约30分钟或明确向上取整的31分钟；不能仅因与当前程序的31分钟不同判错。",
+      "可以只以原响应中站名/坐标描述起终点；未补证前不强制独立canonical POI名称。"
+    ],
+    "contamination_note": "公开开发集：本任务由已参与开发的AI依据已可见资料起草，可用于修正规范与调试；不是未见留出或人审金标，后续不能改名当盲测。"
+  },
+  {
+    "case_id": "DEV-08",
+    "status": "draft_pending_human_review",
+    "annotation_status": "ai_authored_draft",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "T1",
+        "description": "保留路线2.4公里、15分钟和三人餐费总额180元，不丢已知信息。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-SYN-EDGE: DEV-08 environment.initial_state.evidence[0]"
+      },
+      {
+        "id": "T2",
+        "description": "公交票价明确未知，不能填0元、猜常见票价或用步行费用替代。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-SYN-EDGE: DEV-08 environment.initial_state.evidence[0]/standard_fare_per_person"
+      },
+      {
+        "id": "T3",
+        "description": "已知小计为180元，总费用尚不确定；不能把180元再按3人乘一次。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-SYN-EDGE: DEV-08 environment.initial_state.evidence[0]/meal_total"
+      },
+      {
+        "id": "T4",
+        "description": "说明剩余预算20元只是可用于未估项目的空间，不能保证200元覆盖。",
+        "check_at": "final_visible_output",
+        "oracle_source": "用户请求；SRC-SYN-EDGE: DEV-08 environment.initial_state"
+      },
+      {
+        "id": "T5",
+        "description": "给出具体下一步需核实单程标准票价及费用范围，无预约/购买动作。",
+        "check_at": "tool_trace_and_final_visible_output",
+        "oracle_source": "用户请求；SRC-SYN-EDGE: DEV-08 environment.initial_state.evidence[0]"
+      }
+    ],
+    "forbidden_claims": [
+      "公交免费",
+      "全程总价确定180元",
+      "三人餐费540元",
+      "已保证总支出不超过200元"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "受控路线长度2400米，时长900秒。",
+        "source_id": "SRC-SYN-EDGE",
+        "locator": "tasks.dev.json#/7/environment/initial_state/evidence/0",
+        "derivation": null
+      },
+      {
+        "id": "F2",
+        "proposition": "受控三人完整餐费是180元总额。",
+        "source_id": "SRC-SYN-EDGE",
+        "locator": "tasks.dev.json#/7/environment/initial_state/evidence/0/meal_total",
+        "derivation": null
+      },
+      {
+        "id": "F3",
+        "proposition": "公交标准票价字段为空，来源未提供票价。",
+        "source_id": "SRC-SYN-EDGE",
+        "locator": "tasks.dev.json#/7/environment/initial_state/evidence/0/standard_fare_per_person",
+        "derivation": null
+      },
+      {
+        "id": "F4",
+        "proposition": "预算减已知餐费剩余20元，最终总额仍未知。",
+        "source_id": "SRC-SYN-EDGE",
+        "locator": "tasks.dev.json#/7/environment/initial_state",
+        "derivation": "200−180=20；交通费未知，不能由此推出预算合规。"
+      }
+    ],
+    "accepted_variations": [
+      "可以写“预算尚无法核实”“可能超预算但证据不足”，不能将可能性报告成必然超支。"
+    ],
+    "contamination_note": "公开开发集：本任务由已参与开发的AI依据已可见资料起草，可用于修正规范与调试；不是未见留出或人审金标，后续不能改名当盲测。"
+  },
+  {
+    "case_id": "DEV-09",
+    "status": "draft_pending_human_review",
+    "annotation_status": "ai_authored_draft",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "V1",
+        "description": "驱动从未保存草案点击已有保存入口后，获得真实保存回执和独立数据库草案记录；不能预置已保存状态或只返回成功文字。",
+        "check_at": "after_save_independent_db_read",
+        "oracle_source": "SRC-SYN-EDIT: DEV-09 environment.driver_actions[1]；独立DB读：保存前后draft/回执/version"
+      },
+      {
+        "id": "V2",
+        "description": "实际关闭并重开原隔离数据库/profile后，恢复保存回执绑定的同run、同plan_version、同spec和优惠来源；比较实际别名绑定，不要求fixture字面ID。",
+        "check_at": "after_restart_independent_db_read",
+        "oracle_source": "SRC-SYN-EDIT: DEV-09 environment.initial_state；独立DB读"
+      },
+      {
+        "id": "V3",
+        "description": "只读恢复没有新增模型调用、用户轮次、任务或预算，保存后采集的真实累计用量基线保持；不使用虚构用量作为运行证据。",
+        "check_at": "before_after_independent_db_read",
+        "oracle_source": "SRC-SYN-EDIT: DEV-09 environment.driver_actions[2]；重启前后独立DB/真实调用日志"
+      },
+      {
+        "id": "V4",
+        "description": "界面重新显示完整已存条件和优惠规则未知，不丢历史已存内容。",
+        "check_at": "restored_visible_output",
+        "oracle_source": "SRC-SYN-EDIT: DEV-09 environment.initial_state/spec；独立DB读"
+      },
+      {
+        "id": "V5",
+        "description": "全过程无交易命令、无重新授权、无UNKNOWN重放。",
+        "check_at": "tool_trace_and_independent_db_read",
+        "oracle_source": "SRC-SYN-EDIT: DEV-09 environment.user_intent；独立DB读：命令/审批/动作账本"
+      }
+    ],
+    "forbidden_claims": [
+      "恢复时创建新任务也算继续原任务",
+      "保存草案等于已预约",
+      "恢复已确认优惠规则完整",
+      "为了恢复自动重新提交不确定动作"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "受控初态是未保存、可核对的草案，不是已经保存成功。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/8/environment/initial_state/draft_review/save_state",
+        "derivation": null
+      },
+      {
+        "id": "F2",
+        "proposition": "受控草案的业务完成标记为false，保存不能转成预约或交易完成。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/8/environment/initial_state/draft_review/business_completed",
+        "derivation": null
+      },
+      {
+        "id": "F3",
+        "proposition": "重启比较基线须在真实保存回执之后采集，恢复时保持该原任务及累计用量。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/8/environment/driver_actions/2",
+        "derivation": "这是预注册驱动契约，实际是否满足只能由保存回执、持久状态与调用日志独立验证。"
+      },
+      {
+        "id": "F4",
+        "proposition": "原已选优惠完整规则未知。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/8/environment/initial_state/spec/selected_offer/rules_status",
+        "derivation": null
+      }
+    ],
+    "accepted_variations": [
+      "界面排版可不同；恢复后的用户可见字段与真实保存回执绑定的持久状态一致。",
+      "fixture-trip-001与初始版本是别名，runner通过真实初始化建立映射；不强求持久ID/版本等于fixture字面值。"
+    ],
+    "contamination_note": "公开开发集：本任务由已参与开发的AI依据已可见资料起草，可用于修正规范与调试；不是未见留出或人审金标，后续不能改名当盲测。"
+  },
+  {
+    "case_id": "DEV-10",
+    "status": "draft_pending_human_review",
+    "annotation_status": "ai_authored_draft",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "V1",
+        "description": "只发送用户唯一人数修改一次；真实main生成请求身份/内容指纹，故障必须发生在真实后端接受之后、客户端收到POST回执之前。",
+        "check_at": "transport_trace_and_independent_db_read",
+        "oracle_source": "用户请求；SRC-SYN-EDIT: DEV-10 environment.driver_actions[1:3]；独立DB/故障日志"
+      },
+      {
+        "id": "V2",
+        "description": "恢复网络后点击已有核对入口，以原真实request_id/指纹取回同一已接受轮次；不新增聊天、请求身份或任务。",
+        "check_at": "transport_trace",
+        "oracle_source": "SRC-SYN-EDIT: DEV-10 environment.driver_actions[3:5]；实际请求别名映射"
+      },
+      {
+        "id": "V3",
+        "description": "相对运行前基线，本次唯一输入只新增1个接受记录、1个用户轮次和1份本轮预算；核对不再新增。",
+        "check_at": "independent_db_read",
+        "oracle_source": "独立DB读：真实接受/turn/budget前后差；SRC-SYN-EDIT: DEV-10 environment.driver_actions[5]"
+      },
+      {
+        "id": "V4",
+        "description": "原任务实际规范人数为3，其余字段保持初值；可见结果与真实持久状态一致。",
+        "check_at": "persisted_spec_and_visible_output",
+        "oracle_source": "用户请求；SRC-SYN-EDIT: DEV-10 environment.initial_state.spec；独立DB读"
+      },
+      {
+        "id": "V5",
+        "description": "客户端送达待核实状态通过真实核对转为已取回；未成功注入响应丢失不能用预塞服务端成功行计通过。",
+        "check_at": "final_visible_output_and_fault_log",
+        "oracle_source": "实际故障注入/传输日志；独立DB读；SRC-SYN-EDIT: DEV-10 environment.alias_binding"
+      }
+    ],
+    "forbidden_claims": [
+      "重新创建一个任务所以恢复成功",
+      "重试获得新的预算也算同一次接受",
+      "没有核对就丢弃原未决请求"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "受控初态人数为2，尚未发送本次人数修改。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/9/environment/initial_state",
+        "derivation": null
+      },
+      {
+        "id": "F2",
+        "proposition": "唯一真实用户输入要求人数改为3，其余字段不变。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/9/agent_input/user_turns/0/message",
+        "derivation": "结合environment.initial_state.spec，最终仅party_size更改；这是预期目标，不是已执行结果。"
+      },
+      {
+        "id": "F3",
+        "proposition": "故障编排要求真实接受之后才丢弃POST响应，不能从预置记录推断接受成功。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/9/environment/driver_actions/2",
+        "derivation": "实际接受与原子性由独立DB/真实传输日志判定，不由fixture声明证明。"
+      },
+      {
+        "id": "F4",
+        "proposition": "恢复只点击既有核对入口，不发送第二条聊天。",
+        "source_id": "SRC-SYN-EDIT",
+        "locator": "tasks.dev.json#/9/environment/driver_actions/4",
+        "derivation": null
+      }
+    ],
+    "accepted_variations": [
+      "允许读取原回执所需的有限GET重试，不要求所有合理读取调用与固定参考序列逐项相同。",
+      "所有请求/任务/轮次ID比较实际alias映射，不能强求fixture字面ID；指纹必须由真实主进程流程生成。"
+    ],
+    "contamination_note": "公开开发集：本任务由已参与开发的AI依据已可见资料起草，可用于修正规范与调试；不是未见留出或人审金标，后续不能改名当盲测。"
+  },
+  {
+    "case_id": "DEV-11",
+    "status": "draft_pending_human_review",
+    "annotation_status": "ai_authored_draft",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "B1",
+        "description": "识别来源是2026-09-09历史快照，相对于本题as_of已是昨天，不能声明当前有效。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-DP-RAW: /observed_at；用户请求"
+      },
+      {
+        "id": "B2",
+        "description": "指出完整菜单详情需到App查看；网页中的推荐菜列表不能当完整菜单。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-DP-RAW: /text；锚点“去大众点评App查看菜单详情”"
+      },
+      {
+        "id": "B3",
+        "description": "明确该快照未覆盖节假日与叠加规则，不能输出允许/禁止的最终商家结论。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-DP-RAW: /text；限定所给全文"
+      },
+      {
+        "id": "B4",
+        "description": "至少保留有依据的门店身份与券面值50/售价47的历史信息，并列出待补资料。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-DP-RAW: /text；用户请求"
+      },
+      {
+        "id": "B5",
+        "description": "停止在本题只读范围，不重试绕过验证、不生成购买/预约请求。",
+        "check_at": "tool_trace_and_final_visible_output",
+        "oracle_source": "用户请求；独立命令日志"
+      }
+    ],
+    "forbidden_claims": [
+      "当前完整菜单已经取得",
+      "726道推荐菜就是完整可点菜单",
+      "节假日一定通用且可以叠加",
+      "昨天价格已自动核实为今天价格",
+      "为了完成自行破解验证"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "快照采集于2026-09-09T04:40:56.588136+00:00。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/observed_at",
+        "derivation": null
+      },
+      {
+        "id": "F2",
+        "proposition": "原文提示去大众点评App查看菜单详情。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；锚点“去大众点评App查看菜单详情”",
+        "derivation": null
+      },
+      {
+        "id": "F3",
+        "proposition": "原文的726数量属于网友推荐菜栏目。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；锚点“网友推荐(726)”及“全部726道推荐菜”",
+        "derivation": null
+      },
+      {
+        "id": "F4",
+        "proposition": "所给快照没有提供代金券的节假日和叠加条款。",
+        "source_id": "SRC-DP-RAW",
+        "locator": "/text；限定所给全文的缺失性检查",
+        "derivation": null
+      }
+    ],
+    "accepted_variations": [
+      "可建议用户自行在App补充规则截图或文字；不要求再扫码，因为本题没有新验证码事件。"
+    ],
+    "contamination_note": "公开开发集：本任务由已参与开发的AI依据已可见资料起草，可用于修正规范与调试；不是未见留出或人审金标，后续不能改名当盲测。"
+  },
+  {
+    "case_id": "DEV-12",
+    "status": "draft_pending_human_review",
+    "annotation_status": "ai_authored_draft",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "B1",
+        "description": "页面可见文本正确读为The Tea Lounge、2 Guests、Fri Sep 11、3:00 pm。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-BOOK-RAW: /text"
+      },
+      {
+        "id": "B2",
+        "description": "年份2026只能归因于预填URL的start_date，不能称页面可见日期控件独立显示年份。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-BOOK-RAW: /url,/text"
+      },
+      {
+        "id": "B3",
+        "description": "区分参数预览、空位查询、预约成功；不能由Find availability按钮或页面显示推断有空位。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-BOOK-RAW: /text；用户请求"
+      },
+      {
+        "id": "B4",
+        "description": "本题无任何新增网页导航/查询/cart/锁位/提交；由独立传输日志核验，不能仅信回复。",
+        "check_at": "transport_trace",
+        "oracle_source": "用户请求；独立请求日志"
+      },
+      {
+        "id": "B5",
+        "description": "对历史原轮是否拦截成功，只能在人工核对对应保护网络日志与原授权后作结论；不能只信派生protected字段。",
+        "check_at": "final_visible_output",
+        "oracle_source": "SRC-BOOK-RAW: /fields；对应独立原始保护网络日志及原用户授权待人审"
+      }
+    ],
+    "forbidden_claims": [
+      "页面控件显示了2026年",
+      "已经查询到2人15:00有位",
+      "预约已完成",
+      "没点击最后提交就证明没有任何业务副作用",
+      "单凭booking_preview.protected=true证明所有业务请求都被拦截"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "原始可见文本显示2 Guests。",
+        "source_id": "SRC-BOOK-RAW",
+        "locator": "/text；锚点“2 Guests”",
+        "derivation": null
+      },
+      {
+        "id": "F2",
+        "proposition": "原始可见文本显示Fri Sep 11，没有独立年份。",
+        "source_id": "SRC-BOOK-RAW",
+        "locator": "/text；锚点“Fri Sep 11”",
+        "derivation": null
+      },
+      {
+        "id": "F3",
+        "proposition": "原始可见文本显示3:00 pm。",
+        "source_id": "SRC-BOOK-RAW",
+        "locator": "/text；锚点“3:00 pm”",
+        "derivation": null
+      },
+      {
+        "id": "F4",
+        "proposition": "原始URL预填参数start_date为2026-09-11。",
+        "source_id": "SRC-BOOK-RAW",
+        "locator": "/url；query.start_date",
+        "derivation": null
+      },
+      {
+        "id": "F5",
+        "proposition": "原始可见文本包含Find availability按钮文字，不包含空位结果。",
+        "source_id": "SRC-BOOK-RAW",
+        "locator": "/text；锚点“Find availability”及所给全文",
+        "derivation": null
+      }
+    ],
+    "accepted_variations": [
+      "可以说“参数已按历史快照核对，未能据此证明空位”；对于原轮无副作用结论应明确待网络/授权核对。"
+    ],
+    "contamination_note": "公开开发集：本任务由已参与开发的AI依据已可见资料起草，可用于修正规范与调试；不是未见留出或人审金标，后续不能改名当盲测。"
+  }
+]
