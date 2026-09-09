@@ -172,7 +172,7 @@ def _future_evidence_issues(review: dict[str, Any], packet: dict[str, Any]) -> l
                 try:
                     for part in [*parts, None]:
                         if isinstance(value, dict):
-                            for key in ("at", "captured_at", "created_at", "finished_at"):
+                            for key in ("at", "captured_at", "observed_at", "created_at", "finished_at"):
                                 if value.get(key):
                                     try:
                                         _time(value[key])
