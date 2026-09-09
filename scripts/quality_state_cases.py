@@ -1,4 +1,4 @@
-"""Known-dev imported-state workflows; no model replacement or scoring.
+"""Declared imported-state workflows; no model replacement or scoring.
 
 The imported draft is explicitly synthetic. Only subsequent messages and draft
 decisions traverse the normal API and real workflow. This does not measure how
@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -32,6 +33,50 @@ from plango_harness.providers.world import Supply, WorldProviderError
 from sqlalchemy.engine import make_url
 
 FIXTURE = Path(__file__).resolve().parents[1] / "eval/quality-v1/runtime-fixtures.dev.json"
+ROOT = FIXTURE.parents[2]
+LEGACY_DRIVERS = {"DEV-05": "edit", "DEV-06": "edit", "DEV-09": "save_restart", "DEV-10": "message_recovery"}
+
+
+def case_driver(case):
+    case_id = case.get("case_id")
+    if not isinstance(case_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", case_id):
+        raise ValueError("invalid_quality_case_id")
+    driver = (case.get("environment") or {}).get("driver") or LEGACY_DRIVERS.get(case_id)
+    if driver not in {"edit", "save_restart", "message_recovery", "message_uncertain"}:
+        raise ValueError("unsupported_imported_case_driver")
+    return driver
+
+
+def load_runtime_fixture(fixture=None, fixture_provenance=None):
+    """Resolve the declared value, without inferring any desired post-task state."""
+    inline = fixture is not None
+    if inline and (not isinstance(fixture, dict) or not isinstance(fixture_provenance, dict)):
+        raise ValueError("inline_fixture_requires_source_path_and_pointer")
+    provenance = fixture_provenance or {"path": str(FIXTURE.relative_to(ROOT)), "json_pointer": ""}
+    if not isinstance(provenance.get("path"), str) or not isinstance(provenance.get("json_pointer"), str):
+        raise ValueError("fixture_source_path_and_pointer_required")
+    path = (ROOT / provenance["path"]).resolve()
+    if not path.is_relative_to(ROOT) or path.suffix != ".json":
+        raise ValueError("fixture_source_must_be_repository_json")
+    raw = path.read_bytes()  # A missing file is an error, never fabricated provenance.
+    value = json.loads(raw)
+    pointer = provenance["json_pointer"]
+    if pointer and not pointer.startswith("/"):
+        raise ValueError("invalid_fixture_json_pointer")
+    for token in pointer.split("/")[1:] if pointer else []:
+        if re.search(r"~(?![01])", token) or isinstance(value, list) and not re.fullmatch(r"0|[1-9]\d*", token):
+            raise ValueError("invalid_fixture_json_pointer")
+        token = token.replace("~1", "/").replace("~0", "~")
+        value = value[int(token)] if isinstance(value, list) else value[token]
+    encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    if not isinstance(value, dict) or inline and encoded != json.dumps(fixture, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode():
+        raise ValueError("inline_fixture_does_not_match_declared_source")
+    if value.get("route", {}).get("mode") != "walking" or type(value["route"].get("cost_per_person")) not in {int, float} or value["route"]["cost_per_person"] != 0:
+        raise ValueError("imported_fixture_only_supports_declared_zero_fare_walking_route")
+    if value.get("initial_draft", {}).get("save_state") != "not_saved" or value["initial_draft"].get("business_completed") is not False:
+        raise ValueError("imported_fixture_requires_unsaved_nonbusiness_initial_state")
+    return value, {"kind": "inline_verified" if inline else "file", "path": str(path.relative_to(ROOT)), "json_pointer": pointer,
+                   "whole_file_sha256": hashlib.sha256(raw).hexdigest(), "value_sha256": hashlib.sha256(encoded).hexdigest()}
 
 
 def install_world(runtime, case_dir, *, place, evidence, origin, fixture):
@@ -85,7 +130,8 @@ def install_world(runtime, case_dir, *, place, evidence, origin, fixture):
             raise WorldProviderError("quality_fixture_route_missing")
         value = {**fixture["route"], "source": "simulated", "recommended": "walking", "destination_place_id": place.place_id}
         proof = Evidence(evidence_id="quality-route:" + place.place_id, source="simulated",
-                         source_ref="fixture://quality-v1/imported-state-route", claim="显式受控单程步行路线，非实时高德",
+                         source_ref="fixture://quality-v1/imported-state-route" if evidence.source_ref == "fixture://quality-v1/imported-state" else evidence.source_ref + "/route",
+                         claim="显式受控单程步行路线，非实时高德",
                          payload=value, observed_at=evidence.observed_at, expires_at=evidence.expires_at)
         return value, proof
 
@@ -103,7 +149,7 @@ def install_world(runtime, case_dir, *, place, evidence, origin, fixture):
     return log_path
 
 
-async def seed(runtime, case, case_dir, *, user_id="desktop", browser_session_id=None):
+async def seed(runtime, case, case_dir, *, user_id="desktop", browser_session_id=None, fixture=None, fixture_provenance=None):
     """Import a declared unsaved initial draft, then produce a real review pause."""
     case_dir = Path(case_dir).resolve()
     database_path = make_url(runtime.settings.database_url).database
@@ -113,12 +159,11 @@ async def seed(runtime, case, case_dir, *, user_id="desktop", browser_session_id
         raise ValueError("quality_seed_requires_case_owned_sqlite_data_dir")
     if not runtime._started or runtime.graph is None:
         raise ValueError("quality_seed_requires_started_runtime")
-    if case["case_id"] not in {"DEV-05", "DEV-06", "DEV-09", "DEV-10"}:
-        raise ValueError("unsupported_imported_case")
+    driver = case_driver(case)
     manifest_path = case_dir / "imported-state.json"
     if manifest_path.exists():
         raise ValueError("quality_seed_refuses_overwriting_existing_attempt")
-    fixture = json.loads(FIXTURE.read_text())
+    fixture, provenance = load_runtime_fixture(fixture, fixture_provenance)
     original = case["environment"]["initial_state"]
     raw_spec = dict(original["spec"])
     raw_place = raw_spec.pop("selected_poi")
@@ -132,7 +177,9 @@ async def seed(runtime, case, case_dir, *, user_id="desktop", browser_session_id
     origin = Location.model_validate(fixture["origin"])
     place = PlaceCandidate(place_id=place_id, name=raw_place["name"], address=raw_place["address"],
                            **fixture["place"], evidence_ids=[source_id])
-    evidence = Evidence(evidence_id=source_id, source="simulated", source_ref="fixture://quality-v1/imported-state",
+    legacy_source = provenance["path"] == str(FIXTURE.relative_to(ROOT)) and not provenance["json_pointer"]
+    source_ref = "fixture://quality-v1/imported-state" if legacy_source else "fixture://" + provenance["path"] + "#" + provenance["json_pointer"]
+    evidence = Evidence(evidence_id=source_id, source="simulated", source_ref=source_ref,
                         claim="明确合成初态：门店身份已选择；完整餐费、供给及优惠完整规则未知。",
                         payload={**place.model_dump(mode="json"), "imported_offer": raw_offer, "fixture_kind": "explicit_synthetic_initial_state"},
                         observed_at=now, expires_at=now + timedelta(days=3), confidence=1)
@@ -164,6 +211,7 @@ async def seed(runtime, case, case_dir, *, user_id="desktop", browser_session_id
     state["clarification"] = draft_review(state)
     state["interrupt_id"] = state["clarification"]["interrupt_id"]
     manifest_path.write_text(json.dumps({"case_id": case["case_id"], "run_id": run_id,
+                                        "driver": driver, "fixture_provenance": provenance,
                                         "status": "import_started", "environment_level": "imported_state_workflow"}, ensure_ascii=False) + "\n")
     install_world(runtime, case_dir, place=place, evidence=evidence, origin=origin, fixture=fixture)
     await runtime.runs.create_with_event(run_id, user_id, seed_text)
@@ -179,9 +227,9 @@ async def seed(runtime, case, case_dir, *, user_id="desktop", browser_session_id
         raise ValueError("quality_initial_review_pause_not_established")
     aliases = {original["run_id"]: run_id, raw_place["id"]: place_id,
                raw_offer["offer_id"]: reference.model_dump(mode="json"), "initial_plan_version": version}
-    manifest = {"case_id": case["case_id"], "status": "imported_unsaved_review", "environment_level": "imported_state_workflow",
-                "fixture_path": str(FIXTURE.relative_to(FIXTURE.parents[2])),
-                "fixture_sha256": hashlib.sha256(FIXTURE.read_bytes()).hexdigest(),
+    manifest = {"case_id": case["case_id"], "driver": driver, "status": "imported_unsaved_review", "environment_level": "imported_state_workflow",
+                "fixture_path": provenance["path"], "fixture_sha256": provenance["whole_file_sha256"],
+                "fixture_value_sha256": provenance["value_sha256"], "fixture_json_pointer": provenance["json_pointer"], "fixture_provenance": provenance,
                 "run_id": run_id, "aliases": aliases, "imported_at": datetime.now(timezone.utc).isoformat(),
                 "clock": {"fixture_observed_at": case["as_of"], "fixture_expires_at": evidence.expires_at.isoformat(),
                           "fixture_scope": "synthetic observation uses the registered case business clock", "runtime_time": "database leases, timeouts, call logs remain real wall clock"},
@@ -206,8 +254,10 @@ def wait_for_stop(client, run_id, timeout=320):
 
 def run_edits(client, case, run_id, collect_checkpoint, *, timeout=320):
     """Send only the preregistered natural-language turns; never inject target fields."""
-    if case["case_id"] not in {"DEV-05", "DEV-06"}:
-        raise ValueError("run_edits_only_supports_DEV05_DEV06")
+    if case_driver(case) != "edit":
+        raise ValueError("run_edits_requires_edit_driver")
+    if not case["agent_input"]["user_turns"]:
+        raise ValueError("edit_driver_requires_preregistered_input")
     turns = []
     for index, turn in enumerate(case["agent_input"]["user_turns"], 1):
         response = client.post(f"/api/v1/runs/{run_id}/messages", json={"text": turn["message"]})

@@ -34,7 +34,7 @@ from check_live_task_quality import usage_of  # noqa: E402
 from migrate_config import parse_config  # noqa: E402
 from plango.app import create_app  # noqa: E402
 from plango.settings import DesktopSettings  # noqa: E402
-from quality_state_cases import run_edits, seed  # noqa: E402
+from quality_state_cases import case_driver, run_edits, seed  # noqa: E402
 
 DATA = ROOT / "eval/quality-v1"
 STATE_CASES = {"DEV-05", "DEV-06", "DEV-09", "DEV-10"}
@@ -157,13 +157,13 @@ def business_clock(runtime, case, observed_at=None):
                "real_clocks": ["SQL leases", "model timeout", "run deadline", "monotonic timers", "capture timestamps"]}
 
 
-def install_budget(runtime, case_id, control, expected_sha, case_ids, log):
+def install_budget(runtime, case_id, control, expected_sha, case_ids, log, *, manifest_fn=None):
     original = runtime.model._invoke
     calls = []
 
     async def invoke(awaitable, *, timeout):
         reason = None
-        if digest(manifest(case_ids)) != expected_sha:
+        if digest(manifest_fn() if manifest_fn else manifest(case_ids)) != expected_sha:
             reason = "source_drift"
         elif len(control["calls"]) >= MAX_BATCH_CALLS or control["reported_tokens"] >= MAX_BATCH_REPORTED_TOKENS:
             reason = "batch_limit"
@@ -172,7 +172,7 @@ def install_budget(runtime, case_id, control, expected_sha, case_ids, log):
         if reason:
             if hasattr(awaitable, "close"):
                 awaitable.close()
-            control["stop"] = reason
+            control["case_stop" if reason == "case_request_limit" else "stop"] = reason
             raise RuntimeError("quality_" + reason)
         row = {"case_id": case_id, "invocation": len(calls) + 1, "started_at": datetime.now(timezone.utc).isoformat()}
         calls.append(row)
@@ -283,7 +283,7 @@ def packet_observation(case, packets):
     if text is None:
         text = json.dumps(payload, ensure_ascii=False, indent=2)
     # This is an encountered replay document, never a fresh live merchant page.
-    title = "冻结历史资料" if case["scenario_origin"] == "real_snapshot_derived" else "明确提供的受控资料"
+    title = payload.get("title") or ("冻结历史资料" if case["scenario_origin"] == "real_snapshot_derived" else "明确提供的受控资料")
     source_url = packet.get("source_url") or payload.get("url") or f"https://quality-fixture.invalid/{case['case_id']}"
     return {"url": source_url, "title": title, "text": text, "tables": [], "elements": [],
             "observed_at": packet.get("observed_at") or case.get("as_of") or datetime.now(timezone.utc).isoformat(),
@@ -296,7 +296,7 @@ def drive(client, rid, observation, session_id, case, control, directory, collec
     deadline = time.monotonic() + 320
     while time.monotonic() < deadline:
         snapshot = client.get(f"/api/v1/runs/{rid}").json()
-        if control["stop"]:
+        if control["stop"] or control.get("case_stop"):
             collect("final", snapshot)
             return "budget_exhausted"
         if snapshot.get("phase") in TERMINAL:
@@ -312,7 +312,7 @@ def drive(client, rid, observation, session_id, case, control, directory, collec
             op = command["operation"]
             allowed = op in {"extract", "snapshot", "read_page", "extract_tables", "current", "scroll"} or (
                 op in {"navigate", "open_tab"} and command["arguments"].get("url") == observation["url"])
-            if case["case_id"] == "DEV-12" and op in {"navigate", "open_tab"}:
+            if (case["case_id"] == "DEV-12" or case.get("environment", {}).get("allow_navigation") is False) and op in {"navigate", "open_tab"}:
                 allowed = False
             result = {"command_id": command["command_id"], "browser_session_id": session_id, "ok": allowed,
                       "outcome": "observed" if allowed else "blocked"}
@@ -341,10 +341,13 @@ def drive(client, rid, observation, session_id, case, control, directory, collec
     return "timeout"
 
 
-def collect_case(case, packets, settings, directory, control, source_sha, case_ids):
+def collect_case(case, packets, settings, directory, control, source_sha, case_ids, *, manifest_fn=None, fixture=None, fixture_provenance=None, desktop_edits=False):
     token, browser_session = uuid.uuid4().hex, uuid.uuid4().hex
     app = create_app(settings, token=token)
-    calls = install_budget(app.state.runtime, case["case_id"], control, source_sha, case_ids, directory / "model-calls.jsonl")
+    control["case_stop"] = None
+    calls = install_budget(app.state.runtime, case["case_id"], control, source_sha, case_ids, directory / "model-calls.jsonl", manifest_fn=manifest_fn)
+    driver = case.get("environment", {}).get("driver") or ("read" if case["case_id"] not in STATE_CASES else None)
+    driver = "read" if driver == "read" else case_driver(case)
     checkpoints = {}
     rid = None
     observation, relevant = packet_observation(case, packets)
@@ -378,16 +381,20 @@ def collect_case(case, packets, settings, directory, control, source_sha, case_i
                                "checkpoint": {"id": stage, "as_of": case.get("as_of"), "captured_at": captured}},
                        database_state=independent_state(directory / "runs.sqlite", rid))
             try:
-                if case["case_id"] in STATE_CASES:
-                    imported = server.call(seed(app.state.runtime, case, directory, user_id="desktop", browser_session_id=browser_session))
+                if driver != "read":
+                    imported = server.call(seed(app.state.runtime, case, directory, user_id="desktop", browser_session_id=browser_session,
+                                                fixture=fixture, fixture_provenance=fixture_provenance))
                     rid = imported["run_id"]
                     write(directory / "imported-initial.json", imported)
                     collect("initial", client.get(f"/api/v1/runs/{rid}").json())
-                    if case["case_id"] in {"DEV-05", "DEV-06"}:
+                    if driver == "edit" and not desktop_edits:
                         result = run_edits(client, case, rid, collect)
                         stop = result["stop_reason"]
                     else:
-                        config = {"case_id": case["case_id"], "run_id": rid, "backend_url": server.url,
+                        turns = case.get("agent_input", {}).get("user_turns", [])
+                        config = {"case_id": case["case_id"], "driver": driver, "message": turns[0]["message"] if turns else None,
+                                  "messages": [turn["message"] for turn in turns],
+                                  "run_id": rid, "backend_url": server.url,
                                   "backend_token": token, "browser_session_id": browser_session, "case_dir": str(directory),
                                   "client_data_dir": str(directory / "client"), "profile_dir": str(directory / "profile")}
                         write(directory / "desktop-config.json", config)
@@ -395,7 +402,7 @@ def collect_case(case, packets, settings, directory, control, source_sha, case_i
                             process = subprocess.Popen(["node", "scripts/quality_desktop_cases.cjs", str(directory / "desktop-config.json")],
                                                        cwd=ROOT, stdout=log, stderr=log)
                             try:
-                                process.wait(timeout=450)
+                                process.wait(timeout=60 + 330 * len(turns) if driver == "edit" else 450)
                             except subprocess.TimeoutExpired:
                                 process.terminate()
                                 process.wait(timeout=45)  # driver handles SIGTERM and closes its own Electron
@@ -407,8 +414,10 @@ def collect_case(case, packets, settings, directory, control, source_sha, case_i
                             stage = "desktop-" + checkpoint["id"]
                             envelope["checkpoint"].update(id=stage, as_of=case.get("as_of"))
                             export(stage, envelope, desktop=checkpoint)
+                        if driver == "edit" and result.get("stop_reason") not in {None, "script_finished"}:
+                            stop = result["stop_reason"]
                         collect("before_restart", client.get(f"/api/v1/runs/{rid}").json())
-                    level = "imported_state_workflow" if case["case_id"] in {"DEV-05", "DEV-06"} else "imported_state_Electron_API"
+                    level = "imported_state_workflow" if driver == "edit" and not desktop_edits else "imported_state_Electron_API"
                 else:
                     turns = case["agent_input"]["user_turns"]
                     if len(turns) != 1:
@@ -432,7 +441,7 @@ def collect_case(case, packets, settings, directory, control, source_sha, case_i
                     if not current.get("outcome"):
                         client.post(f"/api/v1/runs/{rid}/cancel")
     # No main/sibling service is touched; reopen only this case's API and database.
-    if case["case_id"] == "DEV-09" and rid and "before_restart" in checkpoints:
+    if driver == "save_restart" and rid and "before_restart" in checkpoints:
         with LocalAPI(create_app(settings, token=token)) as reopened:
             with httpx.Client(base_url=reopened.url, headers={"Authorization": "Bearer " + token}) as client:
                 snapshot = client.get(f"/api/v1/runs/{rid}").json()
@@ -440,7 +449,8 @@ def collect_case(case, packets, settings, directory, control, source_sha, case_i
                        "checkpoint": {"id": "after_restart", "as_of": case.get("as_of"), "captured_at": datetime.now(timezone.utc).isoformat()}},
                        database_state=independent_state(directory / "runs.sqlite", rid))
                 checkpoints["after_restart"]["scope"] = "actual_owned_backend_restart_desktop_closed"
-    result = {"case_id": case["case_id"], "trial_id": "first", "run_id": rid, "stop_reason": stop,
+    result = {"case_id": case["case_id"], "trial_id": "first", "run_id": rid, "stop_reason": "budget_exhausted" if control.get("case_stop") else stop,
+              "raw_stop_reason": stop, "collector_limit_reason": control.get("case_stop") or control["stop"],
               "environment_level": level, "clock": clock, "checkpoints": checkpoints,
               "model_invocations": len(calls), "reported_tokens": sum(c.get("usage", {}).get("total_tokens", 0) for c in calls),
               "usage_missing_invocations": sum(c.get("status") == "response" and c.get("usage_missing", False) for c in calls),

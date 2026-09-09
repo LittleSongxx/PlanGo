@@ -1,4 +1,4 @@
-// DEV-09/10 real desktop driver. The root runner owns the API, DB, model and gold.
+// Preregistered real desktop actions. The root runner owns the API, DB, model and gold.
 // Usage: node scripts/quality_desktop_cases.cjs PRIVATE_CONFIG.json
 // Never run this against the main desktop/profile or a non-loopback backend.
 const assert = require('node:assert/strict')
@@ -10,11 +10,87 @@ const { _electron } = require('playwright-core')
 
 const ROOT = resolve(__dirname, '..')
 const MESSAGE = '人数改为3人，其他不变'
+const LEGACY_DRIVERS = { 'DEV-05': 'edit', 'DEV-06': 'edit', 'DEV-09': 'save_restart', 'DEV-10': 'message_recovery' }
 const TERMINAL = new Set(['SUCCEEDED', 'FAILED', 'PARTIAL_FAILED', 'CANCELLED', 'INFEASIBLE'])
 const sleep = ms => new Promise(resolveSleep => setTimeout(resolveSleep, ms))
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 const inside = (parent, child) => child !== parent && child.startsWith(parent + sep)
 const jsonFile = (path, value) => writeFile(path, JSON.stringify(value, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
+
+function driverConfig(config, declaredCase) {
+  assert(typeof config.case_id === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(config.case_id), 'Invalid case_id')
+  const case_id = config.case_id.replace(/^DEV-?0?([0-9]+)$/, (_, id) => `DEV-${id.padStart(2, '0')}`)
+  const driver = config.driver || LEGACY_DRIVERS[case_id]
+  assert(['edit', 'save_restart', 'message_recovery', 'message_uncertain'].includes(driver), 'Unsupported desktop driver')
+  if (declaredCase) {
+    assert.equal(declaredCase.case_id, case_id, 'Declared case identity mismatch')
+    assert.equal(declaredCase.environment?.driver || LEGACY_DRIVERS[case_id], driver, 'Declared driver mismatch')
+  } else assert(LEGACY_DRIVERS[case_id], 'New cases require their private case-input.json declaration')
+  const message = config.message ?? (case_id === 'DEV-10' ? MESSAGE : undefined)
+  if (driver === 'edit') {
+    assert(declaredCase && Array.isArray(config.messages) && config.messages.length >= 1 && config.messages.length <= 2, 'Edit driver requires one or two declared messages')
+    assert(config.messages.every(text => typeof text === 'string' && text.trim() && text.length <= 10_000), 'Invalid declared edit message')
+    assert.deepEqual(config.messages, declaredCase.agent_input?.user_turns?.map(turn => turn.message), 'Edit messages must exactly match the preregistered sequence')
+  } else if (driver !== 'save_restart') {
+    assert(typeof message === 'string' && message.trim() && message.length <= 10_000, 'One explicit message is required')
+    if (declaredCase) {
+      assert.equal(declaredCase.agent_input?.user_turns?.length, 1, 'Message driver requires exactly one declared user input')
+      assert.equal(declaredCase.agent_input.user_turns[0].message, message, 'Message must equal the preregistered user input')
+    }
+  }
+  return { ...config, case_id, driver, message }
+}
+
+function permittedMessage(config, payload, identity) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false
+  const { request_fingerprint, ...body } = payload
+  return payload.text === config.message && typeof payload.request_id === 'string' && /^[A-Za-z0-9:_-]{1,200}$/.test(payload.request_id)
+    && typeof request_fingerprint === 'string' && /^[a-f0-9]{64}$/.test(request_fingerprint) && hash(body) === request_fingerprint
+    && Object.keys(payload).every(key => ['request_id', 'request_fingerprint', 'text', 'location_context'].includes(key))
+    && (!identity || identity.request_id === payload.request_id && identity.request_fingerprint === request_fingerprint)
+}
+
+function permittedSave(payload, review) {
+  return !!review && payload?.decision === 'save' && Object.keys(payload).every(key => ['decision', 'interrupt_id', 'plan_id', 'plan_version'].includes(key))
+    && ['interrupt_id', 'plan_id', 'plan_version'].every(key => payload[key] === review[key])
+}
+
+function messageSequence(config) {
+  const messages = config.driver === 'edit' ? config.messages : [config.message]
+  const entries = new Map(), accepted = new Set()
+  let armed = config.driver === 'edit' ? -1 : 0
+  return {
+    arm(index) {
+      assert(config.driver === 'edit' && Number.isInteger(index) && index === armed + 1 && index < messages.length, 'Edit messages must be armed in order')
+      assert(index === 0 || accepted.has(index - 1), 'Previous scripted input has no matching real acceptance')
+      armed = index
+    },
+    permit(payload) {
+      const previous = entries.get(payload?.request_id)
+      const index = previous?.index ?? armed
+      if (index < 0 || !messages[index] || (!previous && [...entries.values()].some(item => item.index === index))) return null
+      if (!permittedMessage({ message: messages[index] }, payload, previous)) return null
+      const entry = previous || { index, request_id: payload.request_id, request_fingerprint: payload.request_fingerprint }
+      entries.set(entry.request_id, entry)
+      return entry
+    },
+    accept(entry, response, status) {
+      if (status !== 202 || response?.accepted !== true || response.run_id !== config.run_id
+        || response.request_id !== entry.request_id || response.request_fingerprint !== entry.request_fingerprint) return false
+      accepted.add(entry.index)
+      return true
+    }
+  }
+}
+
+function permittedWrite(config, method, url, payload, sequence, review) {
+  if (method !== 'POST' || url.search) return null
+  const runPath = `/api/v1/runs/${encodeURIComponent(config.run_id)}`
+  if (config.driver === 'save_restart') return url.pathname === runPath + '/draft-decision' && permittedSave(payload, review) ? { kind: 'save' } : null
+  if (!['edit', 'message_recovery', 'message_uncertain'].includes(config.driver) || url.pathname !== runPath + '/messages') return null
+  const identity = sequence.permit(payload)
+  return identity ? { kind: 'message', identity } : null
+}
 
 function comparable(snapshot) {
   const state = snapshot.state || {}
@@ -35,9 +111,10 @@ function childEnvironment(config, proxyOrigin) {
     OMP_NUM_THREADS: '1', OPENBLAS_NUM_THREADS: '1', NODE_USE_ENV_PROXY: '0' }
 }
 
-async function makeProxy(config, result) {
+async function makeProxy(config, result, review) {
   const counts = result.transport_counts
-  let lookupBroken = false, dropNext = config.case_id === 'DEV-10', requestIdentity = null
+  let lookupBroken = false, dropNext = ['message_recovery', 'message_uncertain'].includes(config.driver)
+  const sequence = messageSequence(config)
   const sockets = new Set(), upstreams = new Set()
   const messagePath = `/api/v1/runs/${encodeURIComponent(config.run_id)}/messages`
   const savePath = `/api/v1/runs/${encodeURIComponent(config.run_id)}/draft-decision`
@@ -56,33 +133,39 @@ async function makeProxy(config, result) {
       const chunks = []; let size = 0
       for await (const chunk of request) { size += chunk.length; if (size > 1_000_000) throw new Error('oversize_request'); chunks.push(chunk) }
       const body = Buffer.concat(chunks)
+      let requestIdentity = null
       if (!['GET', 'HEAD'].includes(method)) {
         let payload; try { payload = JSON.parse(body.toString()) } catch { payload = {} }
-        const permitted = config.case_id === 'DEV-09' ? savePost && payload.decision === 'save'
-          : messagePost && payload.text === MESSAGE && typeof payload.request_id === 'string' && typeof payload.request_fingerprint === 'string' && !payload.image
-            && (!requestIdentity || requestIdentity.request_id === payload.request_id && requestIdentity.request_fingerprint === payload.request_fingerprint)
+        const permitted = permittedWrite(config, method, url, payload, sequence, review)
         if (!permitted) { counts.unexpected_write_attempts++; response.writeHead(403, { 'content-type': 'application/json' }).end('{"detail":"quality_driver_write_scope"}'); return }
-        if (messagePost) { counts.forwarded_message_posts++; requestIdentity ||= { request_id: payload.request_id, request_fingerprint: payload.request_fingerprint } }
+        if (messagePost) { counts.forwarded_message_posts++; requestIdentity = permitted.identity }
         if (savePost) counts.forwarded_draft_saves++
       }
       if (lookup && lookupBroken) { counts.injected_lookup_503++; response.writeHead(503, { 'content-type': 'application/json' }).end('{"detail":"controlled_lookup_outage"}'); return }
       if (lookup) counts.forwarded_lookups++
       const upstream = http.request(url, { method, headers: { ...request.headers, host: new URL(config.backend_url).host } }, incoming => {
-        if (messagePost && dropNext) {
+        if (messagePost) {
           const bytes = []
           incoming.on('data', chunk => bytes.push(chunk))
           incoming.on('end', () => {
             let accepted; try { accepted = JSON.parse(Buffer.concat(bytes).toString()) } catch { accepted = null }
-            if (incoming.statusCode === 202 && accepted?.accepted === true && accepted.run_id === config.run_id
-              && accepted.request_id === requestIdentity.request_id && accepted.request_fingerprint === requestIdentity.request_fingerprint) {
-              result.acceptance = { ...requestIdentity, run_id: accepted.run_id, upstream_http_status: incoming.statusCode, accepted: true, replayed: accepted.replayed === true }
+            const valid = sequence.accept(requestIdentity, accepted, incoming.statusCode)
+            const receipt = { script_step: requestIdentity.index + 1, request_id: requestIdentity.request_id, request_fingerprint: requestIdentity.request_fingerprint,
+              run_id: accepted?.run_id || null, upstream_http_status: incoming.statusCode, accepted: valid, replayed: accepted?.replayed === true, at: new Date().toISOString() }
+            ;(result.message_responses ||= []).push(receipt)
+            if (valid) {
+              ;(result.acceptances ||= []).push(receipt)
+              result.acceptance = receipt // Legacy single-message evidence field.
+            }
+            if (valid && dropNext) {
               counts.accepted_responses_dropped++; lookupBroken = true; dropNext = false
               result.driver_actions.push({ action: 'drop_first_real_accepted_response', at: new Date().toISOString() })
-              response.destroy()
-            } else {
-              result.fault_not_injected = { upstream_http_status: incoming.statusCode || null, reason: 'Expected a real matching 202 acceptance before dropping a response' }
-              response.writeHead(incoming.statusCode || 502, incoming.headers); response.end(Buffer.concat(bytes))
+              response.destroy(); return
             }
+            if (!valid && dropNext) {
+              result.fault_not_injected = { upstream_http_status: incoming.statusCode || null, reason: 'Expected a real matching 202 acceptance before dropping a response' }
+            }
+            response.writeHead(incoming.statusCode || 502, incoming.headers); response.end(Buffer.concat(bytes))
           })
           incoming.on('error', () => response.destroy())
         } else { response.writeHead(incoming.statusCode || 502, incoming.headers); incoming.pipe(response) }
@@ -97,7 +180,7 @@ async function makeProxy(config, result) {
   })
   server.on('connection', socket => { sockets.add(socket); socket.on('close', () => sockets.delete(socket)) })
   await new Promise((resolveListen, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolveListen) })
-  return { origin: `http://127.0.0.1:${server.address().port}`, recover: () => { lookupBroken = false },
+  return { origin: `http://127.0.0.1:${server.address().port}`, armEdit: index => sequence.arm(index), recover: () => { assert.equal(config.driver, 'message_recovery'); lookupBroken = false },
     close: async () => {
       // Closing downstream sockets does not close the API's long-lived SSE
       // responses. Own and terminate both halves before declaring cleanup done.
@@ -135,7 +218,7 @@ import(pathToFileURL(${JSON.stringify(join(ROOT, 'out/main/index.js'))}).href);
 }
 
 async function runDriver(config) {
-  const result = { schema: 'plango.quality-desktop.v1', case_id: config.case_id, run_id: config.run_id, started_at: new Date().toISOString(),
+  const result = { schema: 'plango.quality-desktop.v1', case_id: config.case_id, driver: config.driver, completion_scope: 'driver_actions_only', run_id: config.run_id, started_at: new Date().toISOString(),
     status: 'running', driver_actions: [], checkpoints: [], transport_counts: { message_post_attempts: 0, forwarded_message_posts: 0, draft_save_attempts: 0, forwarded_draft_saves: 0,
       lookup_attempts: 0, forwarded_lookups: 0, injected_lookup_503: 0, accepted_responses_dropped: 0, unexpected_write_attempts: 0, create_run_attempts: 0 },
     backend_restarted: false, desktop_restarted: false, cleanup: {}, limitations: ['The root runner must independently inspect persisted DB state and restart the backend; this driver never sets completion state.'] }
@@ -226,7 +309,7 @@ async function runDriver(config) {
       const people = page.getByLabel('同行人数', { exact: true })
       return await people.count() === 1 && await people.inputValue() === String(run.state.trip_spec.party_size)
     })
-    const reason = String(run.state?.reason || '').replace(/\s+/g, '')
+    const reason = String(run.state?.clarification?.question || run.state?.browser_wait?.message || run.state?.reason || '').replace(/\s+/g, '')
     if (reason) await wait('current_summary_in_ui', async () => (await page.locator('[aria-label="对话记录"]').innerText()).replace(/\s+/g, '').includes(reason))
   }
   try {
@@ -236,11 +319,45 @@ async function runDriver(config) {
     assert(!(initial.state?.action_results || []).some(action => ['RUNNING', 'UNKNOWN'].includes(action.status)), 'Seed must have no uncertain actions')
     assert(initial.draft_review && !initial.outcome, 'Seed must be a real unsaved reviewable draft')
     assert.equal(initial.draft_review.scope, 'draft_ready')
-    proxy = await makeProxy(config, result)
+    proxy = await makeProxy(config, result, initial.draft_review)
     await openDesktop('initial')
     await wait('real_draft_save_button', async () => await page.getByRole('button', { name: '保存草案', exact: true }).isVisible())
     await capture('initial-reviewable-draft')
-    if (config.case_id === 'DEV-09') {
+    if (config.driver === 'edit') {
+      result.turn_results = []; result.stop_reason = 'script_finished'
+      for (const [index, message] of config.messages.entries()) {
+        const before = await snapshot()
+        proxy.armEdit(index)
+        await page.getByRole('textbox', { name: '任务输入', exact: true }).fill(message)
+        await page.getByRole('button', { name: '发送消息', exact: true }).click()
+        record('send_preregistered_edit', { script_step: index + 1 })
+        await wait('edit_acceptance_response', async () => result.message_responses?.some(row => row.script_step === index + 1))
+        const receipt = result.message_responses.find(row => row.script_step === index + 1)
+        if (!receipt.accepted) {
+          await capture(`t${index + 1}`); result.stop_reason = 'input_not_accepted'; break
+        }
+        await wait('edit_delivery_retrieved', async () => !(await page.locator('[aria-label="消息发送状态"]').count()))
+        await wait('edit_actual_stop', async () => {
+          const run = await snapshot()
+          return !run.command_pending && run.event_seq > before.event_seq
+            && (Number(run.state?.turn_id) > Number(before.state?.turn_id || 1) || TERMINAL.has(run.phase))
+            && (run.draft_review || run.state?.clarification || run.state?.browser_wait || run.interrupt_id || TERMINAL.has(run.phase))
+        }, 330_000)
+        await waitUiSummary(await snapshot())
+        const current = await capture(`t${index + 1}`)
+        result.turn_results.push({ script_step: index + 1, request_id: receipt.request_id, request_fingerprint: receipt.request_fingerprint,
+          phase: current.phase, turn_id: current.state?.turn_id, draft_review: !!current.draft_review })
+        const blocked = current.state?.browser_wait ? 'unexpected_browser_wait'
+          : current.state?.clarification && !current.draft_review ? 'unscripted_clarification'
+            : current.interrupt_id && !current.draft_review ? 'unexpected_approval'
+              : TERMINAL.has(current.phase) && current.phase !== 'SUCCEEDED' ? 'product_failure'
+                : !current.draft_review && index < config.messages.length - 1 ? 'unexpected_stop_before_scripted_next_turn' : null
+        if (blocked) { result.stop_reason = blocked; record('stop_without_unscripted_answer', { reason: blocked }); break }
+      }
+      assert.equal(result.transport_counts.accepted_responses_dropped, 0)
+      assert.equal(result.transport_counts.injected_lookup_503, 0)
+      assert.equal(result.transport_counts.forwarded_draft_saves, 0)
+    } else if (config.driver === 'save_restart') {
       await page.getByRole('button', { name: '保存草案', exact: true }).click(); record('click_existing_save_draft')
       await wait('saved_draft_ready', async () => { const run = await snapshot(); return !run.command_pending && run.phase === 'SUCCEEDED' && run.state?.execution_outcome?.data?.scope === 'draft_ready' })
       await waitUiSummary(await snapshot())
@@ -254,24 +371,31 @@ async function runDriver(config) {
       assert.equal(result.transport_counts.forwarded_draft_saves, 1)
       assert.equal(result.transport_counts.message_post_attempts, 0)
     } else {
-      await page.getByRole('textbox', { name: '任务输入', exact: true }).fill(MESSAGE)
+      await page.getByRole('textbox', { name: '任务输入', exact: true }).fill(config.message)
       await page.getByRole('button', { name: '发送消息', exact: true }).click(); record('send_single_fixed_user_message')
       await wait('delivery_unconfirmed', async () => {
         if (result.fault_not_injected) throw new Error('fault_injection_not_observed')
         return result.transport_counts.accepted_responses_dropped === 1 && await page.getByRole('button', { name: '核对送达并取回', exact: true }).isVisible()
       })
       await capture('accepted-response-lost')
-      proxy.recover(); record('restore_receipt_lookup')
-      await page.getByRole('button', { name: '核对送达并取回', exact: true }).click(); record('click_existing_delivery_lookup')
-      await wait('original_delivery_retrieved', async () => !(await page.locator('[aria-label="消息发送状态"]').count()))
-      await wait('new_draft_or_terminal', async () => { const run = await snapshot(); return Number(run.state?.turn_id) > Number(initial.state?.turn_id || 1) && !run.command_pending && (!!run.draft_review || TERMINAL.has(run.phase)) }, 330_000)
-      await waitUiSummary(await snapshot())
-      const final = await capture('same-request-recovered')
-      result.recovery = { run_id_preserved: final.run_id === initial.run_id, before_turn: initial.state?.turn_id, after_turn: final.state?.turn_id,
-        before_party_size: initial.state?.trip_spec?.party_size, after_party_size: final.state?.trip_spec?.party_size, phase: final.phase }
+      if (config.driver === 'message_uncertain') {
+        record('leave_delivery_unconfirmed', { lookup_outage_preserved: true, recovery_clicked: false })
+        result.recovery = { performed: false, delivery_state: 'unconfirmed', lookup_outage_preserved: true }
+        assert.equal(result.transport_counts.forwarded_lookups, 0)
+      } else {
+        proxy.recover(); record('restore_receipt_lookup')
+        await page.getByRole('button', { name: '核对送达并取回', exact: true }).click(); record('click_existing_delivery_lookup')
+        await wait('original_delivery_retrieved', async () => !(await page.locator('[aria-label="消息发送状态"]').count()))
+        await wait('new_draft_or_terminal', async () => { const run = await snapshot(); return Number(run.state?.turn_id) > Number(initial.state?.turn_id || 1) && !run.command_pending && (!!run.draft_review || TERMINAL.has(run.phase)) }, 330_000)
+        await waitUiSummary(await snapshot())
+        const final = await capture('same-request-recovered')
+        result.recovery = { performed: true, run_id_preserved: final.run_id === initial.run_id, before_turn: initial.state?.turn_id, after_turn: final.state?.turn_id,
+          before_party_size: initial.state?.trip_spec?.party_size, after_party_size: final.state?.trip_spec?.party_size, phase: final.phase }
+        assert(result.transport_counts.forwarded_lookups > 0)
+      }
       assert.equal(result.transport_counts.forwarded_message_posts, 1, 'Lookup recovery must not resend the message')
       assert.equal(result.transport_counts.accepted_responses_dropped, 1)
-      assert(result.transport_counts.injected_lookup_503 > 0 && result.transport_counts.forwarded_lookups > 0)
+      assert(result.transport_counts.injected_lookup_503 > 0)
       assert.equal(result.transport_counts.forwarded_draft_saves, 0)
     }
     assert.equal(result.transport_counts.create_run_attempts, 0)
@@ -292,9 +416,7 @@ async function runDriver(config) {
 
 async function main() {
   assert.equal(process.argv.length, 3, 'Usage: node scripts/quality_desktop_cases.cjs CONFIG.json')
-  const config = JSON.parse(await readFile(resolve(process.argv[2]), 'utf8'))
-  config.case_id = String(config.case_id).replace(/^DEV-?0?([0-9]+)$/, (_, id) => `DEV-${id.padStart(2, '0')}`)
-  assert(['DEV-09', 'DEV-10'].includes(config.case_id))
+  let config = JSON.parse(await readFile(resolve(process.argv[2]), 'utf8'))
   const url = new URL(config.backend_url)
   assert(url.protocol === 'http:' && url.hostname === '127.0.0.1' && Number(url.port) >= 1024 && !['8011', '8012', '5432', '6379', '8799'].includes(url.port)
     && !url.username && !url.password && url.pathname === '/' && !url.search && !url.hash, 'Owned dynamic loopback API required')
@@ -302,6 +424,10 @@ async function main() {
   for (const name of ['case_dir', 'client_data_dir', 'profile_dir']) config[name] = resolve(config[name])
   assert(inside(join(ROOT, 'output'), config.case_dir), 'Private case_dir must be under this repository output/')
   assert(inside(config.case_dir, config.client_data_dir) && inside(config.case_dir, config.profile_dir) && config.client_data_dir !== config.profile_dir)
+  const caseInput = resolve(config.case_input_path || join(config.case_dir, 'case-input.json'))
+  assert(inside(config.case_dir, caseInput) && caseInput.endsWith('.json'), 'Case declaration must be private case-owned JSON')
+  const declaration = await readFile(caseInput, 'utf8').then(JSON.parse).catch(error => { if (error.code !== 'ENOENT') throw error; return null })
+  config = driverConfig(config, declaration?.case || declaration)
   assert(typeof config.backend_token === 'string' && config.backend_token.length >= 8 && typeof config.browser_session_id === 'string' && config.browser_session_id)
   assert(typeof config.run_id === 'string' && /^[a-zA-Z0-9:_-]+$/.test(config.run_id))
   for (const name of ['case_dir', 'client_data_dir', 'profile_dir']) { await mkdir(config[name], { recursive: true, mode: 0o700 }); assert.equal(await realpath(config[name]), config[name], 'Symlinked case resources are not allowed') }
@@ -320,4 +446,4 @@ async function main() {
   else { console.log(summary); process.exitCode = 1 }
 }
 if (require.main === module) main().catch(() => { console.error('Desktop case driver failed validation or could not preserve its private result; no existing result was overwritten.'); process.exitCode = 1 })
-module.exports = { childEnvironment, comparable, makeProxy, bootstrap }
+module.exports = { childEnvironment, comparable, makeProxy, bootstrap, driverConfig, permittedMessage, permittedSave, messageSequence, permittedWrite }

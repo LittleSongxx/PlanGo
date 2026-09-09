@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-09-09T13:42:24.354024+00:00",
+  "reviewer_type": "independent_ai",
+  "human_reviewed": false,
+  "authority": "explicit_user_instruction",
+  "instruction": "你帮我新开一个独立的子Agent代替我审核吧",
+  "reviewer_task": "/root/independent_quality_reviewer",
+  "reviewer_context": "fresh; no product implementation, past dev output, or case-authoring context supplied",
+  "supersedes": "The initial human-only execution gate is replaced by explicitly delegated independent AI gold and output review; no human_ui approval is synthesized.",
+  "report_scope": "30 new controlled acceptance cases; AI-reviewed percentages, not human-calibrated or real-merchant/website generalization.",
+  "product_unchanged": true,
+  "primary_attempt_rule": "One valid first attempt per case; retain failures. Product stays frozen through grading."
+}

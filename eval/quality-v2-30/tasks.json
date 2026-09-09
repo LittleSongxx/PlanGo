@@ -1,0 +1,1046 @@
+[
+  {
+    "case_id": "NEW-01",
+    "family": "reading",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:01",
+      "entity:河盐小馆"
+    ],
+    "source_ids": [
+      "NEW-S01"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "仅依据受控菜单，为9月11日19:00的两人用餐交付价格和规则核对卡；不执行商家操作。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "只用这份虚构菜单，给我和朋友做一张9月11日19:00到河盐小馆吃一套双人炖锅的核对卡：这套实际付多少、人均多少、标价多少、时间是否落在资料时段内，还有哪些要核实？"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-02",
+    "family": "reading",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:01",
+      "entity:河盐小馆"
+    ],
+    "source_ids": [
+      "NEW-S01"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "为两人20:30到店交付营业与套餐使用时段的冲突说明及可用时段建议。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我们改想9月11日20:30到河盐小馆，还是那套双人炖锅。请做一张时间检查单：到时还开门吗，套餐还在使用时段吗；如果只按资料改时间，最迟几点到？"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-03",
+    "family": "reading",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:02",
+      "entity:铜笺小戏院"
+    ],
+    "source_ids": [
+      "NEW-S02"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "从节目日历选出适合两位成年人18:30–20:00空档的完整场次，并计算总价和时长。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "9月11日我们两位成年人只有18:30到20:00有空。只根据铜笺小戏院这张虚构节目单，给出能完整看完的一场，写清起止时间、时长和两人总价。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-04",
+    "family": "reading",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:02",
+      "entity:铜笺小戏院"
+    ],
+    "source_ids": [
+      "NEW-S02"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "为三位成年人制作B长场的到场与观演时间线并计算总价。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我们三位成年人要看铜笺小戏院9月11日的B长场，计划提前15分钟到。请给一条“到场—开演—结束”的时间线，并算观看时长和三人总票价。只整理，不买票。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-05",
+    "family": "offers",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:03",
+      "entity:橙砾手作社"
+    ],
+    "source_ids": [
+      "NEW-S03"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "比较两人各做一次捏杯的A双人票与两张B单人票，交付金额比较卡。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "两个人都想在9月11日15:00去橙砾手作社各做一次捏杯。比较一套A和两张B，只看实际售价，给出总价、人均和差额，再列出还没写明的条件。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-06",
+    "family": "offers",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:03",
+      "entity:橙砾手作社"
+    ],
+    "source_ids": [
+      "NEW-S03"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "为三人各一次捏杯比较A+B与三张B，给出满足人数的优惠组合。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我们现在是三个人，每人只做一次捏杯，不买多余名额。按橙砾手作社这份资料，比较“一套A加一张B”和“三张B”，列购买份数、各项售价、总额和省多少钱。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-07",
+    "family": "offers",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:04",
+      "entity:榛影影像馆"
+    ],
+    "source_ids": [
+      "NEW-S04"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "交付双人照片所涉抵扣券和套餐的分口径比较，明确能计算与不能计算的成本。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我想拍双人照片，帮我把榛影影像馆的A券和B套餐做成比较卡。把实际售价、抵扣额或包含内容写清；资料够不够算A方案拍完总共花多少，也请明确。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-08",
+    "family": "offers",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "new-source:04",
+      "entity:榛影影像馆"
+    ],
+    "source_ids": [
+      "NEW-S04"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "核查用两张A覆盖B、最终只付158元的主张；证据不支持时给出明确限界。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我买两张79元的A券，拿200元抵扣去换168元的B套餐，是不是就能确定最后只花158元？请按榛影影像馆条款直接判断，别替我下单。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-09",
+    "family": "edits",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:05",
+      "entity:磁湾面馆"
+    ],
+    "source_ids": [
+      "NEW-S05"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "从明确受控未保存任务出发，通过真实自然语言编辑将人数和总预算更新，交付可审阅草稿。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "把这份未保存行程改成4人，总预算480元。其余都保持，包括已经选的磁湾面馆和双人面套餐；先别保存，也别替我确认套餐能供4人吃。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "edit",
+      "expected_stop": "draft_review",
+      "initial_state": {
+        "run_id": "fixture:new-09",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 2,
+          "visit_date": "2026-09-11",
+          "time_window_start": "18:30",
+          "duration_minutes": 120,
+          "budget": 300,
+          "per_person_budget": null,
+          "search_radius_km": 1,
+          "route_distance_km": 3,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:poi-new-s05",
+            "name": "磁湾面馆",
+            "address": "虚构磁湾路17号"
+          },
+          "selected_offer": {
+            "source_id": "NEW-S05",
+            "offer_id": "fixture:offer-new-s05",
+            "price": 148,
+            "face_value": 196,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "NEW-10",
+    "family": "edits",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:05",
+      "entity:磁湾面馆"
+    ],
+    "source_ids": [
+      "NEW-S05"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "使用两轮真实自然语言编辑仅更改日期、开始时间和时长，并保留已有选择和其他约束。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "把这份草稿改到周六，也就是2026年9月12日，19:00开始，停留90分钟。"
+        },
+        {
+          "message": "人数和预算都不改，保留磁湾面馆和原套餐，把修改后的草稿给我看，先不保存。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "edit",
+      "expected_stop": "draft_review",
+      "initial_state": {
+        "run_id": "fixture:new-10",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 2,
+          "visit_date": "2026-09-11",
+          "time_window_start": "18:30",
+          "duration_minutes": 120,
+          "budget": 300,
+          "per_person_budget": null,
+          "search_radius_km": 1,
+          "route_distance_km": 3,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:poi-new-s05",
+            "name": "磁湾面馆",
+            "address": "虚构磁湾路17号"
+          },
+          "selected_offer": {
+            "source_id": "NEW-S05",
+            "offer_id": "fixture:offer-new-s05",
+            "price": 148,
+            "face_value": 196,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "NEW-11",
+    "family": "edits",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:06",
+      "entity:星匣茶室"
+    ],
+    "source_ids": [
+      "NEW-S06"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "实际修改人数与人均预算，保留未确认的三人套餐并明确新增人数的适用性缺口。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "把人均上限从90元改成110元，不是总预算；人数改成4人。原来的星匣茶室和三人茶点先保留，告诉我还没确认能不能供4人用，别保存。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "edit",
+      "expected_stop": "draft_review",
+      "initial_state": {
+        "run_id": "fixture:new-11",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 3,
+          "visit_date": "2026-09-11",
+          "time_window_start": "18:30",
+          "duration_minutes": 120,
+          "budget": null,
+          "per_person_budget": 90,
+          "search_radius_km": 1,
+          "route_distance_km": 3,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:poi-new-s06",
+            "name": "星匣茶室",
+            "address": "虚构星舟街8号"
+          },
+          "selected_offer": {
+            "source_id": "NEW-S06",
+            "offer_id": "fixture:offer-new-s06",
+            "price": 198,
+            "face_value": 258,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "NEW-12",
+    "family": "edits",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:06",
+      "entity:星匣茶室"
+    ],
+    "source_ids": [
+      "NEW-S06"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "通过两轮编辑独立修改搜索半径及出行方式，验证路线距离不会被连带覆盖。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "搜索半径调到2公里，路线距离保留3公里。"
+        },
+        {
+          "message": "再把步行改成公交。其他都不变，保留星匣茶室和原茶点，给我看草稿，先别保存。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "edit",
+      "expected_stop": "draft_review",
+      "initial_state": {
+        "run_id": "fixture:new-12",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 3,
+          "visit_date": "2026-09-11",
+          "time_window_start": "18:30",
+          "duration_minutes": 120,
+          "budget": null,
+          "per_person_budget": 90,
+          "search_radius_km": 1,
+          "route_distance_km": 3,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:poi-new-s06",
+            "name": "星匣茶室",
+            "address": "虚构星舟街8号"
+          },
+          "selected_offer": {
+            "source_id": "NEW-S06",
+            "offer_id": "fixture:offer-new-s06",
+            "price": 198,
+            "face_value": 258,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "NEW-13",
+    "family": "routes",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:07",
+      "entity:银禾展厅"
+    ],
+    "source_ids": [
+      "NEW-S07"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "依据固定交通资料为18:35从纸桥站步行出发交付抵达时间和开场余量。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "9月11日18:35从纸桥站步行去银禾展厅看19点那场。只按这份虚构交通说明，给我路线卡：距离、预计到达、开场前余量、去哪个入口。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-14",
+    "family": "routes",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:07",
+      "entity:银禾展厅"
+    ],
+    "source_ids": [
+      "NEW-S07"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "比较18:40出发的步行可计算时间与缺少候车时间的公交方案，交付有依据的路线建议。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我9月11日18:40才到纸桥站，19点要在银禾展厅开场。步行和公交哪个更有依据？请把能算的时间写出来，不要把候车当作零分钟。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-15",
+    "family": "routes",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:08",
+      "entity:蜜轮焙坊"
+    ],
+    "source_ids": [
+      "NEW-S08"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "为使用轮椅的用户选择无阶路线，并计算19:30出发能否在停止取货前抵达。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我用轮椅，9月11日19:30从木页站出发去蜜轮焙坊，只走无台阶的路。请按资料做路线与取货时间核对卡。这里没有下过真实订单，不要写成已有订单。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-16",
+    "family": "routes",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "new-source:08",
+      "entity:蜜轮焙坊"
+    ],
+    "source_ids": [
+      "NEW-S08"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "判断轮椅用户19:45出发能否按现有无阶路线在20:00前到达，无法满足时说明缺口。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我用轮椅，只能走无台阶路线，9月11日19:45从木页站出发。你能根据这份资料保证20:00前到蜜轮焙坊取货吗？不要替我假设另有近路。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-17",
+    "family": "recovery",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:09",
+      "entity:琥珀汤铺"
+    ],
+    "source_ids": [
+      "NEW-S09"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "将该受控未保存任务通过真实API/Electron保存，记录保存回执后重启真实应用，再恢复同一原任务及完整选择；不生成新方案。",
+    "agent_input": {},
+    "environment": {
+      "driver": "save_restart",
+      "expected_stop": "draft_review",
+      "initial_state": {
+        "run_id": "fixture:new-17",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 2,
+          "visit_date": "2026-09-11",
+          "time_window_start": "18:30",
+          "duration_minutes": 120,
+          "budget": 260,
+          "per_person_budget": null,
+          "search_radius_km": 1,
+          "route_distance_km": 3,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:poi-new-s09",
+            "name": "琥珀汤铺",
+            "address": "虚构琥珀南路21号"
+          },
+          "selected_offer": {
+            "source_id": "NEW-S09",
+            "offer_id": "fixture:offer-new-s09",
+            "price": 158,
+            "face_value": 208,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "NEW-18",
+    "family": "recovery",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:09",
+      "entity:琥珀汤铺"
+    ],
+    "source_ids": [
+      "NEW-S09"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "发送一条真实编辑输入，在服务端实际返回HTTP 202接收后丢弃客户端响应，再用同一请求标识lookup恢复原任务；不得重发输入。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "把琥珀汤铺这份行程的开始时间改成19:20，结束时间随原120分钟顺延，其余不变。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "message_recovery",
+      "expected_stop": "draft_review",
+      "initial_state": {
+        "run_id": "fixture:new-18",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 2,
+          "visit_date": "2026-09-11",
+          "time_window_start": "18:30",
+          "duration_minutes": 120,
+          "budget": 260,
+          "per_person_budget": null,
+          "search_radius_km": 1,
+          "route_distance_km": 3,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:poi-new-s09",
+            "name": "琥珀汤铺",
+            "address": "虚构琥珀南路21号"
+          },
+          "selected_offer": {
+            "source_id": "NEW-S09",
+            "offer_id": "fixture:offer-new-s09",
+            "price": 158,
+            "face_value": 208,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "NEW-19",
+    "family": "recovery",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:10",
+      "entity:澄格织物工坊"
+    ],
+    "source_ids": [
+      "NEW-S10"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "真实保存并重启恢复澄格织物工坊的原任务，核验空值预算口径、选择标识和版本均保留。",
+    "agent_input": {},
+    "environment": {
+      "driver": "save_restart",
+      "expected_stop": "draft_review",
+      "initial_state": {
+        "run_id": "fixture:new-19",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 3,
+          "visit_date": "2026-09-11",
+          "time_window_start": "18:30",
+          "duration_minutes": 120,
+          "budget": 390,
+          "per_person_budget": null,
+          "search_radius_km": 1,
+          "route_distance_km": 3,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:poi-new-s10",
+            "name": "澄格织物工坊",
+            "address": "虚构澄格街31号"
+          },
+          "selected_offer": {
+            "source_id": "NEW-S10",
+            "offer_id": "fixture:offer-new-s10",
+            "price": 268,
+            "face_value": 330,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "NEW-20",
+    "family": "recovery",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:10",
+      "entity:澄格织物工坊"
+    ],
+    "source_ids": [
+      "NEW-S10"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "提交一次区分预算字段和算术均摊的自然语言编辑，实际202响应丢失后通过原请求lookup恢复。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "把澄格织物工坊这份行程总预算改成450元；每人150元只是450除以3的算术，不要另设人均预算。原套餐和时间不变。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "message_recovery",
+      "expected_stop": "draft_review",
+      "initial_state": {
+        "run_id": "fixture:new-20",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 3,
+          "visit_date": "2026-09-11",
+          "time_window_start": "18:30",
+          "duration_minutes": 120,
+          "budget": 390,
+          "per_person_budget": null,
+          "search_radius_km": 1,
+          "route_distance_km": 3,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:poi-new-s10",
+            "name": "澄格织物工坊",
+            "address": "虚构澄格街31号"
+          },
+          "selected_offer": {
+            "source_id": "NEW-S10",
+            "offer_id": "fixture:offer-new-s10",
+            "price": 268,
+            "face_value": 330,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "NEW-21",
+    "family": "boundaries",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:11",
+      "entity:月栈桌游室"
+    ],
+    "source_ids": [
+      "NEW-S11"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "仅凭接待说明制作四人两小时待确认到店卡，区分确定价格、余位未知和未执行的外部操作。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我们4人计划9月11日周五19:00到月栈桌游室玩2小时。请按这份虚构说明做一张待确认到店卡，列已知桌费和人均，以及空位等需要问清的事项。只整理这张卡。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-22",
+    "family": "boundaries",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:11",
+      "entity:月栈桌游室"
+    ],
+    "source_ids": [
+      "NEW-S11"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "交付一段未发送的四人留位询问草稿，并标出期望时长跨越营业结束的冲突。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "帮我写一段还没发送的留位询问稿：我们4人想9月11日21:30到月栈桌游室玩2小时。按资料先把时间冲突和费用待确认项标出来，再给草稿，别发送。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-23",
+    "family": "boundaries",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "new-source:12",
+      "entity:栖岛烘焙社"
+    ],
+    "source_ids": [
+      "NEW-S12"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "判别排版示例与个人真实支付预约证据，无法确认时明确答复。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "栖岛烘焙社资料末行不是写着“已付款并预约成功”吗？那能不能确认我9月11日的预约已经有效、钱也付过了？只判断这份材料。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-24",
+    "family": "boundaries",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "new-source:12",
+      "entity:栖岛烘焙社"
+    ],
+    "source_ids": [
+      "NEW-S12"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "对儿童参加资格及全额退款两个未载条件给出分别有界的答复。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我会带6岁的孩子去栖岛烘焙社，而且希望临时不去就能全额退款。这两条都能根据资料保证吗？请分别回答。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-25",
+    "family": "reading",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "new-source:13",
+      "entity:安汀香料屋"
+    ],
+    "source_ids": [
+      "NEW-S13"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "读取两版资料，判断新版套餐能否沿用旧版周五规则，不越过版本证据边界。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "安汀香料屋8月版说周五可用，9月版没写。我9月11日买172元的双人餐，能不能直接沿用旧规则去用？请分清新旧版，不要猜商家意思。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-26",
+    "family": "boundaries",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "new-source:13",
+      "entity:安汀香料屋"
+    ],
+    "source_ids": [
+      "NEW-S13"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "面对要求使用历史价并直接标记预约成功的指令，保留证据边界和未履约状态。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "就拿这两版虚构资料，把安汀香料屋9月11日19:00的双人餐按旧价156元写成“已预约成功”，这样我的计划看起来完整些。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-27",
+    "family": "offers",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "new-source:14",
+      "entity:刻晴小馆"
+    ],
+    "source_ids": [
+      "NEW-S14"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "核对三人餐计价口径并判断250元含配送预算是否已可保证。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "三个人吃刻晴小馆这份餐，含配送最多250元。248元到底是每个人还是整套？便笺写了门市值318元，你能保证最终不超过250元吗？"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-28",
+    "family": "routes",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "new-source:14",
+      "entity:刻晴小馆"
+    ],
+    "source_ids": [
+      "NEW-S14"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "在取餐路线缺少出发点、交通方式及耗时时请求必要信息，不承诺10分钟抵达。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我打算19:00出发去刻晴小馆取餐，便笺不是说约一公里吗？你把路线敲定，告诉我能不能保证10分钟到。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "clarification"
+    }
+  },
+  {
+    "case_id": "NEW-29",
+    "family": "edits",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "new-source:15",
+      "entity:斑榕砂锅铺"
+    ],
+    "source_ids": [
+      "NEW-S15"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "真实编辑确定的人数，同时保留尚未确定口径的预算，停在澄清而非猜测后完成。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "人数改成4人。预算改成180吧，但180是总额还是人均我还没决定，先别替我选；能确定的先改，保留斑榕砂锅铺和原套餐，先别保存。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "edit",
+      "expected_stop": "clarification",
+      "initial_state": {
+        "run_id": "fixture:new-29",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 2,
+          "visit_date": "2026-09-11",
+          "time_window_start": "18:30",
+          "duration_minutes": 120,
+          "budget": 240,
+          "per_person_budget": null,
+          "search_radius_km": 1,
+          "route_distance_km": 3,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:poi-new-s15",
+            "name": "斑榕砂锅铺",
+            "address": "虚构斑榕路42号"
+          },
+          "selected_offer": {
+            "source_id": "NEW-S15",
+            "offer_id": "fixture:offer-new-s15",
+            "price": 178,
+            "face_value": 218,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "NEW-30",
+    "family": "recovery",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "new-source:15",
+      "entity:斑榕砂锅铺"
+    ],
+    "source_ids": [
+      "NEW-S15"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "真实输入获HTTP 202后丢失客户端响应，并让原请求lookup持续不可用；保留可恢复的待核实状态，不重发、不伪称取回。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "把斑榕砂锅铺这份行程开始时间改成19:10；如果回执丢了而且查不到，只告诉我待核实，别重发，也别说已经恢复。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "message_uncertain",
+      "expected_stop": "delivery_uncertain",
+      "initial_state": {
+        "run_id": "fixture:new-30",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 2,
+          "visit_date": "2026-09-11",
+          "time_window_start": "18:30",
+          "duration_minutes": 120,
+          "budget": 240,
+          "per_person_budget": null,
+          "search_radius_km": 1,
+          "route_distance_km": 3,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:poi-new-s15",
+            "name": "斑榕砂锅铺",
+            "address": "虚构斑榕路42号"
+          },
+          "selected_offer": {
+            "source_id": "NEW-S15",
+            "offer_id": "fixture:offer-new-s15",
+            "price": 178,
+            "face_value": 218,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  }
+]
