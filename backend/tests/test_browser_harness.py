@@ -598,10 +598,11 @@ class BoundaryCheck(unittest.TestCase):
                     return self
 
                 async def ainvoke(self, messages):
+                    from plango.outcomes import TaskIntent
                     calls.append(messages)
-                    assert self.schema is ImageReading
+                    assert self.schema in {ImageReading, TaskIntent}
                     return {
-                        "parsed": ImageReading(text="用户截图：餐厅套餐价格128元"),
+                        "parsed": TaskIntent(kind="write" if "帮我预约餐厅" in str(messages[-1]["content"]) else "extract") if self.schema is TaskIntent else ImageReading(text="用户截图：餐厅套餐价格128元"),
                         "raw": SimpleNamespace(
                             usage_metadata={
                                 "input_tokens": 30,
@@ -628,8 +629,8 @@ class BoundaryCheck(unittest.TestCase):
                 run_id = response.json()["run_id"]
                 done = wait_for(client, run_id, lambda v: v["phase"] in {"SUCCEEDED", "FAILED"})
                 self.assertEqual(done["phase"], "SUCCEEDED", done)
-                self.assertEqual(done["state"]["model_token_count"], 40)
-                self.assertEqual(calls[0][1]["content"][1]["image_url"]["url"], image)
+                self.assertEqual(done["state"]["model_token_count"], 80)  # Intent + OCR, both within the same budget.
+                self.assertEqual(calls[1][1]["content"][1]["image_url"]["url"], image)
                 self.assertEqual(done["state"]["browser_artifacts"][0]["source"], "user")
                 self.assertEqual(done["state"]["execution_outcome"]["data"]["scope"], "image_text")
                 self.assertFalse(done["state"]["execution_outcome"]["data"]["merchant_verified"])

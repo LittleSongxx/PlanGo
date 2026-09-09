@@ -56,6 +56,12 @@ def test_generic_activity_replaces_a_polluted_region_without_querying_the_catego
         build_graph(deps, extension=lambda graph: nodes.update(requirements=graph.nodes["requirements"].runnable))
         state = initial_state(run_id="controlled", user_id="controlled", input_text=text)
         state["previous_spec"] = previous
+        rejected = await nodes["requirements"].ainvoke(state)
+        assert rejected["trip_spec"].model_dump(exclude={"goal"}) == previous.model_dump(exclude={"goal"})
+        assert rejected["clarification"]["fields"] == ["context"]
+        execute.assert_not_awaited()
+        # The sandbox fallback still handles the previously supported wording.
+        model.structured = AsyncMock(side_effect=lambda schema, *, fallback, **kwargs: fallback)
         result = await nodes["requirements"].ainvoke(state)
         spec = result["trip_spec"]
         assert spec.location == spec.search_location == origin
@@ -83,6 +89,13 @@ def test_named_origin_assignment_precedes_same_message_origin_references():
         deps = GraphDeps(model=model, world=SimpleNamespace(), tools=SimpleNamespace(schemas=lambda: [], execute=execute), planner=None, memory=None, runs=None, action_provider=None)
         nodes = {}
         build_graph(deps, extension=lambda graph: nodes.update(requirements=graph.nodes["requirements"].runnable))
+        state = initial_state(run_id="controlled", user_id="controlled", input_text=f"把出发地点改为{address}，就在这个新起点附近安排餐厅")
+        state["previous_spec"] = previous
+        rejected = await nodes["requirements"].ainvoke(state)
+        assert rejected["trip_spec"].model_dump(exclude={"goal"}) == previous.model_dump(exclude={"goal"})
+        assert rejected["clarification"]["fields"] == ["context"]
+        execute.assert_not_awaited()
+        model.structured = AsyncMock(side_effect=lambda schema, *, fallback, **kwargs: fallback)
         for reference in ("这个新起点", "该新起点", "此新起点"):
             text = f"把出发地点改为{address}，就在{reference}附近安排餐厅，其他要求不变。"
             state = initial_state(run_id="controlled", user_id="controlled", input_text=text)

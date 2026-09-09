@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.graph import ImageReading
-from plango.outcomes import read_outcome
+from plango.outcomes import TaskIntent, read_outcome
 from plango_harness.agent.graph import GraphDeps
 from plango_harness.agent.model_adapter import ModelAdapter
 from test_browser_harness import TOKEN, settings, wait_for
@@ -18,7 +18,12 @@ IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC
 
 def test_same_uploaded_image_on_second_user_turn_reuses_original_source_without_new_ocr(tmp_path):
     app = create_app(settings(tmp_path).model_copy(update={"openai_api_key": "synthetic-adapter-only"}), token=TOKEN)
-    model = AsyncMock(return_value=ImageReading(text="合成OCR样本：套餐128元，仅为图片文字"))
+    async def classify_or_read(schema, **kwargs):
+        if schema is TaskIntent:
+            return TaskIntent(kind="extract")
+        assert schema is ImageReading
+        return ImageReading(text="合成OCR样本：套餐128元，仅为图片文字")
+    model = AsyncMock(side_effect=classify_or_read)
     app.state.runtime.model.structured = model
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         run_id = client.post("/api/v1/runs", json={"input_text": "读取上传图片中的文字", "image": IMAGE, "browser_session_id": "fixture-desktop"}).json()["run_id"]
@@ -35,7 +40,7 @@ def test_same_uploaded_image_on_second_user_turn_reuses_original_source_without_
         outcome = second["state"]["execution_outcome"]
         assert outcome["data"] == {"scope": "image_text", "business_completed": False, "merchant_verified": False, "price_verified": False}
         assert outcome["evidence_ids"] == [original["artifact_id"]]
-        model.assert_awaited_once()
+        assert [call.args[0] for call in model.await_args_list] == [TaskIntent, ImageReading, TaskIntent], "Each user turn is classified once; the same image uses OCR only once"
         assert client.get("/api/v1/browser/commands?browser_session_id=fixture-desktop").json()["commands"] == []
         events = client.get(f"/api/v1/runs/{run_id}/events").json()["events"]
         assert len([event for event in events if event["event_type"] == "image_extracted"]) == 1

@@ -44,10 +44,10 @@ def _location_reference(value: str) -> Literal["current_origin", "selected_place
     if kind == "current_origin":
         return "current_origin"
     return "selected_place" if kind == "selected_place" else None
-_TIME_AMOUNT = re.compile(r"(?<![\d.零一二两三四五六七八九十个])([+-]?\d+(?:\.\d+)?|半|[零一二两三四五六七八九十]+)\s*(?:个)?(半)?\s*(小时|分钟|分|时)(半)?(?:\s*(\d+)\s*分钟)?")
-_CLOCK_POINT = re.compile(r"(?<!\d)(\d{1,2}|[零一二两三四五六七八九十]+)\s*点(?:\s*(?:(半)|([\d零一二两三四五六七八九十]+)\s*分(?!钟)|([0-5]?\d)(?!\d|\s*(?:小时|分钟|个|时))))?")
+_TIME_AMOUNT = re.compile(r"(?<![\d.零一二两三四五六七八九十百千个])([+-]?\d+(?:\.\d+)?|半|[零一二两三四五六七八九十百千]+)\s*(?:个)?(半)?\s*(小时|分钟|分|时)(半)?(?:\s*(\d+)\s*分钟)?")
+_CLOCK_POINT = re.compile(r"(?<!\d)([+-]?\d+|[零一二两三四五六七八九十]+)\s*点(?:\s*(?:(半)|([+-]?\d+|[零一二两三四五六七八九十]+)\s*分(?!钟)|([+-]?\d+)(?!\d|\s*(?:小时|分钟|个|时))))?")
 _QUEUE_CUE = r"排队|等候|等位|等待|(?<=最多)等"
-_PEOPLE_AMOUNT = r"[+-]?\d+(?:\.\d+)?|[零一二两三四五六七八九十]+"
+_PEOPLE_AMOUNT = r"[+-]?\d+(?:\.\d+)?|[零一二两三四五六七八九十百千]+"
 _ROLE_COUNT_LINK = r"(?:这一组|人数|数量|组|这次|实际|最终|按|落实为|确认|改成|改为|调整为|调整到|变成|为|是|\s)*"
 
 
@@ -59,10 +59,19 @@ def _hours(value: str) -> float | None:
             return 0.5
         if value in _CN_DIGITS:
             return float(_CN_DIGITS[value])
-        if value.count("十") == 1:
-            tens, ones = value.split("十")
-            if (not tens or tens in _CN_DIGITS) and (not ones or ones in _CN_DIGITS):
-                return float(_CN_DIGITS.get(tens, 1) * 10 + _CN_DIGITS.get(ones, 0))
+        if re.fullmatch(r"[零一二两三四五六七八九十百千]+", value):
+            total, digit, last_unit = 0, 0, 10000
+            for char in value:
+                unit = {"十": 10, "百": 100, "千": 1000}.get(char)
+                if unit:
+                    if unit >= last_unit:
+                        return None
+                    total, digit, last_unit = total + (digit or 1) * unit, 0, unit
+                else:
+                    if digit:  # Consecutive Chinese digits are not a positional quantity.
+                        return None
+                    digit = _CN_DIGITS[char]
+            return float(total + digit)
         return None
 
 
@@ -501,6 +510,14 @@ class RequirementAgent:
                 "party 描述角色资料，party_size 是明确总人数，party_counts只记录明确角色人数，未知分配不得猜测；角色退出记录0。"
                 "3位成人表示总共3人；我和3个朋友表示4人。默认用户占位不算额外成员。不设预算使用clear_budget/clear_per_person_budget。"
                 "同事和朋友是不同角色；长辈规范为老人。"
+                "field_evidence必须返回对象：每个本轮实际修改字段都引用当前消息的完整原文子句，"
+                "包括否定、条件和单位，不得只摘数字或去掉否定词；没有修改时返回{}。"
+                "此前消息和记忆只用于理解指代，不能作为本轮修改的原文。其余不变/保留不产生修改。"
+                "金额统一元，总时长与排队统一分钟，距离统一公里。搜索半径只设search_radius_km，"
+                "实际路程上限只设route_distance_km；新输出不要用同时修改两个范围的旧字段max_distance_km。"
+                "含糊的预算口径、人数、日期或距离应保留原值并在clarification_fields列出待确认字段，"
+                "不要猜总额/人均或把否定和保留要求当成修改。只有用户明确撤销或改为未知时才设置clear_*或*_unknown，"
+                "也必须为该标志提供原文。明确的本轮修改可对照上一版需求执行，不重复追问已知信息。"
             ),
             user=(
                 f"当前用户消息：{text}\n上一版 TripSpec：{previous}\n"
@@ -508,9 +525,11 @@ class RequirementAgent:
             ),
             fallback=fallback,
         )
-        return self._stabilize_explicit_fields(
-            output, fallback, text=text, previous_spec=previous_spec, memory_context=memory_context
-        )
+        if output is fallback:
+            return self._stabilize_explicit_fields(
+                output, fallback, text=text, previous_spec=previous_spec, memory_context=memory_context
+            )
+        return self._grounded_patch(output, text=text, previous_spec=previous_spec)
 
     @staticmethod
     def _stabilize_explicit_fields(
@@ -527,6 +546,8 @@ class RequirementAgent:
         party roles, and clearly stated constraints are safer when the small
         deterministic extractor is used as a lower bound.
         """
+        if output.field_evidence is not None:
+            return RequirementAgent._grounded_patch(output, text=text, previous_spec=previous_spec)
 
         def clean(values: list[str] | None) -> list[str]:
             return list(
@@ -817,6 +838,72 @@ class RequirementAgent:
         return output.model_copy(update=updates)
 
     @staticmethod
+    def _grounded_patch(output: RequirementOutput, *, text: str, previous_spec: TripSpec | None) -> RequirementOutput:
+        """Validate a model's sparse patch without reinterpreting language with fallback rules."""
+        metadata = {"goal", "field_evidence", "clarification_needed", "clarification_fields", "clarification_question"}
+        values: dict[str, Any] = {"goal": text if previous_spec is None else f"{previous_spec.goal}；用户补充：{text}",
+                                  "field_evidence": {}, "clarification_needed": output.clarification_needed,
+                                  "clarification_fields": list(output.clarification_fields),
+                                  "clarification_question": output.clarification_question}
+        if output.field_evidence is None:
+            return RequirementOutput(goal=values["goal"], field_evidence={}, clarification_needed=True,
+                                     clarification_fields=["context"],
+                                     clarification_question="未能核对本轮修改的依据，请明确要调整的条件；原有条件已保留。")
+        rejected: list[str] = []
+        for field, value in output.model_dump(exclude_none=True).items():
+            if field in metadata or value is False and (field.startswith("clear_") or field.endswith("_unknown")):
+                continue
+            if value == [] and field != "activity_order":
+                continue
+            quote = (output.field_evidence or {}).get(field, "").strip()
+            # A full clause retains negation and the unit/scope next to a number.
+            # Excerpt membership is provenance, not a proof of semantic entailment.
+            boundary = r"[，,；;。\n]"
+            if not quote or preservation_instruction(quote) or not re.search(r"(?:^|" + boundary + r")\s*" + re.escape(quote) + r"\s*(?:$|" + boundary + r")", text):
+                rejected.append(field)
+                continue
+            if output.clarification_needed and field in output.clarification_fields:
+                continue  # An unresolved interpretation must not overwrite its previous value.
+            if field == "max_distance_km":
+                rejected.append(field)  # New model patches must distinguish search and route limits.
+                continue
+            amounts: list[float] | None = None
+            if field in {"duration_minutes", "max_queue_minutes"}:
+                amounts = [minutes for match in _TIME_AMOUNT.finditer(quote) if (minutes := _time_minutes(match)) is not None]
+            elif field in {"search_radius_km", "route_distance_km"}:
+                amounts = [number / (1000 if match[2].lower() in {"米", "m"} else 1)
+                           for match in re.finditer(r"(" + _PEOPLE_AMOUNT + r")\s*(公里|km|米|m)", quote, re.I)
+                           if (number := _hours(match[1])) is not None]
+            elif field in {"budget", "per_person_budget"}:
+                amounts = [number for match in re.finditer(r"(" + _PEOPLE_AMOUNT + r")\s*(?:元|块|CNY|RMB)", quote, re.I)
+                           if (number := _hours(match[1])) is not None]
+                if not amounts:  # Bare numeric assignments remain valid; scope is a model decision.
+                    amounts = [float(match[0]) for match in re.finditer(r"[+-]?\d+(?:\.\d+)?", quote)]
+            if amounts is not None and value not in amounts:
+                rejected.append(field)
+                continue
+            values[field] = value
+            values["field_evidence"][field] = quote
+        for field, flag in (("budget", "clear_budget"), ("per_person_budget", "clear_per_person_budget"),
+                            ("party_size", "party_size_unknown"), ("visit_date", "visit_date_unknown"),
+                            ("time_window_start", "time_window_start_unknown"), ("search_radius_km", "clear_search_radius"),
+                            ("route_distance_km", "clear_route_distance")):
+            if values.get(flag) and values.get(field) is not None:
+                values.pop(field)
+                values.pop(flag)
+                rejected.append(field)
+        if rejected:
+            values.update(clarification_needed=True,
+                          clarification_fields=list(dict.fromkeys([*values["clarification_fields"], *rejected])),
+                          clarification_question=output.clarification_question or "部分修改缺少明确依据或单位不一致，请确认要修改的条件；原有条件已保留。")
+        elif values["clarification_needed"] and not values["clarification_question"]:
+            values["clarification_question"] = "请确认尚未明确的条件；其他已确认条件保持。"
+        if previous_spec is None and not values["field_evidence"]:
+            values.update(clarification_needed=True, clarification_fields=values["clarification_fields"] or ["context"],
+                          clarification_question=values["clarification_question"] or "请提供本次活动的明确要求。")
+        return RequirementOutput.model_validate(values)
+
+    @staticmethod
     def _fallback(
         text: str, memory_context: list[dict], previous_spec: TripSpec | None = None,
         *, reference_at: str | None = None,
@@ -981,23 +1068,26 @@ class RequirementAgent:
                 location_reference = explicit_reference
                 location_name = None if explicit_reference else explicit_name
         time_start: str | None = None
-        clock_match = re.search(r"(?<!\d)([01]?\d|2[0-3])[:：]([0-5]\d)(?!\d)", value)
+        clock_match = re.search(r"(?<!\d)([+-]?\d{1,2})[:：](\d{2})(?!\d)", value)
         time_match = _CLOCK_POINT.search(value)
         if clock_match:
             hour = int(clock_match.group(1))
             prefix = value[max(0, clock_match.start() - 3):clock_match.start()]
-            if hour < 12 and any(word in prefix for word in ("下午", "晚上")):
+            if 0 <= hour < 12 and any(word in prefix for word in ("下午", "晚上")):
                 hour += 12
             time_start = f"{hour:02}:{int(clock_match.group(2)):02}"
         elif time_match:
-            hour = min(23, int(_hours(time_match.group(1)) or 0))
-            if hour < 12 and any(
+            hour = int(_hours(time_match.group(1)) or 0)
+            if 0 <= hour < 12 and any(
                 word in value[max(0, time_match.start() - 3) : time_match.start()]
                 for word in ("下午", "晚上")
             ):
                 hour += 12
             minute = 30 if time_match.group(2) else int(_hours(time_match.group(3) or time_match.group(4) or "0") or 0)
             time_start = f"{hour:02d}:{minute:02d}"
+        invalid_time = time_start is not None and re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", time_start) is None
+        if invalid_time:
+            time_start = None  # Invalid input is not an instruction to clear the prior start time.
         duration: int | None = None
         duration_text = _duration_scope(value)
         duration_match = _TIME_AMOUNT.search(duration_text)
@@ -1075,6 +1165,10 @@ class RequirementAgent:
                 else:
                     semantics.pop(field, None)
         temporal = temporal_patch(value, previous_spec, reference_at)
+        if invalid_time:
+            temporal.update(clarification_needed=True, time_window_start_unknown=False,
+                            clarification_fields=list(dict.fromkeys([*temporal.get("clarification_fields", []), "time_window_start"])),
+                            clarification_question="开始时刻无效，请确认00:00至23:59之间的时间；原开始时间保持。")
         result = RequirementOutput(
             goal=goal,
             party=party,

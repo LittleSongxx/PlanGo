@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.browser import run_context
+from plango.outcomes import TaskIntent
 from plango.settings import DesktopSettings
 from plango.world import BrowserWorld, PageData, dianping_preview_data
 from test_browser_harness import TOKEN, fixture, settings, wait_for
@@ -149,10 +150,14 @@ async def test_adapter_reuses_command_cache_without_model_and_preserves_saved_re
 
 def test_new_adapter_result_rebuilds_structured_artifact_from_durable_command(tmp_path):
     app = create_app(settings(tmp_path), token=TOKEN)
-    app.state.runtime.model.structured = AsyncMock(side_effect=AssertionError("preview needs no model"))
+    async def classify(schema, **kwargs):
+        assert schema is TaskIntent, "Literal preview extraction needs no model"
+        return TaskIntent(kind="extract")
+    app.state.runtime.model.structured = AsyncMock(side_effect=classify)
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         run_id = client.post("/api/v1/runs", json={"input_text": "读取当前页面的门店地址、菜单和套餐使用条件，不下单。", "browser_session_id": "fixture-desktop"}).json()["run_id"]
         wait_for(client, run_id, lambda run: bool(run["state"].get("browser_wait")))
+        app.state.runtime.model.structured.assert_awaited_once()
         command = client.get("/api/v1/browser/commands?browser_session_id=fixture-desktop").json()["commands"][0]
         response = {**fixture(command), **observation(command_id=command["command_id"]), "elements": []}
         assert client.post(f"/api/v1/browser/commands/{command['command_id']}/result", json=response).status_code == 200
@@ -161,7 +166,7 @@ def test_new_adapter_result_rebuilds_structured_artifact_from_durable_command(tm
         stored = client.portal.call(app.state.runtime.bridge.get, command["command_id"])
         assert stored["payload"]["_processed_version"] == 4
         assert [item["price"] for item in stored["payload"]["_processed"]["offers"]] == [47, 98, 19.9]
-        assert app.state.runtime.model.structured.await_count == 0
+        assert app.state.runtime.model.structured.await_count == 1, "Receipt resume must not classify the same turn again"
 
     restored_app = create_app(settings(tmp_path), token=TOKEN)
     with TestClient(restored_app, headers={"Authorization": "Bearer " + TOKEN}) as client:

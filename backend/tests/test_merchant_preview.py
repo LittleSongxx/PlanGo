@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.graph import BrowserDecision
-from plango.outcomes import browser_manual_error
+from plango.outcomes import TaskIntent, browser_manual_error
 from plango.world import PageData
 from test_browser_harness import TOKEN, fixture, settings, wait_for
 
@@ -21,6 +21,8 @@ def test_app_only_menu_preview_preserves_partial_fields_without_a_vision_loop(tm
     async def extract(schema, *, fallback, **kwargs):
         calls.append(schema.__name__)
         assert schema is not BrowserDecision, "An explicit app-only detail gate needs no model or Vision retry"
+        if schema is TaskIntent:
+            return TaskIntent(kind="extract")
         if schema is PageData:
             return PageData.model_validate({"places": [{"name": "受控餐厅", "address": "重庆市受控路1号", "quote": place}],
                                            "menu": [{"name": "清蒸鱼", "quote": "清蒸鱼"}],
@@ -31,6 +33,7 @@ def test_app_only_menu_preview_preserves_partial_fields_without_a_vision_loop(tm
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         rid = client.post("/api/v1/runs", json={"input_text": "读取当前页面的门店地址、菜单和套餐使用条件，不下单。", "browser_session_id": "fixture-desktop"}).json()["run_id"]
         wait_for(client, rid, lambda value: bool(value["state"].get("browser_wait")))
+        assert calls == ["TaskIntent"]
         command = client.get("/api/v1/browser/commands?browser_session_id=fixture-desktop").json()["commands"][0]
         response = {**fixture(command), "text": text, "title": "受控餐厅", "tables": [], "elements": elements,
                     "fields": {"dom": {"canvas_count": 1, "manual_gate": None, "forms": []}}}
@@ -45,4 +48,4 @@ def test_app_only_menu_preview_preserves_partial_fields_without_a_vision_loop(tm
         assert not result["state"].get("action_results")
         assert result["state"].get("browser_vision_turn") is None
         assert client.get("/api/v1/browser/commands?browser_session_id=fixture-desktop").json()["commands"] == []
-        assert calls == ["PageData"]
+        assert calls == ["TaskIntent", "PageData"]

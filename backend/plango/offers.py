@@ -201,7 +201,7 @@ def compare_offers(artifact, constraints, *, now=None):
         counts = [count for count in range(1, 101) if grounded and _grounded_people(count, quote)]
         people = counts[0] if len(counts) == 1 else None
         if party is None:
-            missing.append("用餐人数尚未确认")
+            missing.append("同行人数尚未确认")
         if visit is None:
             missing.append("到店日期尚未确认")
         elif visit < today:
@@ -218,7 +218,7 @@ def compare_offers(artifact, constraints, *, now=None):
             elif party is not None and party < people:
                 missing.append("实际人数少于套餐标注人数，使用人数下限尚未核验")
         else:
-            missing.append("代金券或单项优惠不能替代完整用餐清单，尚不明确全部餐费")
+            missing.append("代金券或单项优惠不能替代完整消费清单，尚不明确全部费用")
         no_fees = _rules(quote, offer_name, name, visit, today, reasons, missing) if grounded else False
         coverage = kind == "package" and party is not None and people == party
         known_cost = price * party if per_person and price is not None and party else price
@@ -244,4 +244,4 @@ def compare_offers(artifact, constraints, *, now=None):
             "constraints": {"party_size": party, "visit_date": visit.isoformat() if visit else None, "timezone": zone_name,
                             "budget": float(budget) if budget is not None else None, "per_person_budget": float(per_budget) if per_budget is not None else None},
             "entries": entries, "summary": f"已核对{name or '待确认门店'}的{len(entries)}项优惠；适用结论仅限已取得的条款。",
-            "limitations": ["已知售价是购买一份优惠的支出，不代表全部餐费；不自动叠加或加购。", "适用性核对不代表可预约、已购买或业务完成。", *source_missing]}
+            "limitations": ["已知售价是购买一份优惠的支出，不代表全部费用；不自动叠加或加购。", "适用性核对不代表可预约、已购买或业务完成。", *source_missing]}

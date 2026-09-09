@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare and execute the frozen 30-case controlled acceptance release.
+"""Freeze, prepare and execute preregistered controlled acceptance releases.
 
 Gold approval is required before run, with independent AI review allowed only
 under the user's explicit delegation. The product/model freeze and attempt
@@ -12,14 +12,18 @@ import copy
 import hashlib
 import json
 import os
+import re
+import subprocess
 import uuid
 from collections import Counter
+from contextlib import nullcontext
 from datetime import datetime, timezone
 from pathlib import Path
 
 import quality_human_import as human
 import quality_judge as judge
 import quality_runner as runner
+from quality_ai_import import validate_protocol
 
 ROOT = runner.ROOT
 DATA = ROOT / "eval/quality-v2-30"
@@ -111,15 +115,53 @@ def adjudicate_fixture(work):
     print(json.dumps({"invalid_evaluator_attempts": len(invalid), "old_evidence_retained": True}))
 
 
-def product():
-    frozen = runner.read(DATA / "product-freeze.json")
-    for path, digest in frozen["files"].items():
-        if file_sha(ROOT / path) != digest:
-            raise ValueError("Frozen product changed: " + path)
-    settings = runner.project_settings(ROOT / "output/quality-v2-30-unstarted")
+def repository_path(path):
+    path = Path(path).resolve()
+    if not path.is_relative_to(ROOT):
+        raise ValueError("Evaluation path must stay in this repository")
+    return path
+
+
+def model_config():
+    settings = runner.project_settings(ROOT / "output/quality-preflight-unstarted")
     actual = {field: getattr(settings, field) for field in ("agent_mode", "max_model_tokens", "max_tool_calls", "max_run_seconds")}
     actual.update(model=settings.openai_model, timeout_seconds=settings.openai_timeout_seconds,
                   max_retries=settings.openai_max_retries, vision_enabled=settings.browser_vision_enabled)
+    return actual
+
+
+def product_files():
+    paths = [* (ROOT / "backend/plango").rglob("*.py"),
+             * (ROOT / "vendor/plango_harness/backend/plango_harness").rglob("*.py")]
+    for directory in ("src", "out", "skills"):
+        paths.extend(p for p in (ROOT / directory).rglob("*") if p.is_file())
+    paths.extend(ROOT / name for name in ("pyproject.toml", "uv.lock", "package.json", "package-lock.json", "electron.vite.config.ts", "tsconfig.json", "tsconfig.node.json", "tsconfig.web.json"))
+    return {str(repository_path(path).relative_to(ROOT)): file_sha(path) for path in sorted(set(paths))}
+
+
+def freeze_product(path):
+    path = repository_path(path)
+    if not (ROOT / "out/main/index.js").is_file() or not (ROOT / "out/renderer/index.html").is_file():
+        raise ValueError("Build the product before freezing")
+    frozen = {"schema_version": 2, "frozen_at": now(), "product_commit": subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "files": product_files(), "model_config": model_config(),
+        "worktree_dirty": bool(subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=no"], cwd=ROOT, text=True)),
+        "scope": "Frozen source/build/model for separately preregistered bounded controlled datasets",
+        "rules": ["Freeze before independent case authoring; review all gold before execution.",
+                  "Keep every valid failure and all attempts; never overwrite a previous freeze."]}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    runner.write(path, frozen)
+    print(json.dumps({"freeze": str(path.relative_to(ROOT)), "files": len(frozen["files"]), "model_calls": 0}))
+
+
+def product(freeze=None):
+    frozen = runner.read(repository_path(freeze or DATA / "product-freeze.json"))
+    for path, digest in frozen["files"].items():
+        if file_sha(repository_path(ROOT / path)) != digest:
+            raise ValueError("Frozen product changed: " + path)
+    if frozen.get("schema_version") == 2 and product_files() != frozen["files"]:
+        raise ValueError("Frozen product file inventory changed")
+    actual = model_config()
     if actual != frozen["model_config"]:
         raise ValueError("Frozen model configuration changed")
     return {"revision": frozen["product_commit"], "files": frozen["files"], "model_config": actual}
@@ -138,17 +180,44 @@ def default_fixture(source_id):
                               "business_completed": False, "unknowns": ["完整餐费未知", "营业及供给未知", "已选优惠完整使用规则未核验"]}}
 
 
-def materials():
-    tasks, sources, gold = [runner.read(DATA / name) for name in ("tasks.json", "sources.json", "gold.json")]
-    assert len(tasks) == len(gold) == 30 and len(sources) == 15
-    assert len({row["case_id"] for row in tasks}) == 30
+def dataset_metadata(dataset, tasks, sources):
+    path = dataset / "protocol.json"
+    if path.exists():
+        protocol = runner.read(path)
+        result = {"scope": "controlled_acceptance", "protocol": protocol,
+                  **{key: protocol[key] for key in ("name", "planned_case_ids", "primary_source_groups", "case_authoring", "execution_scope")}}
+        validate_protocol(result)
+        assert protocol["planned_case_ids"] == [t["case_id"] for t in tasks], "Preregistered case order changed"
+        assert protocol["primary_source_groups"] == len({s["group_id"] for s in sources})
+        repository_path(ROOT / protocol["budget_ledger"])
+        return result
+    assert dataset == DATA.resolve(), "New datasets require protocol.json"
+    assert len(tasks) == 30 and len(sources) == 15
     assert Counter(t["case_class"] for t in tasks) == {"delivery": 20, "bounded_answer": 10}
     assert Counter(t["family"] for t in tasks) == {key: 5 for key in ("reading", "offers", "edits", "routes", "recovery", "boundaries")}
     assert Counter(s for t in tasks for s in t["source_ids"]) == {s["source_id"]: 2 for s in sources}
+    return {"name": "PlanGo-controlled-30-v1", "scope": "controlled_acceptance",
+            "planned_case_ids": [t["case_id"] for t in tasks], "primary_source_groups": 15,
+            "case_authoring": "Independent AI author did not inspect implementation/dev outputs; human review pending",
+            "execution_scope": "20 raw-observation cases and 10 imported-state workflows; all ten workflows use real Electron"}
+
+
+def materials(dataset=None):
+    dataset = repository_path(dataset or DATA)
+    tasks, sources, gold = [runner.read(dataset / name) for name in ("tasks.json", "sources.json", "gold.json")]
+    assert len(tasks) == len(gold) == len({row["case_id"] for row in tasks})
+    dataset_metadata(dataset, tasks, sources)
     by_source, by_gold = {s["source_id"]: s for s in sources}, {g["case_id"]: g for g in gold}
+    assert len(by_source) == len(sources) and len(by_gold) == len(gold)
     assert set(by_gold) == {t["case_id"] for t in tasks}
+    assert {sid for t in tasks for sid in t["source_ids"]} == set(by_source)
+    for task in tasks:
+        assert re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", task["case_id"])
+        assert len(task["source_ids"]) == 1, "Collector supports one declared primary source per case"
+        assert task["environment"]["driver"] in {"read", *STATE_DRIVERS}
+        assert not ({"gold", "gold_facts", "must_pass", "forbidden_claims"} & task.keys()), "Judging material must not enter actor tasks"
     fixtures = {t["source_ids"][0]: default_fixture(t["source_ids"][0]) for t in tasks if t["environment"]["driver"] in STATE_DRIVERS}
-    path = DATA / "runtime-fixtures.json"
+    path = dataset / "runtime-fixtures.json"
     if path.exists():
         assert runner.read(path) == fixtures, "Runtime fixture changed; never silently rewrite reviewed data"
     else:
@@ -173,11 +242,15 @@ def source_packets(case, source, fixtures):
     return values
 
 
-def prepare(work):
-    frozen = product()
-    tasks, sources, gold, fixtures = materials()
-    work = Path(work).resolve()
+def prepare(work, *, dataset=None, freeze=None):
+    dataset = repository_path(dataset or DATA)
+    freeze = repository_path(freeze or dataset / "product-freeze.json")
+    frozen = product(freeze)
+    work = repository_path(work)
     assert work.is_relative_to(ROOT / "output")
+    assert not work.exists(), "Never reuse a previous work directory"
+    tasks, sources, gold, fixtures = materials(dataset)
+    metadata = dataset_metadata(dataset, tasks, list(sources.values()))
     work.mkdir(mode=0o700, parents=True, exist_ok=False)
     cases = []
     for task in tasks:
@@ -188,24 +261,56 @@ def prepare(work):
                                  "outputs": [], "independent_state": {}, "transport_checks": {},
                                  "all_delivery_checkpoints_captured": False, "attempt_outcome": "completed"}})
     bundle = human.seal_bundle({"schema_version": 1, "report_kind": "human_reviewed_controlled",
-             "dataset": {"name": "PlanGo-controlled-30-v1", "scope": "controlled_acceptance",
-                         "planned_case_ids": [t["case_id"] for t in tasks], "primary_source_groups": 15,
-                         "case_authoring": "Independent AI author did not inspect implementation/dev outputs; human review pending",
-                         "execution_scope": "20 raw-observation cases and 10 imported-state workflows; all ten workflows use real Electron"},
+             "dataset": metadata,
              "product": frozen, "cases": cases, "collection": {"attempts": []}})
     runner.write(work / "gold-bundle.json", bundle)
     (work / "human-events.jsonl").touch(mode=0o600, exist_ok=False)
+    inputs = {name: dataset / name for name in ("sources.json", "tasks.json", "gold.json", "runtime-fixtures.json")}
+    inputs["product-freeze.json"] = freeze
+    if (dataset / "protocol.json").exists():
+        inputs["protocol.json"] = dataset / "protocol.json"
+        protocol = metadata["protocol"]
+        with runner.shared_budget(ROOT / protocol["budget_ledger"], protocol["limits"]):
+            pass
     runner.write(work / "session.json", {"created_at": now(), "dataset_sha": bundle["dataset_sha"],
-        "product_sha": bundle["product_sha"], "source_files": {name: file_sha(DATA / name) for name in (
-            "sources.json", "tasks.json", "gold.json", "runtime-fixtures.json", "product-freeze.json")},
+        "product_sha": bundle["product_sha"], "dataset_path": str(dataset.relative_to(ROOT)), "freeze_path": str(freeze.relative_to(ROOT)),
+        "input_paths": {key: str(path.relative_to(ROOT)) for key, path in inputs.items()},
+        "source_files": {name: file_sha(path) for name, path in inputs.items()},
         "mode": "awaiting_per_case_human_gold_review", "model_calls": 0})
-    print(json.dumps({"bundle": str((work / "gold-bundle.json").relative_to(ROOT)), "cases": 30,
+    print(json.dumps({"bundle": str((work / "gold-bundle.json").relative_to(ROOT)), "cases": len(tasks),
                       "human_gold_approved": 0, "model_calls": 0}, ensure_ascii=False))
 
 
-def run(work, case_ids, *, gold_review=None):
+def session_inputs(work, *, dataset=None, freeze=None):
+    session = runner.read(work / "session.json")
+    bound_dataset = ROOT / session["dataset_path"] if "dataset_path" in session else DATA
+    bound_freeze = ROOT / session["freeze_path"] if "freeze_path" in session else DATA / "product-freeze.json"
+    selected, frozen = repository_path(dataset or bound_dataset), repository_path(freeze or bound_freeze)
+    assert selected == repository_path(bound_dataset), "Session dataset path changed"
+    assert frozen == repository_path(bound_freeze), "Session freeze path changed"
+    paths = {name: repository_path(ROOT / session["input_paths"][name]) if "input_paths" in session else selected / name for name in session["source_files"]}
+    for name, path in paths.items():
+        assert file_sha(path) == session["source_files"][name], "Reviewed input changed: " + name
+    return selected, frozen, paths
+
+
+def run(work, case_ids, *, gold_review=None, dataset=None, freeze=None):
+    work = repository_path(work)
+    bundle = runner.read(work / "gold-bundle.json")
+    protocol = bundle["dataset"].get("protocol")
+    validate_protocol(bundle["dataset"])
+    if protocol:
+        ledger = repository_path(ROOT / protocol["budget_ledger"])
+        assert ledger.exists(), "Shared budget ledger missing; never restart its allowance"
+    budget = runner.shared_budget(ledger, protocol["limits"]) if protocol else nullcontext({"calls": [], "reported_tokens": 0, "stop": None})
+    with budget as control:
+        _run(work, case_ids, gold_review=gold_review, dataset=dataset, freeze=freeze, control=control)
+
+
+def _run(work, case_ids, *, gold_review=None, dataset=None, freeze=None, control):
     work = Path(work).resolve()
     bundle = runner.read(work / "gold-bundle.json")
+    dataset, freeze, inputs = session_inputs(work, dataset=dataset, freeze=freeze)
     if gold_review:
         from quality_ai_import import validate_gold
         issues = validate_gold(bundle, runner.read(gold_review))
@@ -213,13 +318,10 @@ def run(work, case_ids, *, gold_review=None):
             raise ValueError("Independent AI gold review is incomplete: " + str(issues))
     else:
         status = human.import_reviews(bundle, events(work))
-        if status["release"]["gold_reviewed_cases"] != 30:
-            raise ValueError("All 30 source/gold cases need review before execution")
-    assert product() == bundle["product"]
-    session = runner.read(work / "session.json")
-    for name, digest in session["source_files"].items():
-        assert file_sha(DATA / name) == digest, "Reviewed input changed: " + name
-    tasks, sources, _, fixtures = materials()
+        if status["release"]["gold_reviewed_cases"] != len(bundle["cases"]):
+            raise ValueError("All preregistered source/gold cases need review before execution")
+    assert product(freeze) == bundle["product"]
+    tasks, sources, _, fixtures = materials(dataset)
     planned = [t["case_id"] for t in tasks]
     assert case_ids and len(case_ids) == len(set(case_ids)) and set(case_ids) <= set(planned)
     registry = work / "attempt-registry.jsonl"
@@ -229,14 +331,16 @@ def run(work, case_ids, *, gold_review=None):
     assert all(not rows or rows[-1]["trial_id"] in invalid for rows in prior.values()), "Never replace a valid primary attempt"
     adapter_paths = [ROOT / "scripts" / name for name in ("quality_acceptance.py", "quality_runner.py", "quality_state_cases.py", "quality_desktop_cases.cjs", "export_quality_output.ts", "quality_ai_import.py", "quality_human_import.py", "quality_judge.py", "quality_scoring.py")]
     def manifest():
-        product()
+        product(freeze)
         return {"product_sha": bundle["product_sha"], "dataset_sha": bundle["dataset_sha"], "case_ids": case_ids,
-                "inputs": {name: file_sha(DATA / name) for name in session["source_files"]},
+                "dataset_path": str(dataset.relative_to(ROOT)), "freeze_path": str(freeze.relative_to(ROOT)),
+                "input_paths": {name: str(path.relative_to(ROOT)) for name, path in inputs.items()},
+                "inputs": {name: file_sha(path) for name, path in inputs.items()},
                 "adapters": {str(path.relative_to(ROOT)): file_sha(path) for path in adapter_paths},
                 "gold_review_sha256": file_sha(gold_review or work / "human-events.jsonl"),
                 "invalidations_sha256": {p.name: file_sha(p) for p in (work / "invalidated-attempts.json", work / "preinput-invalidations.json") if p.exists()},
                 "reviewer_type": "independent_ai" if gold_review else "human",
-                "limits": {"calls": runner.MAX_BATCH_CALLS, "case_calls": runner.MAX_CASE_CALLS, "reported_tokens_stop": runner.MAX_BATCH_REPORTED_TOKENS}}
+                "limits": control.get("limits", {"calls": runner.MAX_BATCH_CALLS, "case_calls": runner.MAX_CASE_CALLS, "reported_tokens_stop": runner.MAX_BATCH_REPORTED_TOKENS})}
     frozen = manifest()
     source_sha = runner.digest(frozen)
     folder = work / ("batch-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:6])
@@ -245,7 +349,7 @@ def run(work, case_ids, *, gold_review=None):
     packets = {"packets": [{"packet_id": sid, "source_id": sid, "case_ids": [t["case_id"] for t in tasks if sid in t["source_ids"]],
         "kind": "explicit_synthetic", "source_url": "https://plango-eval.invalid/" + sid,
         "observed_at": s["observed_at"], "payload": {"title": s["title"], "text": s["text"]}} for sid, s in sources.items()]}
-    control, collected = {"calls": [], "reported_tokens": 0, "stop": None}, []
+    initial_calls, initial_tokens, collected = len(control["calls"]), control["reported_tokens"], []
     for case in tasks:
         cid = case["case_id"]
         if cid not in case_ids:
@@ -265,15 +369,16 @@ def run(work, case_ids, *, gold_review=None):
         fixture = fixtures.get(case["source_ids"][0]) if case["environment"]["driver"] in STATE_DRIVERS else None
         result = runner.collect_case(case, packets, settings, directory, control, source_sha, case_ids,
                     manifest_fn=manifest, desktop_edits=True, fixture=fixture, trial_id=label,
-                    fixture_provenance={"path": str((DATA / "runtime-fixtures.json").relative_to(ROOT)), "json_pointer": "/" + case["source_ids"][0]} if fixture else None)
+                    fixture_provenance={"path": str((dataset / "runtime-fixtures.json").relative_to(ROOT)), "json_pointer": "/" + case["source_ids"][0].replace("~", "~0").replace("/", "~1")} if fixture else None)
         collected.append(result)
         print(json.dumps({"case": cid, "stop": result["stop_reason"], "tokens": result["reported_tokens"]}), flush=True)
     runner.write(folder / "collection.json", {"planned": case_ids, "cases": collected, "stop": control["stop"],
-        "reported_tokens": control["reported_tokens"], "model_invocations": len(control["calls"]), "scope": "controlled_acceptance_collection"})
+        "reported_tokens": control["reported_tokens"] - initial_tokens, "model_invocations": len(control["calls"]) - initial_calls,
+        "stage_reported_tokens": control["reported_tokens"], "stage_model_invocations": len(control["calls"]), "scope": "controlled_acceptance_collection"})
     print(json.dumps({"batch": str(folder.relative_to(ROOT)), "attempted": len(collected), "stop": control["stop"]}), flush=True)
 
 
-def output_case(original, directory):
+def output_case(original, directory, *, fixtures_path=None):
     """Retain static reviewed inputs; add actual outputs and independently read state."""
     case = copy.deepcopy(original)
     packet = case["packet"]
@@ -297,7 +402,7 @@ def output_case(original, directory):
         sid = packet["task"]["source_ids"][0]
         env_source = next(s for s in packet["source_packets"] if s["source_id"] == "ENV-" + sid)
         assert imported["fixture_value_sha256"] == human.canonical_sha(env_source["content"])
-        assert imported["fixture_sha256"] == file_sha(DATA / "runtime-fixtures.json")
+        assert imported["fixture_sha256"] == file_sha(fixtures_path or DATA / "runtime-fixtures.json")
     for stage, capture in checkpoints.items():
         if capture.get("scope") in {"pre_task_context", "actual_owned_backend_restart_desktop_closed"}:
             continue
@@ -353,21 +458,25 @@ def output_case(original, directory):
     return case
 
 
-def bundle_outputs(work, target):
+def bundle_outputs(work, target, *, dataset=None, freeze=None):
     work = Path(work).resolve()
     before = runner.read(work / "gold-bundle.json")
+    dataset, freeze, inputs = session_inputs(work, dataset=dataset, freeze=freeze)
     registry = [json.loads(x) for x in (work / "attempt-registry.jsonl").read_text().splitlines()]
     by_id = {row["case_id"]: row for row in registry}
     invalid = invalid_attempts(work)
-    assert len(by_id) == 30 and set(by_id) == set(before["dataset"]["planned_case_ids"])
+    assert set(by_id) == set(before["dataset"]["planned_case_ids"]), "Every planned case needs a valid attempt"
     assert all(row["trial_id"] not in invalid for row in by_id.values()), "Every invalid case still needs its declared replacement"
-    assert product() == before["product"]
+    assert product(freeze) == before["product"]
     after = copy.deepcopy(before)
     after["collection"] = {"attempts": []}
     for index, case in enumerate(before["cases"]):
         directory = (ROOT / by_id[case["case_id"]]["directory"]).resolve()
         assert directory.is_relative_to(work)
-        row = output_case(case, directory)
+        manifest = runner.read(directory.parent / "manifest.json")
+        assert all(manifest[key] == before[key] for key in ("product_sha", "dataset_sha")), "Mixed product/dataset collection"
+        assert manifest["inputs"] == {name: file_sha(path) for name, path in inputs.items()}, "Collection input drift"
+        row = output_case(case, directory, fixtures_path=dataset / "runtime-fixtures.json")
         after["cases"][index] = row
         for attempt in (r for r in registry if r["case_id"] == row["case_id"]):
             bad = invalid.get(attempt["trial_id"])
@@ -388,24 +497,33 @@ def bundle_outputs(work, target):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare", "run", "bundle", "adjudicate-fixture", "adjudicate-preinput"))
-    parser.add_argument("--work", required=True, type=Path)
-    parser.add_argument("--cases", help="Predeclared subset, normally ten cases per serial batch")
+    parser.add_argument("action", choices=("freeze", "prepare", "run", "bundle", "adjudicate-fixture", "adjudicate-preinput"))
+    parser.add_argument("--work", type=Path)
+    parser.add_argument("--dataset", type=Path, help="Explicit dataset directory; defaults to the original 30-case set or prepared session")
+    parser.add_argument("--freeze", type=Path, help="Explicit product freeze; freeze action writes only a new file")
+    parser.add_argument("--cases", help="Comma-separated IDs from the frozen plan; all planned cases require valid attempts and reviews")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--gold-review", type=Path, help="Actual independent AI gold review explicitly delegated by the user")
     args = parser.parse_args()
     os.umask(0o077)
+    if args.action == "freeze":
+        if not args.freeze:
+            parser.error("freeze requires an explicit new --freeze path")
+        freeze_product(args.freeze)
+        return
+    if not args.work:
+        parser.error("--work is required")
     if args.action == "prepare":
-        prepare(args.work)
+        prepare(args.work, dataset=args.dataset, freeze=args.freeze)
     elif args.action == "run":
-        run(args.work, (args.cases or "").split(","), gold_review=args.gold_review)
+        run(args.work, (args.cases or "").split(","), gold_review=args.gold_review, dataset=args.dataset, freeze=args.freeze)
     elif args.action == "adjudicate-fixture":
         adjudicate_fixture(args.work)
     elif args.action == "adjudicate-preinput":
         adjudicate_preinput(args.work)
     else:
         assert args.output, "bundle requires a new --output path"
-        bundle_outputs(args.work, args.output)
+        bundle_outputs(args.work, args.output, dataset=args.dataset, freeze=args.freeze)
 
 
 if __name__ == "__main__":

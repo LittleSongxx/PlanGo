@@ -68,7 +68,8 @@ def test_origin_clarification_corrects_the_failed_explicit_address_without_losin
             return {"ok": True, "result": corrected.model_dump(mode="json")} if arguments["address"] == corrected.name else {"ok": False, "error": "ambiguous_location"}
 
         model = ModelAdapter(settings(tmp_path))
-        model.structured = AsyncMock(return_value=RequirementOutput(location_name=corrected.name))
+        model.structured = AsyncMock(return_value=RequirementOutput(location_name=corrected.name,
+                                      field_evidence={"location_name": "出发地点改为受控恢复起点"}))
         deps = GraphDeps(model=model, world=SimpleNamespace(strict_location=True), tools=SimpleNamespace(schemas=lambda: [], execute=execute), planner=None, memory=None, runs=None, action_provider=None)
         nodes = {}
         build_graph(deps, extension=lambda graph: nodes.update(requirements=graph.nodes["requirements"].runnable))

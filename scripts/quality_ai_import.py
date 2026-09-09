@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Aggregate a separate AI context's controlled-30 reviews, never human signatures.
+"""Aggregate a separate AI context's frozen controlled reviews, never human signatures.
 
 Gold is the actor admission gate. Complete, hash-bound output reviews are the
 score gate. No model/provider/browser/service is invoked by this module.
@@ -19,13 +19,42 @@ import quality_judge as judge
 from quality_scoring import summarize, unique_json_keys
 
 SCOPE = "30 controlled acceptance cases; independent-context AI review; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark"
+BOUNDED_PROTOCOL = "plango.controlled-bounded.v1"
+
+
+def validate_protocol(dataset: dict[str, Any]) -> None:
+    """Explicitly version smaller plans; the legacy release still requires 30."""
+    protocol = dataset.get("protocol")
+    if protocol is None:
+        if len(dataset["planned_case_ids"]) != 30:
+            raise ValueError("expected_30_planned_cases_without_versioned_protocol")
+        return
+    if protocol.get("version") != BOUNDED_PROTOCOL:
+        raise ValueError("unsupported_bounded_protocol")
+    planned = dataset["planned_case_ids"]
+    if protocol.get("planned_case_ids") != planned or not 1 <= len(planned) <= 12:
+        raise ValueError("bounded_plan_mismatch_or_out_of_range")
+    if protocol.get("evaluation_kind") not in {"regression", "independent_controlled"}:
+        raise ValueError("evaluation_kind_required")
+    limits = protocol.get("limits", {})
+    maxima = {"calls": 80, "case_calls": 12, "reported_tokens_stop": 120000}
+    if set(limits) != set(maxima) or any(type(limits[key]) is not int or not 1 <= limits[key] <= maximum for key, maximum in maxima.items()):
+        raise ValueError("bounded_limits_required")
+    ledger = protocol.get("budget_ledger")
+    if not isinstance(ledger, str) or Path(ledger).is_absolute() or ".." in Path(ledger).parts or Path(ledger).parts[:1] != ("output",):
+        raise ValueError("shared_budget_ledger_must_be_under_output")
+
+
+def review_scope(bundle: dict[str, Any]) -> str:
+    protocol = bundle["dataset"].get("protocol")
+    return SCOPE if protocol is None else (f"{len(bundle['cases'])} controlled {protocol['evaluation_kind']} cases; "
+        "independent-context AI review; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark")
 
 
 def _bundle_issues(bundle: dict[str, Any]) -> list[str]:
     try:
         sealed = human.seal_bundle(bundle)
-        if len(sealed["cases"]) != 30:
-            return ["bundle:expected_30_planned_cases"]
+        validate_protocol(sealed["dataset"])
         if any(bundle.get(key) != sealed[key] for key in ("dataset_sha", "product_sha", "collection_sha")):
             return ["bundle:hash_mismatch"]
         if any(old.get("gold_sha") != new["gold_sha"] or old.get("packet_sha") != new["packet_sha"]
@@ -79,7 +108,7 @@ def _case_rows(bundle: dict[str, Any], review: dict[str, Any], stage: str) -> tu
 
 
 def validate_gold(bundle: dict[str, Any], review: dict[str, Any]) -> list[str]:
-    """Empty issues means all 30 gold/source cases were approved by the AI reviewer."""
+    """Empty issues means every preregistered gold/source case was approved."""
     issues = _bundle_issues(bundle)
     if issues:
         return issues
@@ -164,7 +193,8 @@ def import_reviews(bundle: dict[str, Any], gold_review: dict[str, Any],
                              "output_case_review_sha": human.canonical_sha(row)})
     scores = summarize(annotations)
     complete = not issues and scores["complete"]
-    release = {"schema": "plango.independent-ai-controlled-review.v1", "scope": SCOPE,
+    scope = review_scope(bundle)
+    release = {"schema": "plango.independent-ai-controlled-review.v1", "scope": scope,
                "dataset_sha": bundle["dataset_sha"], "product_sha": bundle["product_sha"], "collection_sha": bundle["collection_sha"],
                "bundle_sha": human.canonical_sha(bundle), "gold_review_sha": human.canonical_sha(gold_review),
                "output_review_sha": human.canonical_sha(output_review), "annotations_sha": human.canonical_sha(annotations),
@@ -172,7 +202,7 @@ def import_reviews(bundle: dict[str, Any], gold_review: dict[str, Any],
                "human_verified": False, "gold_human_verified": False, "human_calibrated": False,
                "context_provenance": "Reviewer context isolation is established by the orchestration record, not inferred from hashes or model agreement"}
     if complete:
-        scores.update(report_kind="independent_ai_reviewed_controlled", reviewer_type="AI", scope=SCOPE, release=release,
+        scores.update(report_kind="independent_ai_reviewed_controlled", reviewer_type="AI", scope=scope, release=release,
                       tsr_percent=100 * scores["tsr"],
                       groundedness_percent=100 * scores["groundedness_macro"] if scores["groundedness_macro"] is not None else None)
         return {"status": "complete", "report_kind": "independent_ai_reviewed_controlled", "reviewer_type": "AI",

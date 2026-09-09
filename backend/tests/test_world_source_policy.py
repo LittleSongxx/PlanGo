@@ -105,9 +105,10 @@ def test_selected_poi_center_template_never_geocodes_merchant_as_origin(tmp_path
         assert (spec["location"]["latitude"], spec["location"]["longitude"]) == (29.575499, 106.532212)
         assert spec["search_location"]["latitude"] == place.latitude
         assert spec["must_visit_place_ids"] == [place.place_id]
-        assert current["state"]["clarification"]["fields"] == ["visit_date"], current
+        assert current["state"]["clarification"]["fields"] == ["context"], current
         world.amap.geocode.assert_not_awaited()
 
+        app.state.runtime.model.structured = AsyncMock(side_effect=lambda schema, *, fallback, **kwargs: fallback)
         reply = f"今天2026-09-0918:30到19:30，3位成人一起吃晚餐，不设预算，只按当前网页里的「{place.name}」安排一个餐厅行程，不增加其他地点。行程确认后核对预约表单，不要提交。"
         assert client.post(f"/api/v1/runs/{run_id}/messages", json={"text": reply}).status_code == 202
         reading = wait_for(client, run_id, lambda v: bool(v["state"].get("browser_wait")) or v["phase"] == "FAILED")

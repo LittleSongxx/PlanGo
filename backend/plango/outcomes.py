@@ -173,8 +173,10 @@ def form_evidence(observation):
 def _fresh_artifact(item, now):
     try:
         observed = datetime.fromisoformat(str(item.get("observed_at") or "").replace("Z", "+00:00"))
-        return bool(observed.tzinfo and -2 <= (now - observed).total_seconds() <= 600)
-    except ValueError:
+        expires = datetime.fromisoformat(str(item["expires_at"]).replace("Z", "+00:00")) if item.get("expires_at") else None
+        return bool(observed.tzinfo and -2 <= (now - observed).total_seconds() <= 600
+                    and (expires is None or expires.tzinfo and observed <= expires and now < expires))
+    except (ValueError, TypeError):
         return False
 
 
@@ -481,7 +483,13 @@ def draft_outcome(state):
                             data={**review, "business_completed": False, "execution_allowed": False})
 
 
-def update_task_context(state: dict[str, Any]) -> dict[str, Any]:
+class TaskIntent(BaseModel):
+    """Language-level objective only; selecting a route never grants an action."""
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["planning", "extract", "reasoning", "write", "continue"] = "continue"
+
+
+def update_task_context(state: dict[str, Any], intent: TaskIntent | None = None) -> dict[str, Any]:
     text = str(state.get("input_text") or "")
     requested = intent_text(text)
     old = dict(state.get("browser_task_context") or {})
@@ -497,19 +505,27 @@ def update_task_context(state: dict[str, Any]) -> dict[str, Any]:
         if explicit_browser and (BROWSER.search(requested) or WRITE.search(requested) or REASONING.search(requested) or analysis)
         else old.get("mode") or ("browser" if BROWSER.search(requested) else "planning")
     )
+    if intent is not None:
+        if intent.kind == "continue":
+            mode = old.get("mode") or mode
+        else:
+            mode = "planning" if intent.kind == "planning" else "browser"
     if mode != old.get("mode") or not old:
+        raw_spec = state.get("trip_spec") or state.get("previous_spec")
+        spec = TripSpec.model_validate(raw_spec) if raw_spec else None
         context: dict[str, Any] = {
             "mode": mode,
             "request": text,
             "edits": [],
-            "party_size": None,
-            "total_budget": None,
-            "per_person_budget": None,
+            "party_size": spec.party_size if spec else old.get("party_size"),
+            "total_budget": spec.budget if spec else old.get("total_budget"),
+            "per_person_budget": spec.per_person_budget if spec else old.get("per_person_budget"),
+            "visit_date": spec.visit_date.isoformat() if spec and spec.visit_date else old.get("visit_date"),
+            "time_window_start": spec.time_window_start if spec else old.get("time_window_start"),
         }
     else:
-        context = old
-        if text != context.get("latest"):
-            context["edits"] = [*context.get("edits", []), text]
+        context = dict(old)
+        context["edits"] = [*context.get("edits", []), text]
     # An explicit new objective replaces task kind; a field-only edit retains it.
     if mode == "planning":
         context["kind"] = "planning"
@@ -523,6 +539,12 @@ def update_task_context(state: dict[str, Any]) -> dict[str, Any]:
         context["kind"] = "extract"
         context["read_kind"] = "menu_read" if re.search(r"菜单|餐单|菜价|\bmenu\b", text, re.I) and not re.search(r"(?:不要|不用|别).{0,4}菜单", text) else "page_read"
     context.setdefault("kind", "planning" if mode == "planning" else "extract")
+    if intent is not None:
+        kind = old.get("kind", context["kind"]) if intent.kind == "continue" else intent.kind
+        context["kind"] = kind
+        context["source_analysis"] = kind == "reasoning"
+        if kind == "reasoning":
+            context["comparison_scope"] = text if intent.kind != "continue" else old.get("comparison_scope", text)
     edits, spans, invalid = price_fields(text)
     context.update(edits)
     context["budget_ambiguous"] = "budget" in invalid
@@ -930,8 +952,12 @@ def source_analysis(state, extracted: SourceAnalysis):
             except ValueError:
                 return []
         date_values, requested_dates = dates(validity), dates(str(context.get("latest") or context.get("request") or ""))
+        if not requested_dates:
+            requested_dates = dates(str(context.get("visit_date") or ""))
         times = re.findall(r"(?<!\d)([0-2]?\d):([0-5]\d)", validity)
         requested_times = re.findall(r"(?<!\d)([0-2]?\d):([0-5]\d)", str(context.get("latest") or context.get("request") or ""))
+        if not requested_times:
+            requested_times = re.findall(r"(?<!\d)([0-2]?\d):([0-5]\d)", str(context.get("time_window_start") or ""))
         minutes = [int(h) * 60 + int(m) for h, m in times]
         current_minute = int(requested_times[-1][0]) * 60 + int(requested_times[-1][1]) if requested_times else None
         if not (clause("validity", r"使用|可用|有效|适用|只限|仅限") and 1 <= len(date_values) <= 2 and len(requested_dates) == 1

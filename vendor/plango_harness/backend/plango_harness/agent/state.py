@@ -234,7 +234,9 @@ def planning_reset(state: dict[str, Any]) -> dict[str, Any]:
         "previous_spec": state.get("trip_spec") or state.get("previous_spec"),
         "previous_plan": state.get("selected_plan") or state.get("previous_plan")
         or next(iter(state.get("candidate_plans") or []), None),
-        "trip_spec": None, "plan_draft": None, "draft_errors": [],
+        # Re-entry still parses this turn before planning. Keep the last accepted
+        # requirements visible if parsing pauses; invalidate decisions, not input.
+        "trip_spec": state.get("trip_spec") or state.get("previous_spec"), "plan_draft": None, "draft_errors": [],
         "place_candidates": state.get("place_candidates", []),
         "candidate_plans": [], "selected_plan": None, "verifier": None, "critique": None,
         "action_proposal": None, "action_results": [], "approval_decision": None,

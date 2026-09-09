@@ -1,5 +1,5 @@
 """Real UI wording regressions; only routing is isolated, no merchant facts fabricated."""
-from plango.outcomes import update_task_context
+from plango.outcomes import TaskIntent, update_task_context
 
 
 def test_negative_submission_stays_read_only_and_is_not_removed_from_request():
@@ -45,3 +45,38 @@ def test_source_analysis_needs_evidence_not_geolocation_and_preserves_write_inte
         assert update_task_context({'input_text': text, 'turn_id': 1})['kind'] == 'write'
     context = update_task_context({'input_text': '帮我规划重庆行程并分析预算。', 'turn_id': 1})
     assert context['mode'] == 'planning'
+
+
+def test_semantic_objective_overrides_words_and_continuation_preserves_scope():
+    original = update_task_context({'input_text': '安排重庆行程', 'turn_id': 1})
+    for request in ('这里写了来回各收五元，三个人要留多少车钱？',
+                    '别替我安排出游，只说表里两个选项差在哪里。',
+                    '九点一刻到还来得及用这张券么？'):
+        state = {'input_text': request, 'turn_id': 2, 'browser_task_context': original}
+        context = update_task_context(state, TaskIntent(kind='reasoning'))
+        assert context['kind'] == 'reasoning' and context['mode'] == 'browser'
+        assert context['source_analysis'] and context['request'] == request
+        assert original['kind'] == 'planning'
+        continued = update_task_context({'input_text': '其余不变', 'turn_id': 3,
+                                        'browser_task_context': context}, TaskIntent())
+        assert continued['kind'] == 'reasoning' and continued['source_analysis']
+        assert continued['comparison_scope'] == request
+        assert update_task_context({'input_text': '其余不变', 'turn_id': 3,
+                                   'browser_task_context': continued}, TaskIntent()) == continued
+        another = update_task_context({'input_text': '其余不变', 'turn_id': 4,
+                                      'browser_task_context': continued}, TaskIntent())
+        assert another['edits'] == ['其余不变', '其余不变']
+
+
+def test_changing_delivery_keeps_accepted_requirements():
+    state = {'input_text': '不用重新安排，按原人数和预算核算这份资料够不够', 'turn_id': 2,
+             'trip_spec': {'goal': '原草案', 'party_size': 3, 'budget': 300, 'per_person_budget': 100,
+                           'visit_date': '2026-09-11', 'time_window_start': '18:30'},
+             'browser_task_context': {'mode': 'planning', 'kind': 'planning', 'turn_id': 1}}
+    context = update_task_context(state, TaskIntent(kind='reasoning'))
+    expected = {'party_size': 3, 'total_budget': 300, 'per_person_budget': 100,
+                'visit_date': '2026-09-11', 'time_window_start': '18:30'}
+    assert all(context[field] == value for field, value in expected.items())
+    continued = update_task_context({'input_text': '其余不变', 'turn_id': 3,
+                                    'browser_task_context': context}, TaskIntent())
+    assert all(continued[field] == value for field, value in expected.items())

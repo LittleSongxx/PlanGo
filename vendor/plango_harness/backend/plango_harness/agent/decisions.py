@@ -4,7 +4,7 @@ import re
 from datetime import date
 from typing import Any, Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from .contracts import Activity, ContractModel, Location, PartyCounts, PartyMember, TripSpec
 from .requirements import preservation_instruction
@@ -41,13 +41,13 @@ class RequirementOutput(ContractModel):
     visit_date_unknown: bool = False
     timezone: str | None = None
     time_window_start_unknown: bool = False
-    time_window_start: str | None = None
-    duration_minutes: int | None = Field(default=None, ge=30, le=1440)
-    budget: float | None = Field(default=None, ge=0)
-    per_person_budget: float | None = Field(default=None, ge=0)
+    time_window_start: str | None = Field(default=None, pattern=r"^(?:[01]?\d|2[0-3]):[0-5]\d$")
+    duration_minutes: int | None = Field(default=None, ge=30, le=1440, strict=True)
+    budget: float | None = Field(default=None, ge=0, le=1_000_000, allow_inf_nan=False, strict=True)
+    per_person_budget: float | None = Field(default=None, ge=0, le=1_000_000, allow_inf_nan=False, strict=True)
     clear_budget: bool = False
     clear_per_person_budget: bool = False
-    party_size: int | None = Field(default=None, ge=1, le=12)
+    party_size: int | None = Field(default=None, ge=1, le=12, strict=True)
     party_size_unknown: bool = False
     party_counts: PartyCounts | None = Field(default=None, max_length=12)
     required_activities: list[Activity] | None = None
@@ -61,15 +61,21 @@ class RequirementOutput(ContractModel):
     clarification_needed: bool = False
     clarification_fields: list[str] = Field(default_factory=list)
     clarification_question: str = ""
+    field_evidence: dict[str, str] | None = Field(default=None, description="本轮修改字段到当前用户消息完整原文子句的映射；无修改返回空对象。未提及、沿用旧值的字段不得列入。明确清除/未知使用对应标志字段名。")
     indoor_required: bool | None = None
     outdoor_required: bool | None = None
-    max_queue_minutes: int | None = Field(default=None, ge=0, le=1440)
-    max_distance_km: float | None = Field(default=None, ge=0, le=1000)
-    search_radius_km: float | None = Field(default=None, ge=0.1, le=50)
-    route_distance_km: float | None = Field(default=None, ge=0.1, le=1000)
+    max_queue_minutes: int | None = Field(default=None, ge=0, le=1440, strict=True)
+    max_distance_km: float | None = Field(default=None, ge=0, le=1000, allow_inf_nan=False, strict=True)
+    search_radius_km: float | None = Field(default=None, ge=0.1, le=50, allow_inf_nan=False, strict=True)
+    route_distance_km: float | None = Field(default=None, ge=0.1, le=1000, allow_inf_nan=False, strict=True)
     clear_search_radius: bool = False
     clear_route_distance: bool = False
     travel_mode: Literal["driving", "walking", "transit"] | None = None
+
+    @field_validator("timezone")
+    @classmethod
+    def known_timezone(cls, value: str | None) -> str | None:
+        return TripSpec.known_timezone(value) if value is not None else None
 
     def to_trip_spec(self, fallback_goal: str, base: TripSpec | None = None) -> TripSpec:
         """Apply a validated requirement patch without dropping prior constraints."""
