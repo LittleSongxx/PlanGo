@@ -1,7 +1,12 @@
 """Offline extraction fixtures: deterministic arithmetic and source boundaries, no model/network."""
+import json
+import tempfile
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from fastapi.testclient import TestClient
+from plango.app import create_app
+from plango.graph import BrowserDecision
 from plango.outcomes import (
     CitedNumber,
     SourceAnalysis,
@@ -9,6 +14,7 @@ from plango.outcomes import (
     source_analysis,
     update_task_context,
 )
+from test_browser_harness import TOKEN, fixture, settings, wait_for
 
 
 def state_for(request, text):
@@ -125,3 +131,47 @@ def test_multiple_offers_or_merchants_are_not_joined_and_return_fare_is_not_one_
     extracted = SourceAnalysis(meal_total=CitedNumber(value=168, quote="完整餐费168元"), fare_per_person=CitedNumber(value=5, quote="票价5元/人"))
     result = source_analysis(state, extracted)
     assert result.data["total_cost"] is None and "单程标准票价未明确" in result.summary
+
+
+@pytest.mark.parametrize("case", ["package", "route"])
+def test_browser_decide_accepts_unique_short_quotes_and_persists_full_source_matches(case):
+    state, extracted = offer()
+    if case == "package":
+        extracted.package_price.quote = "136元/份"
+        extracted.covered_people.quote = "2名成人"
+        expected_quote, expected_total = "售价136元/份", 136
+    else:
+        state = state_for("4人，根据给定路线能确认不超预算吗？总预算230元。", "完整餐费已确认为168元。公交路线距离3.6公里，用时18分钟；单程标准票价未提供，不包含返程。")
+        extracted = SourceAnalysis(meal_total=CitedNumber(value=168, quote="168元"), distance_m=CitedNumber(value=3600, quote="3.6公里"), duration_seconds=CitedNumber(value=1080, quote="18分钟"))
+        expected_quote, expected_total = "完整餐费已确认为168元", None
+    # Exercise the actual JSON document -> bridge receipt -> browser_decide
+    # chain, not just the validator with a hand-built final state.
+    text = json.dumps({"evidence": [{"text": state["browser_observation"]["text"]}]}, ensure_ascii=False)
+    schemas = []
+    with tempfile.TemporaryDirectory() as directory:
+        app = create_app(settings(directory), token=TOKEN)
+        app.state.runtime.model._model = object()  # Isolated model fixture, no provider call.
+
+        async def short_quotes(schema, *, fallback, **kwargs):
+            schemas.append(schema)
+            if schema is SourceAnalysis:
+                return extracted
+            assert schema is not BrowserDecision, "Validated analysis must provide the answer, not a model finish rationale"
+            return fallback
+
+        app.state.runtime.model.structured = short_quotes
+        with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
+            run_id = client.post("/api/v1/runs", json={"input_text": state["input_text"], "browser_session_id": "fixture-desktop"}).json()["run_id"]
+            wait_for(client, run_id, lambda run: bool(run["state"].get("browser_wait")))
+            command = client.get("/api/v1/browser/commands?browser_session_id=fixture-desktop").json()["commands"][0]
+            assert command["operation"] == "extract"
+            client.post("/api/v1/browser/commands/" + command["command_id"] + "/result", json={**fixture(command), "text": text, "tables": []})
+            final = wait_for(client, run_id, lambda run: bool(run.get("outcome")))
+            outcome = final["state"]["execution_outcome"]
+            assert final["phase"] == "SUCCEEDED" and outcome["data"]["scope"] == "source_analysis"
+            assert outcome["data"]["total_cost"] == expected_total
+            assert expected_quote in outcome["data"]["quotes"].values()
+            assert final["state"]["action_results"] == []
+            assert final["state"].get("trip_spec") is None
+            assert schemas.count(SourceAnalysis) == 1
+            assert ("若同行2人均符合条款中的成人范围" if case == "package" else "不能按0元计算") in outcome["summary"]

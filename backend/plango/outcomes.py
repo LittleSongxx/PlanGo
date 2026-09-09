@@ -850,11 +850,15 @@ def source_analysis(state, extracted: SourceAnalysis):
         if key == "covered_people" and re.search(r"(?:成人|成年人).{0,12}(?:儿童|小孩)", text):
             continue  # Mixed age composition needs an explicit group breakdown.
         matches = [(match, factor) for pattern, factor in expressions for match in re.finditer(pattern, text, re.I)]
+        quoted = list(re.finditer(re.escape(fact.quote), text))
         observed = {Decimal(match[1]) * factor for match, factor in matches
                     if not re.search(r"不是|并非|未确认|不含|往返|人均|每人|每位", re.split(r"[。；;\n]", text[:match.start()])[-1][-20:])
-                    and match.group() in fact.quote}
+                    and not _INSTRUCTION.search(re.split(r"[。；;\n]", text[:match.start()])[-1] + match.group())
+                    and len(quoted) == 1 and quoted[0].start() <= match.start(1) and match.end(1) <= quoted[0].end()}
         if len(matches) == 1 and observed == {Decimal(str(fact.value))}:
-            values[key], citations[key] = Decimal(str(fact.value)), fact.quote
+            # A short model quote can identify the numeric span, while the
+            # original full match still proves its label/unit and preserves it.
+            values[key], citations[key] = Decimal(str(fact.value)), matches[0][0].group()
     def clause(key, positive, negative=""):
         quote = getattr(extracted, key)
         valid = bool(quote and quote in text and not _INSTRUCTION.search(quote) and re.search(positive, quote)

@@ -180,6 +180,11 @@ def install_budget(runtime, case_id, control, expected_sha, case_ids, log):
         started = time.monotonic()
         try:
             result = await original(awaitable, timeout=timeout)
+            parsed = result.get("parsed") if isinstance(result, dict) else None
+            if type(parsed).__name__ == "SourceAnalysis":
+                # Private dev diagnostics only; never supplied to the judge as
+                # source evidence, and never persisted as product facts.
+                row["unverified_analysis"] = parsed.model_dump(mode="json")
             usage = usage_of(result)
             row.update(status="response", usage=usage, usage_missing=not bool(usage))
             if not usage:
