@@ -22,6 +22,7 @@ function driverConfig(config, declaredCase) {
   const case_id = config.case_id.replace(/^DEV-?0?([0-9]+)$/, (_, id) => `DEV-${id.padStart(2, '0')}`)
   const driver = config.driver || LEGACY_DRIVERS[case_id]
   assert(['edit', 'save_restart', 'message_recovery', 'message_uncertain'].includes(driver), 'Unsupported desktop driver')
+  assert(config.phase === undefined || config.phase === 'read_only_restore' && driver === 'save_restart', 'Restore is a read-only save/restart phase')
   if (declaredCase) {
     assert.equal(declaredCase.case_id, case_id, 'Declared case identity mismatch')
     assert.equal(declaredCase.environment?.driver || LEGACY_DRIVERS[case_id], driver, 'Declared driver mismatch')
@@ -84,6 +85,7 @@ function messageSequence(config) {
 }
 
 function permittedWrite(config, method, url, payload, sequence, review) {
+  if (config.phase === 'read_only_restore') return null
   if (method !== 'POST' || url.search) return null
   const runPath = `/api/v1/runs/${encodeURIComponent(config.run_id)}`
   if (config.driver === 'save_restart') return url.pathname === runPath + '/draft-decision' && permittedSave(payload, review) ? { kind: 'save' } : null
@@ -223,6 +225,7 @@ async function runDriver(config) {
       lookup_attempts: 0, forwarded_lookups: 0, injected_lookup_503: 0, accepted_responses_dropped: 0, unexpected_write_attempts: 0, create_run_attempts: 0 },
     backend_restarted: false, desktop_restarted: false, cleanup: {}, limitations: ['The root runner must independently inspect persisted DB state and restart the backend; this driver never sets completion state.'] }
   let proxy, electron, page, stopped = false
+  const outputFile = name => join(config.evidence_dir || config.case_dir, name)
   const record = (action, details = {}) => result.driver_actions.push({ action, at: new Date().toISOString(), ...details })
   const onSignal = () => { stopped = true; if (electron) void electron.close().catch(() => {}) }
   process.once('SIGTERM', onSignal); process.once('SIGINT', onSignal)
@@ -251,7 +254,7 @@ async function runDriver(config) {
       if (!batch.length) break
       events.push(...batch); cursor = batch.at(-1).seq
     }
-    const file = `${String(result.checkpoints.length + 1).padStart(2, '0')}-${name}`
+    const file = relative(config.case_dir, outputFile(`${String(result.checkpoints.length + 1).padStart(2, '0')}-${name}`))
     const checkpoint = { id: name, captured_at: new Date().toISOString() }
     await jsonFile(join(config.case_dir, `${file}.snapshot.json`), { snapshot: run, events, checkpoint })
     await jsonFile(join(config.case_dir, `${file}.events.json`), { events })
@@ -283,7 +286,7 @@ async function runDriver(config) {
   }
   const openDesktop = async name => {
     assert(!electron, 'An existing desktop must exit before another consumer starts')
-    const bootFile = join(config.case_dir, `desktop-bootstrap-${name}.cjs`)
+    const bootFile = outputFile(`desktop-bootstrap-${name}.cjs`)
     await writeFile(bootFile, bootstrap(config, proxy.origin), { flag: 'wx', mode: 0o600 })
     electron = await _electron.launch({ executablePath: join(ROOT, 'node_modules/electron/dist/electron'), args: ['--no-sandbox', bootFile],
       cwd: config.case_dir, env: childEnvironment(config, proxy.origin), timeout: 30_000 })
@@ -318,9 +321,30 @@ async function runDriver(config) {
     assert.equal(initial.run_id, config.run_id)
     assert(!initial.command_pending && !initial.state?.browser_receipt_pending && !initial.state?.browser_wait, 'Seed must have no pending command/browser work')
     assert(!(initial.state?.action_results || []).some(action => ['RUNNING', 'UNKNOWN'].includes(action.status)), 'Seed must have no uncertain actions')
+    proxy = await makeProxy(config, result, initial.draft_review)
+    if (config.phase === 'read_only_restore') {
+      assert.equal(initial.phase, 'SUCCEEDED', 'Restore requires the original saved task')
+      assert.equal(initial.state?.execution_outcome?.data?.scope, 'draft_ready')
+      result.phase = config.phase
+      result.original_desktop_result = config.original_desktop_result
+      result.backend_restart = config.backend_restart
+      result.saved_baseline = config.saved_baseline
+      await openDesktop('backend-restored')
+      await waitUiSummary(await snapshot())
+      const restored = await capture('both-restarted')
+      result.restored_comparison = { baseline_hash: result.saved_baseline.state_hash, restored_hash: hash(comparable(restored)),
+        equal: hash(comparable(restored)) === result.saved_baseline.state_hash }
+      assert(result.restored_comparison.equal, 'Backend/desktop restore changed original task/spec/plan/offer/usage')
+      assert.equal(result.transport_counts.message_post_attempts, 0)
+      assert.equal(result.transport_counts.draft_save_attempts, 0)
+      assert.equal(result.transport_counts.create_run_attempts, 0)
+      assert.equal(result.transport_counts.unexpected_write_attempts, 0)
+      result.desktop_restarted = true
+      result.status = 'completed'
+      return result
+    }
     assert(initial.draft_review && !initial.outcome, 'Seed must be a real unsaved reviewable draft')
     assert.equal(initial.draft_review.scope, 'draft_ready')
-    proxy = await makeProxy(config, result, initial.draft_review)
     await openDesktop('initial')
     await wait('real_draft_save_button', async () => await page.getByRole('button', { name: '保存草案', exact: true }).isVisible())
     await capture('initial-reviewable-draft')
@@ -413,7 +437,7 @@ async function runDriver(config) {
     try { await proxy?.close(); result.cleanup.proxy_closed = true } catch { result.cleanup.proxy_closed = false; result.status = 'failed' }
     result.cleanup.backend_untouched = true; result.cleanup.profile_preserved = true; result.finished_at = new Date().toISOString()
     process.removeListener('SIGTERM', onSignal); process.removeListener('SIGINT', onSignal)
-    await jsonFile(join(config.case_dir, 'desktop-result.json'), result)
+    await jsonFile(outputFile('desktop-result.json'), result)
   }
   return result
 }
@@ -426,21 +450,39 @@ async function main() {
     && !url.username && !url.password && url.pathname === '/' && !url.search && !url.hash, 'Owned dynamic loopback API required')
   config.backend_url = url.origin
   for (const name of ['case_dir', 'client_data_dir', 'profile_dir']) config[name] = resolve(config[name])
+  config.evidence_dir = resolve(config.evidence_dir || config.case_dir)
   assert(inside(join(ROOT, 'output'), config.case_dir), 'Private case_dir must be under this repository output/')
   assert(inside(config.case_dir, config.client_data_dir) && inside(config.case_dir, config.profile_dir) && config.client_data_dir !== config.profile_dir)
+  assert(config.evidence_dir === config.case_dir || inside(config.case_dir, config.evidence_dir), 'Evidence must stay under the original case')
+  assert(![config.client_data_dir, config.profile_dir].some(path => path === config.evidence_dir || inside(path, config.evidence_dir)), 'Evidence must not overwrite profile/client state')
   const caseInput = resolve(config.case_input_path || join(config.case_dir, 'case-input.json'))
   assert(inside(config.case_dir, caseInput) && caseInput.endsWith('.json'), 'Case declaration must be private case-owned JSON')
   const declaration = await readFile(caseInput, 'utf8').then(JSON.parse).catch(error => { if (error.code !== 'ENOENT') throw error; return null })
   config = driverConfig(config, declaration?.case || declaration)
   assert(typeof config.backend_token === 'string' && config.backend_token.length >= 8 && typeof config.browser_session_id === 'string' && config.browser_session_id)
   assert(typeof config.run_id === 'string' && /^[a-zA-Z0-9:_-]+$/.test(config.run_id))
-  for (const name of ['case_dir', 'client_data_dir', 'profile_dir']) { await mkdir(config[name], { recursive: true, mode: 0o700 }); assert.equal(await realpath(config[name]), config[name], 'Symlinked case resources are not allowed') }
-  for (const name of ['.env', '.env.example', 'desktop-result.json']) assert(!(await stat(join(config.case_dir, name)).catch(() => null)), 'Existing case config/result must not be overwritten or loaded')
+  for (const name of ['case_dir', 'client_data_dir', 'profile_dir', 'evidence_dir']) { await mkdir(config[name], { recursive: true, mode: 0o700 }); assert.equal(await realpath(config[name]), config[name], 'Symlinked case resources are not allowed') }
+  for (const name of ['.env', '.env.example']) assert(!(await stat(join(config.case_dir, name)).catch(() => null)), 'Existing case config must not be loaded')
+  assert(!(await stat(join(config.evidence_dir, 'desktop-result.json')).catch(() => null)), 'Existing result must not be overwritten')
   assert(!(await stat(join(config.profile_dir, 'plango-config.json')).catch(() => null)), 'Fresh isolated profile required; existing runtime override could contain keys')
+  if (config.phase === 'read_only_restore') {
+    assert(config.evidence_dir !== config.case_dir, 'Restore requires separate new evidence files')
+    const sourcePath = join(config.case_dir, 'desktop-result.json'), bytes = await readFile(sourcePath), original = JSON.parse(bytes)
+    assert.equal(config.original_desktop_result?.path, 'desktop-result.json')
+    assert.equal(config.original_desktop_result?.sha256, createHash('sha256').update(bytes).digest('hex'))
+    assert.equal(original.run_id, config.run_id)
+    assert.equal(original.driver, 'save_restart')
+    assert.equal(original.status, 'completed')
+    assert(original.cleanup?.desktop_closed && original.cleanup?.proxy_closed && original.saved_baseline)
+    assert.equal(original.transport_counts?.forwarded_draft_saves, 1)
+    assert(Date.parse(original.finished_at) <= Date.parse(config.backend_restart?.stopped_at)
+      && Date.parse(config.backend_restart.stopped_at) <= Date.parse(config.backend_restart.reopened_at), 'Restore requires the actual ordered backend lifecycle')
+    config.saved_baseline = original.saved_baseline
+  }
   const identityPath = join(config.client_data_dir, 'desktop-identity.json'), identity = { token: config.backend_token, browserSessionId: config.browser_session_id }
   const existing = await readFile(identityPath, 'utf8').catch(error => { if (error.code !== 'ENOENT') throw error; return null })
   if (existing) assert.deepEqual(JSON.parse(existing), identity, 'Existing identity mismatch; never replace it')
-  else await jsonFile(identityPath, identity)
+  else { assert(config.phase !== 'read_only_restore', 'Restore must preserve an existing identity'); await jsonFile(identityPath, identity) }
   const result = await runDriver(config)
   const summary = JSON.stringify({ case_id: result.case_id, status: result.status, checkpoints: result.checkpoints.length, desktop_restarted: result.desktop_restarted, backend_restarted: false, cleanup: result.cleanup })
   const exitCode = result.status === 'completed' ? 0 : 1

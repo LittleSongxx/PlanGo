@@ -183,22 +183,42 @@ def test_output_packaging_keeps_original_events_receipt_time_and_explicit_fixtur
     source["content"] = fixture
     now = "2026-09-09T13:00:00Z"
     event = {"event_seq": 7, "event_type": "INPUT_ACCEPTED", "created_at": now, "payload": {"request_id": "actual-original"}}
-    envelope = {"snapshot": {"state": {}}, "events": [event]}
+    envelope = {"snapshot": {"state": {"trip_spec": {"budget": 440}, "messages": ["hidden model"],
+        "selected_plan": {"plan_id": "p1", "version": 2, "rationale": "hidden model rationale"},
+        "evidence": [{"evidence_id": "fact1", "claim": "hidden claim", "payload": {"price": 248}}], "weather": None, "browser_artifacts": []}}, "events": [event]}
     runner.write(tmp_path / "snapshot.json", envelope)
     runner.write(tmp_path / "visible.json", {"messages": [], "cards": [], "checkpoint": {"id": "final"}})
     runner.write(tmp_path / "imported-state.json", {"fixture_value_sha256": ai.human.canonical_sha(fixture),
                  "fixture_sha256": acceptance.file_sha(fixture_path), "imported_at": "2026-09-09T12:59:00Z"})
     receipt = {"at": now, "accepted": True, "request_id": "actual-original"}
+    runner.write(tmp_path / "captured.ui.json", {"text": "已保留所选优惠；尚未保存", "active_run": "original"})
     runner.write(tmp_path / "desktop-result.json", {"acceptance": receipt, "message_responses": [{"at": now, "status": 202}]})
     runner.write(tmp_path / "collection.json", {"trial_id": "first", "stop_reason": "completed", "checkpoints": {
         "final": {"snapshot_path": str(tmp_path / "snapshot.json"), "visible_path": str(tmp_path / "visible.json"),
-                  "captured_at": now, "desktop_evidence": {"id": "final"}, "independent_state": {"same_run": True}}}})
+                  "captured_at": now, "desktop_evidence": {"id": "final", "ui": "captured.ui.json"}, "independent_state": {"same_run": True}}}})
     result = acceptance.output_case(original, tmp_path, fixtures_path=fixture_path)
     desktop = result["packet"]["transport_checks"]["desktop"]
     assert desktop["acceptance"] == receipt
     assert desktop["message_responses"] == [{"at": now, "status": 202}]
     assert desktop["checkpoint_events"]["final"] == {"captured_at": now, "events": [event]}
+    api = desktop["checkpoint_states"]["final"]
+    assert api["source"] == "captured_API_snapshot_not_independent_SQL" and api["captured_at"] == now
+    assert api["artifact_sha256"] == acceptance.file_sha(tmp_path / "snapshot.json")
+    assert api["state"]["trip_spec"] == {"budget": 440}
+    assert "hidden" not in json.dumps(api) and "rationale" not in json.dumps(api)
+    assert api["state"]["browser_artifacts"] == [] and api["state"]["weather"] is None
+    assert desktop["checkpoint_ui"]["final"]["artifact_sha256"] == acceptance.file_sha(tmp_path / "captured.ui.json")
+    assert result["packet"]["outputs"][0]["context_output"]["desktop_ui_text"] == "已保留所选优惠；尚未保存"
     assert result["packet"]["outputs"][0]["checkpoint"]["captured_at"] == now
+    claim = {"claim_id": "early", "label": "supported", "output": {"ref_id": "output:early"},
+             "evidence": [{"ref_id": "transport_checks", "pointer": "/desktop/checkpoint_states/final/state/trip_spec"}]}
+    packet = copy.deepcopy(result["packet"])
+    packet["outputs"].append({"checkpoint": {"id": "early", "captured_at": "2026-09-09T12:59:59Z"}})
+    assert ai.human._future_evidence_issues({"claims": [claim]}, packet) == ["transport_evidence_from_future:early"]
+    original_audit = result["packet"]["capture_audit"]
+    (tmp_path / "snapshot.json").write_text(json.dumps({**envelope, "snapshot": {"state": {"trip_spec": {"budget": 999}}}}))
+    with pytest.raises(AssertionError, match="Original captured artifact changed"):
+        acceptance.output_case(original, tmp_path, fixtures_path=fixture_path, prior_capture_audit=original_audit)
     fixture_path.write_text("{}")
     with pytest.raises(AssertionError):
         acceptance.output_case(original, tmp_path, fixtures_path=fixture_path)

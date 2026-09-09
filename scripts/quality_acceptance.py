@@ -46,15 +46,69 @@ def events(work):
 def invalid_attempts(work):
     result = {}
     for filename, review in (("invalidated-attempts.json", "fixture-adjudication.json"),
-                             ("preinput-invalidations.json", "startup-adjudication.json")):
+                             ("preinput-invalidations.json", "startup-adjudication.json"),
+                             ("transport-invalidations.json", "transport-adjudication.json")):
         path = Path(work) / filename
         if path.exists():
             ledger = runner.read(path)
             assert ledger["adjudication_sha256"] == file_sha(Path(work) / review)
+            if filename == "transport-invalidations.json":
+                assert ledger["attempts"] == [transport_invalidation(Path(work))], "Transport adjudication binding changed"
             for row in ledger["attempts"]:
                 assert row["trial_id"] not in result
                 result[row["trial_id"]] = row
     return result
+
+
+def transport_invalidation(work):
+    """Validate the independent decision against the original sealed attempt."""
+    work = work.resolve()
+    audit = runner.read(work / "transport-adjudication.json")
+    original = runner.read(work / "output-bundle.json")
+    gold = runner.read(work / "gold-bundle.json")
+    assert audit["origin"] == "independent_ai" and audit["reviewer_type"] == "AI" and audit["human_reviewed"] is False
+    assert audit["decision"] == "invalidate_original_attempt_as_runner_error" and audit["invalid_reason"]["category"] == "runner_error"
+    assert audit["original_bundle_sha"] == human.canonical_sha(original)
+    assert audit["original_collection_sha"] == original["collection_sha"]
+    assert all(audit[key] == original[key] == gold[key] for key in ("dataset_sha", "product_sha"))
+    case = next(c for c in original["cases"] if c["case_id"] == audit["case_id"])
+    packet = case["packet"]
+    assert packet["task"]["environment"]["driver"] == audit["impact_scope"]["driver"] == "save_restart"
+    assert audit["impact_scope"]["case_ids"] == [case["case_id"]]
+    for key in ("packet_sha", "gold_sha"):
+        assert case[key] == audit["original_" + key]
+    assert next(c for c in gold["cases"] if c["case_id"] == case["case_id"])["gold_sha"] == case["gold_sha"]
+    assert human.canonical_sha(packet["capture_audit"]) == audit["original_capture_audit_sha"]
+    assert packet["trial_id"] == audit["original_trial_id"]
+    policy = audit["replacement_policy"]
+    assert policy["allowed"] is True and policy["maximum_replacement_attempts"] == 1 and policy["replacement_for"] == packet["trial_id"]
+    rows = [json.loads(line) for line in (work / "attempt-registry.jsonl").read_text().splitlines()]
+    matches = [row for row in rows if row["trial_id"] == packet["trial_id"]]
+    assert len(matches) == 1 and matches[0]["case_id"] == case["case_id"]
+    row = matches[0]
+    directory = (ROOT / row["directory"]).resolve()
+    assert directory.is_relative_to(work)
+    capture = packet["capture_audit"]
+    assert file_sha(directory / "collection.json") == audit["original_case_collection_sha256"] == capture["case_collection_sha256"]
+    for name, sha in capture["artifact_hashes"].items():
+        path = (directory / name).resolve()
+        assert path.is_relative_to(directory) and file_sha(path) == sha, "Original attempt artifact changed"
+    record = runner.read(directory / "collection.json")
+    assert record["trial_id"] == audit["original_raw_trial_id"]
+    assert record["checkpoints"]["after_restart"]["scope"] == "actual_owned_backend_restart_desktop_closed"
+    assert "desktop-both-restarted" not in record["checkpoints"]
+    return {**row, "invalid_reason": audit["invalid_reason"], "raw_stop_reason": record["stop_reason"],
+            "case_collection_sha256": audit["original_case_collection_sha256"],
+            "original_bundle_canonical_sha": audit["original_bundle_sha"], "original_bundle_file_sha256": file_sha(work / "output-bundle.json"),
+            "original_capture_audit_sha": audit["original_capture_audit_sha"]}
+
+
+def adjudicate_transport(work):
+    work = Path(work).resolve()
+    row = transport_invalidation(work)
+    runner.write(work / "transport-invalidations.json", {"adjudication_sha256": file_sha(work / "transport-adjudication.json"),
+                 "created_at": now(), "attempts": [row]})
+    print(json.dumps({"transport_invalid_attempts": 1, "old_evidence_retained": True}))
 
 
 def adjudicate_preinput(work):
@@ -338,7 +392,7 @@ def _run(work, case_ids, *, gold_review=None, dataset=None, freeze=None, control
                 "inputs": {name: file_sha(path) for name, path in inputs.items()},
                 "adapters": {str(path.relative_to(ROOT)): file_sha(path) for path in adapter_paths},
                 "gold_review_sha256": file_sha(gold_review or work / "human-events.jsonl"),
-                "invalidations_sha256": {p.name: file_sha(p) for p in (work / "invalidated-attempts.json", work / "preinput-invalidations.json") if p.exists()},
+                "invalidations_sha256": {p.name: file_sha(p) for p in (work / "invalidated-attempts.json", work / "preinput-invalidations.json", work / "transport-invalidations.json") if p.exists()},
                 "reviewer_type": "independent_ai" if gold_review else "human",
                 "limits": control.get("limits", {"calls": runner.MAX_BATCH_CALLS, "case_calls": runner.MAX_CASE_CALLS, "reported_tokens_stop": runner.MAX_BATCH_REPORTED_TOKENS})}
     frozen = manifest()
@@ -378,22 +432,70 @@ def _run(work, case_ids, *, gold_review=None, dataset=None, freeze=None, control
     print(json.dumps({"batch": str(folder.relative_to(ROOT)), "attempted": len(collected), "stop": control["stop"]}), flush=True)
 
 
-def output_case(original, directory, *, fixtures_path=None):
+def checkpoint_state(snapshot):
+    """Only task/plan facts: full model messages and planning rationale stay private."""
+    state = snapshot.get("state", {})
+    result = {key: state.get(key) for key in ("trip_spec", "selected_poi", "plan_version", "turn_id", "turn_budget", "model_token_count", "tool_call_count")}
+    plan = state.get("selected_plan")
+    result["selected_plan"] = {key: plan.get(key) for key in ("plan_id", "version", "stops", "total_cost", "party_size", "party_counts", "evidence_ids")} if plan else None
+    outcome = state.get("execution_outcome")
+    result["execution_outcome"] = {**{key: outcome.get(key) for key in ("kind", "status", "evidence_ids")},
+        "data": {key: (outcome.get("data") or {}).get(key) for key in ("kind", "scope", "interrupt_id", "plan_id", "plan_version", "business_completed", "execution_allowed")}} if outcome else None
+    result["action_results"] = [{key: row.get(key) for key in ("action_id", "status", "idempotency_key")} for row in state.get("action_results", [])]
+    result["evidence"] = [{key: row.get(key) for key in ("evidence_id", "source", "source_ref", "payload", "observed_at", "expires_at")} for row in state.get("evidence", [])]
+    result["browser_artifacts"] = [{key: row.get(key) for key in ("artifact_id", "command_id", "url", "title", "observed_at", "source_id")} for row in state.get("browser_artifacts", [])]
+    result["weather"] = state.get("weather")
+    return result
+
+
+def output_case(original, directory, *, fixtures_path=None, prior_capture_audit=None):
     """Retain static reviewed inputs; add actual outputs and independently read state."""
     case = copy.deepcopy(original)
     packet = case["packet"]
     result = runner.read(directory / "collection.json")
     packet["trial_id"] = case["case_id"] + ":" + result["trial_id"]
     checkpoints = result["checkpoints"]
-    baseline_ids, outputs, available, hashes, desktop_events = set(), [], [], {}, {}
+    baseline_ids, outputs, available, hashes, desktop_events, desktop_states, desktop_ui = set(), [], [], {}, {}, {}, {}
+    if prior_capture_audit:
+        assert file_sha(directory / "collection.json") == prior_capture_audit["case_collection_sha256"], "Original case collection changed"
+        for name, sha in prior_capture_audit["artifact_hashes"].items():
+            path = (directory / name).resolve()
+            assert path.is_relative_to(directory.resolve()) and file_sha(path) == sha, "Original captured artifact changed"
     def artifact(path):
         p = Path(path)
         p = p if p.is_absolute() else ROOT / p
         p = p.resolve()
         assert p.is_relative_to(directory.resolve())
-        hashes[str(p.relative_to(directory))] = file_sha(p)
+        name = str(p.relative_to(directory))
+        hashes[name] = file_sha(p)
+        if prior_capture_audit and name in prior_capture_audit["artifact_hashes"]:
+            assert hashes[name] == prior_capture_audit["artifact_hashes"][name], "Original captured artifact changed"
         return runner.read(p)
     for stage, capture in checkpoints.items():
+        if capture.get("desktop_evidence"):
+            envelope = artifact(capture["snapshot_path"])
+            assert envelope.get("checkpoint", {}).get("captured_at", capture["captured_at"]) == capture["captured_at"]
+            snapshot = envelope["snapshot"]
+            assert snapshot.get("run_id") == result.get("run_id"), "Captured API run differs from attempt"
+            raw_path = capture["desktop_evidence"].get("snapshot")
+            if raw_path:
+                raw = artifact(directory / raw_path)
+                assert raw["snapshot"] == snapshot and raw["events"] == envelope["events"], "Original desktop API snapshot differs from exported envelope"
+                assert raw["checkpoint"]["captured_at"] == capture["captured_at"]
+            path = Path(capture["snapshot_path"])
+            path = path if path.is_absolute() else ROOT / path
+            state = snapshot.get("state", {})
+            desktop_states[stage] = {"captured_at": capture["captured_at"], "source": "captured_API_snapshot_not_independent_SQL",
+                "artifact_path": str(path.relative_to(directory)), "artifact_sha256": file_sha(path),
+                "scope": "State at this checkpoint only; cannot substantiate any earlier output",
+                **{key: snapshot.get(key) for key in ("run_id", "phase", "version", "event_seq", "selected_offer", "draft_review", "outcome")},
+                "state": checkpoint_state(snapshot),
+                "model_call_count": len(state.get("model_calls", []))}
+            ui_path = capture["desktop_evidence"].get("ui")
+            if ui_path:
+                ui = artifact(directory / ui_path)
+                desktop_ui[stage] = {"captured_at": capture["captured_at"], "source": "original_captured_desktop_UI_not_rerendered",
+                    "artifact_path": ui_path, "artifact_sha256": file_sha(directory / ui_path), "active_run": (ui or {}).get("active_run")}
         if capture.get("scope") == "pre_task_context" and capture.get("visible_path"):
             baseline_ids.update(m["id"] for m in artifact(capture["visible_path"])["messages"])
     complete = "final" in checkpoints
@@ -424,6 +526,8 @@ def output_case(original, directory, *, fixtures_path=None):
             desktop_events[stage] = {"captured_at": capture["captured_at"], "events": envelope.get("events", [])}
         if desktop and desktop.get("ui"):
             ui = artifact(directory / desktop["ui"])
+            if ui:
+                visible.setdefault("context_output", {})["desktop_ui_text"] = ui["text"]
             if ui and ui.get("pending_status"):
                 visible["cards"].append({"id": "actual-delivery-status", "kind": "desktop_delivery",
                     "views": [{"name": "actual captured UI", "rendered_text": ui["pending_status"]}],
@@ -436,6 +540,12 @@ def output_case(original, directory, *, fixtures_path=None):
     for source in packet["source_packets"]:
         source["available_at_checkpoint_ids"] = available.copy()
     transport = {}
+    if imported:
+        transport["initial_state_import"] = {key: imported[key] for key in ("run_id", "aliases", "imported_at", "fixture_sha256", "fixture_value_sha256", "scope") if key in imported}
+        transport["initial_state_import"].update(source="original_import_binding_not_actor_output",
+            declared_initial_plan_version=packet["task"]["environment"].get("initial_state", {}).get("plan_version"),
+            artifact_sha256=file_sha(directory / "imported-state.json"))
+        hashes["imported-state.json"] = file_sha(directory / "imported-state.json")
     for name in ("observations.jsonl", "egress.jsonl", "controlled-world.jsonl"):
         path = directory / name
         transport[name.removesuffix(".jsonl").replace("-", "_")] = [json.loads(x) for x in path.read_text().splitlines()] if path.exists() else []
@@ -446,7 +556,19 @@ def output_case(original, directory, *, fixtures_path=None):
         raw = runner.read(desktop_path)
         transport["desktop"] = {key: raw[key] for key in ("run_id", "started_at", "finished_at", "transport_counts", "driver_actions", "recovery", "restored_comparison", "cleanup", "desktop_restarted", "backend_restarted", "message_responses", "acceptances", "acceptance", "saved_baseline", "checkpoints") if key in raw}
         transport["desktop"]["checkpoint_events"] = desktop_events
+        transport["desktop"]["checkpoint_states"] = desktop_states
+        transport["desktop"]["checkpoint_ui"] = desktop_ui
         hashes[desktop_path.name] = file_sha(desktop_path)
+    for name in ("desktop-result.json", "backend-lifecycle.json"):
+        path = directory / "backend-restored" / name
+        if path.exists():
+            raw = artifact(path)
+            if name == "desktop-result.json":
+                transport["desktop_restore"] = {key: raw[key] for key in ("run_id", "phase", "status", "started_at", "finished_at", "transport_counts",
+                    "driver_actions", "restored_comparison", "cleanup", "checkpoints", "original_desktop_result", "backend_restart", "error") if key in raw}
+            else:
+                transport["backend_restart"] = {key: raw[key] for key in ("stopped_at", "reopened_at", "closed_at", "original_desktop_result",
+                    "run_id", "state_unchanged", "model_invocations", "scope")}
     stop = result["stop_reason"]
     outcome = stop if stop in {"timeout", "external_blocked", "budget_exhausted"} else "completed" if stop in {"completed", "script_finished"} else "product_failure"
     if stop == "unscripted_clarification" and packet["task"]["environment"]["expected_stop"] == "clarification":
@@ -470,13 +592,18 @@ def bundle_outputs(work, target, *, dataset=None, freeze=None):
     assert product(freeze) == before["product"]
     after = copy.deepcopy(before)
     after["collection"] = {"attempts": []}
+    previous_bundle = runner.read(work / "output-bundle.json") if (work / "output-bundle.json").exists() else None
+    if previous_bundle:
+        assert all(previous_bundle[key] == before[key] for key in ("dataset_sha", "product_sha")), "Original bundle binding changed"
     for index, case in enumerate(before["cases"]):
         directory = (ROOT / by_id[case["case_id"]]["directory"]).resolve()
         assert directory.is_relative_to(work)
         manifest = runner.read(directory.parent / "manifest.json")
         assert all(manifest[key] == before[key] for key in ("product_sha", "dataset_sha")), "Mixed product/dataset collection"
         assert manifest["inputs"] == {name: file_sha(path) for name, path in inputs.items()}, "Collection input drift"
-        row = output_case(case, directory, fixtures_path=dataset / "runtime-fixtures.json")
+        prior = next((c["packet"]["capture_audit"] for c in (previous_bundle or {}).get("cases", [])
+                      if c["case_id"] == case["case_id"] and c["packet"]["trial_id"] == by_id[case["case_id"]]["trial_id"]), None)
+        row = output_case(case, directory, fixtures_path=dataset / "runtime-fixtures.json", prior_capture_audit=prior)
         after["cases"][index] = row
         for attempt in (r for r in registry if r["case_id"] == row["case_id"]):
             bad = invalid.get(attempt["trial_id"])
@@ -497,7 +624,7 @@ def bundle_outputs(work, target, *, dataset=None, freeze=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("freeze", "prepare", "run", "bundle", "adjudicate-fixture", "adjudicate-preinput"))
+    parser.add_argument("action", choices=("freeze", "prepare", "run", "bundle", "adjudicate-fixture", "adjudicate-preinput", "adjudicate-transport"))
     parser.add_argument("--work", type=Path)
     parser.add_argument("--dataset", type=Path, help="Explicit dataset directory; defaults to the original 30-case set or prepared session")
     parser.add_argument("--freeze", type=Path, help="Explicit product freeze; freeze action writes only a new file")
@@ -521,6 +648,8 @@ def main():
         adjudicate_fixture(args.work)
     elif args.action == "adjudicate-preinput":
         adjudicate_preinput(args.work)
+    elif args.action == "adjudicate-transport":
+        adjudicate_transport(args.work)
     else:
         assert args.output, "bundle requires a new --output path"
         bundle_outputs(args.work, args.output, dataset=args.dataset, freeze=args.freeze)

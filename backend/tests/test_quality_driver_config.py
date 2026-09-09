@@ -51,7 +51,7 @@ def test_inline_fixture_is_verified_against_the_actual_file_pointer(tmp_path, mo
 def test_desktop_config_matches_declared_message_and_validates_fingerprinted_body():
     script = r"""
 const assert=require('node:assert/strict'),crypto=require('node:crypto');
-const {driverConfig,permittedMessage,permittedSave}=require('./scripts/quality_desktop_cases.cjs');
+const {driverConfig,permittedMessage,permittedSave,permittedWrite}=require('./scripts/quality_desktop_cases.cjs');
 const message='人数改为4人，其他不变';
 for(const driver of ['message_recovery','message_uncertain']) {
  const declared={case_id:'NEW-03',environment:{driver},agent_input:{user_turns:[{message}]}};
@@ -76,6 +76,12 @@ const review={interrupt_id:'review-1',plan_id:'plan-1',plan_version:1};
 assert(permittedSave({decision:'save',...review},review));
 assert(!permittedSave({decision:'save',...review,plan_version:2},review));
 assert(!permittedSave({decision:'prepare',...review},review));
+const restored=driverConfig({case_id:'DEV09',phase:'read_only_restore'});
+assert.equal(restored.driver,'save_restart');
+assert.throws(()=>driverConfig({case_id:'DEV-10',phase:'read_only_restore'}));
+for(const method of ['POST','PUT','PATCH','DELETE']) {
+ assert.equal(permittedWrite({...restored,run_id:'original'},method,new URL('http://127.0.0.1:12345/api/v1/runs/original/draft-decision'),{decision:'save',...review},null,review),null);
+}
 console.log('Desktop declaration and exact POST gates passed; no browser started');
 """
     result = subprocess.run(["node", "-e", script], cwd=ROOT, capture_output=True, text=True, timeout=10)

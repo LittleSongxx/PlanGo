@@ -394,6 +394,60 @@ def drive(client, rid, observation, session_id, case, control, directory, collec
     return "timeout"
 
 
+def run_desktop(config, *, timeout):
+    evidence = Path(config.get("evidence_dir", config["case_dir"]))
+    path = evidence / "desktop-config.json"
+    write(path, config)
+    with (evidence / "desktop-driver.log").open("x") as log:
+        process = subprocess.Popen(["node", "scripts/quality_desktop_cases.cjs", str(path)], cwd=ROOT, stdout=log, stderr=log)
+        try:
+            process.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            process.terminate()
+            process.wait(timeout=45)  # driver closes only its own Electron
+    return read(evidence / "desktop-result.json"), process.returncode
+
+
+def restore_saved_desktop(directory, settings, *, stopped_at):
+    """Reopen the owned API, then only read the saved run in its original profile."""
+    config = read(directory / "desktop-config.json")
+    assert config["driver"] == "save_restart" and Path(config["case_dir"]).resolve() == directory.resolve()
+    evidence = directory / "backend-restored"
+    evidence.mkdir(mode=0o700)  # Never overwrite a previous restore execution.
+    original = directory / "desktop-result.json"
+    config.update(phase="read_only_restore", evidence_dir=str(evidence),
+                  original_desktop_result={"path": original.name, "sha256": hashlib.sha256(original.read_bytes()).hexdigest()})
+    before = independent_state(directory / "runs.sqlite", config["run_id"])
+    assert not before.get("missing_run") and not before["pending_command"]
+    assert not any(row.get("status") in {"RUNNING", "UNKNOWN"} for row in before["action_results"])
+    app = create_app(settings, token=config["backend_token"])
+    async def blocked_model(awaitable, *, timeout):
+        if hasattr(awaitable, "close"):
+            awaitable.close()
+        raise RuntimeError("quality_restore_is_read_only_no_model")
+    async def blocked_egress(client, request, *args, **kwargs):
+        append(evidence / "egress.jsonl", {"method": request.method, "host": request.url.host, "allowed": False})
+        raise RuntimeError("quality_restore_is_read_only_no_network")
+    app.state.runtime.model._invoke = blocked_model
+    with patch.object(httpx.AsyncClient, "send", blocked_egress), LocalAPI(app) as reopened:
+        config.update(backend_url=reopened.url, backend_restart={"stopped_at": stopped_at,
+                      "reopened_at": datetime.now(timezone.utc).isoformat(), "scope": "actual_owned_API_database_reopen"})
+        result, code = run_desktop(config, timeout=120)
+        with httpx.Client(base_url=reopened.url, headers={"Authorization": "Bearer " + config["backend_token"]}, trust_env=False) as client:
+            snapshot = client.get(f"/api/v1/runs/{config['run_id']}").json()
+        final = {"snapshot": snapshot, "events": reopened.call(app.state.runtime.get_events(config["run_id"], 0)),
+                 "checkpoint": {"id": "after_restart", "captured_at": datetime.now(timezone.utc).isoformat()}}
+        state = independent_state(directory / "runs.sqlite", config["run_id"])
+    lifecycle = {**config["backend_restart"], "closed_at": datetime.now(timezone.utc).isoformat(),
+                 "original_desktop_result": config["original_desktop_result"], "run_id": config["run_id"],
+                 "independent_state_before": before, "independent_state_after": state,
+                 "state_unchanged": before == state, "model_invocations": 0,
+                 "scope": "later_actual_read_only_restore_not_evidence_for_earlier_outputs"}
+    write(evidence / "backend-lifecycle.json", lifecycle)
+    assert before == state, "Read-only restore changed the persisted task"
+    return result, code, final, state
+
+
 def collect_case(case, packets, settings, directory, control, source_sha, case_ids, *, manifest_fn=None, fixture=None, fixture_provenance=None, desktop_edits=False, trial_id="first"):
     token, browser_session = uuid.uuid4().hex, uuid.uuid4().hex
     app = create_app(settings, token=token)
@@ -450,17 +504,8 @@ def collect_case(case, packets, settings, directory, control, source_sha, case_i
                                   "run_id": rid, "backend_url": server.url,
                                   "backend_token": token, "browser_session_id": browser_session, "case_dir": str(directory),
                                   "client_data_dir": str(directory / "client"), "profile_dir": str(directory / "profile")}
-                        write(directory / "desktop-config.json", config)
-                        with (directory / "desktop-driver.log").open("x") as log:
-                            process = subprocess.Popen(["node", "scripts/quality_desktop_cases.cjs", str(directory / "desktop-config.json")],
-                                                       cwd=ROOT, stdout=log, stderr=log)
-                            try:
-                                process.wait(timeout=60 + 330 * len(turns) if driver == "edit" else 450)
-                            except subprocess.TimeoutExpired:
-                                process.terminate()
-                                process.wait(timeout=45)  # driver handles SIGTERM and closes its own Electron
-                        result = read(directory / "desktop-result.json")
-                        stop = "script_finished" if process.returncode == 0 else "desktop_driver_failed"
+                        result, code = run_desktop(config, timeout=60 + 330 * len(turns) if driver == "edit" else 450)
+                        stop = "script_finished" if code == 0 else "desktop_driver_failed"
                         write(directory / "desktop-record.json", result)
                         for checkpoint in result.get("checkpoints", []):
                             envelope = read(directory / checkpoint["snapshot"])
@@ -495,13 +540,23 @@ def collect_case(case, packets, settings, directory, control, source_sha, case_i
                         client.post(f"/api/v1/runs/{rid}/cancel")
     # No main/sibling service is touched; reopen only this case's API and database.
     if driver == "save_restart" and rid and "before_restart" in checkpoints:
-        with LocalAPI(create_app(settings, token=token)) as reopened:
-            with httpx.Client(base_url=reopened.url, headers={"Authorization": "Bearer " + token}, trust_env=False) as client:
-                snapshot = client.get(f"/api/v1/runs/{rid}").json()
-                export("after_restart", {"snapshot": snapshot, "events": reopened.call(reopened.app.state.runtime.get_events(rid, 0)),
-                       "checkpoint": {"id": "after_restart", "as_of": case.get("as_of"), "captured_at": datetime.now(timezone.utc).isoformat()}},
-                       database_state=independent_state(directory / "runs.sqlite", rid))
+        stopped_at = datetime.now(timezone.utc).isoformat()
+        if stop == "script_finished":
+            try:
+                restored, code, envelope, state = restore_saved_desktop(directory, settings, stopped_at=stopped_at)
+                for checkpoint in restored.get("checkpoints", []):
+                    captured = read(directory / checkpoint["snapshot"])
+                    stage = "desktop-" + checkpoint["id"]
+                    captured["checkpoint"].update(id=stage, as_of=case.get("as_of"))
+                    export(stage, captured, desktop=checkpoint)
+                envelope["checkpoint"]["as_of"] = case.get("as_of")
+                export("after_restart", envelope, database_state=state)
                 checkpoints["after_restart"]["scope"] = "actual_owned_backend_restart_desktop_closed"
+                if code:
+                    stop = "desktop_restore_failed"
+            except Exception as error:
+                stop = "collector_error"
+                write(directory / "restore-error.json", safe_error(error))
     result = {"case_id": case["case_id"], "trial_id": trial_id, "run_id": rid, "stop_reason": "budget_exhausted" if control.get("case_stop") else stop,
               "raw_stop_reason": stop, "collector_limit_reason": control.get("case_stop") or control["stop"],
               "environment_level": level, "clock": clock, "checkpoints": checkpoints,
