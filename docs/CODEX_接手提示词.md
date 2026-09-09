@@ -34,7 +34,7 @@ R0更名/目录迁移/独立conda plango、P0–P3核心、结构化需求卡/�
 
 测试使用归属明确的独立数据库/profile。调试中遇到不友好UI要顺手改善美观/可读性；临时窗口不用就及时关闭，需用户扫码/验证/审批时明确说明，关闭保留数据，不做产品空闲自动退出。不要给用户留一堆不知是否需要操作的窗口。
 
-最终npm check375pytest+43subtests及类型/构建通过，Ruff/mypy70文件通过；证据eval/plango-product-next/。主API/worker已更新，原17业务表1413行和Cookie/身份/回执保持，备份output/product-final/。新本地d7-ready包已从aa3f0cb干净源码生成并扫描（功能基线e8e156b，附试用说明），未发布；试用单docs/独立试用验收.md待真实使用者填写。入口与包证据eval/plango-d7-next/，临时会话output/d7-next/tealounge-brha972n保留但已关闭。
+最终npm check375pytest+43subtests及类型/构建通过，Ruff/mypy70文件通过；证据eval/plango-product-next/。主API/worker已更新，原17业务表1413行和Cookie/身份/回执保持，备份output/product-final/。新本地booking-preview包已从a308b20干净源码生成并扫描（包含网络保护与参数预览），未发布；试用单docs/独立试用验收.md待真实使用者填写。入口与包证据eval/plango-d7-next/，临时会话output/d7-next/tealounge-brha972n保留但已关闭。
 
 完成必要验证后更新 docs/实施进度.md、当前handoff及使用文档，可分阶段本地提交，再继续后续阶段；不自动push、PR、发布或发送消息。不要把局部完成当成全项目完成，也不要未经要求创建新的goal工具目标。
 

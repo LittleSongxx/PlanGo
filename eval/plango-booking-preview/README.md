@@ -29,3 +29,5 @@ TableCheck[官方 Booking v1](https://tablecheck.atlassian.net/wiki/spaces/API/p
 私有现场与失败日志：`output/playwright/d7-next/live-1788942063023/`（脚本/网络只读调查）、`live-1788943739408/`（真实任务/重启）、`output/d7-next/preview-*.log`。窗口与独立后端已关闭，数据库/profile保留。完整质量sweep和长时压力仍暂停，独立试用者尚未完成验收。
 
 主API/worker已更新，[原17业务表1413行和主Cookie/身份/回执保持](main-continuity.json)，[运行代码与健康检查](deployment.json)通过，迁移仍0013。私有备份`output/d7-preview-final/`。本地试用包另行从提交后的源码生成，旧包不覆盖。
+
+[最新本地包](package.json)：`release/plango-0.1.0-linux-x64-booking-preview.tar.gz`，源码a308b20/source_dirty=false，内容/密钥排除/作者与固定上游扫描通过；旧包不含这次网络保护，不覆盖。打包器未改，沿用上轮受控打包器回归，不声称本轮重做安装全链。
