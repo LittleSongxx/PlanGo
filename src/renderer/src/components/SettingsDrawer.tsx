@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
-import { X, Wifi, Puzzle, MessageCircle, Bell, Database, Brain, MapPin } from 'lucide-react'
+import { X, Wifi, Puzzle, MessageCircle, Bell, Brain, MapPin } from 'lucide-react'
 import { detectViaAMap, geocodeAddress } from '../lib/amap'
 import { locationLabel } from '@shared/location'
 import { DialogShell } from './DialogShell'
+import { ExecutionServiceCard } from './ExecutionServiceCard'
 
 export function SettingsDrawer(): JSX.Element | null {
   const open = useStore((s) => s.settingsOpen)
@@ -12,8 +13,6 @@ export function SettingsDrawer(): JSX.Element | null {
   const [skills, setSkills] = useState<any[]>([])
   const [im, setIm] = useState<{ connected: boolean; note: string } | null>(null)
   const [ping, setPing] = useState<string>('')
-  const backendReady = useStore((s) => s.backendReady)
-  const reconnect = useStore((s) => s.hydrateHarness)
 
   useEffect(() => {
     if (!open) return
@@ -39,24 +38,22 @@ export function SettingsDrawer(): JSX.Element | null {
           {/* 定位 */}
           <LocationSection />
 
-          <Section icon={<Database size={15} />} title="运行服务与真实数据">
-            <div className="text-xs text-neutral-500">{backendReady ? '运行服务已连接' : '运行服务未连接'} · 真实高德与浏览器页面</div>
-            <div className="text-[11px] text-neutral-400 mt-1 break-all">{config?.harness?.baseURL}</div>
-            <button onClick={() => void reconnect()} className="mt-3 px-3 py-2 text-xs rounded-lg border border-[var(--line)] bg-[#f7faf7]">检查连接</button>
-          </Section>
+          <ExecutionServiceCard />
 
           {/* LLM */}
-          <Section icon={<Wifi size={15} />} title={`大模型 · ${config?.llm?.model || '未配置'}`}>
-            <div className="text-xs text-neutral-500">{config?.hasLlmKey ? `已配置 Key（${config?.llm?.apiKey}）` : '尚未配置，可在连接与能力中填写' }</div>
+          <Section icon={<Wifi size={15} />} title={`桌面模型配置 · ${config?.llm?.model || '未配置'}`}>
+            <div className="text-xs text-neutral-500">{config?.hasLlmKey ? '桌面密钥已配置' : '尚未配置，可在连接与能力中填写' }。此处测试桌面配置，独立服务使用上方摘要中的配置。</div>
             <button
               onClick={async () => {
                 setPing('测试中…')
-                const r = await window.plango.pingLlm()
-                setPing(r.ok ? '连通 ✅ ' + r.message : '失败 ❌ ' + r.message)
+                try {
+                  const r = await window.plango.pingLlm()
+                  setPing(r.ok ? '桌面文本接口通过：' + r.message : '桌面测试失败：' + r.message)
+                } catch { setPing('桌面测试失败，请检查连接。') }
               }}
               className="mt-2 text-xs px-3 py-1 rounded-lg bg-neutral-100 hover:bg-neutral-200"
             >
-              测试连通
+              测试桌面模型
             </button>
             {ping && <span className="ml-2 text-xs text-neutral-500">{ping}</span>}
           </Section>

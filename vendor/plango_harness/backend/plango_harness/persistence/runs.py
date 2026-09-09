@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import uuid
 from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any, Mapping, Sequence
 
@@ -15,10 +16,20 @@ from plango_harness.persistence.database import (
     Database,
     agent_action,
     agent_run,
+    input_acceptance,
     run_event,
     run_plan,
     utc_now,
 )
+
+
+@dataclass
+class InputAcceptance:
+    request_id: str
+    request_hash: str
+    statements: list[Any] = field(default_factory=list)
+    expected_cancel_requested: bool | None = None
+    request_fingerprint: str | None = None
 
 
 def _jsonable(value: Any) -> Any:
@@ -42,6 +53,44 @@ class RunRepository:
         # this process as well as using the database row lock on PostgreSQL.
         # ponytail: one process-wide lock; use per-run locks if event throughput matters.
         self._event_lock = asyncio.Lock()
+
+    async def accepted_input(self, request_id: str, request_hash: str | None = None) -> dict[str, Any] | None:
+        async with self.database.session() as session:
+            row = (await session.execute(select(input_acceptance).where(input_acceptance.c.request_id == request_id))).mappings().first()
+        if not row:
+            return None
+        if request_hash is not None and row["request_hash"] != request_hash:
+            raise ValueError("request_id_conflicts_with_saved_content")
+        return {"accepted": True, "request_id": request_id, "request_fingerprint": row["request_fingerprint"], "run_id": row["run_id"], "event_seq": row["event_seq"]}
+
+    @staticmethod
+    async def _accept_input(session: AsyncSession, acceptance: InputAcceptance | None, run_id: str, event_seq: int) -> None:
+        if acceptance is None:
+            return
+        # The unique key serializes competing API processes. A conflict rolls
+        # back the entire input; the caller then retrieves the committed receipt.
+        await session.execute(input_acceptance.insert().values(
+            request_id=acceptance.request_id, request_hash=acceptance.request_hash,
+            request_fingerprint=acceptance.request_fingerprint,
+            run_id=run_id, event_seq=event_seq, created_at=utc_now(),
+        ))
+        row = (await session.execute(select(agent_run).where(agent_run.c.run_id == run_id).with_for_update())).mappings().first()
+        if row:
+            lease = row["lease_until"]
+            if lease and lease.replace(tzinfo=lease.tzinfo or utc_now().tzinfo) > utc_now():
+                raise ValueError("run is busy; wait for the current Agent turn")
+            if acceptance.expected_cancel_requested is not None and bool(row["cancel_requested"]) != acceptance.expected_cancel_requested:
+                raise ValueError("run cancellation changed before input acceptance")
+            if row["cancel_requested"] and not acceptance.expected_cancel_requested:
+                raise ValueError("run cancellation requested")
+            state = row["state_json"] or {}
+            unresolved = (await session.execute(select(agent_action.c.action_id).where(
+                agent_action.c.run_id == run_id, agent_action.c.status.in_(["UNKNOWN", "RUNNING"]),
+            ).limit(1))).first()
+            if unresolved or state.get("browser_receipt_pending") or any(action.get("status") in {"UNKNOWN", "RUNNING"} for action in state.get("action_results", [])):
+                raise ValueError("已有操作结果尚未确认，请先核对原操作，不会通过重试消息重新提交")
+        for statement in acceptance.statements:
+            await session.execute(statement)
 
     async def create(self, run_id: str, user_id: str, input_text: str) -> None:
         now = utc_now()
@@ -87,7 +136,8 @@ class RunRepository:
                 )
 
     async def create_with_event(
-        self, run_id: str, user_id: str, input_text: str, *, selected_poi: dict[str, Any] | None = None
+        self, run_id: str, user_id: str, input_text: str, *, selected_poi: dict[str, Any] | None = None,
+        acceptance: InputAcceptance | None = None,
     ) -> RunEvent:
         """Create a run and its first audit fact in one transaction."""
         now = utc_now()
@@ -119,6 +169,7 @@ class RunRepository:
         async with self._event_lock:
             async with self.database.session() as session:
                 async with session.begin():
+                    await self._accept_input(session, acceptance, run_id, 1)
                     await session.execute(
                         agent_run.insert().values(
                             run_id=run_id,
@@ -254,6 +305,7 @@ class RunRepository:
         command_id: str | None = None,
         clear_pending_command: bool = False,
         release_lease: bool = False,
+        acceptance: InputAcceptance | None = None,
     ) -> tuple[list[RunEvent], int]:
         """Atomically persist the projection and its audit events.
 
@@ -287,6 +339,9 @@ class RunRepository:
                     ).first()
                     if not row:
                         raise KeyError(f"run not found: {run_id}")
+                    if acceptance is not None and clear_pending_command and row[4]:
+                        raise ValueError("another command is pending for this run")
+                    await self._accept_input(session, acceptance, run_id, int(row[1] or 0) + len(events))
                     if expected_version is not None and int(row[0]) != expected_version:
                         raise RuntimeError("stale run state version")
                     if lease_owner is not None and row[2] != lease_owner:
@@ -310,6 +365,7 @@ class RunRepository:
                             **({"input_text": input_text} if input_text is not None else {}),
                             **({"pending_command": None} if command_id is not None or clear_pending_command else {}),
                             **({"lease_owner": None, "lease_until": None} if release_lease else {}),
+                            **({"cancel_requested": 0} if acceptance is not None else {}),
                         )
                     )
                     seq = int(row[1] or 0)
@@ -373,6 +429,7 @@ class RunRepository:
         payload: dict[str, Any] | None = None,
         command_payload: dict[str, Any] | None = None,
         expected_version: int | None = None,
+        acceptance: InputAcceptance | None = None,
     ) -> RunEvent:
         """Persist a user command and its audit fact atomically."""
         now = utc_now()
@@ -390,15 +447,18 @@ class RunRepository:
                     ).first()
                     if not row:
                         raise KeyError(f"run not found: {run_id}")
+                    await self._accept_input(session, acceptance, run_id, int(row[0] or 0) + 1)
                     if expected_version is not None and row[1] != expected_version:
                         raise ValueError("run changed before command acceptance")
                     if command_payload is not None and row[3]:
                         pending = row[3]
-                        if pending.get("payload") != command_payload:
+                        if acceptance is not None or pending.get("payload") != command_payload:
                             raise ValueError("another command is pending for this run")
                         return RunEvent(run_id=run_id, seq=pending["event_seq"], phase=phase, event_type=event_type, payload={**event_payload, "command_id": pending["id"]}, agent_id="runtime", created_at=now)
                     seq = int(row[0] or 0) + 1
                     values: dict[str, Any] = {"last_event_seq": seq, "updated_at": now}
+                    if acceptance is not None:
+                        values["version"] = int(row[1]) + 1
                     if command_payload is not None:
                         command_id = uuid.uuid4().hex
                         projection = row[2] or {}

@@ -28,7 +28,7 @@ from plango_harness.memory.repository import MemoryRepository
 from plango_harness.observability import agent_span
 from plango_harness.persistence.actions import ActionLedger
 from plango_harness.persistence.database import Database, utc_now
-from plango_harness.persistence.runs import RunRepository
+from plango_harness.persistence.runs import InputAcceptance, RunRepository
 from plango_harness.providers import SandboxActionProvider, WorldService
 from plango_harness.queue import QueueItem, RunQueue
 from plango_harness.settings import Settings
@@ -189,7 +189,7 @@ class PlanGoRuntime:
             accepted=True,
         )
 
-    async def send_message(self, run_id: str, text: str) -> dict[str, Any]:
+    async def send_message(self, run_id: str, text: str, *, acceptance: InputAcceptance | None = None) -> dict[str, Any]:
         text = (text or "").strip()
         if not text:
             raise ValueError("message text must not be empty")
@@ -212,6 +212,8 @@ class PlanGoRuntime:
         interrupted = row.get("phase") == RunPhase.WAITING_APPROVAL.value or bool(
             state.get("clarification") or state.get("interrupt_id")
         )
+        if acceptance is not None and not interrupted:
+            raise ValueError("run is busy; wait for the current Agent turn")
         kind = "resume" if interrupted else "run"
         payload = {
             "decision": "edit" if row.get("phase") == RunPhase.WAITING_APPROVAL.value else "resume",
@@ -222,6 +224,7 @@ class PlanGoRuntime:
             payload={"text": text}, text=text,
             command_payload=payload if interrupted else None,
             expected_version=int(row["version"]),
+            acceptance=acceptance,
         )
         queued = await self._enqueue_run(run_id, kind=kind, payload={"command_id": event.payload["command_id"]} if interrupted else {})
         return self._envelope(
@@ -233,7 +236,7 @@ class PlanGoRuntime:
             queued=queued,
         )
 
-    async def replan(self, run_id: str, reason: str, *, requirement_edit: dict[str, Any] | None = None, expected_version: int | None = None) -> dict[str, Any]:
+    async def replan(self, run_id: str, reason: str, *, requirement_edit: dict[str, Any] | None = None, expected_version: int | None = None, acceptance: InputAcceptance | None = None) -> dict[str, Any]:
         """Start a fresh planning turn after a world/constraint change."""
         reason = (reason or "世界状态发生变化").strip()
         row = await self.runs.get(run_id)
@@ -241,12 +244,12 @@ class PlanGoRuntime:
             raise KeyError(run_id)
         if expected_version is not None and row["version"] != expected_version:
             raise ValueError("requirements_changed_reload_before_editing")
-        if row.get("phase") == RunPhase.REPLANNING.value and (row.get("state_json") or {}).get("pending_message") == reason:
+        if acceptance is None and row.get("phase") == RunPhase.REPLANNING.value and (row.get("state_json") or {}).get("pending_message") == reason:
             return self.snapshot(row)
         if row.get("phase") == RunPhase.REPLANNING.value and (row.get("state_json") or {}).get("pending_message"):
             raise ValueError("run is busy; wait for the accepted planning turn")
         if row.get("phase") == RunPhase.WAITING_APPROVAL.value and requirement_edit is None:
-            await self.send_message(run_id, reason)
+            await self.send_message(run_id, reason, acceptance=acceptance)
             return self.snapshot(await self.runs.get(run_id))
         lease_until = row.get("lease_until")
         if lease_until is not None:
@@ -254,7 +257,7 @@ class PlanGoRuntime:
                 lease_until = lease_until.replace(tzinfo=utc_now().tzinfo)
             if lease_until > utc_now():
                 raise ValueError("run is busy; wait for the current Agent turn")
-        if row.get("cancel_requested"):
+        if row.get("cancel_requested") and acceptance is None:
             await self.runs.clear_cancel(run_id)
         row = await self.runs.get(run_id)
         if not row:
@@ -300,6 +303,7 @@ class PlanGoRuntime:
             expected_version=expected_version if expected_version is not None else int(row.get("version") or 1),
             input_text=reason,
             clear_pending_command=True,
+            acceptance=acceptance,
             events=[
                 {
                     "phase": RunPhase.REPLANNING,
@@ -331,6 +335,7 @@ class PlanGoRuntime:
         text: str = "",
         *,
         interrupt_id: str | None = None,
+        acceptance: InputAcceptance | None = None,
     ) -> dict[str, Any]:
         row = await self.runs.get(run_id)
         if not row:
@@ -361,6 +366,7 @@ class PlanGoRuntime:
             text=text if text else None,
             command_payload={"decision": decision, "text": text},
             expected_version=int(row["version"]),
+            acceptance=acceptance,
         )
         queued = await self._enqueue_run(
             run_id,

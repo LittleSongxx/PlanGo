@@ -174,6 +174,17 @@ run_event = Table(
     Column("created_at", DateTime(timezone=True), nullable=False),
 )
 
+input_acceptance = Table(
+    "input_acceptance",
+    metadata,
+    Column("request_id", String(128), primary_key=True),
+    Column("request_hash", String(64), nullable=False),
+    Column("request_fingerprint", String(64)),
+    Column("run_id", String(64), nullable=False),
+    Column("event_seq", Integer, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+)
+
 agent_action = Table(
     "agent_action",
     metadata,
@@ -255,7 +266,10 @@ class Database:
                             "WHERE table_schema = 'public' AND table_name = 'agent_run') "
                             "AND EXISTS (SELECT 1 FROM information_schema.columns "
                             "WHERE table_schema = 'public' AND table_name = 'agent_run' "
-                            "AND column_name = 'pending_command')"
+                            "AND column_name = 'pending_command') "
+                            "AND EXISTS (SELECT 1 FROM information_schema.columns "
+                            "WHERE table_schema = 'public' AND table_name = 'input_acceptance' "
+                            "AND column_name = 'request_fingerprint')"
                         )
                     )
                     if not bool(migrated.scalar()):

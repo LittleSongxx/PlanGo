@@ -333,7 +333,46 @@ export interface HarnessEvent {
   created_at?: string
 }
 
+export interface ModelCheck {
+  status: 'not_checked' | 'passed' | 'failed' | 'not_configured'
+  checked_at?: string
+  category?: string
+  total_tokens?: number
+}
+
+export interface ExecutionSummary {
+  runtime_profile: 'desktop' | 'service'
+  model: { name: string; provider_origin: string; key_configured: boolean; check: ModelCheck }
+  capabilities: { amap_configured: boolean; browser_vision_enabled: boolean; browser_strategy: 'dom_first'; image_input: 'model_dependent'; transit: 'limited' }
+  recent_task_model?: { run_id: string; name: string; status: string; recorded_at: string }
+}
+
+export interface HarnessStatus {
+  ready: boolean
+  input_delivery_version?: number
+  error?: string
+  service?: { origin: string; ownership: 'desktop' | 'external' }
+  execution?: ExecutionSummary
+}
+
+export interface HarnessDeliveryRequest {
+  requestId: string
+  text: string
+  image?: string
+  selectedPoi?: SelectedPoi
+  runId?: string
+}
+export interface HarnessDeliveryResult {
+  requestId: string
+  status: 'not_sent' | 'unconfirmed' | 'accepted' | 'delivered'
+  runId?: string
+  snapshot?: HarnessSnapshot
+  error?: string
+}
+
 export interface HarnessApi {
+  deliver: (request: HarnessDeliveryRequest) => Promise<HarnessDeliveryResult>
+  checkDelivery: (requestId: string) => Promise<HarnessDeliveryResult>
   editRequirements: (runId: string, edit: RequirementEdit) => Promise<HarnessSnapshot>
   resumePreparation: (runId: string, planId: string, planVersion: number, approvalId: string) => Promise<HarnessSnapshot>
   decideDraft: (runId: string, interruptId: string, planId: string, planVersion: number, decision: 'save' | 'prepare') => Promise<HarnessSnapshot>
@@ -347,7 +386,7 @@ export interface HarnessApi {
   cancel: (runId: string) => Promise<HarnessSnapshot>
   resume: (runId: string, interruptId: string, decision: 'approve' | 'reject' | 'edit' | 'resume', text?: string) => Promise<HarnessSnapshot>
   listRuns: () => Promise<HarnessSnapshot[]>
-  status: () => Promise<{ ready: boolean; error?: string }>
+  status: (checkModel?: boolean) => Promise<HarnessStatus>
 }
 
 export interface RequirementFields {

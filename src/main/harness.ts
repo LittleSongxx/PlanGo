@@ -3,7 +3,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { delimiter, join, resolve } from 'node:path'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { app } from 'electron'
-import { getConfig, getHarnessEnvironment } from './config'
+import { getConfig, getHarnessEnvironment, safeServiceOrigin } from './config'
+import type { HarnessStatus } from '../shared/types'
 import { executeBrowserCommand, releaseBrowserRun, activateBrowserRun, cancelBrowserRun } from './browser-bridge'
 import { getMainWindow } from './index'
 import { HarnessClient } from './harnessClient'
@@ -128,9 +129,14 @@ async function connect(): Promise<HarnessClient> {
   return client
 }
 
-export async function harnessStatus(): Promise<{ ready: boolean; error?: string }> {
-  try { return await (await getHarness()).status() }
-  catch (error) { return { ready: false, error: (error as Error).message } }
+export async function harnessStatus(checkModel = false): Promise<HarnessStatus> {
+  const origin = safeServiceOrigin(getHarnessEnvironment().PLANGO_BACKEND_URL || 'http://127.0.0.1:8011')
+  try {
+    const status = await (await getHarness()).status(checkModel)
+    return { ...status, service: { origin, ownership: child && child.exitCode === null ? 'desktop' : 'external' } }
+  } catch {
+    return { ready: false, error: '运行服务暂不可用，请检查服务地址、身份凭据与服务进程。', service: { origin, ownership: 'external' } }
+  }
 }
 
 export async function restartHarness(): Promise<void> {

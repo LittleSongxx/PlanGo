@@ -64,7 +64,7 @@ with tempfile.TemporaryDirectory(prefix="plango-migrations-") as temporary:
         } <= names
         assert (
             connection.execute("select version_num from alembic_version").fetchone()[0]
-            == "0012_plango_rename"
+            == "0013_input_acceptance"
         )
         fields = {r[1] for r in connection.execute("pragma table_info(plango_browser_binding)")}
         assert {"input_image", "generation", "enabled_skills", "location_context"} <= fields

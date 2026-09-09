@@ -24,6 +24,7 @@ from plango_harness.agent.contracts import (
 from plango_harness.agent.state import planning_reset
 from plango_harness.domain.planning import verify_plan
 from plango_harness.persistence.database import agent_action, agent_run
+from plango_harness.persistence.runs import InputAcceptance
 from plango_harness.runtime import TERMINAL_PHASES, PlanGoRuntime
 from plango_harness.tools.registry import ToolRegistry
 from sqlalchemy import func, select, text, update
@@ -180,6 +181,27 @@ class DesktopRuntime(PlanGoRuntime):
         self._delivery_lock = asyncio.Lock()
         self._resume_lock = asyncio.Lock()
 
+    async def _accept_input(self, request_id, payload, operation, *, request_fingerprint=None):
+        payload = {**payload, "request_fingerprint": request_fingerprint}
+        digest = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+        acceptance = InputAcceptance(request_id or uuid.uuid4().hex, digest, request_fingerprint=request_fingerprint)
+        previous = await self.runs.accepted_input(acceptance.request_id, digest)
+        if previous:
+            return {**previous, "replayed": True}
+        try:
+            result = await operation(acceptance)
+        except Exception:
+            # Another API process may have won the unique-key race, or the
+            # post-commit enqueue/snapshot may have failed. The receipt decides.
+            previous = await self.runs.accepted_input(acceptance.request_id, digest)
+            if previous:
+                return {**previous, "replayed": True}
+            raise
+        receipt = await self.runs.accepted_input(acceptance.request_id, digest)
+        if not receipt:
+            raise ValueError("input_not_accepted_reload_run")
+        return {**result, **receipt, "replayed": False}
+
     def build_graph(self, deps, *, checkpointer):
         deps.planner = BrowserPlanEngine(deps.world, self.settings.seed)
         self.planner = deps.planner
@@ -245,25 +267,67 @@ class DesktopRuntime(PlanGoRuntime):
         enabled_skills=None,
         location_context=None,
         selected_poi=None,
+        request_id=None,
+        request_fingerprint=None,
     ):
         self._ensure_started()
-        if not input_text.strip():
-            raise ValueError("input_text must not be empty")
-        list_skill_adverts(enabled_skills)
-        canonical_poi = None
-        run_id = uuid.uuid4().hex
-        if selected_poi is not None:
-            poi_id = str(selected_poi.get("poi_id") or "").removeprefix("amap:")
-            if not poi_id:
-                raise ValueError("selected_poi_id_required")
-            canonical_poi = await self.observe_selected_poi(poi_id, "selected-poi:" + run_id)
-        await self.bridge.bind(run_id, browser_session_id, image, enabled_skills, location_context)
-        event = await self.runs.create_with_event(
-            run_id, user_id or "desktop", input_text.strip(),
-            **({"selected_poi": canonical_poi} if canonical_poi is not None else {}),
-        )
-        await self._enqueue_run(run_id)
-        return self._envelope(run_id=run_id, phase="CREATED", event_seq=event.seq, accepted=True)
+        async def accept(acceptance):
+            if not input_text.strip():
+                raise ValueError("input_text must not be empty")
+            if image and not self.settings.model_enabled:
+                raise ValueError("截图解析需要配置支持图像的模型；图片尚未处理")
+            list_skill_adverts(enabled_skills)
+            canonical_poi = None
+            run_id = uuid.uuid4().hex
+            if selected_poi is not None:
+                poi_id = str(selected_poi.get("poi_id") or "").removeprefix("amap:")
+                if not poi_id:
+                    raise ValueError("selected_poi_id_required")
+                canonical_poi = await self.observe_selected_poi(poi_id, "selected-poi:" + run_id)
+            acceptance.statements.append(bindings.insert().values(
+                run_id=run_id, browser_session_id=browser_session_id, input_image=image,
+                enabled_skills=enabled_skills, location_context=location_context,
+            ))
+            event = await self.runs.create_with_event(
+                run_id, user_id or "desktop", input_text.strip(), selected_poi=canonical_poi, acceptance=acceptance,
+            )
+            queued = await self._enqueue_run(run_id)
+            return self._envelope(run_id=run_id, phase="CREATED", event_seq=event.seq, accepted=True, queued=queued)
+
+        return await self._accept_input(request_id, {
+            "kind": "create", "user_id": user_id, "input_text": input_text, "browser_session_id": browser_session_id,
+            "image": image, "enabled_skills": enabled_skills, "location_context": location_context, "selected_poi": selected_poi,
+        }, accept, request_fingerprint=request_fingerprint)
+
+    async def accept_message(self, run_id, text, *, image=None, location_context=None, request_id=None, request_fingerprint=None):
+        async def accept(acceptance):
+            row = await self.runs.get(run_id)
+            if not row:
+                raise KeyError(run_id)
+            state = row.get("state_json") or {}
+            acceptance.expected_cancel_requested = bool(row.get("cancel_requested"))
+            if state.get("browser_receipt_pending") or any(action.get("status") in {"UNKNOWN", "RUNNING"} for action in [*state.get("action_results", []), *await self.runs.actions(run_id)]):
+                raise ValueError("已有操作结果尚未确认，请先核对原操作，不会通过重试消息重新提交")
+            if image and not self.settings.model_enabled:
+                raise ValueError("截图解析需要配置支持图像的模型；图片尚未处理")
+            values = {}
+            if location_context is not None:
+                values["location_context"] = location_context
+            if image or state.get("processed_image_hash"):
+                values["input_image"] = image
+            if values:
+                acceptance.statements.append(update(bindings).where(bindings.c.run_id == run_id).values(**values))
+            if state.get("browser_wait"):
+                if text.strip() in {"继续", "已登录", "continue", "resume"}:
+                    return await self.enqueue_resume(run_id, "resume", text, acceptance=acceptance)
+                return await self.replan(run_id, text, acceptance=acceptance)
+            if row["phase"] in TERMINAL_PHASES:
+                return await self.replan(run_id, text, acceptance=acceptance)
+            return await self.send_message(run_id, text, acceptance=acceptance)
+
+        return await self._accept_input(request_id, {
+            "kind": "message", "run_id": run_id, "text": text, "image": image, "location_context": location_context,
+        }, accept, request_fingerprint=request_fingerprint)
 
     async def history(self, user_id="desktop"):
         async with self.database.session() as session:
@@ -396,7 +460,7 @@ class DesktopRuntime(PlanGoRuntime):
         saved = next(event for event in await self.memory.events_for_source(row["user_id"], source) if event["event_kind"] == "episode")
         return {"accepted": True, "replayed": not bool(committed), "feedback": self._feedback_record(saved)}
 
-    async def resume_browser(self, run_id, command_id, *, retry=False):
+    async def resume_browser(self, run_id, command_id, *, retry=False, acceptance=None):
         async with self._resume_lock:
             row = await self.runs.get(run_id)
             if not row or row.get("cancel_requested") or row["phase"] in TERMINAL_PHASES:
@@ -414,13 +478,10 @@ class DesktopRuntime(PlanGoRuntime):
             if retry:
                 if command["payload"].get("approved_action_id"):
                     raise ValueError("write_commands_cannot_be_retried")
-                async with self.database.session() as session:
-                    async with session.begin():
-                        await session.execute(
-                            update(bindings)
-                            .where(bindings.c.run_id == run_id)
-                            .values(generation=bindings.c.generation + 1)
-                        )
+                if acceptance is None:
+                    # Browser resumes also keep generation and the command in one transaction.
+                    acceptance = InputAcceptance(uuid.uuid4().hex, hashlib.sha256(command_id.encode()).hexdigest())
+                acceptance.statements.append(update(bindings).where(bindings.c.run_id == run_id).values(generation=bindings.c.generation + 1))
             elif (
                 not command.get("result")
                 or wait.get("error_kind")
@@ -438,13 +499,14 @@ class DesktopRuntime(PlanGoRuntime):
                 text=None,
                 command_payload={"decision": "resume", "browser_command_id": command_id},
                 expected_version=row["version"],
+                acceptance=acceptance,
             )
             queued = await self._enqueue_run(
                 run_id, kind="resume", payload={"command_id": event.payload["command_id"]}
             )
             return {"accepted": True, "queued": queued, "run_id": run_id, "event_seq": event.seq}
 
-    async def enqueue_resume(self, run_id, decision, text="", *, interrupt_id=None):
+    async def enqueue_resume(self, run_id, decision, text="", *, interrupt_id=None, acceptance=None):
         row = await self.runs.get(run_id)
         state = (row or {}).get("state_json") or {}
         if (state.get("clarification") or {}).get("kind") == "draft_review":
@@ -455,12 +517,12 @@ class DesktopRuntime(PlanGoRuntime):
             if decision != "resume":
                 raise ValueError("browser_wait_requires_resume")
             return await self.resume_browser(
-                run_id, state["browser_wait"]["command_id"], retry=True
+                run_id, state["browser_wait"]["command_id"], retry=True, acceptance=acceptance,
             )
         if row and decision in {"approve", "reject", "edit"}:
             if not interrupt_id or interrupt_id != state.get("interrupt_id"):
                 raise ValueError("exact_interrupt_id_required")
-        return await super().enqueue_resume(run_id, decision, text, interrupt_id=interrupt_id)
+        return await super().enqueue_resume(run_id, decision, text, interrupt_id=interrupt_id, acceptance=acceptance)
 
     async def decide_draft(self, run_id, decision, interrupt_id, plan_id, plan_version):
         row = await self.runs.get(run_id)

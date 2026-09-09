@@ -1,8 +1,9 @@
 import { create } from 'zustand'
-import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent, RequirementEdit } from '@shared/types'
+import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent, RequirementEdit, HarnessDeliveryRequest, HarnessDeliveryResult } from '@shared/types'
 import { projectHarness, projectEvents, runBusy, canResolveAction, row } from './lib/harnessProjection'
 import { originFallback as computeOrigin } from './lib/cityCenter'
 import { migrateLocalStorage } from './lib/storageMigration'
+import { loadDraftImage, saveDraftImage } from './lib/draftImages'
 import type { BrowserIntent, BrowserViewState, BrowserTabState } from '@shared/browserView'
 import type { LocationGranularity, LocationInfo, SelectedPoi } from '@shared/location'
 
@@ -32,6 +33,34 @@ export interface SavedSession {
 
 const SESS_KEY = 'plango_sessions'
 const HIDDEN_KEY = 'plango_hidden_sessions'
+const COMPOSER_KEY = 'plango_composer'
+export interface ComposerDraft { text: string; image?: string; imageRef?: string; selectedPoi?: SelectedPoi; revision: number }
+export interface PendingDelivery {
+  request: HarnessDeliveryRequest
+  sessionId: string
+  status: HarnessDeliveryResult['status']
+  acceptedRunId?: string
+  imageRef?: string
+  error?: string
+  draftRevision?: number
+}
+const EMPTY_DRAFT: ComposerDraft = { text: '', revision: 0 }
+function loadComposer(): { activeSessionId?: string; drafts: Record<string, ComposerDraft>; pendingDelivery: PendingDelivery | null; error?: string } {
+  try {
+    const value = JSON.parse(localStorage.getItem(COMPOSER_KEY) || '{}')
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid composer')
+    if (value.activeSessionId !== undefined && typeof value.activeSessionId !== 'string') throw new Error('Invalid session')
+    if (value.drafts !== undefined && (!value.drafts || typeof value.drafts !== 'object' || Array.isArray(value.drafts))) throw new Error('Invalid drafts')
+    for (const draft of Object.values(value.drafts || {}) as ComposerDraft[]) {
+      if (!draft || typeof draft.text !== 'string' || !Number.isSafeInteger(draft.revision) || (draft.image !== undefined && typeof draft.image !== 'string') || (draft.imageRef !== undefined && typeof draft.imageRef !== 'string')) throw new Error('Invalid draft')
+    }
+    if (value.pendingDelivery && (!value.pendingDelivery.request || typeof value.pendingDelivery.request.requestId !== 'string' || !value.pendingDelivery.request.requestId || typeof value.pendingDelivery.request.text !== 'string' || typeof value.pendingDelivery.sessionId !== 'string' || !['not_sent', 'unconfirmed', 'accepted', 'delivered'].includes(value.pendingDelivery.status))) throw new Error('Invalid pending delivery')
+    return { activeSessionId: value.activeSessionId, drafts: value.drafts || {}, pendingDelivery: value.pendingDelivery || null }
+  } catch { return { drafts: {}, pendingDelivery: null, error: '本地草稿记录损坏或无法读取，已停止新发送并保留原记录。请先恢复本地存储中的 plango_composer，避免重复发送。' } }
+}
+const initialComposer = loadComposer()
+const initialSessionId = initialComposer.activeSessionId || 'sess_' + crypto.randomUUID()
+
 function hiddenSessionIds(): Set<string> {
   try {
     const ids = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]')
@@ -120,6 +149,17 @@ interface State {
   setActiveTab: (id: string) => void
 
   pushMessage: (m: ChatMessage) => void
+  drafts: Record<string, ComposerDraft>
+  pendingDelivery: PendingDelivery | null
+  deliveryBusy: boolean
+  storageError: string
+  setDraft: (draft: Partial<Pick<ComposerDraft, 'text' | 'image' | 'imageRef' | 'selectedPoi'>>, sessionId?: string) => void
+  persistComposer: () => Promise<boolean>
+  hydrateComposer: () => Promise<boolean>
+  composerReady: boolean
+  discardPendingDelivery: () => Promise<void>
+  recoverDelivery: (retry?: boolean) => Promise<void>
+  openPendingDelivery: () => void
   send: (text: string, image?: string, selectedPoi?: SelectedPoi) => Promise<void>
   confirm: (token: string, ok: boolean) => Promise<void>
 
@@ -150,6 +190,8 @@ interface State {
 }
 
 let refreshingRun: string | null = null
+let composerWrite = Promise.resolve(true)
+let composerHydration: Promise<boolean> | null = null
 
 export const useStore = create<State>((set, get) => ({
   tabs: [],
@@ -183,7 +225,12 @@ export const useStore = create<State>((set, get) => ({
   routeTarget: null,
   sharePlan: null,
   sessions: loadSessions(),
-  activeSessionId: 'sess_' + crypto.randomUUID(),
+  activeSessionId: initialSessionId,
+  drafts: initialComposer.drafts,
+  pendingDelivery: initialComposer.pendingDelivery,
+  deliveryBusy: false,
+  storageError: initialComposer.error || '',
+  composerReady: !initialComposer.error && !Object.values(initialComposer.drafts).some(draft => draft.imageRef && !draft.image) && !(initialComposer.pendingDelivery?.imageRef && !initialComposer.pendingDelivery.request.image),
   historyOpen: false,
   sidePanelOpen: false,
   discoverOpen: false,
@@ -234,11 +281,14 @@ export const useStore = create<State>((set, get) => ({
   },
 
   hydrateHarness: async () => {
+    await get().hydrateComposer()
     const activeSessionId = get().activeSessionId
     try {
       const status = await window.plango.harness.status()
       set({ backendReady: status.ready, backendError: status.error || '' })
       if (!status.ready) return
+      if (get().pendingDelivery) await get().recoverDelivery()
+      if (get().activeSessionId !== activeSessionId) return
       if (get().run) { await get().refreshRun(); return }
       const runs = await window.plango.harness.listRuns()
       if (get().activeSessionId !== activeSessionId || get().run) return
@@ -252,8 +302,8 @@ export const useStore = create<State>((set, get) => ({
       saveSessions(sessions)
       // The history stores references only; opening a run always fetches its
       // current plan and approval rather than trusting cached outcome cards.
-      const savedId = localStorage.getItem('plango_active_run')
-      const saved = sessions.find(s => s.runId === savedId)
+      const savedId = !initialComposer.activeSessionId && activeSessionId === initialSessionId ? localStorage.getItem('plango_active_run') : null
+      const saved = sessions.find(s => s.id === activeSessionId) || sessions.find(s => s.runId === savedId)
       if (saved) get().restoreSession(saved.id)
     } catch (e) { set({ backendReady: false, backendError: String(e) }) }
   },
@@ -266,21 +316,145 @@ export const useStore = create<State>((set, get) => ({
     set({ events, steps: projectEvents(events) })
   },
 
+  setDraft: (patch, sessionId = get().activeSessionId) => {
+    const current = get().drafts[sessionId] || EMPTY_DRAFT
+    set(s => ({ drafts: { ...s.drafts, [sessionId]: { ...current, ...patch, ...('image' in patch ? { imageRef: patch.imageRef } : {}), revision: current.revision + 1 } } }))
+    get().persistComposer()
+  },
+
+  persistComposer: () => {
+    const { activeSessionId, drafts, pendingDelivery } = get()
+    // Serialize writes so a slow image save cannot overwrite a newer edited draft.
+    const operation = composerWrite.then(async () => {
+      if (initialComposer.error) return false // Preserve the original corrupt blob; never silently reset a pending request.
+      try {
+        const savedDrafts = Object.fromEntries(await Promise.all(Object.entries(drafts).map(async ([id, draft]) => [id, {
+          ...draft, image: undefined, imageRef: draft.imageRef || (draft.image ? await saveDraftImage(draft.image) : undefined)
+        }])))
+        const savedPending = pendingDelivery ? { ...pendingDelivery, imageRef: pendingDelivery.imageRef || (pendingDelivery.request.image ? await saveDraftImage(pendingDelivery.request.image) : undefined),
+          request: { ...pendingDelivery.request, image: undefined } } : null
+        localStorage.setItem(COMPOSER_KEY, JSON.stringify({ activeSessionId, drafts: savedDrafts, pendingDelivery: savedPending }))
+        set(s => ({ storageError: '', drafts: Object.fromEntries(Object.entries(s.drafts).map(([id, draft]) => [id, draft.revision === drafts[id]?.revision ? { ...draft, imageRef: savedDrafts[id].imageRef } : draft])),
+          pendingDelivery: s.pendingDelivery && s.pendingDelivery.request.requestId === savedPending?.request.requestId ? { ...s.pendingDelivery, imageRef: savedPending.imageRef } : s.pendingDelivery }))
+        return true
+      } catch {
+        set({ storageError: '草稿尚未保存到磁盘（本地存储不可用或空间不足）。请保留当前窗口，复制文字或恢复存储空间后重试。' })
+        return false
+      }
+    })
+    composerWrite = operation
+    return operation
+  },
+
+  hydrateComposer: async () => {
+    if (get().composerReady) return true
+    if (initialComposer.error) return false
+    if (composerHydration) return composerHydration
+    composerHydration = (async () => {
+      try {
+        const { drafts, pendingDelivery } = get()
+        const loadedDrafts = Object.fromEntries(await Promise.all(Object.entries(drafts).map(async ([id, draft]) => [id, {
+          ...draft, image: draft.image || (draft.imageRef ? await loadDraftImage(draft.imageRef) : undefined)
+        }])))
+        const loadedPending = pendingDelivery?.imageRef && !pendingDelivery.request.image ? { ...pendingDelivery, request: { ...pendingDelivery.request, image: await loadDraftImage(pendingDelivery.imageRef) } } : pendingDelivery
+        set({ drafts: loadedDrafts, pendingDelivery: loadedPending, composerReady: true, storageError: '' })
+        return true
+      } catch (error) { set({ storageError: `原图片尚未恢复，已保留附件引用并停止新发送。${String(error)}` }); return false }
+      finally { composerHydration = null }
+    })()
+    return composerHydration
+  },
+
+  discardPendingDelivery: async () => {
+    const pending = get().pendingDelivery
+    if (!pending || pending.status !== 'not_sent' || get().deliveryBusy || !get().composerReady) return
+    const current = get().drafts[pending.sessionId]
+    if (!current?.text && !current?.image) get().setDraft({ text: pending.request.text, image: pending.request.image, imageRef: pending.imageRef, selectedPoi: pending.request.selectedPoi }, pending.sessionId)
+    else if (pending.request.selectedPoi) get().setDraft({ selectedPoi: pending.request.selectedPoi }, pending.sessionId)
+    set({ pendingDelivery: null, backendError: '', deliveryBusy: true })
+    try { if (!await get().persistComposer()) set({ pendingDelivery: pending }) }
+    finally { set({ deliveryBusy: false }) }
+  },
+
   send: async (text, image, selectedPoi) => {
-    if (!text.trim() || get().busy) return
-    if (!get().backendReady) { set({ backendError: '运行服务尚未连接，请先重新连接。' }); return }
+    if (!text.trim() || get().busy || get().deliveryBusy || !get().composerReady) return
+    if (get().pendingDelivery) { set({ backendError: '还有一条消息待确认，请先在发送状态中取回或继续原请求。' }); return }
     if (selectedPoi) get().newSession()
-    const { run, activeSessionId } = get()
-    set((s) => ({ busy: true, requestBusy: true, backendError: '', messages: [...s.messages, { role: 'user', content: text }] }))
-    try {
-      const snapshot = run ? await window.plango.harness.sendMessage(run.run_id, text, image) : await window.plango.harness.createRun(text, image, selectedPoi)
-      if (get().activeSessionId !== activeSessionId) return
-      get().applyHarness(snapshot)
-    } catch (e) {
-      if (get().activeSessionId === activeSessionId) set({ backendError: String(e) })
-    } finally {
-      if (get().activeSessionId === activeSessionId) { set({ requestBusy: false, busy: runBusy(get().run) }); get().persistSession() }
+    else selectedPoi = get().drafts[get().activeSessionId]?.selectedPoi
+    const { run, activeSessionId, sessions, drafts } = get()
+    const draft = drafts[activeSessionId] || EMPTY_DRAFT
+    const pendingDelivery: PendingDelivery = {
+      request: { requestId: crypto.randomUUID(), text, image, selectedPoi, runId: run?.run_id || sessions.find(s => s.id === activeSessionId)?.runId },
+      sessionId: activeSessionId, status: 'not_sent',
+      draftRevision: draft.text.trim() === text.trim() && draft.image === image ? draft.revision : undefined
     }
+    set({ pendingDelivery, backendError: '' })
+    // Persist the stable identity before crossing IPC; a failed save never starts a request.
+    if (!await get().persistComposer()) return
+    get().persistSession()
+    await get().recoverDelivery(true)
+  },
+
+  recoverDelivery: async (retry = false) => {
+    const pending = get().pendingDelivery
+    if (!pending || get().deliveryBusy) return
+    if (!await get().hydrateComposer()) return
+    const restoredPending = get().pendingDelivery
+    if (!restoredPending || restoredPending.request.requestId !== pending.request.requestId || get().deliveryBusy) return
+    if (!get().backendReady) { set({ backendError: '运行服务尚未连接，输入与原请求已保留，请先重新连接。' }); return }
+    const shouldSend = retry && (pending.status === 'not_sent' || pending.status === 'unconfirmed')
+    // Checking after reconnect/restart is read-only. An uncertain request never gets a new identity.
+    set({ deliveryBusy: true, pendingDelivery: shouldSend ? { ...restoredPending, status: 'unconfirmed', error: undefined } : restoredPending })
+    if (!await get().persistComposer()) { set({ deliveryBusy: false, pendingDelivery: pending }); return }
+    if (get().activeSessionId === pending.sessionId) set({ busy: true, requestBusy: true })
+    try {
+      const result = shouldSend ? await window.plango.harness.deliver(restoredPending.request) : await window.plango.harness.checkDelivery(pending.request.requestId)
+      if (result.requestId !== pending.request.requestId) throw new Error('发送回执身份不匹配，请重新核对原请求。')
+      const expectedRunId = pending.request.runId || pending.acceptedRunId
+      if (expectedRunId && result.runId && result.runId !== expectedRunId) throw new Error('回执目标与原任务不一致，已保留原请求，请重新核对。')
+      if (pending.acceptedRunId && ['not_sent', 'unconfirmed'].includes(result.status)) throw new Error('原请求已有接受记录，本次查询尚未确认，请继续取回原任务。')
+      const updated = { ...restoredPending, status: result.status, acceptedRunId: result.runId || pending.acceptedRunId, error: result.error }
+      if (result.status === 'delivered' && (!result.snapshot || result.snapshot.run_id !== updated.acceptedRunId)) throw new Error('已接收消息，但任务快照仍需核对。')
+      set({ pendingDelivery: updated })
+      if (updated.acceptedRunId) {
+        const sessions = get().sessions.map(session => session.id === pending.sessionId ? { ...session, runId: updated.acceptedRunId } : session)
+        set({ sessions }); saveSessions(sessions)
+      }
+      if (result.status === 'delivered' && result.snapshot) {
+        const { drafts } = get(), currentDraft = drafts[pending.sessionId]
+        if (pending.draftRevision !== undefined && currentDraft?.revision === pending.draftRevision) {
+          set({ drafts: { ...drafts, [pending.sessionId]: { text: '', revision: currentDraft.revision + 1 } } })
+        }
+        if (get().activeSessionId === pending.sessionId) get().applyHarness(result.snapshot)
+        else {
+          const projected = projectHarness(result.snapshot)
+          const sessions = get().sessions.map(session => session.id === pending.sessionId ? { ...session, runId: result.snapshot!.run_id, messages: projected.messages, updatedAt: Date.now() } : session)
+          set({ sessions }); saveSessions(sessions)
+        }
+        set({ pendingDelivery: null })
+        // If disk is full, retain the identity in memory too. A later check safely finishes the same delivery.
+        if (!await get().persistComposer()) set({ pendingDelivery: updated })
+      } else await get().persistComposer()
+    } catch (error) {
+      const latest = get().pendingDelivery || pending
+      set({ pendingDelivery: { ...latest, status: latest.status === 'accepted' || latest.acceptedRunId ? 'accepted' : 'unconfirmed', error: String(error) } })
+      await get().persistComposer()
+    } finally {
+      set({ deliveryBusy: false })
+      if (get().activeSessionId === pending.sessionId) {
+        set({ requestBusy: false, busy: runBusy(get().run) })
+        get().persistSession()
+      }
+    }
+  },
+
+  openPendingDelivery: () => {
+    const pending = get().pendingDelivery
+    if (!pending || pending.sessionId === get().activeSessionId) return
+    if (!get().sessions.some(session => session.id === pending.sessionId)) {
+      set(s => ({ sessions: [...s.sessions, { id: pending.sessionId, title: pending.request.text.slice(0, 26), createdAt: Date.now(), updatedAt: Date.now(), city: '', messages: [], cards: [], runId: pending.acceptedRunId || pending.request.runId }] }))
+    }
+    get().restoreSession(pending.sessionId)
   },
 
   confirm: async (token, ok) => {
@@ -434,13 +608,15 @@ export const useStore = create<State>((set, get) => ({
       messages: [{ role: 'assistant', content: '开始新的安排吧。告诉我地点、人数和预算。' }], cards: [], steps: [], events: [], run: null,
       busy: false, requestBusy: false, backendError: '', historyOpen: false }))
     localStorage.removeItem('plango_active_run')
+    get().persistComposer()
   },
   restoreSession: (id) => {
     const list = upsertSession(get())
     const target = list.find(x => x.id === id)
     if (!target) return
     set({ sessions: list, activeSessionId: id, messages: target.messages, cards: [], steps: [], events: [], run: null,
-      busy: !!target.runId, requestBusy: !!target.runId, backendError: target.runId ? '' : '这是旧版会话的只读记录。发送消息会建立新的后端任务。', historyOpen: false })
+      busy: !!target.runId, requestBusy: !!target.runId, backendError: target.runId || get().drafts[id] || get().pendingDelivery?.sessionId === id ? '' : '这是旧版会话的只读记录。发送消息会建立新的后端任务。', historyOpen: false })
+    get().persistComposer()
     if (!target.runId) return
     localStorage.setItem('plango_active_run', target.runId)
     void window.plango.harness.getRun(target.runId).then(async snapshot => {
@@ -453,6 +629,7 @@ export const useStore = create<State>((set, get) => ({
   },
   deleteSession: (id) => {
     const state = get()
+    if (state.pendingDelivery?.sessionId === id) { set({ backendError: '此会话还有消息待确认，请先取回原请求再隐藏。' }); return }
     const target = state.sessions.find(session => session.id === id)
     const hidden = hiddenSessionIds()
     hidden.add(id)
@@ -477,8 +654,10 @@ function upsertSession(s: State): SavedSession[] {
   const hidden = hiddenSessionIds()
   if (hidden.has(s.activeSessionId) || (s.run && hidden.has(s.run.run_id))) return sessions
   const firstUser = s.messages.find((m) => m.role === 'user')
-  if (!firstUser && s.cards.length === 0) return sessions // 空会话不存
-  const title = (typeof firstUser?.content === 'string' ? firstUser.content : '') || '新会话'
+  const pending = s.pendingDelivery?.sessionId === s.activeSessionId ? s.pendingDelivery : null
+  const draft = s.drafts[s.activeSessionId]
+  if (!firstUser && s.cards.length === 0 && !pending && !draft?.text && !draft?.image) return sessions
+  const title = (typeof firstUser?.content === 'string' ? firstUser.content : '') || pending?.request.text || draft?.text || '图片草稿'
   const now = Date.now()
   const existing = sessions.find((x) => x.id === s.activeSessionId)
   const snap: SavedSession = {

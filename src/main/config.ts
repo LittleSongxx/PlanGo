@@ -142,12 +142,25 @@ export function setConfig(patch: Partial<AppConfig>): AppConfig {
 }
 
 // 设置页脱敏
+export function safeServiceOrigin(value: string): string {
+  try {
+    const url = new URL(value)
+    return ['http:', 'https:'].includes(url.protocol) ? url.origin : '地址无效'
+  } catch { return '地址无效' }
+}
+
 export function getConfigMasked(): AppConfig & { hasLlmKey: boolean; hasAmapKey: boolean } {
   const c = getConfig()
-  const mask = (s: string) => (s ? s.slice(0, 5) + '••••' + s.slice(-3) : '')
+  const mask = (s: string) => (s ? '••••' : '')
+  let baseURL = ''
+  try {
+    const url = new URL(c.llm.baseURL)
+    // Private endpoints remain saved in the main process; the editor must enter a replacement explicitly.
+    if (!url.username && !url.password && !url.search && !url.hash) baseURL = c.llm.baseURL
+  } catch { /* Invalid stored endpoints are editable without reflecting their raw contents. */ }
   return {
     ...c,
-    llm: { ...c.llm, apiKey: mask(c.llm.apiKey) },
+    llm: { ...c.llm, baseURL, apiKey: mask(c.llm.apiKey) },
     amap: { ...c.amap, key: mask(c.amap.key), jsKey: mask(c.amap.jsKey), jsSecurity: mask(c.amap.jsSecurity) },
     hasLlmKey: !!c.llm.apiKey,
     hasAmapKey: !!c.amap.key

@@ -20,6 +20,8 @@ process.env.PLANGO_BACKEND_AUTOSTART = 'false'
 process.env.PLANGO_BACKEND_TOKEN = 'offline-smoke-only'
 process.env.PLANGO_DATA_DIR = join(work, 'harness')
 let snapshot, command, observation, snapshotReads = 0
+let deliveryReceipt, deliveryLookupBroken = true, deliveryPosts = 0, deliveryLookups = 0, browserResultPosts = 0
+let healthMode = 'current', modelChecks = 0, modelCheck = { status: 'not_checked' }
 const input = '读取当前浏览器页面的真实菜单'
 const fixture = '<!doctype html><html><head><title>菜单界面回归样本</title></head><body><h1>菜单界面回归样本</h1><table><tr><th>菜品</th><th>价格</th></tr><tr><td>真实读取的双人套餐</td><td>128 元</td></tr><tr><td>时价菜</td><td>询价</td></tr>' + Array.from({ length: 8 }, (_, index) => `<tr><td>回归菜品 ${index + 3}</td><td>询价</td></tr>`).join('') + '</table><input placeholder="搜索"></body></html>'
 const server = createServer(async (req, res) => {
@@ -29,20 +31,44 @@ const server = createServer(async (req, res) => {
   let body = ''; for await (const part of req) body += part
   const data = body ? JSON.parse(body) : {}
   let result = {}
-  if (/health\/(live|ready)$/.test(url.pathname)) result = { ready: true, status: 'ready', app: 'PlanGo', world_provider: 'browser' }
+  if (/health\/(live|ready)$/.test(url.pathname)) {
+    if (healthMode === 'offline') { res.writeHead(503); res.end('{}'); return }
+    result = { ready: true, input_delivery_version: 1, status: 'ready', app: 'PlanGo', world_provider: 'browser' }
+    if (healthMode !== 'legacy') result.execution = {
+      runtime_profile: healthMode === 'desktop' ? 'desktop' : 'service',
+      model: { name: 'fixture-task-model', provider_origin: 'https://fixture.invalid', key_configured: healthMode !== 'missing_key', check: healthMode === 'missing_key' ? { status: 'not_configured' } : modelCheck },
+      capabilities: { amap_configured: true, browser_vision_enabled: false, browser_strategy: 'dom_first', image_input: 'model_dependent', transit: 'limited' },
+      recent_task_model: { run_id: 'fixture-history', name: 'fixture-worker-model', status: 'ok', recorded_at: new Date().toISOString() }
+    }
+  } else if (url.pathname === '/api/v1/health/model-check' && req.method === 'POST') {
+    modelChecks++
+    modelCheck = { status: 'passed', checked_at: new Date().toISOString(), total_tokens: 9 }
+    result = modelCheck
+  }
   else if (url.pathname === '/api/v1/geo/search') result = { source: 'amap', scope: 'around', pois: [], observed_at: new Date().toISOString(), expires_at: new Date(Date.now() + 60000).toISOString(), cache_hit: false }
   else if (url.pathname === '/api/v1/reminders') result = { reminders: [], history: [] }
   else if (url.pathname === '/api/v1/memory/profile') result = { summaries: [], preferences: [], favorites: [] }
   else if (url.pathname === '/api/v1/runs' && req.method === 'GET') result = { runs: snapshot ? [snapshot] : [] }
   else if (url.pathname === '/api/v1/runs' && req.method === 'POST') {
     assert.equal(data.input_text, input)
+    deliveryPosts++
+    assert.equal(deliveryPosts, 1, 'Recovering a lost acknowledgement must not POST another task')
     snapshot = { run_id: 'smoke-run', input_text: data.input_text, phase: 'REQUIREMENTS_READY', event_seq: 1, version: 1, interrupt_id: 'browser:smoke-command', state: { browser_wait: { type: 'browser', command_id: 'smoke-command', message: '读取本地回归页面' } } }
     command = { command_id: 'smoke-command', run_id: snapshot.run_id, browser_session_id: data.browser_session_id, operation: 'extract', arguments: {}, expires_at: new Date(Date.now() + 60000).toISOString() }
-    result = { run_id: snapshot.run_id, accepted: true }
+    deliveryReceipt = { run_id: snapshot.run_id, accepted: true, request_id: data.request_id, request_fingerprint: data.request_fingerprint }
+    // Persist acceptance in this controlled server, then lose the HTTP response.
+    res.destroy(); return
+  } else if (url.pathname.startsWith('/api/v1/requests/')) {
+    deliveryLookups++
+    if (deliveryLookupBroken) { res.writeHead(503); res.end(JSON.stringify({ detail: 'controlled receipt lookup outage' })); return }
+    assert.equal(decodeURIComponent(url.pathname.slice('/api/v1/requests/'.length)), deliveryReceipt.request_id)
+    result = deliveryReceipt
   } else if (url.pathname === '/api/v1/runs/smoke-run') { snapshotReads++; result = snapshot }
   else if (url.pathname.endsWith('/events')) result = { events: [] }
   else if (url.pathname === '/api/v1/browser/commands') result = { commands: command && !observation ? [command] : [], cursor: observation ? 1 : 0 }
   else if (url.pathname === '/api/v1/browser/commands/smoke-command/result') {
+    browserResultPosts++
+    assert.equal(browserResultPosts, 1, 'Delivery recovery must not repeat the controlled browser command')
     assert.equal(data.ok, true, JSON.stringify(data))
     assert.equal(data.tables[0].rows[0][1], '128 元')
     assert.equal(data.url, fixtureUrl)
@@ -117,6 +143,9 @@ async function main() {
   await waitFor('valid-address recovery', async () => !await js("!!document.querySelector('[role=alert]')") && await guest.executeJavaScript('document.visibilityState') === 'visible')
   await js("document.querySelector('button[title=\"设置\"]').click()")
   await waitFor('drawer hides native view', async () => await guest.executeJavaScript('document.visibilityState') === 'hidden')
+  await waitFor('execution summary in settings', () => js("document.querySelector('[aria-label=\"执行服务与能力\"]')?.innerText.includes('fixture-task-model')"))
+  assert.equal(await js("document.body.innerText.includes('独立 worker 当前配置尚未单独核对') && document.body.innerText.includes('fixture-worker-model')"), true)
+  assert.equal(modelChecks, 0, 'Opening settings must not call a paid model')
   await sleep(200)
   writeFileSync(join(uiEvidence, '04-settings.png'), (await window.webContents.capturePage()).toPNG())
   await js("document.querySelector('button[aria-label=\"关闭设置\"]').click()")
@@ -125,6 +154,34 @@ async function main() {
   await waitFor('connection dialog', () => js("!!document.querySelector('dialog[aria-label=\"连接与能力\"]')"))
   await sleep(200)
   writeFileSync(join(uiEvidence, '05-connection-model.png'), (await window.webContents.capturePage()).toPNG())
+  const refreshHealth = async () => {
+    await js("[...document.querySelectorAll('button')].find(el=>el.innerText==='刷新服务状态').click()")
+    await waitFor('health refresh completed', () => js("![...document.querySelectorAll('button')].find(el=>el.innerText==='刷新服务状态').disabled"))
+  }
+  await waitFor('service configuration distinct from desktop editor', () => js("document.body.innerText.includes('fixture-task-model') && document.body.innerText.includes('桌面模型配置')"))
+  assert.equal(await js("document.body.innerText.includes('尚未实测') && document.body.innerText.includes('只读 Vision 未启用') && document.body.innerText.includes('公交覆盖有限')"), true)
+  assert.equal(modelChecks, 0)
+  await js("[...document.querySelectorAll('button')].find(el=>el.innerText==='测试服务模型').click()")
+  await waitFor('explicit service model check', () => js("document.body.innerText.includes('服务文本接口实测通过')"))
+  assert.equal(modelChecks, 1)
+  healthMode = 'legacy'
+  await refreshHealth()
+  assert.equal(await js("document.body.innerText.includes('当前服务版本未提供配置摘要')"), true)
+  assert.equal(await js("[...document.querySelectorAll('button')].find(el=>el.innerText==='测试服务模型').disabled"), true)
+  healthMode = 'missing_key'
+  await refreshHealth()
+  assert.equal(await js("document.body.innerText.includes('服务模型尚未配置完整')"), true)
+  assert.equal(await js("[...document.querySelectorAll('button')].find(el=>el.innerText==='测试服务模型').disabled"), true)
+  healthMode = 'desktop'
+  await refreshHealth()
+  assert.equal(await js("document.body.innerText.includes('桌面内嵌 worker')"), true)
+  healthMode = 'offline'
+  await refreshHealth()
+  assert.equal(await js("document.body.innerText.includes('无法读取当前执行配置')"), true)
+  healthMode = 'current'
+  await refreshHealth()
+  assert.equal(modelChecks, 1, 'Status refreshes must not repeat the model check')
+  writeFileSync(join(uiEvidence, '05-execution-service.png'), (await window.webContents.capturePage()).toPNG())
   await js("[...document.querySelectorAll('[role=tab]')].find(el=>el.innerText==='技能').click()")
   await waitFor('installed skills', () => js("!!document.querySelector('[role=switch]')"))
   const skillBefore = await js("({name:document.querySelector('[role=switch]').getAttribute('aria-label'), checked:document.querySelector('[role=switch]').getAttribute('aria-checked')})")
@@ -150,6 +207,20 @@ async function main() {
   await js("document.querySelector('button[aria-label=\"关闭地点与优惠发现\"]').click()")
   await waitFor('discovery close restores guest', async () => await guest.executeJavaScript('document.visibilityState') === 'visible')
   await fill('textarea', input)
+  await waitFor('lost acknowledgement delivery status', () => js("document.querySelector('[aria-label=\"消息发送状态\"]')?.innerText.includes('送达待核实') && [...document.querySelectorAll('button')].some(el=>el.innerText==='核对送达并取回' && !el.disabled)"))
+  const pendingDelivery = await js("JSON.parse(localStorage.getItem('plango_composer')).pendingDelivery")
+  assert.equal(pendingDelivery.status, 'unconfirmed')
+  assert.equal(pendingDelivery.request.requestId, deliveryReceipt.request_id)
+  assert.equal(await js("document.querySelector('textarea').value"), input, 'The exact draft stays visible until the accepted task is retrieved')
+  assert.equal(deliveryPosts, 1)
+  await sleep(200)
+  writeFileSync(join(uiEvidence, '13-delivery-unconfirmed.png'), (await window.webContents.capturePage()).toPNG())
+  deliveryLookupBroken = false
+  await js("[...document.querySelectorAll('button')].find(el=>el.innerText==='核对送达并取回').click()")
+  await waitFor('read-only delivery recovery clears exact draft', () => js("!JSON.parse(localStorage.getItem('plango_composer')).pendingDelivery && document.querySelector('textarea').value===''") )
+  assert.equal(deliveryPosts, 1, 'The renderer/main/preload recovery is GET-only')
+  assert(deliveryLookups >= 2, 'Exercise failed and recovered receipt lookup through the real client')
+  assert.equal(await js("localStorage.getItem('plango_active_run')"), 'smoke-run')
   await waitFor('real browser observation', () => !!observation)
   await waitFor('projected menu in full UI', () => js("document.body.innerText.includes('菜单摘录') && document.body.innerText.includes('价格待核验') && document.body.innerText.includes('¥128')"))
   assert.equal(await js("document.body.innerText.includes('回归菜品 10')"), false, 'Long menu excerpts start compact')
@@ -184,6 +255,7 @@ async function main() {
   assert.equal(window.webContents.getURL(), hostUrl, 'Renderer navigation away from the fixed application document is blocked')
   await window.loadURL(fixtureUrl) // Trusted test code simulates the same WebContents displaying a foreign document.
   assert.equal(await js("window.plango.getConfig().then(()=>false,error=>error.message.includes('Untrusted IPC sender'))"), true, 'A foreign document in the former host cannot use privileged IPC')
-  console.log('Desktop UI smoke passed: real WCV/IPC, DOM read, unknown price, same authenticated contents, history recovery, host navigation and IPC isolation. Shell screenshot: ' + screenshot)
+  console.log(JSON.stringify({ scope: 'controlled main/preload/renderer delivery recovery', deliveryPosts, deliveryLookups, browserResultPosts, runId: 'smoke-run', screenshot: join(uiEvidence, '13-delivery-unconfirmed.png'), businessActions: 0 }))
+  console.log('Desktop UI smoke passed: real WCV/IPC, lost acknowledgement recovery, DOM read, unknown price, same authenticated contents, history recovery, host navigation and IPC isolation. Shell screenshot: ' + screenshot)
 }
 main().then(() => { server.close(); process.chdir(root); rmSync(work, { recursive: true, force: true }); app.exit(0) }).catch(error => { console.error(error); server.close(); process.chdir(root); app.exit(1) })

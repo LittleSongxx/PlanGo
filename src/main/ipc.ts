@@ -7,7 +7,7 @@ import { cancelBrowserRun, cancelBrowserTab } from './browser-bridge'
 import { getMainWindow, isTrustedRendererUrl } from './index'
 import { handleBrowserIntent, setBrowserLayout } from './browserView'
 import { getHarness, harnessStatus, restartHarness } from './harness'
-import { getConfig, getConfigMasked, getHarnessEnvironment, setConfig } from './config'
+import { getConfig, getConfigMasked, getHarnessEnvironment, setConfig, safeServiceOrigin } from './config'
 import { pingLlm } from './llm'
 import { listSkills, toggleSkill } from './skills/loader'
 import { detectLocation, getLocation, setManualCity, setReportedLocation } from './location'
@@ -76,9 +76,15 @@ export function registerIpc(): void {
     throw new Error('Unknown reminder operation')
   })
   handle(IPC.harnessRequest, async (operation: string, raw: unknown) => {
-    if (operation === 'status') return harnessStatus()
+    if (operation === 'status') return harnessStatus(z.object({ checkModel: z.boolean().optional() }).parse(raw || {}).checkModel)
     const client = await getHarness()
     switch (operation) {
+      case 'deliver': {
+        const p = z.object({ requestId: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/), runId: id.optional(), text, image, selectedPoi }).strict().parse(raw)
+        if (p.runId && p.selectedPoi) throw new Error('选店必须使用明确的任务入口')
+        return client.deliver(p)
+      }
+      case 'checkDelivery': return client.checkDelivery(z.object({ requestId: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/) }).strict().parse(raw).requestId)
       case 'createRun': {
         const p = z.object({ text, image, selectedPoi }).parse(raw)
         const attached = p.image || guideImage
@@ -148,7 +154,7 @@ export function registerIpc(): void {
     return projectedReply(await (await getHarness()).createRun(p.message))
   })
   handle(IPC.agentConfirm, () => { throw new Error('旧确认已失效，请从当前 Harness 任务重新确认。') })
-  handle(IPC.getConfig, () => ({ config: { ...getConfigMasked(), harness: { baseURL: getHarnessEnvironment().PLANGO_BACKEND_URL || 'http://127.0.0.1:8011', autoStart: getHarnessEnvironment().PLANGO_BACKEND_AUTOSTART !== 'false' } }, cities: [] }))
+  handle(IPC.getConfig, () => ({ config: { ...getConfigMasked(), harness: { baseURL: safeServiceOrigin(getHarnessEnvironment().PLANGO_BACKEND_URL || 'http://127.0.0.1:8011'), autoStart: getHarnessEnvironment().PLANGO_BACKEND_AUTOSTART !== 'false' } }, cities: [] }))
   handle(IPC.setConfig, async (raw: unknown) => {
     const patch = z.object({
       llm: z.object({ apiKey: z.string().max(2048), baseURL: z.string().url(), model: z.string().min(1).max(200) }).partial().optional(),

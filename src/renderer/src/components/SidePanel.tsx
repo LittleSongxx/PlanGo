@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import type { ReminderList } from '@shared/types'
 import { DialogShell } from './DialogShell'
+import { ExecutionServiceCard } from './ExecutionServiceCard'
 import { X, Cpu, MessageCircle, Puzzle, Brain, Check, Loader2, Plug, Heart, Lock, MapPin, Bell } from 'lucide-react'
 
 // 右侧面板：模型/API 切换 + 微信/飞书入口 + 技能 + 记忆呈现（多 Agent/越用越懂的"外部旋钮"）。
@@ -71,6 +72,7 @@ function ModelSection(): JSX.Element {
   const [apiKey, setApiKey] = useState('')
   const [saving, setSaving] = useState(false)
   const [ping, setPing] = useState('')
+  const [revision, setRevision] = useState(0)
 
   useEffect(() => {
     window.plango.getConfig().then((r) => {
@@ -87,23 +89,26 @@ function ModelSection(): JSX.Element {
   const save = async (): Promise<void> => {
     setSaving(true)
     setPing('')
-    const patch: any = { llm: { baseURL, model } }
+    const patch: any = { llm: { model, ...(baseURL.trim() ? { baseURL: baseURL.trim() } : {}) } }
     if (apiKey.trim()) patch.llm.apiKey = apiKey.trim()
     try {
       await window.plango.setConfig(patch)
       const r = await window.plango.pingLlm()
-      setPing(r.ok ? '连通正常 ✓ ' + r.message : '连接失败：' + r.message)
+      setPing(r.ok ? '桌面配置已保存，桌面文本测试通过 ✓ ' + r.message : '桌面配置已保存，桌面测试失败：' + r.message)
       setApiKey('')
       const config = await window.plango.getConfig()
       setCfg(config.config)
+      setRevision(value => value + 1)
       await useStore.getState().hydrateHarness()
-    } catch (e) { setPing('保存失败：' + String(e)) }
+    } catch { setPing('保存或重新连接未完成，请刷新服务状态并核对桌面配置。') }
     finally { setSaving(false) }
   }
 
   return (
     <div className="space-y-3">
-      <div className="text-xs text-neutral-500">选择预设，或填写模型接口与密钥。连通测试使用这些配置；独立运行服务的实际配置请同时核对。</div>
+      <ExecutionServiceCard revision={revision} />
+      <h3 className="font-semibold text-sm pt-2">桌面模型配置</h3>
+      <div className="text-xs text-neutral-500">预设只填接口与模型名称，不保证账户可用。保存与下方测试只使用桌面配置；独立 Docker 服务不会被覆盖。</div>
       <div className="grid grid-cols-2 gap-2">
         {PRESETS.map((p) => {
           const active = baseURL === p.baseURL
@@ -124,7 +129,7 @@ function ModelSection(): JSX.Element {
       </div>
 
       <Field label="服务地址（BASE_URL）">
-        <input value={baseURL} onChange={(e) => setBaseURL(e.target.value)} className="plango-field" placeholder="https://api.xxx.com/v1" />
+        <input value={baseURL} onChange={(e) => setBaseURL(e.target.value)} className="plango-field" placeholder="https://api.xxx.com/v1（留空保留原地址）" />
       </Field>
       <Field label="模型名称（MODEL）">
         <input value={model} onChange={(e) => setModel(e.target.value)} className="plango-field" placeholder="模型名" />
@@ -134,7 +139,7 @@ function ModelSection(): JSX.Element {
       </Field>
 
       <button onClick={save} disabled={saving} className="w-full py-2 rounded-xl bg-brand-strong text-white font-medium text-sm flex items-center justify-center gap-1.5 disabled:opacity-50">
-        {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} 保存并检查连通
+        {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} 保存桌面配置并测试
       </button>
       {ping && <div className={`text-xs ${ping.includes('✓') ? 'text-green-600' : 'text-red-500'}`}>{ping}</div>}
 

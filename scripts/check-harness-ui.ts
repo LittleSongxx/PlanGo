@@ -56,7 +56,7 @@ Object.defineProperty(globalThis, 'localStorage', { value: { getItem: (k: string
 let resolveCreate!: (value: HarnessSnapshot) => void
 const calls: string[] = []
 Object.defineProperty(globalThis, 'window', { value: { plango: { harness: {
-  createRun: () => new Promise<HarnessSnapshot>(resolve => { resolveCreate = resolve }),
+  deliver: (request: { requestId: string }) => new Promise<HarnessSnapshot>(resolve => { resolveCreate = resolve }).then(snapshot => ({ requestId: request.requestId, status: 'delivered', runId: snapshot.run_id, snapshot })),
   getRun: async (id: string) => { calls.push(`get:${id}`); return snapshot },
   events: async () => ({ events: [] }),
   resume: async (...args: string[]) => { calls.push(`resume:${args.join(':')}`); return snapshot },
@@ -75,6 +75,7 @@ assert.deepEqual(session.cards, [], 'History must not persist executable approva
 useStore.getState().newSession()
 assert.equal(cache.get('plango_active_run'), undefined)
 const pending = useStore.getState().send('新的安排')
+await new Promise(resolve => setTimeout(resolve, 0))
 useStore.getState().newSession()
 resolveCreate(snapshot)
 await pending

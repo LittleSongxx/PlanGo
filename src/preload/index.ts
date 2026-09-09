@@ -1,7 +1,7 @@
 // preload：一能力一方法，contextBridge 暴露给渲染层。
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
-import type { HarnessFeedbackInput, RequirementEdit } from '../shared/types'
+import type { HarnessFeedbackInput, RequirementEdit, HarnessDeliveryRequest } from '../shared/types'
 import type { LocationInfo, SelectedPoi } from '../shared/location'
 import type { BrowserIntent, BrowserLayout, BrowserViewState, BrowserActivity } from '../shared/browserView'
 
@@ -13,6 +13,8 @@ const api = {
     remove: (id: string) => ipcRenderer.invoke(IPC.reminderRequest, 'remove', { id })
   },
   harness: {
+    deliver: (request: HarnessDeliveryRequest) => ipcRenderer.invoke(IPC.harnessRequest, 'deliver', request),
+    checkDelivery: (requestId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'checkDelivery', { requestId }),
     editRequirements: (runId: string, edit: RequirementEdit) => ipcRenderer.invoke(IPC.harnessRequest, 'editRequirements', { runId, edit }),
     resumePreparation: (runId: string, planId: string, planVersion: number, approvalId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'resumePreparation', { runId, planId, planVersion, approvalId }),
     decideDraft: (runId: string, interruptId: string, planId: string, planVersion: number, decision: 'save' | 'prepare') => ipcRenderer.invoke(IPC.harnessRequest, 'decideDraft', { runId, interruptId, planId, planVersion, decision }),
@@ -26,7 +28,7 @@ const api = {
     cancel: (runId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'cancel', { runId }),
     resume: (runId: string, interruptId: string, decision: string, text?: string) => ipcRenderer.invoke(IPC.harnessRequest, 'resume', { runId, interruptId, decision, text }),
     listRuns: () => ipcRenderer.invoke(IPC.harnessRequest, 'listRuns', {}),
-    status: () => ipcRenderer.invoke(IPC.harnessRequest, 'status', {})
+    status: (checkModel = false) => ipcRenderer.invoke(IPC.harnessRequest, 'status', { checkModel })
   },
   onHarnessEvent: (cb: (event: unknown) => void) => sub(IPC.harnessEvent, cb),
   // 对话主线

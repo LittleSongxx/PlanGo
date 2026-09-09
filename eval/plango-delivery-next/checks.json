@@ -1,0 +1,40 @@
+{
+  "controlled": true,
+  "full_check_before_fingerprint": {
+    "pytest": 279,
+    "subtests": 43,
+    "typecheck": true,
+    "ui": true,
+    "transport": true,
+    "share": true,
+    "build": true
+  },
+  "final_after_fingerprint": {
+    "pytest": 280,
+    "subtests": 43,
+    "typecheck": true,
+    "transport": true,
+    "geo_client": true,
+    "build": true,
+    "ruff": true,
+    "mypy_files": 69
+  },
+  "real_model_calls": 0,
+  "merchant_transactions": 0,
+  "desktop_integrated": {
+    "controlled": true,
+    "delivery_posts": 1,
+    "delivery_lookups": 2,
+    "browser_result_posts": 1,
+    "same_run_restored": true,
+    "original_draft_cleared": true,
+    "temporary_windows_closed": true
+  },
+  "image_restart": {
+    "controlled": true,
+    "image_bytes": 8000000,
+    "metadata_bytes": 506,
+    "restored_data_url_chars": 10666690,
+    "automatic_posts_after_restart": 0
+  }
+}

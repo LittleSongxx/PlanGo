@@ -1,12 +1,12 @@
 # PlanGo 当前实施交接
 
-更新：**2026-09-09 11:02（Asia/Shanghai，只读运行快照）**。工作区：`/home/song/code/Agent/multi-agent/PlanGo`。
+更新：**2026-09-09，D1/D2 首批实现与验证**。工作区：`/home/song/code/Agent/multi-agent/PlanGo`。
 
 ## 0. 当前目标与下一步
 
 用户希望新 Codex **按最近讨论的“项目本身推进计划”直接实施**，不要重新输出泛化分析或询问“是否开始”。主线是：用户选择门店与优惠 → 修改人数/日期/预算 → 系统解释适用性与缺失规则 → 保存行程 → 中断后继续原任务。
 
-**先做第5节 D1“发送失败与断线恢复”及 D2“实际配置/能力入口”，再推进 D3 套餐决策和 D4 资料到行程。** 后续依次做效率、路线费用、真实表单及独立使用验收。先复现风险，复用已有持久命令、规范补丁、证据和审批机制，按小阶段验证与本地提交；不要为了形式统一重建架构。
+**D1“发送失败与断线恢复”和 D2“实际配置/能力入口”已有首批实现及验证；接下来推进第5节 D3 套餐决策和 D4 资料到行程。** 后续依次做效率、路线费用、真实表单及独立使用验收。复用已有持久命令、规范补丁、证据和审批机制，按小阶段验证与本地提交；不要重复首批实现或为了形式统一重建架构。
 
 用户主投方向已确认 **AI应用／Agent开发**；[秋招与作品集建议](秋招与作品集推进建议.md)是辅助背景，不能据此把本次产品实施改成写简历或发布作品集。20个评估任务、3–5个独立试用者等仍是建议数量，尚未执行；**完整质量指标测评继续暂停**。
 
@@ -31,9 +31,9 @@
 | 项目 | 本次只读核实 |
 | --- | --- |
 | 分支 | `feat/planora-browser-harness`，历史分支名保留 |
-| 写交接前HEAD | `46543d6 docs: record merchant UI trial artifact and verification`；本次可能形成文档提交，以Git为准 |
-| 最新实现 | `a05f037`：门店预览、读取范围、窗口与UI；此前 `87f18e9`：结构化编辑/试用交付，`d6086c1`：P2/P3核心 |
-| 初查工作区 | 无代码修改；未跟踪文件为用户融合原文、上一轮生成的秋招建议。当前交接文档改动另计 |
+| 本轮接手HEAD | `f8eb546 docs: hand off the next PlanGo product implementation stages`；D1/D2阶段提交以本文件对应Git记录为准 |
+| 最新实现 | 本轮D1/D2：持久发送身份/内容指纹、事务接受、草稿/图片恢复、执行配置与能力摘要；此前`a05f037`门店UI、`87f18e9`需求/试用、`d6086c1`核心均保留 |
+| 初查工作区 | 无代码修改，仅用户融合原文未跟踪；没有重做更名、环境、安装或商家登录 |
 | 主Compose | `plango`，目录标签归属本仓库；API/PG/Redis healthy，worker运行，migrate Exited 0 |
 | 主API/数据库 | `http://127.0.0.1:8011`；database/role=`plango` |
 | 主任务 | 8条：6 SUCCEEDED、1 REQUIREMENTS_READY、1 PARTIAL_FAILED；有效租约或pending_command=0，未回执浏览器命令=0，RUNNING/UNKNOWN动作=0。终态包含只读/草案，不表示6次交易 |
@@ -50,7 +50,7 @@
 | 主profile | `~/.config/plango`，`persist:plango`；Cookie在 `Partitions/plango/Cookies` |
 | 主桌面身份/回执 | profile下 `harness/desktop-identity.json`、`browser-receipts.json`，不能替换成新身份 |
 | 原迁移私有备份 | `output/r0-backup/`；含配置、SQL/卷/profile，不提交、不公开打印 |
-| 最近主库更新备份 | `output/merchant-live/before-main-update.sql`、`before-main-rows.json`；更早 `output/next-maintenance/` |
+| 最近主库更新备份 | `output/delivery-next/before-main-update.sql`、`before-main-rows.json`；此前商家/维护备份照常保留 |
 | 原真实PG/Redis测试 | `plango-e2e`卷、`output/live-ui/profile/`、`output/live-ui/final-backup/plango-e2e.sql`；当前停止，不是空库 |
 | 商家原任务 | `output/merchant-next/session-C0ovDv/`，数据库 `data/runs.sqlite`、profile `electron/`；原后台端口已停，不固定端口恢复 |
 | 结构化需求原任务 | `output/requirements-next/session-kfOEZ5/`，`data/runs.sqlite`与独立profile，已停止 |
@@ -84,7 +84,11 @@
 
 ## 4. 现有验证与交付
 
-最近完整npm check为263pytest+43subtests、TS/存储/传输/分享/构建通过；追加预算回归后最终全量pytest为**264+43subtests**，Ruff/mypy67文件、真实浏览器**80项**及隔离完整桌面/键盘交互通过。9场景54条归档断言核对冻结证据中的记录与字段值，不执行新业务，也不是54次新业务成功。本次写交接只读检查状态，未重跑业务验收。
+上一轮门店UI交付完整npm check为263pytest+43subtests、TS/存储/传输/分享/构建通过；追加预算回归后全量pytest为**264+43subtests**，Ruff/mypy67文件、真实浏览器**80项**及隔离完整桌面/键盘交互通过。9场景54条归档断言核对冻结证据中的记录与字段值，不执行新业务，也不是54次新业务成功。
+
+以上为上一轮门店交付基线。本轮D1/D2完整npm check通过279pytest+43subtests、TS及构建；追加内容指纹后全量pytest最终**280+43subtests**，最终类型、传输、Geo客户端、Ruff/mypy69文件与构建通过。实际Electron集成包含接受后断响应→原请求只读取回（POST=1）；8MB图片两次独立进程恢复、服务配置/诊断/旧服务/缺key/离线界面通过。双runtime PostgreSQL并发创建/消息/暂停各12请求仅1次首次接受，旧行/UNKNOWN保留。详见[首批证据](../eval/plango-delivery-next/README.md)；均未执行真实模型/商家交易，未恢复完整质量测评。
+
+主API/worker已更新并迁移至0013。更新前无租约/待命令/UNKNOWN且无主桌面，私有SQL备份后升级；原16张业务表1413行全部保留（另1张迁移版本表按预期更新），主Cookie文件/桌面身份/浏览器回执哈希保持。更新后API/PG/Redis健康、worker运行、未决计数仍0；没有打开主profile。独立e2e只临时启动PG做并发验收，现已停止，v1–v4测试数据库和失败日志保留。
 
 - [真实门店/UI](../eval/plango-merchant-live/README.md)、[读取数据](../eval/plango-merchant-live/read-result.json)、[主数据连续性](../eval/plango-merchant-live/main-data-continuity.json)。主服务更新时17表1414条原始行、49Cookie及身份/回执保持是有时间的历史验收，本次未重新逐行计算。
 - [需求/安装/接续](../eval/plango-next/README.md)、[安装验收](../eval/plango-next/trial-install.json)：17表/72profile文件、受控Cookie/UNKNOWN/审批/checkpoint/Redis PEL恢复；不是跨机器真实登录验收。
@@ -94,11 +98,13 @@
 
 ## 5. 已授权接续的产品实施顺序
 
-这是最近用户要求“针对项目本身”讨论后，要求交接给新会话按计划实施的路线；**下列D1–D7仍未实施**。源码风险先复现，不能当作已经发生的用户事故。求职展示作为顺带保留的证据，不取代本路线。
+这是用户确认的产品实施路线；**D1/D2首批已实现，D3–D7继续按顺序推进**。故障注入与真实业务验收分别报告，不能当作已经发生的用户事故。求职展示作为顺带证据，不取代本路线。
 
 ### D1 / P0：发送失败与断线恢复（第一项）
 
-现状：`ChatPanel`文本/图片入口先清输入再异步send；`store.send`先显示普通用户气泡，失败主要设全局错误。`HarnessClient.createRun`先POST再GET；POST被接收但响应/后续GET失败时，前端可能没有run_id。DTO没有客户端稳定请求ID，每次create_run生成新UUID。已有事务内pending_command去重只覆盖其现有范围，不能假定覆盖创建与每条消息整个生命周期。
+已实现：草稿和单个未决发送保留在原profile，图片用原生IndexedDB附件引用；固定request_id与内容指纹贯穿renderer/main/API。main先持久固定正文、图片、选店、位置、Skills及服务地址，再POST；接受后只GET取回。服务端`input_acceptance`与创建/命令/绑定/预算同事务持久，重复接受跨完成/重启仍返回原回执。同文新轮独立，内容冲突、当前租约/取消/pending/UNKNOWN均受事务围栏保护。旧服务无协议声明时不POST，保留草稿；0012→0013迁移不清旧数据。
+
+上述风险已通过独立故障注入复现并修复，不是主用户数据事故。另复现并修复迟到replan覆盖已接受pending命令，以及409响应丢失后仅按ID误认旧内容；后者由持久内容指纹校验阻断。未送达可返回草稿，未知送达不可静默丢弃或改用新请求身份；重启先只读核对。
 
 先读：`src/renderer/src/components/ChatPanel.tsx` → `src/renderer/src/store.ts` → `src/preload/index.ts` / `src/shared/types.ts` / `src/main/ipc.ts` → `src/main/harnessClient.ts` → `backend/plango/app.py` / `runtime.py` → `vendor/plango_harness/backend/plango_harness/runtime.py` / `persistence/runs.py`。
 
@@ -108,7 +114,7 @@
 
 ### D2 / P0：实际模型配置与能力入口（与D1形成首批交付）
 
-现状：本地pingLlm测试桌面cfg；连接现有Docker服务时只是连接，保存桌面配置/restartHarness不会更新Docker环境。SidePanel已有说明，但ready主要只有model_enabled，缺少可核对的实际执行配置/能力摘要。快捷示例仍包含取号/点菜愿景，与已验收范围需对齐。
+已实现：设置和连接入口共用执行服务卡，显示安全服务来源/归属、API配置模型、最近任务实际模型记录、key配置布尔值、DOM/Vision/图片/高德/公交能力边界。明确区分桌面文本测试、主动服务文本诊断与任务模型可用性；独立worker当前配置未单独核对时明确注明。健康检查不调用模型，诊断有界且只由按钮触发。快捷示例改为规划、只读优惠及草案分享；不覆盖独立Docker环境，不展示密钥片段或带凭据URL。
 
 入口：`SettingsDrawer.tsx`、`SidePanel.tsx`、`ChatPanel.tsx`、`src/main/{config,harness,ipc}.ts`、`docker-compose.yml`、`backend/plango/settings.py`、`app.py`。扩现有设置/健康入口，不开第二套配置真相。
 
@@ -149,9 +155,9 @@
 ## 6. 新会话首轮应落地什么
 
 1. 读根AGENTS、本文件、架构决策、Agent架构与选型、进度末尾；只读核实本文件第2节的归属与待任务。
-2. 先D1：沿完整发送链复现三个网络故障窗口，保留失败证据；核对创建和消息幂等边界，实施最小修复及旧数据兼容。并行可只读梳理D2，避免冲突文件同时编辑。
-3. D1/D2首批交付要做到：用户能恢复输入和确认送达；重复操作不重复任务/预算；当前服务实际模型/能力可核对；示例与真实支持范围一致；必要UI顺手改善。
-4. 通过必要回归后更新进度/交接/使用文档并本地阶段提交，然后继续D3–D7。遇到具体账号、业务写授权或确需用户选择的缺口时才问，不停在“是否开始”。
+2. D1/D2已交付后继续D3：复用同店当前优惠原文，按已确认人数/日期/预算给三态适用性及缺失规则；不要把人均或套餐标价直接当完整用餐费用。
+3. D4显式选择必须保留原command/artifact与优惠索引/hash引用，核对canonical分店和地址后进入原TripSpec/版本/审批。纯浏览器run可能没有TripSpec，不能把默认北京/1人/400元当用户确认；新轮会清当前artifact，不能为恢复方便混入全部历史网页。
+4. 保持D1/D2故障恢复回归，通过必要检查后更新进度/交接/使用文档并本地阶段提交，再继续D5–D7。遇到具体账号、业务写授权或确需用户选择的缺口时才问，不停在“是否开始”。
 
 ## 7. 启停和验证入口
 
@@ -193,4 +199,4 @@ PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plang
 
 它使用受控页面及真实模型，可能重启隔离API/worker；不代表真实交易。共享镜像先build api一次再up --no-build，避免此前并发导出同标签竞争。对当前主服务更新也须先确认静止、备份、保持数据连续性，不能拿主profile做干净安装测试。
 
-新证据使用新目录/文件名，公开材料脱敏；原始SQL/profile/配置留私有output。完成后关闭临时窗口与专属测试进程，保留数据，最后核对Git与用户原文哈希。**下一阶段尚未开始，不能把本次交接文档当D1–D7已交付。**
+新证据使用新目录/文件名，公开材料脱敏；原始SQL/profile/配置留私有output。完成后关闭临时窗口与专属测试进程，保留数据，最后核对Git与用户原文哈希。**D1/D2已有代码与受控验收；D3–D7不能据此计为完成。**

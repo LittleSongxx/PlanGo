@@ -25,7 +25,8 @@ const server = createServer(async (request, response) => {
     scope: body.location_context.longitude === undefined || ['city', 'district', 'unknown'].includes(body.location_context.granularity) ? 'city' : 'around',
     pois: [{ id: 'fixture-poi', name: '受控地点', location: '106.57,29.56', cityname: body.location_context.city, address: '受控地址', type: '餐饮服务;餐厅', business: { rating: '4.5', cost: '80', tel: 'fixture-contact' }, photos: [{ url: 'https://fixture.invalid/poi.png' }] }] })
   if (path === '/api/v1/geo/geocode' || path === '/api/v1/geo/reverse') return finish({ ...time, source: 'amap', location: { longitude: body.longitude ?? 106.57, latitude: body.latitude ?? 29.56, address: '受控地址', city: '重庆市', district: '渝中区', granularity: path.endsWith('geocode') ? 'city' : 'address' } })
-  if (path === '/api/v1/runs' && request.method === 'POST') return finish({ run_id: 'fixture-run' })
+  if (path === '/api/v1/health/ready') return finish({ ready: true, input_delivery_version: 1 })
+  if (path === '/api/v1/runs' && request.method === 'POST') return finish({ run_id: 'fixture-run', request_id: body.request_id, request_fingerprint: body.request_fingerprint, accepted: true })
   if (path.endsWith('/events?after=0')) return finish({ events: [] })
   if (path === '/api/v1/runs/fixture-run') return finish({ run_id: 'fixture-run', phase: 'SUCCEEDED', state: {}, event_seq: 0 })
   response.statusCode = 404; finish({ detail: 'unexpected fixture path' })

@@ -20,6 +20,7 @@ from sqlalchemy import or_, select, update
 
 from .browser import Observation, bindings
 from .geo import install_geo_routes
+from .health import install_health_routes
 from .location import LocationContext
 from .reminders import install_reminder_routes, setup_reminders
 from .requirements import RequirementEdit
@@ -53,6 +54,8 @@ class SelectedPoi(BaseModel):
 
 
 class CreateRun(BaseModel):
+    request_id: str | None = Field(default=None, min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
+    request_fingerprint: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     selected_poi: SelectedPoi | None = None
     location_context: LocationContext | None = None
     user_id: str = Field(default="desktop", min_length=1, max_length=128)
@@ -64,6 +67,8 @@ class CreateRun(BaseModel):
 
 
 class Message(BaseModel):
+    request_id: str | None = Field(default=None, min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
+    request_fingerprint: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     location_context: LocationContext | None = None
     text: str = Field(min_length=1, max_length=12000)
     image: str | None = Field(default=None, max_length=12000000)
@@ -160,6 +165,7 @@ def create_app(settings=None, *, token=None):
 
     protected = [Depends(auth)]
     install_geo_routes(app, runtime, protected)
+    install_health_routes(app, runtime, protected)
 
     @app.exception_handler(ValueError)
     async def value_error(request, exc):
@@ -178,7 +184,6 @@ def create_app(settings=None, *, token=None):
     async def live():
         return {"status": "ok", "app": "PlanGo", "world_provider": "browser"}
 
-    @app.get("/api/v1/health/ready", dependencies=protected)
     @app.get("/health/ready")
     async def ready():
         ok = runtime._started and await runtime.database.ping()
@@ -194,8 +199,6 @@ def create_app(settings=None, *, token=None):
 
     @app.post("/api/v1/runs", dependencies=protected, status_code=202)
     async def create(body: CreateRun):
-        if body.image and not settings.model_enabled:
-            raise ValueError("截图解析需要配置支持图像的模型；图片尚未处理")
         return await runtime.create_run(
             body.user_id,
             body.input_text,
@@ -204,7 +207,16 @@ def create_app(settings=None, *, token=None):
             body.enabled_skills,
             body.location_context.model_dump(mode="json") if body.location_context else None,
             selected_poi=body.selected_poi.model_dump(mode="json") if body.selected_poi else None,
+            request_id=body.request_id,
+            request_fingerprint=body.request_fingerprint,
         )
+
+    @app.get("/api/v1/requests/{request_id}", dependencies=protected)
+    async def accepted_input(request_id: str):
+        receipt = await runtime.runs.accepted_input(request_id)
+        if receipt is None:
+            raise HTTPException(404, "request not accepted")
+        return receipt
 
     @app.get("/api/v1/runs", dependencies=protected)
     async def history(user_id: str = "desktop"):
@@ -220,33 +232,10 @@ def create_app(settings=None, *, token=None):
 
     @app.post("/api/v1/runs/{run_id}/messages", dependencies=protected, status_code=202)
     async def message(run_id: str, body: Message):
-        await runtime.bridge.update_location(
-            run_id, body.location_context.model_dump(mode="json") if body.location_context else None
+        return await runtime.accept_message(
+            run_id, body.text, image=body.image, request_id=body.request_id, request_fingerprint=body.request_fingerprint,
+            location_context=body.location_context.model_dump(mode="json") if body.location_context else None,
         )
-        row = await runtime.runs.get(run_id)
-        if body.image and not settings.model_enabled:
-            raise ValueError("截图解析需要配置支持图像的模型；图片尚未处理")
-        if body.image or (row and (row.get("state_json") or {}).get("processed_image_hash")):
-            async with runtime.database.session() as session:
-                async with session.begin():
-                    await session.execute(
-                        update(bindings)
-                        .where(bindings.c.run_id == run_id)
-                        .values(input_image=body.image)
-                    )
-        if row and (row.get("state_json") or {}).get("browser_wait"):
-            if body.text.strip() in {"继续", "已登录", "continue", "resume"}:
-                return await runtime.enqueue_resume(run_id, "resume", body.text)
-            return await runtime.replan(run_id, body.text)
-        if row and row["phase"] in {
-            "SUCCEEDED",
-            "PARTIAL_FAILED",
-            "INFEASIBLE",
-            "FAILED",
-            "CANCELLED",
-        }:
-            return await runtime.replan(run_id, body.text)
-        return await runtime.send_message(run_id, body.text)
 
     @app.post("/api/v1/runs/{run_id}/resume", dependencies=protected, status_code=202)
     async def resume(run_id: str, body: Resume):
