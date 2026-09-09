@@ -33,7 +33,9 @@
     "test:desktop-storage-browser": "node scripts/desktop-storage-regression.cjs",
     "test:desktop-correctness": "tsx scripts/check-desktop-correctness.ts",
     "test:map-title": "electron --no-sandbox scripts/map-title-regression.cjs",
-    "test:browser-view": "electron --no-sandbox scripts/browser-view-regression.cjs"
+    "test:browser-view": "electron --no-sandbox scripts/browser-view-regression.cjs",
+    "package:trial": "python3 scripts/trial.py pack",
+    "test:trial": "python3 scripts/check_trial.py"
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",

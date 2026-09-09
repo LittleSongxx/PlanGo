@@ -20,6 +20,7 @@ from sqlalchemy import update
 
 from .browser import commands, run_context
 from .location import LocationContext, select_origin
+from .outcomes import browser_manual_error
 from .supply import entity_spans, literal_supply
 
 
@@ -224,6 +225,12 @@ class BrowserWorld:
 
     async def page(self):
         observation = await self.bridge.request("extract", {})
+        if browser_manual_error(observation):
+            interrupt({"type": "browser", "id": "browser:" + observation["command_id"],
+                       "command_id": observation["command_id"], "paused_at": time.time(),
+                       "message": "请在当前浏览器人工登录或验证后继续；原任务已保留。",
+                       "error_kind": browser_manual_error(observation)})
+            return await self.page()
         if not observation.get("ok"):
             raise WorldProviderError(observation.get("error_kind", "browser_unavailable"))
         observed = datetime.fromisoformat(observation["observed_at"])
@@ -242,6 +249,8 @@ class BrowserWorld:
         return observation
 
     async def extract(self, observation):
+        if browser_manual_error(observation):
+            return PageData()
         context = run_context.get()
         cache = context.setdefault("extracted", {})
         key = observation["command_id"]
@@ -423,8 +432,9 @@ class BrowserWorld:
         return None
 
     async def search_places(self, query, location, *, limit=8):
+        radius = min(50000, max(1, round(run_context.get().get("world_radius_km", 5.0) * 1000)))
         if not self._uses_browser():
-            amap_places, amap_evidence = await self.amap.search_places(query, location, limit=limit)
+            amap_places, amap_evidence = await self.amap.search_places(query, location, limit=limit, radius_m=radius)
             run_context.get().setdefault("places", {}).update({p.place_id: p for p in amap_places})
             return amap_places, amap_evidence
         observation = await self.page()
@@ -433,7 +443,7 @@ class BrowserWorld:
         evidence: list[Evidence] = []
         now = datetime.fromisoformat(observation["observed_at"])
         if self.settings.amap_webservice_key:
-            places, evidence = await self.amap.search_places(query, location, limit=limit)
+            places, evidence = await self.amap.search_places(query, location, limit=limit, radius_m=radius)
         known = {p.name: p for p in places}
         for observed in data.places:
             existing = known.get(observed.name)

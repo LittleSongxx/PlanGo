@@ -99,6 +99,7 @@ const selectorSource = `(() => {
     let gate=controls.some(el=>el.tagName==='INPUT'&&el.type==='password')?'login':null;
     if(controls.some(el=>(['INPUT','TEXTAREA'].includes(el.tagName)||el.isContentEditable)&&(/captcha|验证码|验证代码|安全验证/i.test([el.getAttribute('aria-label'),el.getAttribute('name'),el.getAttribute('placeholder'),...(el.labels?Array.from(el.labels,label=>label.innerText):[])].join(' '))||el.getAttribute('autocomplete')==='one-time-code')))gate='captcha';
     const text=(document.body?document.body.innerText:'').trim().slice(0,1000);
+    if(location.hostname==='account.dianping.com'&&location.pathname==='/pclogin'&&/扫描二维码登录|扫码[，,\\s]*享.{0,10}免登录|扫码登录/.test(text))gate='login';
     if(/^(安全验证|人机验证|验证码|Just a moment[.]*|Checking your browser|Verify (you are|you're) human)(\\s*[|–-].*)?$/i.test(document.title.trim())||/^(请完成(人机|安全|身份)验证|请验证您是真人)/.test(text))gate='captcha';
     return gate;
   }

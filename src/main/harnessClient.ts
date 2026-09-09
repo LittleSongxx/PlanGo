@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, existsSync, openSync, writeFileSync, fsyncSync, closeSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 import type { BrowserCommand, BrowserObservation } from '../shared/browser'
-import type { HarnessEvent, HarnessSnapshot, HarnessFeedbackInput, HarnessFeedbackReply } from '../shared/types'
+import type { HarnessEvent, HarnessSnapshot, HarnessFeedbackInput, HarnessFeedbackReply, RequirementEdit } from '../shared/types'
 import type { LocationContext, SelectedPoi } from '../shared/location'
 
 interface Options {
@@ -119,6 +119,13 @@ export class HarnessClient {
   async selectPlan(runId: string, planId: string, planVersion: number): Promise<HarnessSnapshot> {
     return this.withIntent(runId, true, async () => {
       await this.request(`/api/v1/runs/${encodeURIComponent(runId)}/plans/select`, 'POST', { plan_id: planId, plan_version: planVersion })
+      return this.getRun(runId)
+    })
+  }
+
+  async editRequirements(runId: string, edit: RequirementEdit): Promise<HarnessSnapshot> {
+    return this.withIntent(runId, true, async () => {
+      await this.request(`/api/v1/runs/${encodeURIComponent(runId)}/requirements`, 'POST', edit)
       return this.getRun(runId)
     })
   }

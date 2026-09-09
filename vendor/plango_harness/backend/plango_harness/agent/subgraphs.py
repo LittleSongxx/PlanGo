@@ -25,6 +25,7 @@ from typing_extensions import TypedDict
 
 
 class RequirementState(TypedDict, total=False):
+    structured_requirement_edit: dict[str, Any] | None
     turn_budget: dict[str, Any]
     browser_task_context: dict[str, Any]
     requirement_reference_at: str | None
@@ -55,6 +56,7 @@ class RequirementState(TypedDict, total=False):
 
 
 class RequirementInput(TypedDict, total=False):
+    structured_requirement_edit: dict[str, Any] | None
     turn_budget: dict[str, Any]
     browser_task_context: dict[str, Any]
     requirement_reference_at: str | None

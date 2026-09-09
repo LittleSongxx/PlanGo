@@ -1,0 +1,470 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-09-09",
+  "purpose": "Small frozen user-scenario regression inventory; evidence checks do not execute the product or establish current merchant facts.",
+  "execution_policy": {
+    "automatic_network_calls": false,
+    "automatic_database_writes": false,
+    "full_quality_sweep": "paused",
+    "preserve_failures_and_cumulative_usage": true,
+    "raise_budgets_to_pass": false,
+    "future_live_run_requires_owned_isolated_profile_and_database": true,
+    "external_business_writes_require_specific_authorization": true
+  },
+  "cases": [
+    {
+      "id": "cq-walking-edit-same-run",
+      "classification": "real_model_amap_and_electron",
+      "recorded_status": "verified_with_scope",
+      "run_ids": [
+        "381fe190c404442894f72b5ddb925524"
+      ],
+      "private_original_store": "output/live-ui/final-backup/plango-e2e.sql",
+      "sources": [
+        "eval/plango-live-ui/actions.json",
+        "eval/plango-live-ui/README.md"
+      ],
+      "prior_failure": "Generic restaurant phrase geocoded to Xi'an; later date edit set refresh flags but skipped real dependencies. Both failed states remain in records 31 and 37.",
+      "expectations": [
+        "Keep Chongqing origin and walking mode; generic categories must not become geocodes.",
+        "Budget-only edit preserves valid geography, routes and unrelated fields.",
+        "Date edit fetches matching-date weather; failed or expired identity remains unknown.",
+        "New explicit origin updates plan/map route origin while retaining budget/date/mode.",
+        "Deliver draft_ready only; unknown supply is not a booking result."
+      ],
+      "necessary_read_only_steps": [
+        "Inspect the same archived run and failure records before any new live replay.",
+        "For a bounded fresh replay in isolated data, use the same phrases with an explicitly recorded current date, retain failures and fixed per-turn caps.",
+        "Compare actual origin/mode, source timestamps and provider requests after each single-field edit; never interpret the archived 2026-09-10 forecast as current."
+      ],
+      "recorded_checks": [
+        {
+          "source": "eval/plango-live-ui/actions.json",
+          "pointer": "/records/31/detail/spec/search_location/name",
+          "equals": "一家餐厅"
+        },
+        {
+          "source": "eval/plango-live-ui/actions.json",
+          "pointer": "/records/33/detail/run_id",
+          "equals": "381fe190c404442894f72b5ddb925524"
+        },
+        {
+          "source": "eval/plango-live-ui/actions.json",
+          "pointer": "/records/36/detail/budget",
+          "equals": 250
+        },
+        {
+          "source": "eval/plango-live-ui/actions.json",
+          "pointer": "/records/36/detail/refresh",
+          "equals": {
+            "discovery": false,
+            "weather": false,
+            "supply": false,
+            "routes": false
+          }
+        },
+        {
+          "source": "eval/plango-live-ui/actions.json",
+          "pointer": "/records/36/detail/cumulative_model_tokens",
+          "equals": 12881
+        },
+        {
+          "source": "eval/plango-live-ui/actions.json",
+          "pointer": "/records/37/detail/weather",
+          "equals": null
+        },
+        {
+          "source": "eval/plango-live-ui/actions.json",
+          "pointer": "/records/39/detail/weather/visit_date",
+          "equals": "2026-09-10"
+        },
+        {
+          "source": "eval/plango-live-ui/actions.json",
+          "pointer": "/records/39/detail/discovery/identity_refresh_attempts",
+          "equals": 20
+        },
+        {
+          "source": "eval/plango-live-ui/actions.json",
+          "pointer": "/records/43/detail/origin/name",
+          "equals": "重庆市渝中区解放碑步行街"
+        },
+        {
+          "source": "eval/plango-live-ui/actions.json",
+          "pointer": "/records/43/detail/travel_mode",
+          "equals": "walking"
+        }
+      ]
+    },
+    {
+      "id": "canonical-party-clear-budget",
+      "classification": "real_model_amap_and_electron_with_controlled_merchant_page",
+      "recorded_status": "verified_with_scope",
+      "run_ids": [
+        "d51586748f934797a6c8b202ccd8df5b"
+      ],
+      "private_original_store": "output/preparation-e2e/session-plD5Ds/data/runs.sqlite",
+      "sources": [
+        "eval/plango-live-preparation/first-requirements-clarification.json",
+        "eval/plango-live-preparation/second-requirements-clarification.json",
+        "eval/plango-live-preparation/four-person-ready-to-review.json"
+      ],
+      "prior_failure": "Three adults became user+three=4 and cleared budget remained 400; selected-merchant reference was geocoded elsewhere. Initial wrong state is preserved.",
+      "expectations": [
+        "Current party counts and total agree; selected POI identity remains canonical.",
+        "Clearing total/per-person budgets leaves null; historical goal text cannot restore amount or request a budget Advocate.",
+        "Each new user edit starts a bounded turn; prior discover/advocate history cannot cause a semantic-cycle flag."
+      ],
+      "necessary_read_only_steps": [
+        "Load the archived failure and final snapshots; run test_trace_regression.py without network.",
+        "When verifying UI edits, use isolated data and compare current TripSpec, selected POI and per-turn/cumulative counters; retain original task history."
+      ],
+      "recorded_checks": [
+        {
+          "source": "eval/plango-live-preparation/first-requirements-clarification.json",
+          "pointer": "/state/trip_spec/budget",
+          "equals": 400
+        },
+        {
+          "source": "eval/plango-live-preparation/four-person-ready-to-review.json",
+          "pointer": "/state/trip_spec/budget",
+          "equals": null
+        },
+        {
+          "source": "eval/plango-live-preparation/four-person-ready-to-review.json",
+          "pointer": "/state/trip_spec/per_person_budget",
+          "equals": null
+        },
+        {
+          "source": "eval/plango-live-preparation/four-person-ready-to-review.json",
+          "pointer": "/state/trip_spec/party_size",
+          "equals": 4
+        },
+        {
+          "source": "eval/plango-live-preparation/four-person-ready-to-review.json",
+          "pointer": "/state/trip_spec/must_visit_place_ids",
+          "equals": [
+            "amap:B0MD1HTUN5"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-resume-invalidate-approval",
+      "classification": "real_model_amap_and_electron_with_controlled_native_form",
+      "recorded_status": "verified_with_scope",
+      "run_ids": [
+        "d51586748f934797a6c8b202ccd8df5b"
+      ],
+      "private_original_store": "output/preparation-e2e/session-plD5Ds/data/runs.sqlite",
+      "sources": [
+        "eval/plango-live-preparation/preparation-stale-tab-blocked.json",
+        "eval/plango-live-preparation/four-person-ready-to-review.json",
+        "eval/plango-live-preparation/final-command-ledger.json",
+        "eval/plango-live-preparation/actions.json"
+      ],
+      "prior_failure": "Restart retained a closed tab; 18:30 differed from approved 18:31. Localhost type was correctly blocked. Old blocked receipts remain in the ledger.",
+      "expectations": [
+        "Resume the original preparation Goal using a fresh read; do not replay sent or UNKNOWN writes.",
+        "Changing 3 to 4 people invalidates old Goal/outcome/resume metadata and creates a new plan approval.",
+        "Only explicitly approved field input is permitted; final state is ready_to_review with pending checks and business_completed=false.",
+        "Controlled merchant page is never promoted to evidence of real merchant reservation; submit count stays zero."
+      ],
+      "necessary_read_only_steps": [
+        "Inspect archived snapshots and command ledger without starting the old backend or fixture.",
+        "For a real merchant, first establish a reachable native form in an owned visible profile; login/captcha goes to manual takeover.",
+        "Stop at read-only inspection until exact field preparation is authorized; business submission requires separate specific authorization."
+      ],
+      "historical_diagnostic_cap": {
+        "tokens_per_explicit_turn": 60000,
+        "tools_per_explicit_turn": 48,
+        "execution_seconds": 300,
+        "not_default_budget_performance_evidence": true
+      },
+      "recorded_checks": [
+        {
+          "source": "eval/plango-live-preparation/four-person-ready-to-review.json",
+          "pointer": "/state/execution_outcome/data/scope",
+          "equals": "ready_to_review"
+        },
+        {
+          "source": "eval/plango-live-preparation/four-person-ready-to-review.json",
+          "pointer": "/state/execution_outcome/data/business_completed",
+          "equals": false
+        },
+        {
+          "source": "eval/plango-live-preparation/four-person-ready-to-review.json",
+          "pointer": "/state/execution_outcome/data/entries/0/visit_time",
+          "equals": "18:31"
+        },
+        {
+          "source": "eval/plango-live-preparation/four-person-ready-to-review.json",
+          "pointer": "/state/model_token_count",
+          "equals": 117705
+        },
+        {
+          "source": "eval/plango-live-preparation/four-person-ready-to-review.json",
+          "pointer": "/state/turn_budget/model_baseline",
+          "equals": 91945
+        },
+        {
+          "source": "eval/plango-live-preparation/actions.json",
+          "pointer": "/records/31/detail/oldGoalCleared",
+          "equals": true
+        },
+        {
+          "source": "eval/plango-live-preparation/actions.json",
+          "pointer": "/records/31/detail/oldOutcomeCleared",
+          "equals": true
+        },
+        {
+          "source": "eval/plango-live-preparation/actions.json",
+          "pointer": "/records/31/detail/oldResumeMetadataAbsent",
+          "equals": true
+        },
+        {
+          "source": "eval/plango-live-preparation/actions.json",
+          "pointer": "/records/33/detail/submissions",
+          "equals": 0
+        },
+        {
+          "source": "eval/plango-live-preparation/actions.json",
+          "pointer": "/records/33/detail/clicks",
+          "equals": 0
+        }
+      ]
+    },
+    {
+      "id": "official-page-read-with-negative-write-clause",
+      "classification": "real_external_page_model_and_electron",
+      "recorded_status": "verified_with_scope",
+      "run_ids": [
+        "6903a5625c244b82983989f5f268635e"
+      ],
+      "private_original_store": "output/live-browser-e2e/session-7sbvyC/data/runs.sqlite",
+      "sources": [
+        "eval/plango-live-browser/external-read-run.json",
+        "eval/plango-live-browser/external-read-success.json",
+        "eval/plango-live-browser/command-ledger.json"
+      ],
+      "prior_failure": "A no-planning/no-submission clause was routed as a write request. The earlier attempt is separate and remains in external-read-run.json; success did not erase it.",
+      "expectations": [
+        "Interpret negative clauses correctly; retain real URL, timestamp and browser source.",
+        "Deliver read_only and business_completed=false; inspect duplicate reads and model budget fallback before optimizing.",
+        "Do not finish just because any page text exists: source navigation and requested facts must be satisfied."
+      ],
+      "necessary_read_only_steps": [
+        "Inspect frozen snapshot and ledger first; two extracts and one budget fallback are the recorded baseline.",
+        "For a bounded fresh read, open the official source in an owned visible session, repeat the original reading request and inspect source/facts; no account or submission actions."
+      ],
+      "recorded_checks": [
+        {
+          "source": "eval/plango-live-browser/external-read-success.json",
+          "pointer": "/phase",
+          "equals": "SUCCEEDED"
+        },
+        {
+          "source": "eval/plango-live-browser/external-read-success.json",
+          "pointer": "/state/execution_outcome/data/scope",
+          "equals": "read_only"
+        },
+        {
+          "source": "eval/plango-live-browser/external-read-success.json",
+          "pointer": "/state/execution_outcome/data/business_completed",
+          "equals": false
+        },
+        {
+          "source": "eval/plango-live-browser/external-read-success.json",
+          "pointer": "/state/model_token_count",
+          "equals": 5968
+        },
+        {
+          "source": "eval/plango-live-browser/external-read-success.json",
+          "pointer": "/state/model_calls/3/error",
+          "equals": "model_token_budget"
+        }
+      ]
+    },
+    {
+      "id": "user-image-source-retained",
+      "classification": "real_user_filechooser_model_and_electron",
+      "recorded_status": "verified_with_scope",
+      "run_ids": [
+        "7aca5ec4a79a44648a54a8681d3e081e"
+      ],
+      "private_original_store": "output/live-browser-e2e/session-7sbvyC/data/runs.sqlite",
+      "sources": [
+        "eval/plango-live-browser/image-upload-run.json",
+        "eval/plango-live-browser/image-upload-success.json",
+        "eval/plango-live-browser/official-visit-guide-upload.png"
+      ],
+      "prior_failure": "Image input ignored the typed reading request and entered planning/date clarification; the earlier attempt remains recorded separately.",
+      "expectations": [
+        "Preserve typed request and user image source through filechooser and history restore.",
+        "Return image_text; merchant/price realtime verification and business completion remain false."
+      ],
+      "necessary_read_only_steps": [
+        "Check archived snapshot and saved image without a model call.",
+        "If image handling changes, use that image via the real isolated filechooser, preserve its historical source date and inspect restored output scope."
+      ],
+      "recorded_checks": [
+        {
+          "source": "eval/plango-live-browser/image-upload-success.json",
+          "pointer": "/state/execution_outcome/data/scope",
+          "equals": "image_text"
+        },
+        {
+          "source": "eval/plango-live-browser/image-upload-success.json",
+          "pointer": "/state/execution_outcome/data/business_completed",
+          "equals": false
+        },
+        {
+          "source": "eval/plango-live-browser/image-upload-success.json",
+          "pointer": "/state/execution_outcome/data/merchant_verified",
+          "equals": false
+        },
+        {
+          "source": "eval/plango-live-browser/image-upload-success.json",
+          "pointer": "/state/execution_outcome/data/price_verified",
+          "equals": false
+        }
+      ]
+    },
+    {
+      "id": "first-real-merchant-preparation",
+      "classification": "unverified_real_merchant",
+      "recorded_status": "unverified",
+      "run_ids": [],
+      "private_original_store": null,
+      "sources": [],
+      "prior_failure": "No real merchant preparation acceptance exists in the inherited evidence. The controlled fixture.meituan.com form does not fill this gap.",
+      "expectations": [
+        "Choose a bounded reachable merchant source; verify real identity, address, menu/package conditions, source date and unknowns.",
+        "Manual login takeover preserves session; preparation uses current plan/version and scope, then resumes original task.",
+        "No reachable form means read-only delivery with the remaining gap recorded, not a synthetic success."
+      ],
+      "necessary_read_only_steps": [
+        "First inspect current entry points and reachability with an owned isolated profile/database.",
+        "Record the selected source and real trace before turning this case into an accepted baseline.",
+        "Obtain specific account input or field authorization only at the actual gate; never submit a reservation/order/payment/message without specific authorization."
+      ],
+      "recorded_checks": []
+    },
+    {
+      "id": "structured-card-restart-same-run",
+      "classification": "real_model_amap_and_electron",
+      "recorded_status": "verified_with_scope",
+      "run_ids": [
+        "de59413d26ff4b1a958d5d607fc4c6a2"
+      ],
+      "private_original_store": "output/requirements-next/session-kfOEZ5/data/runs.sqlite",
+      "sources": [
+        "eval/plango-next/requirements/06-saved.json",
+        "eval/plango-next/requirements/02-budget-people.json",
+        "eval/plango-next/requirements/03-locked.json"
+      ],
+      "prior_failure": "The v2 free model rationale claimed no long queue despite unknown supply; original snapshot retained. WSL restarted between v3 and v4.",
+      "expectations": [
+        "Direct field edits preserve one run and cumulative usage; budget clearing stays null.",
+        "Lock/unlock preserve canonical stop identity; stale business facts remain unknown.",
+        "Origin/search center/radius/date/time/transport reach canonical spec and real date weather.",
+        "UI/share derive claims from structured facts; stored free prose is audit history only."
+      ],
+      "necessary_read_only_steps": [
+        "Inspect frozen snapshots first; live repeats require an owned isolated profile/database and default per-turn caps.",
+        "Reopen the same profile after service restart, inspect field values and saved draft; do not replay external writes."
+      ],
+      "recorded_checks": [
+        {
+          "source": "eval/plango-next/requirements/06-saved.json",
+          "pointer": "/phase",
+          "equals": "SUCCEEDED"
+        },
+        {
+          "source": "eval/plango-next/requirements/06-saved.json",
+          "pointer": "/state/execution_outcome/data/scope",
+          "equals": "draft_ready"
+        },
+        {
+          "source": "eval/plango-next/requirements/06-saved.json",
+          "pointer": "/state/trip_spec/budget",
+          "equals": null
+        },
+        {
+          "source": "eval/plango-next/requirements/06-saved.json",
+          "pointer": "/state/trip_spec/party_size",
+          "equals": 3
+        },
+        {
+          "source": "eval/plango-next/requirements/06-saved.json",
+          "pointer": "/state/trip_spec/max_distance_km",
+          "equals": 3
+        },
+        {
+          "source": "eval/plango-next/requirements/06-saved.json",
+          "pointer": "/state/trip_spec/travel_mode",
+          "equals": "driving"
+        },
+        {
+          "source": "eval/plango-next/requirements/06-saved.json",
+          "pointer": "/state/weather/visit_date",
+          "equals": "2026-09-11"
+        },
+        {
+          "source": "eval/plango-next/requirements/06-saved.json",
+          "pointer": "/state/model_token_count",
+          "equals": 14514
+        },
+        {
+          "source": "eval/plango-next/requirements/06-saved.json",
+          "pointer": "/state/action_results",
+          "equals": []
+        },
+        {
+          "source": "eval/plango-next/requirements/03-locked.json",
+          "pointer": "/state/selected_plan/stops/0/locked",
+          "equals": true
+        }
+      ]
+    },
+    {
+      "id": "dianping-qr-login-manual-gate",
+      "classification": "real_external_page_and_electron",
+      "recorded_status": "manual_login_required",
+      "run_ids": [
+        "f8f8ad2719074b0a9c62cbb08367892f"
+      ],
+      "private_original_store": "output/merchant-next/session-C0ovDv/data/runs.sqlite",
+      "sources": [
+        "eval/plango-next/dianping-manual-paused.json",
+        "eval/plango-next/dianping-before-login-fix.json"
+      ],
+      "prior_failure": "QR-only account page missed password/OTP detection; model suggested unavailable Vision then PARTIAL_FAILED.",
+      "expectations": [
+        "Pause before model extraction at the observed QR login route; keep original task and cumulative tokens.",
+        "Only explicit user continuation issues a fresh read generation; credentials and UNKNOWN writes are never replayed.",
+        "Login screen is not merchant/menu/booking evidence."
+      ],
+      "necessary_read_only_steps": [
+        "Reopen the same owned profile, navigate the preserved public shop link, and let the user handle login in the visible page.",
+        "Do not probe alternative protected endpoints or treat indexed metadata as current shop facts."
+      ],
+      "recorded_checks": [
+        {
+          "source": "eval/plango-next/dianping-manual-paused.json",
+          "pointer": "/phase",
+          "equals": "REQUIREMENTS_READY"
+        },
+        {
+          "source": "eval/plango-next/dianping-manual-paused.json",
+          "pointer": "/state/browser_wait/error_kind",
+          "equals": "authentication_required"
+        },
+        {
+          "source": "eval/plango-next/dianping-manual-paused.json",
+          "pointer": "/state/model_token_count",
+          "equals": 2583
+        }
+      ]
+    }
+  ]
+}

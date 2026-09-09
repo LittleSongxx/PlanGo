@@ -290,6 +290,20 @@ class FallbackPlanBuilder:
 PlanBuilder = FallbackPlanBuilder
 
 
+def _plan_rationale(stops: list[PlanStop], party_size: int | None) -> str:
+    price_known = all(stop.unit_price is not None and "price_unknown" not in stop.tags for stop in stops)
+    cost = f"估算总费用 ¥{sum(stop.estimated_cost for stop in stops):g}" if price_known else "总费用待核验"
+    pending = []
+    if any(stop.supply_source == "unknown" or stop.estimated_wait_min is None or "supply_unknown" in stop.tags for stop in stops):
+        pending.append("营业/排队")
+    if any(stop.supply_source == "unknown" or "reservation_unknown" in stop.tags for stop in stops):
+        pending.append("可订情况")
+    if any(stop.distance_kind != "route" or "route_unknown" in stop.tags for stop in stops):
+        pending.append("路线")
+    people = f"{party_size} 人" if party_size is not None else "人数待确认"
+    return f"行程草案：{' → '.join(stop.name for stop in stops)}；{people}；{cost}。" + (f"待核验：{'、'.join(pending)}。" if pending else "")
+
+
 def compile_plan_draft(
     spec: TripSpec,
     draft: PlanDraft,
@@ -472,7 +486,7 @@ def compile_plan_draft(
         party_size=spec.party_size,
         party_counts=dict(spec.party_counts),
         evidence_ids=evidence_ids,
-        rationale=draft.rationale or "根据候选地点和角色偏好生成的受约束计划",
+        rationale=_plan_rationale(stops, spec.party_size),
     )
 
 
@@ -718,6 +732,7 @@ class PlanEngine:
                 "party_size": spec.party_size,
                 "party_counts": dict(spec.party_counts),
                 "evidence_ids": sorted(evidence_ids),
+                "rationale": _plan_rationale(updated, spec.party_size),
             }
         )
 

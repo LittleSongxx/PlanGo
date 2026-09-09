@@ -57,7 +57,7 @@ class LiveSupplyContractCheck(unittest.IsolatedAsyncioTestCase):
         async def page():
             return observation
 
-        async def search(query, location, *, limit):
+        async def search(query, location, *, limit, radius_m=5000):
             return [place], [
                 Evidence(
                     evidence_id="place-proof",

@@ -515,7 +515,7 @@ class DesktopRuntime(PlanGoRuntime):
             turn = int(state.get("turn_id", 1)) + 1
             reason = "继续核对原计划的表单参数，不改变行程，不提交预约。"
             state.update({**planning_reset(state), "phase": "REPLANNING", "outcome": None, "reason": "", "pending_message": reason,
-                          "messages": [*state.get("messages", []), HumanMessage(content=reason)], "turn_id": turn, "turn_count": 0,
+                          "messages": [*state.get("messages", []), HumanMessage(content=reason, id=f"user:{run_id}:{turn}")], "turn_id": turn, "turn_count": 0,
                           "preparation_restart": {"identity": identity, "turn_id": turn, "goal": goal.model_dump(mode="json"), "plan": plan.model_dump(mode="json")},
                           "turn_budget": {"id": "prepare:" + uuid.uuid4().hex, "grant_seq": int(row.get("last_event_seq") or 0) + 1,
                                           "model_baseline": int(state.get("model_token_count", 0)), "tool_baseline": int(state.get("tool_call_count", 0))},
@@ -634,6 +634,39 @@ class DesktopRuntime(PlanGoRuntime):
             run_id, kind="resume", payload={"command_id": event.payload["command_id"]}
         )
         return {"accepted": True, "run_id": run_id, "event_seq": event.seq}
+
+    async def edit_requirements(self, run_id, edit):
+        async with self._resume_lock:
+            row = await self.runs.get(run_id)
+            if not row:
+                raise KeyError(run_id)
+            state = row.get("state_json") or {}
+            if row["version"] != edit.expected_version:
+                raise ValueError("需求已变化，请刷新后再保存")
+            if row.get("pending_command") or row.get("cancel_requested") or (row.get("lease_until") and _utc(row["lease_until"]) > datetime.now(timezone.utc)):
+                raise ValueError("当前任务正在处理命令，请稍后再修改")
+            if not (state.get("trip_spec") or state.get("previous_spec")):
+                raise ValueError("请先在对话中确认行程需求")
+            if row["phase"] not in TERMINAL_PHASES | {"WAITING_APPROVAL"} and not (row["phase"] == "REQUIREMENTS_READY" and (state.get("clarification") or state.get("interrupt_id"))):
+                raise ValueError("请等待当前规划结束后再修改需求")
+            async with self.database.session() as session:
+                pending_browser = (await session.execute(select(commands.c.command_id).where(commands.c.run_id == run_id, commands.c.result.is_(None)).limit(1))).first()
+            if pending_browser or state.get("browser_receipt_pending") or any(action["status"] in {"RUNNING", "UNKNOWN"} for action in await self.runs.actions(run_id)):
+                raise ValueError("已有浏览器操作尚未确认，请先核对原操作结果")
+            fields = edit.fields.model_dump(mode="json", exclude_unset=True)
+            lock = edit.stop_lock.model_dump() if edit.stop_lock else None
+            if lock:
+                plan = state.get("selected_plan") or state.get("previous_plan") or {}
+                if (plan.get("plan_id"), plan.get("version")) != (lock["plan_id"], lock["plan_version"]) or not any(stop["place_id"] == lock["place_id"] for stop in plan.get("stops", [])):
+                    raise ValueError("锁定目标不属于当前方案，请刷新后重试")
+            labels = {"location_name": "起点", "search_location_name": "搜索中心", "max_distance_km": "距离上限（公里）", "visit_date": "日期", "time_window_start": "开始时间", "party_size": "人数", "budget": "总预算", "per_person_budget": "人均预算", "travel_mode": "交通方式"}
+            modes = {"walking": "步行", "driving": "驾车", "transit": "公共交通"}
+            descriptions = [f"{labels[key]}：{modes.get(str(value), str(value)) if value is not None else '未设定'}" for key, value in fields.items()]
+            if lock:
+                name = next(stop["name"] for stop in plan["stops"] if stop["place_id"] == lock["place_id"])
+                descriptions.append(f"{'锁定' if lock['locked'] else '解锁'}单站：{name}")
+            reason = "修改行程需求；" + "；".join(descriptions)
+            return await super().replan(run_id, reason, requirement_edit={"fields": fields, "stop_lock": lock}, expected_version=edit.expected_version)
 
     async def get_run(self, run_id):
         row = await self.runs.get(run_id)

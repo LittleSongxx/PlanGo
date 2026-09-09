@@ -17,12 +17,20 @@ RUN = ROOT / "output" / "lifecycle"
 STATE = RUN / "desktop.json"
 LOG = RUN / "desktop.log"
 SETUP_LOG = RUN / "setup.log"
+INSTALL = json.loads((ROOT / "trial-install.json").read_text()) if (ROOT / "trial-install.json").exists() else None
+PROJECT = INSTALL["project"] if INSTALL else "plango"
+ELECTRON = ROOT / ("electron/electron" if INSTALL else "node_modules/electron/dist/electron")
 
 
 def is_electron(p):
-    executable = str(ROOT / "node_modules/electron/dist/electron")
+    executable = str(ELECTRON)
     # Electron can collapse its process title into one /proc cmdline entry.
-    return p["args"][:2] == [executable, "."] or p["args"] == [executable + " ."]
+    expected = [executable, "."] + ([f"--user-data-dir={INSTALL['profile']}"] if INSTALL else [])
+    if len(p["args"]) == 1:
+        return p["args"] in ([" ".join(expected)], [" ".join([executable, *expected[2:], "."])])
+    profiles = [arg for arg in p["args"] if arg.startswith("--user-data-dir")]
+    positional = [arg for arg in p["args"] if not arg.startswith("--user-data-dir")]
+    return positional[:2] == expected[:2] and profiles == expected[2:]
 
 
 def is_launcher(p):
@@ -114,7 +122,7 @@ def stop_desktop():
 
 
 def compose():
-    return ["docker", "compose", "--project-name", "plango", "--project-directory", str(ROOT),
+    return ["docker", "compose", "--project-name", PROJECT, "--project-directory", str(ROOT),
             "--env-file", str(ROOT / ".env") if (ROOT / ".env").exists() else "/dev/null",
             "--file", str(ROOT / "docker-compose.yml")]
 
@@ -124,7 +132,7 @@ def check_compose_owner():
                 '"files":{{json (.Label "com.docker.compose.project.config_files")}}}')
     with SETUP_LOG.open("a") as log:
         result = subprocess.run(["docker", "ps", "--all", "--filter",
-                                 "label=com.docker.compose.project=plango", "--format", template],
+                                 f"label=com.docker.compose.project={PROJECT}", "--format", template],
                                 stdout=subprocess.PIPE, stderr=log, text=True)
     if result.returncode:
         raise ConnectionError(f"无法检查 Docker；请确认 Docker 已运行，详见 {SETUP_LOG}")
@@ -132,7 +140,7 @@ def check_compose_owner():
         labels = json.loads(line)
         if (not labels.get("root") or Path(labels["root"]).resolve() != ROOT
                 or labels.get("files") != str(ROOT / "docker-compose.yml")):
-            raise RuntimeError("Compose 项目 plango 已被其他目录使用或无法确认归属；未修改容器。")
+            raise RuntimeError(f"Compose 项目 {PROJECT} 已被其他目录使用或无法确认归属；未修改容器。")
 
 
 def run_setup(command, label, **kwargs):
@@ -144,6 +152,8 @@ def run_setup(command, label, **kwargs):
 
 
 def start():
+    if (ROOT / "trial-upgrade-in-progress.json").exists():
+        raise RuntimeError("试用升级尚未完成；请按 trial-upgrade-in-progress.json 保留的原应用与冷备份恢复后再启动。")
     existing = desktop_processes()
     check_compose_owner()
     if any(is_launcher(p) for p in existing.values()):
@@ -155,20 +165,23 @@ def start():
             return
     if existing:
         stop_desktop()
-    for command in ("node", "npm", "conda", "uv", "docker"):
+    for command in (("docker",) if INSTALL else ("node", "npm", "conda", "uv", "docker")):
         if not shutil.which(command):
             raise RuntimeError(f"缺少 {command}；请先安装并加入 PATH。")
     if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
         raise RuntimeError("未发现桌面显示环境；请在图形桌面的终端运行 start.sh。")
-    run_setup(["node", "-e", "const [a,b]=process.versions.node.split('.').map(Number); process.exit(a>20||(a===20&&b>=11)?0:1)"], "检查 Node.js 20.11+…")
-    lock_hash = hashlib.sha256((ROOT / "package.json").read_bytes() + (ROOT / "package-lock.json").read_bytes()).hexdigest()
-    stamp = RUN / "node-dependencies.sha256"
-    if (not stamp.exists() or stamp.read_text() != lock_hash
-            or not (ROOT / "node_modules/.bin/electron-vite").exists()
-            or not (ROOT / "node_modules/electron/dist/electron").exists()):
-        run_setup(["npm", "ci"], "安装本仓库 Node 依赖…")
-        stamp.write_text(lock_hash)
-    run_setup([sys.executable, str(ROOT / "scripts/setup_backend.py")], "准备 plango Python 环境与本项目配置…")
+    if INSTALL:
+        run_setup([sys.executable, str(ROOT / "scripts/trial.py"), "doctor"], "检查试用配置（日志不包含密钥）…")
+    else:
+        run_setup(["node", "-e", "const [a,b]=process.versions.node.split('.').map(Number); process.exit(a>20||(a===20&&b>=11)?0:1)"], "检查 Node.js 20.11+…")
+        lock_hash = hashlib.sha256((ROOT / "package.json").read_bytes() + (ROOT / "package-lock.json").read_bytes()).hexdigest()
+        stamp = RUN / "node-dependencies.sha256"
+        if (not stamp.exists() or stamp.read_text() != lock_hash
+                or not (ROOT / "node_modules/.bin/electron-vite").exists()
+                or not (ROOT / "node_modules/electron/dist/electron").exists()):
+            run_setup(["npm", "ci"], "安装本仓库 Node 依赖…")
+            stamp.write_text(lock_hash)
+        run_setup([sys.executable, str(ROOT / "scripts/setup_backend.py")], "准备 plango Python 环境与本项目配置…")
     with SETUP_LOG.open("a") as log:
         result = subprocess.run([*compose(), "config", "--format", "json"], cwd=ROOT,
                                 stdout=subprocess.PIPE, stderr=log, text=True)
@@ -178,13 +191,17 @@ def start():
     port = api["ports"][0]["published"]
     environment = os.environ.copy()
     environment.pop("ELECTRON_RUN_AS_NODE", None)
+    environment.pop("ELECTRON_RENDERER_URL", None)
     environment.update(PLANGO_BACKEND_AUTOSTART="false", PLANGO_BACKEND_URL=f"http://127.0.0.1:{port}",
                        PLANGO_BACKEND_TOKEN=api["environment"]["PLANGO_BACKEND_TOKEN"])
-    run_setup([*compose(), "up", "--build", "--detach", "--wait", "--wait-timeout", "180"], "启动 PlanGo Docker 服务并等待健康检查…")
+    # All three Python services share one image; concurrent Bake exports can race on its tag.
+    run_setup([*compose(), "build", "api"], "构建本项目后端镜像…")
+    run_setup([*compose(), "up", "--no-build", "--detach", "--wait", "--wait-timeout", "180"], "启动 PlanGo Docker 服务并等待健康检查…")
     print(f"启动桌面，日志：{LOG}", flush=True)
     with LOG.open("a") as log:
         log_start = log.tell()
-        child = subprocess.Popen(["npm", "run", "dev"], cwd=ROOT, env=environment,
+        command = [str(ELECTRON), ".", f"--user-data-dir={INSTALL['profile']}"] if INSTALL else ["npm", "run", "dev"]
+        child = subprocess.Popen(command, cwd=ROOT, env=environment,
                                  stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
     ready = False
     try:

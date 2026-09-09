@@ -7,6 +7,7 @@ import { PlanMap } from './PlanMap'
 import { PoiImage } from './PoiImage'
 import { ResultFeedback } from './ResultFeedback'
 import { DraftReviewCard } from './DraftReviewCard'
+import { RequirementsCard } from './RequirementsCard'
 import { MapPin, Clock, Utensils, Ticket, Users, CheckCircle2, XCircle, AlertTriangle, Send, ListChecks, Tag, Wallet, Globe, Navigation, Mic, MicOff, Compass, ArrowRight, Sparkles, FileText } from 'lucide-react'
 
 const cardPriority = (card: OutcomeCard): number => card.kind === 'confirm' || card.kind === 'draft_review' ? 2 : card.kind === 'preparation' && card.current ? 1 : 0
@@ -34,6 +35,7 @@ export function OutcomeCanvas(): JSX.Element {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-5 lg:p-6">
+        <RequirementsCard />
         <ResultFeedback />
         {cards.length === 0 && run?.outcome ? <div className="max-w-4xl mx-auto plango-card p-6"><h2 className="text-base font-semibold">本轮尚无可展示的成果</h2><p className="text-sm text-[var(--muted)] leading-6 mt-3">{String(run.state.reason || '你可以在对话中查看任务记录，调整需求后继续。')}</p></div> : cards.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-5">

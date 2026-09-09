@@ -25,7 +25,7 @@ READ_REQUEST = re.compile(r"读取|提取|识别|查看|看看|打开|访问|浏
 def intent_text(text: str) -> str:
     """Exclude prohibitions from routing without removing them from the model's task."""
     clauses = re.split(r"[，。；！？\n]|(?:但是|不过|但|然后)", text)
-    return "，".join(re.sub(r"(?:不要|不用|不必|无需|不需要|禁止|避免|别).*$", "", clause) for clause in clauses)
+    return "，".join(re.sub(r"(?:不要|不用|不必|无需|不需要|禁止|避免|别|不(?=登录|下单|支付|付款|提交|预约|预订|订位|订座|取号|领号|发送|购买|取消订单)).*$", "", clause) for clause in clauses)
 
 
 class ExecutionGoal(BaseModel):
@@ -137,6 +137,12 @@ def _fresh_artifact(item, now):
         return False
 
 
+def browser_manual_error(observation):
+    dom = (observation.get("fields") or {}).get("dom")
+    gate = dom.get("manual_gate") if isinstance(dom, dict) else None
+    return "authentication_required" if gate == "login" else "captcha_required" if gate == "captcha" else None
+
+
 def read_outcome(state, now=None):
     raw = state.get("execution_goal") or read_goal(state, state.get("browser_task_context") or {})
     if not raw or raw.get("kind") not in {"page_read", "menu_read"}:
@@ -144,6 +150,9 @@ def read_outcome(state, now=None):
     goal = ReadGoal.model_validate(raw)
     now = now or datetime.now(timezone.utc)
     observation = state.get("browser_observation") or {}
+    if browser_manual_error(observation):
+        return ExecutionOutcome(kind=goal.kind, status="needs_evidence", summary="页面需要人工登录或验证；尚未取得目标内容。",
+                                data={"scope": "read_only", "business_completed": False})
     evidence = []
     visual = current_visual_observation(state)
     for item in state.get("browser_artifacts", []):

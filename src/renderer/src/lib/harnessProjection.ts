@@ -2,7 +2,7 @@ import type { AgentStep, ChatMessage, HarnessEvidence, HarnessEvent, HarnessSnap
 
 type Row = Record<string, unknown>
 export const row = (value: unknown): Row => value && typeof value === 'object' && !Array.isArray(value) ? value as Row : {}
-const rows = (value: unknown): Row[] => Array.isArray(value) ? value.map(row) : []
+export const rows = (value: unknown): Row[] => Array.isArray(value) ? value.map(row) : []
 const str = (value: unknown): string => typeof value === 'string' ? value : ''
 const num = (value: unknown): number | undefined => typeof value === 'number' && Number.isFinite(value) ? value : undefined
 const strings = (value: unknown): string[] => Array.isArray(value) ? value.filter((x): x is string => typeof x === 'string') : []
@@ -46,18 +46,27 @@ function projectPlan(candidate: Row, run: HarnessSnapshot, evidence: HarnessEvid
   const verifier = row(state.verifier)
   const unknownNotes = rows(verifier.unknown_evidence).map(c => str(c.detail) || str(c.name)).concat(strings(verifier.unknown_evidence)).filter(Boolean)
   const stops = rows(candidate.stops)
-  const priceUnknown = stops.some(stop => {
+  const unitPrice = (stop: Row): number | undefined => {
     const place = places.find(p => p.place_id === stop.place_id) || {}
-    return stop.price_known === false || place.price_known === false || (num(stop.unit_price) === undefined && num(place.average_price) === undefined)
-  })
+    return stop.price_known === false || place.price_known === false || strings(stop.tags).includes('price_unknown') ? undefined : num(stop.unit_price) ?? num(place.average_price)
+  }
+  const supplyUnknown = (stop: Row): boolean => source(stop.supply_source) === 'unknown' || num(stop.estimated_wait_min) === undefined || strings(stop.tags).includes('supply_unknown')
+  const partySize = num(candidate.party_size) ?? num(spec.party_size)
+  const totalCost = !stops.length || stops.some(stop => unitPrice(stop) === undefined) ? null : num(candidate.total_cost) ?? null
+  const pending = [
+    ...(stops.some(supplyUnknown) ? ['营业/排队'] : []),
+    ...(stops.some(stop => source(stop.supply_source) === 'unknown' || strings(stop.tags).includes('reservation_unknown')) ? ['可订情况'] : []),
+    ...(stops.some(stop => stop.distance_kind !== 'route' || strings(stop.tags).includes('route_unknown')) ? ['路线'] : [])
+  ]
   const candidateSource = (stop: Row): SourceTag => source(places.find(p => p.place_id === stop.place_id)?.source || stop.supply_source)
   return {
-    plan_id: str(candidate.plan_id), run_id: run.run_id, version: num(candidate.version), party_size: num(candidate.party_size) ?? num(row(state.trip_spec).party_size),
+    plan_id: str(candidate.plan_id), run_id: run.run_id, version: num(candidate.version), party_size: partySize,
     visit_date: str(spec.visit_date) || undefined, timezone: str(spec.timezone) || undefined,
     origin: num(row(spec.location).latitude) !== undefined && num(row(spec.location).longitude) !== undefined ? { name: str(row(spec.location).name), latitude: Number(row(spec.location).latitude), longitude: Number(row(spec.location).longitude) } : undefined,
     travel_mode: ['driving', 'walking', 'transit'].includes(str(spec.travel_mode)) ? spec.travel_mode as 'driving' | 'walking' | 'transit' : undefined,
-    title: ['PlanDraft', 'PlanCandidate', '确定性 fallback'].includes(str(candidate.label)) ? '基础方案' : str(candidate.label) || '当前方案', budget_limit: cap ?? (spec.budget === null && spec.per_person_budget === null ? null : undefined), style: 'balanced', total_cost: priceUnknown ? null : num(candidate.total_cost) ?? null,
-    radar: {}, share_message: str(candidate.rationale),
+    title: ['PlanDraft', 'PlanCandidate', '确定性 fallback'].includes(str(candidate.label)) ? '基础方案' : str(candidate.label) || '当前方案', budget_limit: cap ?? (spec.budget === null && spec.per_person_budget === null ? null : undefined), style: 'balanced', total_cost: totalCost,
+    // Historical model prose remains in the snapshot; only structured facts become shareable claims.
+    radar: {}, share_message: `行程草案：${stops.map(stop => str(stop.name)).join(' → ')}；${partySize === undefined ? '人数待确认' : `${partySize} 人`}；${totalCost === null ? '总费用待核验' : `估算总费用 ¥${totalCost}`}。${pending.length ? `待核验：${pending.join('、')}。` : ''}`,
     evidence: evidence.filter(e => strings(candidate.evidence_ids).includes(e.evidence_id) || stops.some(s => strings(s.evidence_ids).includes(e.evidence_id))),
     validation_notes: [...new Set(checks.filter(c => c.passed !== true).map(c => str(c.detail) || str(c.name)).concat(unknownNotes, verifier.executable === false ? ['当前是待核验方案，尚不具备执行条件。'] : []))],
     source_mix: Object.fromEntries([...new Set(stops.map(candidateSource))].map(s => [s, stops.filter(x => candidateSource(x) === s).length])),
@@ -69,13 +78,13 @@ function projectPlan(candidate: Row, run: HarnessSnapshot, evidence: HarnessEvid
         raw_score: source(place.source) === 'browser' && place.rating_known !== true ? null : num(place.rating) ?? null,
         trust: 'unknown', trust_reason: '', address: str(place.address), city: str(row(row(state.trip_spec).location).name),
         lng: num(place.longitude), lat: num(place.latitude),
-        price_per_person: place.price_known === false || stop.price_known === false ? undefined : num(stop.unit_price) ?? num(place.average_price),
+        price_per_person: unitPrice(stop),
         tags: strings(stop.tags), enable_book: false, enable_reservation: false, business_hours: '', products: [],
         source: candidateSource(stop), recommended: [], is_distraction: false
       }
       return { node_id: `${str(stop.place_id)}:${i}`, time_start: time(stop.start_minute), time_end: time(stop.end_minute), category: kind, title: str(stop.name), poi,
-        reason: str(stop.reason) || str(candidate.rationale), locked: stop.locked === true, transit_from_prev_min: strings(stop.tags).includes('route_unknown') || stop.distance_kind === 'straight_line_lower_bound' ? null : num(stop.travel_min) ?? null, distance_km: num(stop.distance_km) ?? null,
-        distance_kind: ['route', 'straight_line_lower_bound'].includes(str(stop.distance_kind)) ? stop.distance_kind as 'route' | 'straight_line_lower_bound' : undefined, wait_min: num(stop.estimated_wait_min) ?? null,
+        reason: `计划停留 ${time(stop.start_minute)}–${time(stop.end_minute)}；${poi.price_per_person === undefined ? '费用待核验' : `人均估算 ¥${poi.price_per_person}`}。${supplyUnknown(stop) ? '营业/排队待核验。' : ''}`, locked: stop.locked === true, transit_from_prev_min: strings(stop.tags).includes('route_unknown') || stop.distance_kind === 'straight_line_lower_bound' ? null : num(stop.travel_min) ?? null, distance_km: num(stop.distance_km) ?? null,
+        distance_kind: ['route', 'straight_line_lower_bound'].includes(str(stop.distance_kind)) ? stop.distance_kind as 'route' | 'straight_line_lower_bound' : undefined, wait_min: supplyUnknown(stop) ? null : num(stop.estimated_wait_min) ?? null,
         verify_state: row(state.verifier).plan_id === candidate.plan_id && row(state.verifier).executable === true ? 'verified' as const : 'suggested' as const }
     })
   }
@@ -240,7 +249,7 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
 }
 
 const eventLabels: Record<string, string> = {
-  USER_MESSAGE: '补充要求已收到', GRAPH_INTERRUPTED: '等待你的下一步', REPLAN_REQUESTED: '按新需求调整',
+  USER_MESSAGE: '补充要求已收到', GRAPH_INTERRUPTED: '等待你的下一步', REPLAN_REQUESTED: '按新需求调整', REQUIREMENTS_EDITED: '行程需求已更新',
   SUPERVISOR_DECISION: '确认下一处理步骤', DISCOVERY_COMPLETE: '地点资料已查到',
   ADVOCATE_FANOUT_STARTED: '正在核对同行需求', ADVOCATE_COMPLETE: '同行需求已核对',
   PLAN_SYNTHESIZED: '方案草稿已生成', PLAN_VERIFIED: '方案核验已完成',

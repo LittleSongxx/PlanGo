@@ -11,6 +11,11 @@ def test_negative_submission_stays_read_only_and_is_not_removed_from_request():
     assert update_task_context({'input_text': '读取当前页面的文字', 'turn_id': 1})['kind'] == 'extract'
     assert update_task_context({'input_text': '不要支付，但请帮我预约这家餐厅。', 'turn_id': 1})['kind'] == 'write'
     assert update_task_context({'input_text': '读取网页，然后提交预约。', 'turn_id': 1})['kind'] == 'write'
+    request = '读取当前页面顺风123观音桥大融城店的真实门店地址、菜单和套餐使用条件；遇到登录请暂停供我人工接管，不登录、不下单。'
+    context = update_task_context({'input_text': request, 'turn_id': 1})
+    assert context['kind'] == 'extract' and context['read_kind'] == 'menu_read'
+    assert context['request'] == request
+    assert update_task_context({'input_text': '不下单，但请帮我预约这家餐厅。', 'turn_id': 1})['kind'] == 'write'
 
 
 def test_user_image_reading_and_image_planning_use_distinct_intents():

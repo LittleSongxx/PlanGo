@@ -1,0 +1,195 @@
+{
+  "scope": "Actual isolated Electron + SQLite backend + configured real model + external pages; not quality metrics",
+  "profile": "/home/song/code/Agent/multi-agent/PlanGo/output/requirements-next/session-kfOEZ5",
+  "records": [
+    {
+      "name": "requirements-startup",
+      "at": "2026-09-09T00:43:34.467Z",
+      "detail": {
+        "title": "PlanGo · AI 本地生活浏览器",
+        "profile": "/home/song/code/Agent/multi-agent/PlanGo/output/requirements-next/session-kfOEZ5",
+        "backend": "http://127.0.0.1:55897",
+        "realModel": true
+      }
+    },
+    {
+      "name": "initial-request",
+      "at": "2026-09-09T00:43:51.519Z",
+      "detail": {
+        "text": "从重庆解放碑出发，明天14:00，两位成人，步行2公里内安排一个2小时行程，只去一家餐厅，总预算300元。营业排队未知请保留待核验草案。"
+      }
+    },
+    {
+      "name": "structured-budget-people-edit",
+      "at": "2026-09-09T00:44:48.621Z",
+      "detail": {
+        "run": "de59413d26ff4b1a958d5d607fc4c6a2",
+        "previousPlan": "2b0672ee6f6d08",
+        "previousVersion": 1,
+        "requested": {
+          "budget": null,
+          "per_person_budget": null,
+          "party_size": 3
+        }
+      }
+    },
+    {
+      "name": "lock-current-stop",
+      "at": "2026-09-09T00:45:58.681Z",
+      "detail": {
+        "run": "de59413d26ff4b1a958d5d607fc4c6a2",
+        "plan": "7ae9060da2543c",
+        "version": 2,
+        "place": "amap:B0KU5CRY5I"
+      }
+    },
+    {
+      "name": "after-wsl-restart",
+      "at": "2026-09-09T00:54:04.681Z",
+      "detail": {
+        "title": "PlanGo · AI 本地生活浏览器",
+        "profile": "/home/song/code/Agent/multi-agent/PlanGo/output/requirements-next/session-kfOEZ5",
+        "backend": "http://127.0.0.1:55695",
+        "realModel": true
+      }
+    },
+    {
+      "name": "unlock-after-wsl",
+      "at": "2026-09-09T00:55:25.773Z",
+      "detail": {
+        "run": "de59413d26ff4b1a958d5d607fc4c6a2",
+        "priorVersion": 3,
+        "cumulativeTokens": 9207
+      }
+    },
+    {
+      "name": "structured-geography-date-mode-edit",
+      "at": "2026-09-09T00:56:09.602Z",
+      "detail": {
+        "run": "de59413d26ff4b1a958d5d607fc4c6a2",
+        "priorVersion": 4,
+        "requested": {
+          "location_name": "重庆市渝中区民族路188号",
+          "search_location_name": "重庆洪崖洞民俗风貌区",
+          "max_distance_km": 3,
+          "visit_date": "2026-09-11",
+          "time_window_start": "15:00",
+          "travel_mode": "driving"
+        }
+      }
+    },
+    {
+      "name": "all-structured-fields-ui",
+      "at": "2026-09-09T00:57:42.768Z",
+      "detail": {
+        "run": "de59413d26ff4b1a958d5d607fc4c6a2",
+        "version": 5,
+        "fields": [
+          {
+            "label": "出发地点",
+            "value": "重庆市渝中区民族路188号"
+          },
+          {
+            "label": "搜索中心",
+            "value": "重庆洪崖洞民俗风貌区"
+          },
+          {
+            "label": "搜索范围 / 距离上限（公里）",
+            "value": "3"
+          },
+          {
+            "label": "出行日期",
+            "value": "2026-09-11"
+          },
+          {
+            "label": "开始时间",
+            "value": "15:00"
+          },
+          {
+            "label": "同行人数",
+            "value": "3"
+          },
+          {
+            "label": "总预算（元）",
+            "value": ""
+          },
+          {
+            "label": "人均预算（元）",
+            "value": ""
+          },
+          {
+            "label": "交通方式",
+            "value": "driving"
+          }
+        ],
+        "weather": {
+          "text": "多云",
+          "rain": false,
+          "temp": 30,
+          "source": "amap",
+          "forecast": true,
+          "timezone": "Asia/Shanghai",
+          "visit_date": "2026-09-11",
+          "source_reported_at": "2026-09-09T00:33:24+00:00",
+          "retrieved_at": "2026-09-09T00:56:10.524173+00:00"
+        },
+        "tokens": 14514,
+        "tools": 164,
+        "budget": {
+          "id": "replan:dc39f05f9e3144a7b62485985413fdbf",
+          "grant_seq": 46,
+          "model_baseline": 11948,
+          "tool_baseline": 122,
+          "started_at": 1788915369.661248,
+          "deadline_at": 1788915669.661248
+        }
+      }
+    },
+    {
+      "name": "final-draft-saved",
+      "at": "2026-09-09T00:58:22.378Z",
+      "detail": {
+        "run": "de59413d26ff4b1a958d5d607fc4c6a2",
+        "phase": "SUCCEEDED",
+        "version": 5,
+        "scope": "draft_ready",
+        "tokens": 14514,
+        "tools": 164,
+        "actions": []
+      }
+    },
+    {
+      "name": "cleanup",
+      "at": "2026-09-09T00:59:03.143Z",
+      "detail": {
+        "stoppedOwnedElectron": true,
+        "stoppedOwnedBackend": true,
+        "preservedProfile": "/home/song/code/Agent/multi-agent/PlanGo/output/requirements-next/session-kfOEZ5"
+      }
+    },
+    {
+      "name": "restored-grounded-summary",
+      "at": "2026-09-09T01:01:09.948Z",
+      "detail": {
+        "run": "de59413d26ff4b1a958d5d607fc4c6a2",
+        "phase": "SUCCEEDED",
+        "version": 5,
+        "tokens": 14514,
+        "freeRationaleVisible": false,
+        "structuredSummary": [
+          "行程草案：徐鼎盛渝味川菜店(洪崖洞店)；3 人；估算总费用 ¥210。待核验：营业/排队、可订情况。"
+        ],
+        "oldClaimVisible": false
+      }
+    },
+    {
+      "name": "cleanup",
+      "at": "2026-09-09T01:01:10.327Z",
+      "detail": {
+        "stoppedOwnedElectron": true,
+        "stoppedOwnedBackend": true,
+        "preservedProfile": "/home/song/code/Agent/multi-agent/PlanGo/output/requirements-next/session-kfOEZ5"
+      }
+    }
+  ]
+}

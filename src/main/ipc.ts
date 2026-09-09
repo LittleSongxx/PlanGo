@@ -101,6 +101,20 @@ export function registerIpc(): void {
         const p = z.object({ runId: id, planId: id, planVersion: z.number().int().min(1) }).parse(raw)
         return client.selectPlan(p.runId, p.planId, p.planVersion)
       }
+      case 'editRequirements': {
+        const p = z.object({ runId: id, edit: z.object({
+          expected_version: z.number().int().min(1),
+          fields: z.object({
+            location_name: z.string().trim().min(1).max(200).optional(), search_location_name: z.string().trim().min(1).max(200).optional(),
+            max_distance_km: z.number().finite().min(0.1).max(50).nullable().optional(),
+            visit_date: z.string().date().nullable().optional(), time_window_start: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
+            party_size: z.number().int().min(1).max(12).optional(), budget: z.number().finite().min(0).max(1_000_000).nullable().optional(),
+            per_person_budget: z.number().finite().min(0).max(1_000_000).nullable().optional(), travel_mode: z.enum(['driving', 'walking', 'transit']).optional()
+          }).strict().optional(),
+          stop_lock: z.object({ plan_id: id, plan_version: z.number().int().min(1), place_id: id, locked: z.boolean() }).strict().optional()
+        }).strict() }).strict().parse(raw)
+        return client.editRequirements(p.runId, p.edit)
+      }
       case 'resumePreparation': {
         const p = z.object({ runId: id, planId: id, planVersion: z.number().int().min(1), approvalId: id }).strict().parse(raw)
         return client.resumePreparation(p.runId, p.planId, p.planVersion, p.approvalId)

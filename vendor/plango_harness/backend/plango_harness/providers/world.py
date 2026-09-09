@@ -479,11 +479,11 @@ class AmapWorldProvider:
         return result
 
     async def search_places(
-        self, query: str, location: Location, *, limit: int = 8
+        self, query: str, location: Location, *, limit: int = 8, radius_m: int = 5000
     ) -> tuple[list[PlaceCandidate], list[Evidence]]:
         try:
             result = await self.search_pois(query or "本地生活", longitude=location.longitude,
-                                            latitude=location.latitude, limit=min(25, limit))
+                                            latitude=location.latitude, limit=min(25, limit), radius_m=radius_m)
         except ValueError:
             return [], [self._error_evidence("v5/place/around", key=f"{query}:{location.latitude:.5f}:{location.longitude:.5f}")]
         places = [place for item in result["pois"][:limit] if (place := _poi_candidate(item, location)) is not None]
@@ -506,7 +506,7 @@ class AmapWorldProvider:
                 source="amap",
                 source_ref=result["source_ref"],
                 claim=f"高德地点检索返回 {len(places)} 个候选",
-                payload={"query": query, "count": len(places)},
+                payload={"query": query, "count": len(places), "radius_m": radius_m},
                 observed_at=observed_at,
                 expires_at=expires_at,
                 confidence=0.9,

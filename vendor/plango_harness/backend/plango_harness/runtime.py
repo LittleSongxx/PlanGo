@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import aiosqlite
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, messages_from_dict
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.errors import NodeTimeoutError
 from langgraph.types import Command
@@ -199,6 +199,8 @@ class PlanGoRuntime:
         if row.get("phase") in TERMINAL_PHASES:
             raise ValueError("run is already terminal; create a new run")
         state = dict(row.get("state_json") or {})
+        if row.get("phase") == RunPhase.REPLANNING.value and state.get("pending_message"):
+            raise ValueError("run is busy; wait for the accepted planning turn")
         paused = row.get("phase") == RunPhase.WAITING_APPROVAL.value or (row.get("phase") == RunPhase.REQUIREMENTS_READY.value and bool(state.get("clarification") or state.get("interrupt_id")))
         lease_until = row.get("lease_until")
         if lease_until is not None:
@@ -231,15 +233,19 @@ class PlanGoRuntime:
             queued=queued,
         )
 
-    async def replan(self, run_id: str, reason: str) -> dict[str, Any]:
+    async def replan(self, run_id: str, reason: str, *, requirement_edit: dict[str, Any] | None = None, expected_version: int | None = None) -> dict[str, Any]:
         """Start a fresh planning turn after a world/constraint change."""
         reason = (reason or "世界状态发生变化").strip()
         row = await self.runs.get(run_id)
         if not row:
             raise KeyError(run_id)
+        if expected_version is not None and row["version"] != expected_version:
+            raise ValueError("requirements_changed_reload_before_editing")
         if row.get("phase") == RunPhase.REPLANNING.value and (row.get("state_json") or {}).get("pending_message") == reason:
             return self.snapshot(row)
-        if row.get("phase") == RunPhase.WAITING_APPROVAL.value:
+        if row.get("phase") == RunPhase.REPLANNING.value and (row.get("state_json") or {}).get("pending_message"):
+            raise ValueError("run is busy; wait for the accepted planning turn")
+        if row.get("phase") == RunPhase.WAITING_APPROVAL.value and requirement_edit is None:
             await self.send_message(run_id, reason)
             return self.snapshot(await self.runs.get(run_id))
         lease_until = row.get("lease_until")
@@ -248,13 +254,22 @@ class PlanGoRuntime:
                 lease_until = lease_until.replace(tzinfo=utc_now().tzinfo)
             if lease_until > utc_now():
                 raise ValueError("run is busy; wait for the current Agent turn")
-        await self.runs.clear_cancel(run_id)
+        if row.get("cancel_requested"):
+            await self.runs.clear_cancel(run_id)
         row = await self.runs.get(run_id)
         if not row:
             raise KeyError(run_id)
         state = dict(row.get("state_json") or {})
+        reset = planning_reset(state)
+        if requirement_edit is not None:
+            lock = requirement_edit.get("stop_lock")
+            if lock:
+                prior = dict(reset["previous_plan"])
+                prior["stops"] = [{**stop, "locked": lock["locked"]} if stop["place_id"] == lock["place_id"] else stop for stop in prior["stops"]]
+                reset["previous_plan"] = prior
+            reset["structured_requirement_edit"] = {**requirement_edit, "turn_id": int(state.get("turn_id", 1)) + 1}
         messages = list(state.get("messages", []))
-        messages.append(HumanMessage(content=reason))
+        messages.append(HumanMessage(content=reason, id=f"user:{run_id}:{int(state.get('turn_id', 1)) + 1}"))
         state.update(
             {
                 "pending_message": reason,
@@ -265,7 +280,8 @@ class PlanGoRuntime:
                 "turn_count": 0,
                 "turn_id": int(state.get("turn_id", 1)) + 1,
                 "plan_version": int(state.get("plan_version", 0)),
-                **planning_reset(state),
+                **reset,
+                "clarification": None,
                 "requirement_reference_at": utc_now().isoformat(),
                 "turn_budget": {"id": "replan:" + uuid.uuid4().hex,
                                 "grant_seq": int(row.get("last_event_seq") or 0) + 1,
@@ -281,14 +297,14 @@ class PlanGoRuntime:
         )
         await self.runs.save_state_and_events(
             state,
-            expected_version=int(row.get("version") or 1),
+            expected_version=expected_version if expected_version is not None else int(row.get("version") or 1),
             input_text=reason,
             clear_pending_command=True,
             events=[
                 {
                     "phase": RunPhase.REPLANNING,
-                    "event_type": "REPLAN_REQUESTED",
-                    "payload": {"reason": reason},
+                    "event_type": "REQUIREMENTS_EDITED" if requirement_edit is not None else "REPLAN_REQUESTED",
+                    "payload": {"reason": reason, **({"edit": requirement_edit, "previous_plan": state.get("previous_plan")} if requirement_edit is not None else {})},
                     "agent_id": "supervisor",
                 }
             ],
@@ -300,7 +316,7 @@ class PlanGoRuntime:
         """Use the persisted acceptance event, never a retry's wall clock or payload timestamp."""
         seq = int((command or {}).get("event_seq") or 0)
         events = await self.runs.events(row["run_id"], after=max(0, seq - 1) if seq else max(0, int(row.get("last_event_seq") or 0) - 200), limit=1 if seq else 200)
-        accepted = next((event for event in reversed(events) if event.event_type in {"RUN_CREATED", "USER_MESSAGE", "REPLAN_REQUESTED", "RESUME_REQUESTED"}), None)
+        accepted = next((event for event in reversed(events) if event.event_type in {"RUN_CREATED", "USER_MESSAGE", "REPLAN_REQUESTED", "REQUIREMENTS_EDITED", "RESUME_REQUESTED"}), None)
         value = accepted.created_at if accepted else row.get("created_at")
         if isinstance(value, str):
             value = datetime.fromisoformat(value)
@@ -726,10 +742,15 @@ class PlanGoRuntime:
             # An explicit API replan updates the projection before the graph
             # checkpoint can move. Prefer that fresh planning cursor instead
             # of replaying the old terminal checkpoint.
-            fresh_replan = bool(
+            accepted_replan = bool(
                 projection.get("phase") == RunPhase.REPLANNING.value
                 and projection.get("pending_message")
             )
+            # A matching durable turn already entered the graph, even if its projection lagged.
+            consumed_replan = bool(accepted_replan and checkpoint_values.get("turn_id") == projection.get("turn_id")
+                                   and (projection.get("turn_budget") or {}).get("id")
+                                   and (checkpoint_values.get("turn_budget") or {}).get("id") == projection["turn_budget"]["id"])
+            fresh_replan = accepted_replan and not consumed_replan
             previous_state = projection if fresh_replan else (checkpoint_values or projection)
             if int(projection.get("model_call_count", 0)) >= int(previous_state.get("model_call_count", 0)):
                 previous_state = {**previous_state, **{k:v for k,v in projection.items() if k.startswith("model_")}}
@@ -772,12 +793,11 @@ class PlanGoRuntime:
             old_trace_len = len(projection.get("trace", []))
             input_state: Any
             if resume is None:
-                # A non-empty ``next`` means a prior worker stopped between
-                # graph nodes; invoking with ``None`` resumes that checkpoint.
+                # Resume unfinished nodes, or publish the already completed replan checkpoint.
                 if (
-                    checkpoint is not None
+                    consumed_replan or (checkpoint is not None
                     and not fresh_replan
-                    and (getattr(checkpoint, "next", None) or ())
+                    and (getattr(checkpoint, "next", None) or ()))
                 ):
                     input_state = None
                 elif not previous_state.get("turn_count", 0) and not fresh_replan:
@@ -792,14 +812,14 @@ class PlanGoRuntime:
                     input_state["selected_poi"] = projection.get("selected_poi")
                 else:
                     pending = row["input_text"]
-                    messages: list[Any] = []
-                    for message in previous_state.get("messages", []):
-                        if hasattr(message, "content"):
-                            messages.append(message)
-                        elif isinstance(message, dict) and "content" in message:
-                            messages.append(HumanMessage(content=str(message["content"])))
-                    if not messages or getattr(messages[-1], "content", "") != pending:
-                        messages.append(HumanMessage(content=pending))
+                    turn = int(previous_state.get("turn_id", 1)) + (0 if fresh_replan else 1)
+                    messages: list[Any] = [HumanMessage(content=pending, id=f"user:{run_id}:{turn}")]
+                    if not checkpoint_values:
+                        # Only rebuilding a missing checkpoint needs the persisted history.
+                        # A fresh replan projection already ends with its accepted message.
+                        history = previous_state.get("messages", [])
+                        history = history[:-1] if fresh_replan else history
+                        messages = [*messages_from_dict([{"type": message["type"], "data": message} for message in history]), *messages]
                     input_state = {
                         "input_text": pending,
                         "messages": messages,
@@ -809,6 +829,7 @@ class PlanGoRuntime:
                         "previous_plan": previous_state.get("selected_plan") or previous_state.get("previous_plan") or next(iter(previous_state.get("candidate_plans") or []), None),
                         "selected_poi": previous_state.get("selected_poi") or projection.get("selected_poi"),
                         "requirement_patch": [], "requirement_refresh": {},
+                        "structured_requirement_edit": previous_state.get("structured_requirement_edit"),
                         "execution_goal": None, "execution_outcome": None,
                         "preparation_restart": previous_state.get("preparation_restart"),
                         "trip_spec": None,
@@ -835,8 +856,7 @@ class PlanGoRuntime:
                         "last_observation": previous_state.get("last_observation"),
                         "phase": RunPhase.CREATED,
                         "turn_count": 0,
-                        "turn_id": int(previous_state.get("turn_id", 1))
-                        + (0 if fresh_replan else 1),
+                        "turn_id": turn,
                         "plan_version": int(previous_state.get("plan_version", 0)),
                         "tool_call_count": int(previous_state.get("tool_call_count", 0) or 0),
                         "repair_round": 0,
@@ -855,6 +875,8 @@ class PlanGoRuntime:
                         "timeout_stage": None,
                         "pending_message": None,
                     }
+                    if not checkpoint_values:
+                        input_state = {**previous_state, **input_state}
             else:
                 if command_id and checkpoint_values.get("consumed_command_id") == command_id:
                     input_state = None  # Resume after the already-applied interrupt, never answer it twice.

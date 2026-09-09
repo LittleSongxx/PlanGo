@@ -123,6 +123,7 @@ class PlanGoState(TypedDict, total=False):
     consumed_command_id: str | None
 
     trip_spec: TripSpec | None
+    structured_requirement_edit: dict[str, Any] | None
     previous_spec: TripSpec | None
     memory_context: list[dict[str, Any]]
     # Evidence is the active turn's working set. Historical evidence remains
@@ -171,7 +172,7 @@ def initial_state(
         "requirement_refresh": {},
         "previous_plan": None,
         "selected_poi": None,
-        "messages": [HumanMessage(content=input_text)],
+        "messages": [HumanMessage(content=input_text, id=f"user:{run_id}:1")],
         "phase": RunPhase.CREATED,
         "outcome": None,
         "reason": "",
@@ -243,5 +244,6 @@ def planning_reset(state: dict[str, Any]) -> dict[str, Any]:
         "preparation_restart": None,
         "execution_started": False, "reflection_done": False,
         "requirement_patch": [], "requirement_refresh": {},
+        "structured_requirement_edit": None,
         "last_observation": None,
     }

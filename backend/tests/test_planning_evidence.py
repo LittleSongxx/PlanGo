@@ -7,10 +7,12 @@ from plango_harness.agent.contracts import (
     Evidence,
     PlaceCandidate,
     PlanCandidate,
+    PlanDraft,
+    PlanDraftStop,
     PlanStop,
     TripSpec,
 )
-from plango_harness.domain.planning import place_fits, verify_plan
+from plango_harness.domain.planning import compile_plan_draft, place_fits, verify_plan
 
 
 def observed_case(tags=(), claim="普通餐厅 人均50元", *, expired=False, foreign=False):
@@ -105,3 +107,16 @@ async def test_venue_claim_requires_complete_assertion(claim, expected):
     assert result.executable is (expected is True)
     assert bool(result.hard_violations) is (expected is False)
     assert bool(result.unknown_evidence) is (expected is None)
+
+
+@pytest.mark.parametrize("price,known,cost_text", [(50, True, "估算总费用 ¥200"), (0, True, "估算总费用 ¥0"), (0, False, "总费用待核验")])
+def test_compiled_summary_uses_observed_stops_and_preserves_untrusted_draft(price, known, cost_text):
+    place, _, evidence = observed_case()
+    place = place.model_copy(update={"average_price": price, "price_known": known})
+    unsupported = "无需长时间排队，满足用户偏好室内避雨"
+    draft = PlanDraft(stops=[PlanDraftStop(place_id=place.place_id, reason=unsupported), PlanDraftStop(place_id="invented")], rationale=unsupported)
+    original = draft.model_dump()
+    plan = compile_plan_draft(TripSpec(goal="四人午餐", party_size=4), draft, [place], evidence=evidence)
+    assert plan is not None
+    assert plan.rationale == f"行程草案：普通餐厅；4 人；{cost_text}。待核验：营业/排队、可订情况、路线。"
+    assert draft.model_dump() == original, "Original model output remains available for the synthesis audit artifact"

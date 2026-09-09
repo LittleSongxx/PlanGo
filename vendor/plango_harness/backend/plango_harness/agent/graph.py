@@ -28,7 +28,7 @@ from plango_harness.agent.contracts import (
     TripSpec,
     VerifierResult,
 )
-from plango_harness.agent.decisions import SupervisorDecision
+from plango_harness.agent.decisions import RequirementOutput, SupervisorDecision
 from plango_harness.agent.model_adapter import ModelAdapter
 from plango_harness.agent.requirements import requirement_delta, retain_evidence
 from plango_harness.agent.state import PlanGoState, planning_reset
@@ -361,12 +361,13 @@ def _coordinator_decision(state: PlanGoState, deps: GraphDeps) -> SupervisorDeci
 
 
 def _semantic_cycle(trace: list[dict[str, Any]], *, width: int = 4) -> bool:
-    """Detect short semantic action cycles, not only adjacent duplicates."""
-    actions = [
-        str(item.get("payload", {}).get("effective_action"))
-        for item in trace
-        if item.get("event") == "supervisor_decision"
-    ]
+    """Detect cycles within the current requirement pass; retain audit history."""
+    actions: list[str] = []
+    for item in trace:
+        if item.get("event") in {"requirements_ready", "replan_requested", "clarification_received"}:
+            actions.clear()
+        elif item.get("event") == "supervisor_decision":
+            actions.append(str(item.get("payload", {}).get("effective_action")))
     if len(actions) < width:
         return False
     recent = actions[-width:]
@@ -375,7 +376,9 @@ def _semantic_cycle(trace: list[dict[str, Any]], *, width: int = 4) -> bool:
 
 def _advocate_roles(spec: TripSpec) -> list[str]:
     """Start only the roles named by the request; keep one experience view."""
-    text = " ".join([spec.goal, *spec.hard_constraints, *spec.soft_preferences]).lower()
+    text = " ".join([*spec.hard_constraints, *spec.soft_preferences,
+                     *(member.role for member in spec.party),
+                     *(role for role, count in spec.party_counts.items() if count)]).lower()
     roles = ["体验"]
     if (spec.party_size or 1) > 1 and any(word in text for word in ("孩子", "儿童", "老人", "家庭", "亲子")):
         roles.insert(0, "家庭")
@@ -419,13 +422,21 @@ def build_graph(
         previous_spec = state.get("previous_spec")
         if isinstance(previous_spec, dict):
             previous_spec = TripSpec.model_validate(previous_spec)
-        output = await requirement_agent.run(
-            state["input_text"],
-            state.get("memory_context", []),
-            previous_spec,
-            state.get("messages", []),
-            reference_at=state.get("requirement_reference_at"),
-        )
+        edit = state.get("structured_requirement_edit") or {}
+        explicit = edit.get("fields", {}) if edit.get("turn_id") == state.get("turn_id", 1) else None
+        if explicit is not None:
+            values = {key: value for key, value in explicit.items() if value is not None}
+            for key, flag in (("budget", "clear_budget"), ("per_person_budget", "clear_per_person_budget"), ("visit_date", "visit_date_unknown"), ("time_window_start", "time_window_start_unknown")):
+                if key in explicit and explicit[key] is None:
+                    values[flag] = True
+            if "max_distance_km" in explicit and explicit["max_distance_km"] is None:
+                values["remove_hard_constraints"] = ["距离优先"]
+            output = RequirementOutput.model_validate(values)
+        else:
+            output = await requirement_agent.run(
+                state["input_text"], state.get("memory_context", []), previous_spec,
+                state.get("messages", []), reference_at=state.get("requirement_reference_at"),
+            )
         pending = []
         for field in (state.get("clarification") or {}).get("fields", []):
             if field not in {"budget", "per_person_budget", "duration_minutes", "max_queue_minutes", "max_distance_km"}:
@@ -445,6 +456,9 @@ def build_graph(
                 "clarification_question": output.clarification_question or "先前的预算、时长或距离/排队上限仍待确认。",
             })
         spec = output.to_trip_spec(state["input_text"], base=previous_spec)
+        if explicit is not None and "party_size" in explicit:
+            # A total edit does not invent the composition of a mixed party.
+            spec = spec.model_copy(update={"party_counts": {spec.party[0].role: spec.party_size} if len(spec.party) == 1 else {}})
         selected_raw = state.get("selected_poi") or {}
         selected_poi = PlaceCandidate.model_validate(selected_raw) if selected_raw else None
         selected_location = Location(name=selected_poi.name, latitude=selected_poi.latitude, longitude=selected_poi.longitude) if selected_poi else None
@@ -485,6 +499,12 @@ def build_graph(
         if resolved_location is None and getattr(deps.world, "strict_location", False):
             answer = interrupt({"type": "clarification", "id": f"clarification:{state['run_id']}:location:{state.get('turn_id',1)}", "question": f"未能取得{location_name or '当前城市'}的真实起点坐标，请提供定位，或配置高德 Key 并明确出发地点。"})
             text = str((answer or {}).get("text", "")) if isinstance(answer, dict) else str(answer or "")
+            if explicit is not None and text.strip():
+                # Parse the answer to this location question, retaining the other exact edits.
+                correction = await requirement_agent.run(text, state.get("memory_context", []), spec, state.get("messages", []), reference_at=state.get("requirement_reference_at"))
+                if correction.location_name or correction.location_reference:
+                    state = {**state, "structured_requirement_edit": {**edit, "fields": {**explicit,
+                        "location_name": correction.location_name, "location_reference": correction.location_reference}}}
             return await requirements({**state, "input_text": state["input_text"] + "\n" + text})
         if resolved_location is not None:
             spec = spec.model_copy(update={"location": resolved_location})
@@ -514,6 +534,8 @@ def build_graph(
         if "search_location" in output.clarification_fields:
             unknown.add("search_location")
         patch, refresh = requirement_delta(previous_spec, spec, explicit_unknown=unknown)
+        if explicit is not None:
+            patch = [{**item, "source": "user_structured"} for item in patch]
         if re.search(r"重新(?:搜索|观测|查询|核验|核实)|刷新(?:商家|地点|候选)|世界状态|改用高德|(?:不用|不要|无需)网页", state["input_text"]):
             refresh = dict(discovery=True, weather=True, supply=True, routes=True)
         elif re.search(r"天气(?:变|更新)|下雨|刷新天气", state["input_text"]):
@@ -1270,11 +1292,9 @@ def build_graph(
 
     async def replan(state: PlanGoState) -> dict[str, Any]:
         text = str(state.get("pending_message") or state.get("input_text") or "")
-        history = list(state.get("messages", []))
-        history.append(HumanMessage(content=text))
         return {
             **planning_reset(dict(state)),
-            "input_text": text, "messages": history, "pending_message": None,
+            "input_text": text, "messages": [HumanMessage(content=text, id=f"user:{state['run_id']}:{int(state.get('turn_id', 1)) + 1}")], "pending_message": None,
             "outcome": None, "reason": "", "phase": RunPhase.REPLANNING,
             "turn_count": 0, "repair_round": 0, "repair_applied": False,
             "started_at": state.get("started_at") or time.time(),
@@ -1407,16 +1427,13 @@ def build_graph(
             {"type": "clarification", "id": interrupt_id, "question": question}
         )
         text = answer if isinstance(answer, str) else (answer or {}).get("text", "")
-        messages = list(state.get("messages", []))
-        if text:
-            messages.append(HumanMessage(content=text))
         return {
             **planning_reset(dict(state)),
             "consumed_command_id": answer.get("_command_id") if isinstance(answer, dict) else None,
             # A clarification answer starts a fresh planning turn while
             # retaining the previous spec as the merge base.
             "input_text": text or state["input_text"],
-            "messages": messages,
+            "messages": [HumanMessage(content=text, id=f"user:{state['run_id']}:{int(state.get('turn_id', 1)) + 1}")] if text else [],
             "clarification": clarification,
             "interrupt_id": None,
             "outcome": None,

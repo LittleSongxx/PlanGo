@@ -11,7 +11,7 @@ COPY backend/plango ./backend/plango
 COPY vendor/plango_harness/backend/plango_harness ./vendor/plango_harness/backend/plango_harness
 COPY skills ./skills
 COPY alembic.ini ./
-RUN useradd --uid 10001 --create-home plango && mkdir /data && chown plango:plango /data
+RUN chmod -R a+rX /app && useradd --uid 10001 --create-home plango && mkdir /data && chown plango:plango /data
 USER plango
 ENV PATH="/opt/conda/envs/plango/bin:$PATH" \
     CONDA_DEFAULT_ENV=plango \

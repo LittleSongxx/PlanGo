@@ -30,6 +30,7 @@ from .browser import BrowserScreenshot
 from .outcomes import (
     ExecutionGoal,
     browser_context,
+    browser_manual_error,
     current_visual_observation,
     draft_outcome,
     draft_review,
@@ -188,6 +189,9 @@ def build_desktop_graph(runtime, deps, checkpointer):
                     "action_proposal": None, "browser_action": None, "approval_decision": None, "browser_receipt_pending": False,
                     "clarification": None, "interrupt_id": None, "reason": "正在重新读取原计划表单；每项修改仍需批准，不会自动提交。"}
         context = update_task_context(state)
+        edit = state.get("structured_requirement_edit") or {}
+        if edit.get("turn_id") == state.get("turn_id", 1):
+            context.update(mode="planning", kind="planning")
         if (state.get("browser_task_context") or {}).get("kind") == "prepare" and context.get("kind") == "prepare":
             # A new turn editing an approved itinerary must re-enter requirements and invalidate its old approval.
             context.update(mode="planning", kind="planning")
@@ -201,6 +205,9 @@ def build_desktop_graph(runtime, deps, checkpointer):
         raw_previous = state.get("previous_spec") or state.get("trip_spec")
         previous = TripSpec.model_validate(raw_previous) if raw_previous else None
         temporal = temporal_patch(str(state.get("input_text") or ""), previous, state.get("requirement_reference_at"))
+        if edit.get("turn_id") == turn and "visit_date" in edit.get("fields", {}):
+            value = edit["fields"]["visit_date"]
+            temporal = {"visit_date": datetime.fromisoformat(value).date() if value else None, "visit_date_unknown": value is None}
         date_changed = previous is not None and ("visit_date" in temporal and temporal["visit_date"] != previous.visit_date or bool(temporal.get("visit_date_unknown")) and previous.visit_date is not None)
         explicit_refresh = re.search(r"重新(?:核验|核实|搜索|观测|查询)|再次核验|刷新(?:所选|当前|这家|商家|门店|地点|候选)", str(state.get("input_text") or ""))
         fact = Evidence.model_validate(selected["evidence"]) if selected.get("evidence") else None
@@ -522,7 +529,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
         observation = await runtime.bridge.request(
             decision.operation, decision.arguments(), tab_id=obs.get("tab_id"), slot=f"step:{steps}"
         )
-        if not observation.get("ok"):
+        if not observation.get("ok") or browser_manual_error(observation):
             # Keep a persistent interruption until the user refreshes the browser generation.
             interrupt(
                 {
@@ -530,7 +537,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
                     "id": "browser:" + observation["command_id"],
                     "command_id": observation["command_id"],
                     "message": "浏览器需要登录、验证码或人工接管；处理后点继续。",
-                    "error_kind": observation.get("error_kind"),
+                    "error_kind": browser_manual_error(observation) or observation.get("error_kind"),
                     "paused_at": time.time(),
                 }
             )

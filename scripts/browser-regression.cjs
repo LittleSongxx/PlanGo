@@ -9,12 +9,13 @@ const work = mkdtempSync(join(tmpdir(), 'plango-browser-regression-'))
 app.setPath('userData', work)
 app.commandLine.appendSwitch('remote-debugging-address', '127.0.0.1')
 app.commandLine.appendSwitch('remote-debugging-port', '0')
-app.commandLine.appendSwitch('host-resolver-rules', 'MAP fixture.meituan.com 127.0.0.1, MAP frame.meituan.com 127.0.0.1')
+app.commandLine.appendSwitch('host-resolver-rules', 'MAP fixture.meituan.com 127.0.0.1, MAP frame.meituan.com 127.0.0.1, MAP account.dianping.com 127.0.0.1')
 app.commandLine.appendSwitch('no-proxy-server')
 app.commandLine.appendSwitch('disable-gpu')
 const fixture = '<!doctype html><html><body><h1>真实菜单测试页</h1><table><tr><th>菜品</th><th>价格</th></tr><tr><td>双人套餐</td><td>128 元</td></tr></table><button id="submit" onclick="window.submits=(window.submits||0)+1">预约</button><input id="search" placeholder="搜索"><p id="result"></p></body></html>'
 let slowRequests = 0
 const server = createServer((req,res) => {
+  if (req.url === '/pclogin') { res.setHeader('Content-Type','text/html; charset=utf-8'); res.end('<title>大众点评网</title><h1>登录</h1><p>APP扫码，享七天免登录</p><p>打开大众点评APP</p><p>扫描二维码登录</p>'); return }
   if (req.url === '/forms-frame') { res.setHeader('Content-Type','text/html; charset=utf-8'); res.end('<form id="booking" action="/frame-book"><h2>框架门店</h2><label>人数<input name="party" value="2"></label><button type="submit">框架提交</button></form>'); return }
   if (req.url === '/forms') {
     res.setHeader('Content-Type','text/html; charset=utf-8')
@@ -298,6 +299,14 @@ async function main() {
   await formsTab.contents.executeJavaScript("const field=document.createElement('textarea');field.name='long';field.value='x'.repeat(2001);document.querySelector('#booking').appendChild(field);true")
   const truncatedForm = await execute(command('snapshot', {}, { run_id: 'forms-run', tab_id: formsTab.id }))
   assert(truncatedForm.fields.dom.forms.find(form => form.action_url === url + 'book').truncated === true, 'bounded form truncation remains explicit rather than pretending a complete check')
+  const qrTab = await createBrowserTab(`http://account.dianping.com:${server.address().port}/pclogin`)
+  await waitFor(() => !qrTab.contents.isLoading())
+  const qrRead = await execute(command('extract', {}, { run_id: 'qr-run', tab_id: qrTab.id }))
+  assert(qrRead.ok && qrRead.fields.dom.manual_gate === 'login', 'observed Dianping QR-only login is a manual gate even without password or OTP inputs')
+  const publicTab = await createBrowserTab(url + 'pclogin')
+  await waitFor(() => !publicTab.contents.isLoading())
+  const publicRead = await execute(command('extract', {}, { run_id: 'public-run', tab_id: publicTab.id }))
+  assert(publicRead.ok && publicRead.fields.dom.manual_gate === null, 'QR login text on an unrelated public page does not impersonate the site-specific login route')
   console.log(`Browser regression: ${checks} assertions passed (real WebContentsView + trusted bridge + Playwright)`)
 }
 async function finish(code) {

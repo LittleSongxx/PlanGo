@@ -75,7 +75,7 @@ def requirement_delta(previous: TripSpec | None, current: TripSpec, *, explicit_
     new_activities = set(current.required_activities + current.optional_activities) - set(previous.required_activities + previous.optional_activities)
     stricter_place = (current.indoor_required and not previous.indoor_required) or (current.outdoor_required and not previous.outdoor_required)
     stricter_place |= current.max_distance_km is not None and (previous.max_distance_km is None or current.max_distance_km < previous.max_distance_km)
-    discovery = location or bool(new_activities) or bool(stricter_place) or "must_visit_place_ids" in changed
+    discovery = location or bool(new_activities) or bool(stricter_place) or bool(changed & {"must_visit_place_ids", "max_distance_km"})
     transport = "travel_mode" in changed
     return patch, {"discovery": discovery, "weather": location or temporal, "supply": discovery or temporal or party or transport, "routes": location or temporal or party or transport}
 

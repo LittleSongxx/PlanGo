@@ -1,0 +1,189 @@
+{
+  "scope": "Actual isolated Electron + SQLite backend + configured real model + external pages; not quality metrics",
+  "profile": "/home/song/code/Agent/multi-agent/PlanGo/output/merchant-next/session-C0ovDv",
+  "records": [
+    {
+      "name": "startup",
+      "at": "2026-09-09T00:36:03.805Z",
+      "detail": {
+        "title": "PlanGo · AI 本地生活浏览器",
+        "profile": "/home/song/code/Agent/multi-agent/PlanGo/output/merchant-next/session-C0ovDv",
+        "backend": "http://127.0.0.1:55791",
+        "realModel": true
+      }
+    },
+    {
+      "name": "dianping-probe",
+      "at": "2026-09-09T00:36:32.479Z",
+      "detail": {
+        "tabs": {
+          "seq": 7,
+          "activeTabId": "tab_7b0e06d8-eae5-4d04-8884-2044e5d5aa24",
+          "tabs": [
+            {
+              "id": "tab_7b0e06d8-eae5-4d04-8884-2044e5d5aa24",
+              "url": "https://account.dianping.com/pclogin?redir=https%3A%2F%2Fwww.dianping.com%2Fshop%2FHaQlfCl5X2CeJdSs",
+              "title": "大众点评网",
+              "loading": false,
+              "canGoBack": false,
+              "canGoForward": false,
+              "zoom": 1,
+              "popup": false
+            }
+          ]
+        },
+        "text": "登录\nAPP扫码，享七天免登录\n\n打开大众点评APP\n\n扫描二维码登录\n\n账号登录/注册遇到问题\n\n关于我们| 商户诚信公约| 规则中心| 媒体报道| 商户入驻| 推广服务| 人才招聘| 最新咨询| 联系我们| 应用下载\n\n©2003-2022 dianping.com, All Rights Reserved.本站发布的所有内容，未经许可，不得转载，详见《知识产权声明》。"
+      }
+    },
+    {
+      "name": "meituan-probe",
+      "at": "2026-09-09T00:37:52.947Z",
+      "detail": {
+        "tabs": {
+          "seq": 15,
+          "activeTabId": "tab_7b0e06d8-eae5-4d04-8884-2044e5d5aa24",
+          "tabs": [
+            {
+              "id": "tab_7b0e06d8-eae5-4d04-8884-2044e5d5aa24",
+              "url": "https://www.meituan.com/",
+              "title": "美团 - 帮大家吃得更好，生活更好",
+              "loading": false,
+              "canGoBack": true,
+              "canGoForward": false,
+              "zoom": 1,
+              "popup": false
+            }
+          ]
+        },
+        "text_excerpt": "首页\n和美团合作\n我们的科技\n企业社会责任\n企业",
+        "scope": "Corporate homepage redirect; no merchant/menu/form evidence"
+      }
+    },
+    {
+      "name": "meituan-food-probe",
+      "at": "2026-09-09T00:39:13.712Z",
+      "detail": {
+        "tabs": {
+          "seq": 21,
+          "activeTabId": "tab_7b0e06d8-eae5-4d04-8884-2044e5d5aa24",
+          "tabs": [
+            {
+              "id": "tab_7b0e06d8-eae5-4d04-8884-2044e5d5aa24",
+              "url": "https://meishi.meituan.com/i/?ci=45&f=android193359149",
+              "title": "美食",
+              "loading": false,
+              "canGoBack": true,
+              "canGoForward": false,
+              "zoom": 1,
+              "popup": false
+            }
+          ]
+        },
+        "text": "输入商家名、品类或商圈\n火锅\n甜点饮品\n自助餐\n小吃快餐\n西餐\n烧烤烤肉\n香锅烤鱼\n海鲜\n全部类目\n附近商家\n智能排序\n筛选\n加载中...",
+        "links": [
+          {
+            "text": "火锅",
+            "url": "https://meishi.meituan.com/i/?cateId=17&onlylist=1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "meituan-food-bounded-wait",
+      "at": "2026-09-09T00:40:32.508Z",
+      "detail": {
+        "url": "https://meishi.meituan.com/i/?ci=45&f=android193359149",
+        "text": "输入商家名、品类或商圈\n火锅\n甜点饮品\n自助餐\n小吃快餐\n西餐\n烧烤烤肉\n香锅烤鱼\n海鲜\n全部类目\n附近商家\n智能排序\n筛选\n加载中..."
+      }
+    },
+    {
+      "name": "cleanup",
+      "at": "2026-09-09T00:41:20.719Z",
+      "detail": {
+        "stoppedOwnedElectron": true,
+        "stoppedOwnedBackend": true,
+        "preservedProfile": "/home/song/code/Agent/multi-agent/PlanGo/output/merchant-next/session-C0ovDv"
+      }
+    },
+    {
+      "name": "restart-with-login-fix",
+      "at": "2026-09-09T00:41:23.690Z",
+      "detail": {
+        "title": "PlanGo · AI 本地生活浏览器",
+        "profile": "/home/song/code/Agent/multi-agent/PlanGo/output/merchant-next/session-C0ovDv",
+        "backend": "http://127.0.0.1:57391",
+        "realModel": true
+      }
+    },
+    {
+      "name": "login-manual-pause",
+      "at": "2026-09-09T00:42:26.282Z",
+      "detail": {
+        "run": "f8f8ad2719074b0a9c62cbb08367892f",
+        "originalRun": "f8f8ad2719074b0a9c62cbb08367892f",
+        "phase": "REQUIREMENTS_READY",
+        "wait": {
+          "type": "browser",
+          "id": "browser:09ac1b225b776960a37283e17b8a875f49d2d3cd",
+          "command_id": "09ac1b225b776960a37283e17b8a875f49d2d3cd",
+          "operation": "extract",
+          "message": "原标签页已关闭。请打开原目标页面，点击继续后重新绑定当前可见标签进行只读核对。",
+          "paused_at": 1788914521.7852077,
+          "error_kind": "tab_closed"
+        },
+        "gate": {
+          "dom": {
+            "canvas_count": 0,
+            "manual_gate": null,
+            "forms": []
+          }
+        },
+        "body": "PLANGO WORKSPACE\n\n把想法，安排好。\n\n需求\n查资料\n方案与结果\n确认继续\n运行服务已连接\nPlanGo\n\n生活，有计划地出发\n\n开始新安排\n工作台\n浏览器\n方案与结果\n发现与管理\n附近发现\n优惠发现\n历史\n连接与能力\n当前地区\n重庆\n配置位置\n设置\nBROWSER\n浏览器\n大众点评网\n100%\n🛵\n美团外卖\n🎫\n美团团购\n⭐\n大众点评\n🧭\n高德地图\n📕\n小红书\n🎬\n抖音\nYOUR ASSISTANT\n对话助手\n等待浏览器处理\n停止任务\n原标签页已关闭。请打开原目标页面，点击继续后重新绑定当前可见标签进行只读核对。\n打开浏览器\n已处理，继续\n读取当前页面顺风123观音桥大融城店的真实门店地址、菜单和套餐使用条件；遇到登录请暂停供我人工接管，不登录、不下单。\n读取当前页面顺风123观音桥大融城店的真实门店地址、菜单和套餐使用条件；遇到登录请暂停供我人工接管，不登录、不下单。\n读取当前页面顺风123观音桥大融城店的真实门店地址、菜单和套餐使用条件；遇到登录请暂停供我人工接管，不登录、不下单。\n\n原标签页已关闭。请打开原目标页面，点击继续后重新绑定当前可见标签进行只读核对。\n\n任务过程（13）\n浏览器观测结果\nShift + Enter 换行\n\n重要操作需你确认，任务可随时停止"
+      }
+    },
+    {
+      "name": "qr-login-paused",
+      "at": "2026-09-09T00:42:47.002Z",
+      "detail": {
+        "run": "f8f8ad2719074b0a9c62cbb08367892f",
+        "phase": "REQUIREMENTS_READY",
+        "wait": {
+          "type": "browser",
+          "id": "browser:40894d4320a5e71b337da9c6e97d345b54671147",
+          "command_id": "40894d4320a5e71b337da9c6e97d345b54671147",
+          "message": "浏览器需要登录、验证码或人工接管；处理后点继续。",
+          "error_kind": "authentication_required",
+          "paused_at": 1788914555.6002176
+        },
+        "tokens": 2583,
+        "tools": 1,
+        "body": "PLANGO WORKSPACE\n\n把想法，安排好。\n\n需求\n查资料\n方案与结果\n确认继续\n运行服务已连接\nPlanGo\n\n生活，有计划地出发\n\n开始新安排\n工作台\n浏览器\n方案与结果\n发现与管理\n附近发现\n优惠发现\n历史\n连接与能力\n当前地区\n重庆\n配置位置\n设置\nYOUR WORKSPACE\n方案与结果\n本次安排\n资料、方案与需要你确认的事项\n刷新\n回到浏览器\n大众点评网\n网页来源\n2026/9/9 08:42:35\n关于我们| 商户诚信公约| 规则中心| 媒体报道| 商户入驻| 推广服务| 人才招聘|  最新咨询|  联系我们| 应用下载 资讯评论精选©2003-2022 dianping.com, All Rights Reserved.本站发布的所有内容，未经许可，不得转载，详见《知识产权声明》。\n查看原始页面\nYOUR ASSISTANT\n对话助手\n等待浏览器处理\n停止任务\n浏览器需要登录、验证码或人工接管；处理后点继续。\n打开浏览器\n已处理，继续\n读取当前页面顺风123观音桥大融城店的真实门店地址、菜单和套餐使用条件；遇到登录请暂停供我人工接管，不登录、不下单。\n读取当前页面顺风123观音桥大融城店的真实门店地址、菜单和套餐使用条件；遇到登录请暂停供我人工接管，不登录、不下单。\n读取当前页面顺风123观音桥大融城店的真实门店地址、菜单和套餐使用条件；遇到登录请暂停供我人工接管，不登录、不下单。\n\n浏览器需要登录、验证码或人工接管；处理后点继续。\n\n任务过程（23）\n等待你的下一步\nShift + Enter 换行\n\n重要操作需你确认，任务可随时停止"
+      }
+    },
+    {
+      "name": "login-after-wsl-start",
+      "at": "2026-09-09T01:10:20.669Z",
+      "detail": {
+        "run": "f8f8ad2719074b0a9c62cbb08367892f",
+        "phase": "REQUIREMENTS_READY",
+        "tokens": 2583,
+        "messages": 3
+      }
+    },
+    {
+      "name": "after-wsl-login-recovery",
+      "at": "2026-09-09T01:11:33.489Z",
+      "detail": {
+        "run": "f8f8ad2719074b0a9c62cbb08367892f",
+        "phase": "REQUIREMENTS_READY",
+        "kind": "extract",
+        "readKind": "menu_read",
+        "messages": 4,
+        "tokens": 2583,
+        "actions": [],
+        "wait": "authentication_required"
+      }
+    }
+  ],
+  "raw_probe_log": "output/merchant-next/actions-full-before-delivery.json"
+}

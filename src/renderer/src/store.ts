@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent } from '@shared/types'
+import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent, RequirementEdit } from '@shared/types'
 import { projectHarness, projectEvents, runBusy, canResolveAction, row } from './lib/harnessProjection'
 import { originFallback as computeOrigin } from './lib/cityCenter'
 import { migrateLocalStorage } from './lib/storageMigration'
@@ -87,6 +87,7 @@ interface State {
   cancelRun: () => Promise<void>
   resolveAction: (runId: string, actionId: string, status: 'SUCCEEDED' | 'FAILED', note: string, reference?: string) => Promise<void>
   selectPlan: (plan: Plan) => Promise<void>
+  editRequirements: (edit: RequirementEdit) => Promise<void>
   decideDraft: (runId: string, interruptId: string, planId: string, planVersion: number, decision: 'save' | 'prepare') => Promise<void>
   resumeBrowser: () => Promise<void>
   resumePreparation: (runId: string, planId: string, planVersion: number, approvalId: string) => Promise<void>
@@ -315,6 +316,17 @@ export const useStore = create<State>((set, get) => ({
       const snapshot = await window.plango.harness.selectPlan(run.run_id, plan.plan_id, plan.version)
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
     } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
+    finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
+  },
+
+  editRequirements: async (edit) => {
+    const { run, activeSessionId } = get()
+    if (!run || get().busy || !get().backendReady) return
+    set({ requestBusy: true, busy: true, backendError: '' })
+    try {
+      const snapshot = await window.plango.harness.editRequirements(run.run_id, edit)
+      if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
+    } catch (error) { if (get().activeSessionId === activeSessionId) set({ backendError: String(error) }) }
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 

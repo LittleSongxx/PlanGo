@@ -22,6 +22,7 @@ from .browser import Observation, bindings
 from .geo import install_geo_routes
 from .location import LocationContext
 from .reminders import install_reminder_routes, setup_reminders
+from .requirements import RequirementEdit
 from .runtime import DesktopRuntime, _utc
 from .settings import settings_from_env
 
@@ -252,6 +253,10 @@ def create_app(settings=None, *, token=None):
         return await runtime.enqueue_resume(
             run_id, body.decision, body.text, interrupt_id=body.interrupt_id
         )
+
+    @app.post("/api/v1/runs/{run_id}/requirements", dependencies=protected, status_code=202)
+    async def edit_requirements(run_id: str, body: RequirementEdit):
+        return await runtime.edit_requirements(run_id, body)
 
     @app.post(
         "/api/v1/runs/{run_id}/interrupts/{interrupt_id}/resume",

@@ -331,6 +331,7 @@ export interface HarnessEvent {
 }
 
 export interface HarnessApi {
+  editRequirements: (runId: string, edit: RequirementEdit) => Promise<HarnessSnapshot>
   resumePreparation: (runId: string, planId: string, planVersion: number, approvalId: string) => Promise<HarnessSnapshot>
   decideDraft: (runId: string, interruptId: string, planId: string, planVersion: number, decision: 'save' | 'prepare') => Promise<HarnessSnapshot>
   feedback: (runId: string, value: HarnessFeedbackInput) => Promise<HarnessFeedbackReply>
@@ -344,6 +345,24 @@ export interface HarnessApi {
   resume: (runId: string, interruptId: string, decision: 'approve' | 'reject' | 'edit' | 'resume', text?: string) => Promise<HarnessSnapshot>
   listRuns: () => Promise<HarnessSnapshot[]>
   status: () => Promise<{ ready: boolean; error?: string }>
+}
+
+export interface RequirementFields {
+  location_name?: string
+  search_location_name?: string
+  max_distance_km?: number | null
+  visit_date?: string | null
+  time_window_start?: string | null
+  party_size?: number
+  budget?: number | null
+  per_person_budget?: number | null
+  travel_mode?: 'driving' | 'walking' | 'transit'
+}
+
+export interface RequirementEdit {
+  expected_version: number
+  fields?: RequirementFields
+  stop_lock?: { plan_id: string; plan_version: number; place_id: string; locked: boolean }
 }
 
 export interface Reminder {
