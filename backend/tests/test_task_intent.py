@@ -34,3 +34,14 @@ def test_planning_field_and_source_edits_do_not_start_an_unrequested_browser_tas
         assert edited['edits'][-1] == text
     reading = update_task_context({'input_text': '不要规划，先读取当前网页菜单', 'turn_id': 2, 'browser_task_context': dict(old)})
     assert reading['mode'] == 'browser' and reading['kind'] == 'extract'
+
+
+def test_source_analysis_needs_evidence_not_geolocation_and_preserves_write_intents():
+    for text in ['依据所给条款判断适用性，并给出总价。', '根据给定路线能确认不超预算吗？',
+                 '分析这份行程的费用和预算，不要重新规划。', '核算这份资料的总费用，只做条件分析。']:
+        context = update_task_context({'input_text': text, 'turn_id': 1})
+        assert context['mode'] == 'browser' and context['kind'] == 'reasoning' and context['source_analysis']
+    for text in ['先判断适用性，再购买这份套餐。', '核算总价后提交预约。', '分析费用，并帮我支付。', '判断适用性后帮我买一份。']:
+        assert update_task_context({'input_text': text, 'turn_id': 1})['kind'] == 'write'
+    context = update_task_context({'input_text': '帮我规划重庆行程并分析预算。', 'turn_id': 1})
+    assert context['mode'] == 'planning'

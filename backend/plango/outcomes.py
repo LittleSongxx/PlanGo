@@ -17,9 +17,10 @@ PLANNING = re.compile(r"行程|出行规划|路线规划|(?:帮我|给我|请)(?
 BROWSER = re.compile(
     r"浏览器|网页|页面|网站|菜单|点菜|团购|比价|比较|对比|挑选|推荐|外卖|购物|下单|预约|预订|订位|订座|取号|排队号|送花|攻略|截图|图片|图像|照片|支付|付款|取消订单|https?://"
 )
-WRITE = re.compile(r"预约|预订|订位|订座|取号|领号|下单|提交|支付|付款|发送|取消订单|购买")
+WRITE = re.compile(r"预约|预订|订位|订座|取号|领号|下单|提交|支付|付款|发送|取消订单|购买|(?:帮我|替我|给我|请|然后|再|并|后)(?:直接)?买|(?:^|[，,；;。])\s*买")
 REASONING = re.compile(r"比价|比较|对比|挑选|推荐|最便宜|最佳|哪家|差价|差额|(?:计算|算一下|算算).{0,80}(?:总价|价格|费用)")
 READ_REQUEST = re.compile(r"读取|提取|识别|查看|看看|打开|访问|浏览|滚动|点击|输入|填写|切换")
+ANALYSIS = re.compile(r"(?:判断|分析|核算|核对).{0,24}(?:适用|条款|规则|总价|费用|预算)|(?:根据|依据|基于|按).{0,30}(?:资料|条款|规则|给定路线).{0,40}(?:判断|确认|计算|核算)|(?:能否|能不能|是否|能确认).{0,12}(?:不超预算|超预算|够用|适用)|(?:给出|算出).{0,8}(?:总价|总费用)")
 CURRENT_PAGE = re.compile(r"(?:当前|这个|此)(?:浏览器)?(?:中|上|里)?的?(?:页面|网页|页)|本(?:页面|网页|页)")
 
 
@@ -487,12 +488,13 @@ def update_task_context(state: dict[str, Any]) -> dict[str, Any]:
     turn = int(state.get("turn_id") or 1)
     if old.get("turn_id") == turn and old.get("latest") == text:
         return old
-    explicit_browser = WRITE.search(requested) or REASONING.search(requested) or READ_REQUEST.search(requested)
+    analysis = bool(ANALYSIS.search(requested))
+    explicit_browser = WRITE.search(requested) or REASONING.search(requested) or READ_REQUEST.search(requested) or analysis
     mode = (
         "planning"
-        if PLANNING.search(requested)
+        if PLANNING.search(requested) and not (analysis and not re.search(r"规划|制定|安排", requested))
         else "browser"
-        if explicit_browser and (BROWSER.search(requested) or WRITE.search(requested) or REASONING.search(requested))
+        if explicit_browser and (BROWSER.search(requested) or WRITE.search(requested) or REASONING.search(requested) or analysis)
         else old.get("mode") or ("browser" if BROWSER.search(requested) else "planning")
     )
     if mode != old.get("mode") or not old:
@@ -513,9 +515,10 @@ def update_task_context(state: dict[str, Any]) -> dict[str, Any]:
         context["kind"] = "planning"
     elif WRITE.search(requested):
         context["kind"] = "write"
-    elif REASONING.search(text):
+    elif REASONING.search(requested) or analysis:
         context["kind"] = "reasoning"
         context["comparison_scope"] = text
+        context["source_analysis"] = analysis
     elif BROWSER.search(text):
         context["kind"] = "extract"
         context["read_kind"] = "menu_read" if re.search(r"菜单|餐单|菜价|\bmenu\b", text, re.I) and not re.search(r"(?:不要|不用|别).{0,4}菜单", text) else "page_read"
@@ -758,6 +761,201 @@ def price_comparison(state: dict[str, Any]) -> dict[str, Any] | None:
             "limitations": limitations,
         },
     }
+
+
+class CitedNumber(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    value: float = Field(ge=0, allow_inf_nan=False)
+    quote: str = Field(min_length=1, max_length=1000)
+
+
+class SourceAnalysis(BaseModel):
+    """Extraction only: the model cannot assign applicability or calculate totals."""
+    model_config = ConfigDict(extra="forbid")
+    package_price: CitedNumber | None = None
+    covered_people: CitedNumber | None = None
+    meal_total: CitedNumber | None = None
+    fare_per_person: CitedNumber | None = None
+    distance_m: CitedNumber | None = None
+    duration_seconds: CitedNumber | None = None
+    meal_coverage: str = Field(default="", max_length=1000)
+    fees_included: str = Field(default="", max_length=1000)
+    validity: str = Field(default="", max_length=1000)
+    reservation: str = Field(default="", max_length=1000)
+    stacking: str = Field(default="", max_length=1000)
+    other_limits: str = Field(default="", max_length=1000)
+
+
+def analysis_source(state):
+    """Analyze the current durable read, never a stale/other-page or model-only fact."""
+    if not (state.get("browser_task_context") or {}).get("source_analysis"):
+        return None
+    observation = state.get("browser_observation") or {}
+    if not observation.get("ok") or browser_manual_error(observation) or not observation.get("command_id"):
+        return None
+    for item in reversed(state.get("browser_artifacts") or []):
+        if (item.get("source") == "browser" and item.get("type") == "browser_page"
+                and item.get("artifact_id") == "page:" + observation["command_id"]
+                and item.get("snapshot_id") == observation.get("snapshot_id") and item.get("url") == observation.get("url")
+                and _fresh_artifact(item, datetime.now(timezone.utc))):
+            text = str((item.get("data") or {}).get("text") or "")
+            if text.strip() and len(text) <= 7500 and text == observation.get("text"):
+                return item
+    return None
+
+
+def source_analysis(state, extracted: SourceAnalysis):
+    """A bounded calculation over cited literal fields, not a merchant guarantee."""
+    from .supply import _INSTRUCTION
+
+    page = analysis_source(state)
+    if not page or (state.get("browser_task_context") or {}).get("kind") != "reasoning":
+        return None
+    text = page["data"]["text"]
+    documents: list[str] = []
+    def find_text(value):
+        if isinstance(value, dict):
+            documents.extend(item for key, item in value.items() if key == "text" and isinstance(item, str))
+            for item in value.values():
+                find_text(item)
+        elif isinstance(value, list):
+            for item in value:
+                find_text(item)
+    try:
+        find_text(json.loads(text))
+    except (ValueError, RecursionError):
+        pass
+    if len(documents) > 1 or len(page["data"].get("offers") or []) > 1:
+        return None  # A single analysis cannot silently join separate source records/offers.
+    if extracted.package_price and (len(page["data"].get("places") or []) > 1 or len(set(re.findall(r"套餐\s*[A-Za-z一二三四五六七八九十\d]+", text))) > 1):
+        return None
+    number = r"(\d+(?:\.\d+)?)"
+    patterns = {
+        "package_price": [(r"(?:售价|套餐价|套餐价格)\s*[:：]?\s*[¥￥]?\s*" + number + r"\s*元\s*[/／]\s*(?:份|套餐)(?=$|[\s，。；;、：:}\"])", 1),
+                          (r"每份套餐(?:售价|价格)?\s*[:：]?\s*[¥￥]?\s*" + number + r"\s*元(?!\s*[/／])", 1)],
+        "covered_people": [(r"(?:覆盖|适用|可供|供)\s*" + number + r"\s*(?:位|名)?(?:成年人|成人|人)", 1)],
+        "meal_total": [(r"(?:完整|全部|总)(?:餐费|用餐费用)(?:已)?(?:确认|确定)?(?:为|是|[:：])?\s*[¥￥]?\s*" + number + r"\s*元", 1)],
+        "fare_per_person": [(r"单程(?:标准)?(?:票价|车费)\s*[:：]?\s*[¥￥]?\s*" + number + r"\s*元\s*[/／]\s*人", 1),
+                            (r"(?:每人|每位)单程(?:标准)?(?:票价|车费)\s*[:：]?\s*[¥￥]?\s*" + number + r"\s*元", 1)],
+        "distance_m": [(number + r"\s*(?:米|m\b)", 1), (number + r"\s*(?:公里|千米|km\b)", 1000)],
+        "duration_seconds": [(number + r"\s*秒", 1), (number + r"\s*分钟", 60)],
+    }
+    values, citations = {}, {}
+    for key, expressions in patterns.items():
+        fact = getattr(extracted, key)
+        if not fact or fact.quote not in text or _INSTRUCTION.search(fact.quote) or re.search(r"[$€£]|\b(?:USD|EUR|GBP)\b", fact.quote):
+            continue
+        if key == "package_price" and re.search(r"人均|每人|每位|元\s*[/／]\s*人", fact.quote):
+            continue
+        if key == "covered_people" and re.search(r"(?:成人|成年人).{0,12}(?:儿童|小孩)", text):
+            continue  # Mixed age composition needs an explicit group breakdown.
+        matches = [(match, factor) for pattern, factor in expressions for match in re.finditer(pattern, text, re.I)]
+        observed = {Decimal(match[1]) * factor for match, factor in matches
+                    if not re.search(r"不是|并非|未确认|不含|往返|人均|每人|每位", re.split(r"[。；;\n]", text[:match.start()])[-1][-20:])
+                    and match.group() in fact.quote}
+        if len(matches) == 1 and observed == {Decimal(str(fact.value))}:
+            values[key], citations[key] = Decimal(str(fact.value)), fact.quote
+    def clause(key, positive, negative=""):
+        quote = getattr(extracted, key)
+        valid = bool(quote and quote in text and not _INSTRUCTION.search(quote) and re.search(positive, quote)
+                     and not (negative and re.search(negative, text))
+                     and not any(re.search(r"(?:不是|并非|未确认|未|不)\s*$", text[max(0, match.start() - 8):match.start()])
+                                 for match in re.finditer(re.escape(quote), text)))
+        if valid:
+            citations[key] = quote
+        return valid
+
+    context = state["browser_task_context"]
+    request = task_text(state)
+    party = context.get("party_size")
+    budget = _amount(context.get("total_budget"))
+    per_budget = _amount(context.get("per_person_budget"))
+    if per_budget is not None and isinstance(party, int):
+        budget = min(budget, per_budget * party) if budget is not None else per_budget * party
+    missing, conflicts, lines = [], [], []
+    total = None
+    def display(value):
+        rendered = format(value, "f")
+        return rendered.rstrip("0").rstrip(".") if "." in rendered else rendered
+    if re.search(r"路线|公交|交通|票价|车费", request) and "meal_total" in values:
+        meal, fare = values["meal_total"], values.get("fare_per_person")
+        lines.append(f"资料给出的完整餐费为{display(meal)}元。")
+        if "distance_m" in values:
+            lines.append(f"给定路线{display(values['distance_m'])}米（{display(values['distance_m'] / 1000)}公里）。")
+        if "duration_seconds" in values:
+            lines.append(f"给定用时{display(values['duration_seconds'])}秒（{display(values['duration_seconds'] / 60)}分钟）。")
+        if fare is None:
+            missing.append("单程标准票价未明确，不能按0元计算")
+        if not isinstance(party, int):
+            missing.append("同行人数待确认")
+        if fare is not None and isinstance(party, int):
+            total = meal + fare * party
+            lines.append(f"单程标准票价{display(fare)}元/人，{party}人交通费小计{display(fare * party)}元；与餐费合计{display(total)}元。")
+        if budget is not None:
+            lines.append(f"总预算{display(budget)}元，扣除餐费后剩余{display(budget - meal)}元用于交通等支出。")
+        lines.append("上述核算只含已给出的餐费与单程标准票价；返程及其他未说明费用另需核对。")
+    elif "package_price" in values and re.search(r"套餐|适用|条款", request):
+        price, people = values["package_price"], values.get("covered_people")
+        adult_only = bool(re.search(r"成人|成年人", citations.get("covered_people", "")))
+        people_unit = "名成人" if adult_only else "人"
+        lines.append(f"资料中的套餐售价为{display(price)}元/份。")
+        if people is not None:
+            lines.append(f"一份条款明确覆盖{display(people)}{people_unit}。")
+        if people is None or not isinstance(party, int):
+            missing.append("套餐覆盖人数或同行人数尚未明确")
+        elif people != party:
+            conflicts.append(f"一份仅明确覆盖{display(people)}{people_unit}，本次{party}人，不能认定按该份数适用或足够")
+        if not re.search(r"(?:仅|只)(?:买|购买|购入|使用|用)?(?:一|1)份", request):
+            missing.append("购买份数尚未明确，未自动加购")
+        if not clause("meal_coverage", r"(?:全部|所有)餐品|完整(?:覆盖|用餐|餐费)", r"不含.{0,8}(?:餐品|餐费)|餐品另点"):
+            missing.append("完整餐品覆盖范围未明确")
+        if not clause("fees_included", r"(?:包含|已含|包括).{0,25}(?:全部|所有)(?:必付)?费用|无额外费用|无服务费(?:或|和|及)其他加收|不收取(?:其他|任何额外)费用",
+                      r"(?:不含|未含|不包括).{0,12}(?:费|加收)|(?:费|加收).{0,6}(?:另计|另收)|(?:另收|加收).{0,12}(?:费|元)"):
+            missing.append("所有必付费用未确认全含，不能把套餐售价当完整餐费")
+        if not clause("reservation", r"无需预约|不需要预约|不用预约"):
+            missing.append("预约要求未满足或未明确")
+        if not (clause("stacking", r"(?:不允许|不可|不能|不与).{0,12}(?:叠加|同享|同用)") and re.search(r"不叠加|不与.{0,8}(?:同用|同享)", request)):
+            missing.append("本次优惠叠加条件尚未核对")
+        if not clause("other_limits", r"(?:没有|无|不设)其他(?:门槛|条件|限制)"):
+            missing.append("其他使用门槛尚未核对")
+        validity = extracted.validity
+        date_pattern = r"(\d{4})[-年](\d{1,2})[-月](\d{1,2})日?"
+        def dates(value):
+            try:
+                return list(dict.fromkeys(datetime(int(y), int(m), int(d)).date() for y, m, d in re.findall(date_pattern, value)))
+            except ValueError:
+                return []
+        date_values, requested_dates = dates(validity), dates(str(context.get("latest") or context.get("request") or ""))
+        times = re.findall(r"(?<!\d)([0-2]?\d):([0-5]\d)", validity)
+        requested_times = re.findall(r"(?<!\d)([0-2]?\d):([0-5]\d)", str(context.get("latest") or context.get("request") or ""))
+        minutes = [int(h) * 60 + int(m) for h, m in times]
+        current_minute = int(requested_times[-1][0]) * 60 + int(requested_times[-1][1]) if requested_times else None
+        if not (clause("validity", r"使用|可用|有效|适用|只限|仅限") and 1 <= len(date_values) <= 2 and len(requested_dates) == 1
+                and len(minutes) == 2 and 0 <= minutes[0] <= minutes[1] < 1440 and current_minute is not None):
+            missing.append("具体使用日期或时段尚不能按原文核对")
+        elif not (date_values[0] <= requested_dates[0] <= date_values[-1] and minutes[0] <= current_minute <= minutes[1]):
+            conflicts.append("所选日期或时间不在原文使用范围内")
+        if (not re.search(r"不(?:再)?另设节假日限制|节假日(?:可用|通用)|当日(?:允许使用|可用)", validity)
+                or re.search(r"(?:节假日|周末|周[一二三四五六日天])(?:不可用|不适用|除外)|仅限周", text)):
+            missing.append("节假日或当日使用条件未明确")
+        if not missing and not conflicts:
+            total = price
+            lines.append((f"若同行{party}人均符合条款中的成人范围，" if adult_only else "按本次人数、份数与日期时段，") + "且遵守上述所给条款条件，可按一份核算。")
+        if adult_only:
+            lines.append("条款的人数范围是成人；仅说明同行人数不代表已确认年龄资格。")
+    else:
+        return None
+    if budget is not None:
+        lines.append(f"已知范围合计{display(total)}元，{'未超出' if total <= budget else '超出'}{display(budget)}元预算。" if total is not None
+                     else f"当前不能确认完整总价不超过{display(budget)}元预算。")
+    lines.extend(conflicts)
+    if missing:
+        lines.append("仍缺依据：" + "；".join(missing) + "。")
+    lines.append("以上是按所给资料的条件分析；没有重新验证实时商家供给，不代表已购买、预约或完成交易。原文见当前资料卡。")
+    return ExecutionOutcome(kind="page_read", status="mismatch" if conflicts else "needs_evidence" if missing else "satisfied", summary="\n".join(lines),
+        evidence_ids=[page["artifact_id"]], data={"scope": "source_analysis", "business_completed": False, "answered": True,
+        "total_cost": float(total) if total is not None else None, "missing_rules": missing, "conflicts": conflicts,
+        "facts": {key: float(value) for key, value in values.items()}, "quotes": citations, "source_url": page["url"]})
 
 
 def current_visual_observation(state: dict[str, Any]) -> dict[str, Any] | None:
