@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 from plango import browser, offers
+from plango_harness.agent.contracts import Evidence
 from plango_harness.persistence.database import utc_now
 
 _paths = list(sys.path)
@@ -29,7 +30,10 @@ def test_business_clock_keeps_sql_wall_clock_and_restores_runtime():
     original_browser_datetime = browser.datetime
     before = utc_now()
     instant = "2001-02-03T04:05:06+00:00"
+    proof = Evidence(evidence_id="business-clock-only", expires_at="2001-02-04T00:00:00+00:00")
+    assert proof.expired
     with runner.business_clock(runtime, {"as_of": instant}) as clock:
+        assert not proof.expired
         assert offers.datetime.now(timezone.utc).isoformat() == instant
         assert browser.datetime.now(timezone.utc).isoformat() == instant
         assert asyncio.run(runtime._requirement_reference({})) == instant
@@ -38,6 +42,7 @@ def test_business_clock_keeps_sql_wall_clock_and_restores_runtime():
     assert offers.datetime is original_datetime
     assert browser.datetime is original_browser_datetime
     assert runtime._requirement_reference is original
+    assert proof.expired
     observed = "2001-02-02T04:05:06+00:00"
     with runner.business_clock(runtime, {"as_of": instant}, observed_at=observed):
         assert offers.datetime.now(timezone.utc).isoformat() == instant

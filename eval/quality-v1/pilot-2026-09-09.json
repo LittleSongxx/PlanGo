@@ -1,0 +1,437 @@
+{
+  "schema_version": 1,
+  "scope": "known_dev_implementation_pilot",
+  "source_sha": "172bd30fd11bb80c5807a4a5e5d6cfe00e9d6a2a71523f32f0dfd5da270b2697",
+  "git_base": "c4723f16eb7ae938bd564a75239746f33e024736",
+  "uncommitted_sources_frozen_by_sha256": true,
+  "planned_cases": 12,
+  "collected_cases": 12,
+  "actor_model_invocations": 25,
+  "actor_reported_tokens": 34039,
+  "judge_requests": 1,
+  "judge_reported_tokens": 4461,
+  "total_reported_tokens": 38500,
+  "human_reviewed_gold": 0,
+  "fully_annotated_cases": 0,
+  "heldout_cases": 0,
+  "tsr": null,
+  "groundedness_macro": null,
+  "structured_conditions": {
+    "pass": 5,
+    "fail": 1,
+    "pending": 54,
+    "not_task_success_rate": true
+  },
+  "judge_trial": "DEV-04: pending because some evidence IDs/quotes were invalid or missing; not retried and no score adopted",
+  "cases": [
+    {
+      "case_id": "DEV-01",
+      "collection_stop": "completed",
+      "environment_level": "frozen_raw_observation_injection",
+      "model_invocations": 2,
+      "reported_tokens": 3101,
+      "structured_checks": [
+        {
+          "id": "R1",
+          "verdict": "pending"
+        },
+        {
+          "id": "R2",
+          "verdict": "pending"
+        },
+        {
+          "id": "R3",
+          "verdict": "pending"
+        },
+        {
+          "id": "R4",
+          "verdict": "pending"
+        },
+        {
+          "id": "R5",
+          "verdict": "pending"
+        }
+      ],
+      "task_score": null,
+      "groundedness_score": null
+    },
+    {
+      "case_id": "DEV-02",
+      "collection_stop": "completed",
+      "environment_level": "frozen_raw_observation_injection",
+      "model_invocations": 2,
+      "reported_tokens": 1610,
+      "structured_checks": [
+        {
+          "id": "R1",
+          "verdict": "pending"
+        },
+        {
+          "id": "R2",
+          "verdict": "pending"
+        },
+        {
+          "id": "R3",
+          "verdict": "pending"
+        },
+        {
+          "id": "R4",
+          "verdict": "pending"
+        },
+        {
+          "id": "R5",
+          "verdict": "pending"
+        }
+      ],
+      "task_score": null,
+      "groundedness_score": null
+    },
+    {
+      "case_id": "DEV-03",
+      "collection_stop": "completed",
+      "environment_level": "frozen_raw_observation_injection",
+      "model_invocations": 2,
+      "reported_tokens": 4134,
+      "structured_checks": [
+        {
+          "id": "O1",
+          "verdict": "pending"
+        },
+        {
+          "id": "O2",
+          "verdict": "pending"
+        },
+        {
+          "id": "O3",
+          "verdict": "pending"
+        },
+        {
+          "id": "O4",
+          "verdict": "pending"
+        },
+        {
+          "id": "O5",
+          "verdict": "pending"
+        }
+      ],
+      "task_score": null,
+      "groundedness_score": null
+    },
+    {
+      "case_id": "DEV-04",
+      "collection_stop": "unscripted_clarification",
+      "environment_level": "frozen_raw_observation_injection",
+      "model_invocations": 1,
+      "reported_tokens": 935,
+      "structured_checks": [
+        {
+          "id": "O1",
+          "verdict": "pending"
+        },
+        {
+          "id": "O2",
+          "verdict": "pending"
+        },
+        {
+          "id": "O3",
+          "verdict": "pending"
+        },
+        {
+          "id": "O4",
+          "verdict": "pending"
+        },
+        {
+          "id": "O5",
+          "verdict": "pending"
+        }
+      ],
+      "task_score": null,
+      "groundedness_score": null
+    },
+    {
+      "case_id": "DEV-05",
+      "collection_stop": "script_finished",
+      "environment_level": "imported_state_workflow",
+      "model_invocations": 3,
+      "reported_tokens": 4313,
+      "structured_checks": [
+        {
+          "id": "E1",
+          "verdict": "fail"
+        },
+        {
+          "id": "E2",
+          "verdict": "pass"
+        },
+        {
+          "id": "E3",
+          "verdict": "pass"
+        },
+        {
+          "id": "E4",
+          "verdict": "pending"
+        },
+        {
+          "id": "E5",
+          "verdict": "pending"
+        }
+      ],
+      "task_score": null,
+      "groundedness_score": null
+    },
+    {
+      "case_id": "DEV-06",
+      "collection_stop": "unscripted_clarification",
+      "environment_level": "imported_state_workflow",
+      "model_invocations": 5,
+      "reported_tokens": 7406,
+      "structured_checks": [
+        {
+          "id": "E1",
+          "verdict": "pass"
+        },
+        {
+          "id": "E2",
+          "verdict": "pass"
+        },
+        {
+          "id": "E3",
+          "verdict": "pass"
+        },
+        {
+          "id": "E4",
+          "verdict": "pending"
+        },
+        {
+          "id": "E5",
+          "verdict": "pending"
+        }
+      ],
+      "task_score": null,
+      "groundedness_score": null
+    },
+    {
+      "case_id": "DEV-07",
+      "collection_stop": "completed",
+      "environment_level": "frozen_raw_observation_injection",
+      "model_invocations": 2,
+      "reported_tokens": 2947,
+      "structured_checks": [
+        {
+          "id": "T1",
+          "verdict": "pending"
+        },
+        {
+          "id": "T2",
+          "verdict": "pending"
+        },
+        {
+          "id": "T3",
+          "verdict": "pending"
+        },
+        {
+          "id": "T4",
+          "verdict": "pending"
+        },
+        {
+          "id": "T5",
+          "verdict": "pending"
+        }
+      ],
+      "task_score": null,
+      "groundedness_score": null
+    },
+    {
+      "case_id": "DEV-08",
+      "collection_stop": "unscripted_clarification",
+      "environment_level": "frozen_raw_observation_injection",
+      "model_invocations": 1,
+      "reported_tokens": 963,
+      "structured_checks": [
+        {
+          "id": "T1",
+          "verdict": "pending"
+        },
+        {
+          "id": "T2",
+          "verdict": "pending"
+        },
+        {
+          "id": "T3",
+          "verdict": "pending"
+        },
+        {
+          "id": "T4",
+          "verdict": "pending"
+        },
+        {
+          "id": "T5",
+          "verdict": "pending"
+        }
+      ],
+      "task_score": null,
+      "groundedness_score": null
+    },
+    {
+      "case_id": "DEV-09",
+      "collection_stop": "script_finished",
+      "environment_level": "imported_state_Electron_API",
+      "model_invocations": 0,
+      "reported_tokens": 0,
+      "structured_checks": [
+        {
+          "id": "V1",
+          "verdict": "pending"
+        },
+        {
+          "id": "V2",
+          "verdict": "pending"
+        },
+        {
+          "id": "V3",
+          "verdict": "pending"
+        },
+        {
+          "id": "V4",
+          "verdict": "pending"
+        },
+        {
+          "id": "V5",
+          "verdict": "pending"
+        }
+      ],
+      "task_score": null,
+      "groundedness_score": null
+    },
+    {
+      "case_id": "DEV-10",
+      "collection_stop": "script_finished",
+      "environment_level": "imported_state_Electron_API",
+      "model_invocations": 4,
+      "reported_tokens": 5959,
+      "structured_checks": [
+        {
+          "id": "V1",
+          "verdict": "pending"
+        },
+        {
+          "id": "V2",
+          "verdict": "pending"
+        },
+        {
+          "id": "V3",
+          "verdict": "pending"
+        },
+        {
+          "id": "V4",
+          "verdict": "pending"
+        },
+        {
+          "id": "V5",
+          "verdict": "pending"
+        }
+      ],
+      "task_score": null,
+      "groundedness_score": null
+    },
+    {
+      "case_id": "DEV-11",
+      "collection_stop": "completed",
+      "environment_level": "frozen_raw_observation_injection",
+      "model_invocations": 1,
+      "reported_tokens": 1170,
+      "structured_checks": [
+        {
+          "id": "B1",
+          "verdict": "pending"
+        },
+        {
+          "id": "B2",
+          "verdict": "pending"
+        },
+        {
+          "id": "B3",
+          "verdict": "pending"
+        },
+        {
+          "id": "B4",
+          "verdict": "pending"
+        },
+        {
+          "id": "B5",
+          "verdict": "pending"
+        }
+      ],
+      "task_score": null,
+      "groundedness_score": null
+    },
+    {
+      "case_id": "DEV-12",
+      "collection_stop": "completed",
+      "environment_level": "frozen_raw_observation_injection",
+      "model_invocations": 2,
+      "reported_tokens": 1501,
+      "structured_checks": [
+        {
+          "id": "B1",
+          "verdict": "pending"
+        },
+        {
+          "id": "B2",
+          "verdict": "pending"
+        },
+        {
+          "id": "B3",
+          "verdict": "pending"
+        },
+        {
+          "id": "B4",
+          "verdict": "pending"
+        },
+        {
+          "id": "B5",
+          "verdict": "pending"
+        }
+      ],
+      "task_score": null,
+      "groundedness_score": null
+    }
+  ],
+  "verification": {
+    "offline_tests_passed": 23,
+    "subtests_passed": 15,
+    "ruff_passed": true,
+    "exporter_self_check_passed": true,
+    "desktop_driver_syntax_passed": true
+  },
+  "collection_dir": "output/quality-v1/dev-20260909T112246Z-eeb85930",
+  "review_dir": "output/quality-v1/review-judge-20260909T1129",
+  "evidence_hashes": {
+    "output/quality-v1/dev-20260909T112246Z-eeb85930/manifest.json": "018986a26c3ebd9836126e5898f2b22dd645fffc368481b9208c6e98a311f922",
+    "output/quality-v1/dev-20260909T112246Z-eeb85930/collection.json": "d42b524d2b078250044ab672ebde02ca0672cee82e76e6a62f935bd9d9e89391",
+    "output/quality-v1/review-judge-20260909T1129/review-manifest.json": "dfc70ffbb264fab2c4b7d37b79123a9b1d42b36fefb21851714b543f744ee356",
+    "output/quality-v1/review-judge-20260909T1129/summary.json": "4ee9c9a69fe077f05376c9725fb8e397b0ba33f1c821e64cc6f40d2a042bf56b",
+    "output/quality-v1/review-judge-20260909T1129/scores.json": "8c7ac0be9542d3f67fcc1290935fa418a697f004a9d562a6fa1509ed98a4c0c6",
+    "output/quality-v1/review-corrected-20260909T1139/review-manifest.json": "a266d0aa0998d24866a74c242ddadf9bb0f52f085367ba2274bde981ddb0edde",
+    "output/quality-v1/review-corrected-20260909T1139/summary.json": "e0b5928fef213249a41be055484b6988f739934cb71e8c887f6ca5b57999611f",
+    "output/quality-v1/review-corrected-20260909T1139/scores.json": "2fecc0b8c86be7e6af59740297a33661d4ad6f0842501701b99b0a567c860c10"
+  },
+  "limitations": [
+    "All gold is AI-authored pending human review.",
+    "Eight cases use raw observation injection, not complete Electron browser replay.",
+    "Four state cases import a declared synthetic unsaved draft; two then use real Electron.",
+    "No unseen holdout or live merchant sentinel was run.",
+    "One judge response was rejected as incomplete; no retries or score selection.",
+    "All product failures and offline collector failures are retained."
+  ],
+  "actor_implementation_commit": "c15217d",
+  "post_run_adapter_change": "Evidence.expired business time uses case as_of; verified offline with historical dates. No new actor calls.",
+  "token_scope": "Incremental actor and judge calls in this batch; historical source collection and imported fixture construction are excluded.",
+  "judge_model_relation": "Same project model configuration, AI-assisted and not human-calibrated.",
+  "corrected_prepare_dir": "output/quality-v1/review-corrected-20260909T1139",
+  "rejected_review_code_archive": "output/quality-v1/review-code-before-input-fix",
+  "post_run_review_fixes": [
+    "Exclude pre-task message IDs from repeated later history; preserve current cards and original output artifacts.",
+    "Include original synthetic runtime fixture with import/manifest/file hash and availability-time checks."
+  ]
+}

@@ -130,15 +130,25 @@ def business_clock(runtime, case, observed_at=None):
     async def reference(row, command=None):
         return instant.isoformat()
 
+    def evidence_expired(proof):
+        expiry = proof.expires_at
+        if expiry and expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
+        return bool(expiry and expiry <= instant)
+
     import plango.booking_preview
     import plango.browser
     import plango.offers
     import plango.outcomes
+    import plango_harness.agent.contracts
     import plango_harness.agent.requirements
     with ExitStack() as stack:
         for module in (plango.booking_preview, plango.offers, plango.outcomes, plango_harness.agent.requirements):
             stack.enter_context(patch.object(module, "datetime", ReferenceDateTime))
         stack.enter_context(patch.object(runtime, "_requirement_reference", reference))
+        # Evidence.expired imports datetime inside its getter; module patching
+        # cannot move that business clock. Preserve its comparison with as_of.
+        stack.enter_context(patch.object(plango_harness.agent.contracts.Evidence, "expired", property(evidence_expired)))
         # The receipt owns its timestamp. Replay changes only that module's now();
         # command deadlines still use fromtimestamp(time.time()), SQL uses utc_now.
         stack.enter_context(patch.object(plango.browser, "datetime", ReceiptDateTime))
