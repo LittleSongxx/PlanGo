@@ -3,6 +3,7 @@
 import asyncio
 import json
 import sys
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -132,3 +133,47 @@ def test_manifest_hashes_gold_but_actor_observation_excludes_judging_material():
     assert observation["text"] == "原始券售价47元"
     assert secret_gold not in json.dumps(observation, ensure_ascii=False)
     assert observation["fields"]["evaluation_source"]["original_observed_at"] is None
+
+
+def test_restore_reopens_api_before_read_only_driver_without_new_identity_or_model(tmp_path, monkeypatch):
+    order = []
+    runner.write(tmp_path / "desktop-config.json", {"case_id": "RESTORE-01", "driver": "save_restart", "case_dir": str(tmp_path),
+        "run_id": "original", "backend_url": "http://127.0.0.1:11111", "backend_token": "original-token",
+        "profile_dir": str(tmp_path / "profile"), "client_data_dir": str(tmp_path / "client"), "browser_session_id": "original-browser"})
+    runner.write(tmp_path / "desktop-result.json", {"original": True})
+    original = (tmp_path / "desktop-result.json").read_bytes()
+    state = {"run_id": "original", "pending_command": False, "action_results": [], "model_call_count": 0}
+    monkeypatch.setattr(runner, "independent_state", lambda *args: state.copy())
+    async def events(*args):
+        return []
+    app = SimpleNamespace(state=SimpleNamespace(runtime=SimpleNamespace(model=SimpleNamespace(), get_events=events)))
+    monkeypatch.setattr(runner, "create_app", lambda *args, **kwargs: app)
+    @contextmanager
+    def local_api(actual):
+        assert actual is app
+        order.append("api_reopened")
+        yield SimpleNamespace(url="http://127.0.0.1:22222", call=asyncio.run)
+        order.append("api_closed")
+    monkeypatch.setattr(runner, "LocalAPI", local_api)
+    @contextmanager
+    def client(**kwargs):
+        assert kwargs["base_url"] == "http://127.0.0.1:22222"
+        yield SimpleNamespace(get=lambda path: SimpleNamespace(json=lambda: {"run_id": "original"}))
+    monkeypatch.setattr(runner.httpx, "Client", client)
+    def driver(config, **kwargs):
+        assert order == ["api_reopened"]
+        assert config["phase"] == "read_only_restore" and config["backend_url"] == "http://127.0.0.1:22222"
+        assert config["profile_dir"] == str(tmp_path / "profile") and config["browser_session_id"] == "original-browser"
+        assert config["evidence_dir"] == str(tmp_path / "backend-restored")
+        order.append("read_only_desktop")
+        return {"status": "completed"}, 0
+    monkeypatch.setattr(runner, "run_desktop", driver)
+    runner.restore_saved_desktop(tmp_path, None, stopped_at="2026-09-09T12:00:00Z")
+    assert order == ["api_reopened", "read_only_desktop", "api_closed"]
+    assert (tmp_path / "desktop-result.json").read_bytes() == original
+    lifecycle = runner.read(tmp_path / "backend-restored/backend-lifecycle.json")
+    assert lifecycle["state_unchanged"] is True and lifecycle["model_invocations"] == 0
+    with pytest.raises(RuntimeError, match="read_only_no_model"):
+        asyncio.run(app.state.runtime.model._invoke(events(), timeout=None))
+    with pytest.raises(FileExistsError):
+        runner.restore_saved_desktop(tmp_path, None, stopped_at="2026-09-09T12:00:00Z")
