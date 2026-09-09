@@ -261,7 +261,8 @@ async function runDriver(config) {
     // fails or the desktop closes; never silently replace it with a final GET.
     result.checkpoints.push(entry)
     const ui = page ? await page.evaluate(() => ({ active_run: localStorage.getItem('plango_active_run'), text: document.body.innerText,
-      pending_status: document.querySelector('[aria-label="消息发送状态"]')?.textContent || null })).catch(() => null) : null
+      pending_status: document.querySelector('[aria-label="消息发送状态"]')?.textContent || null,
+      outcome_notices: [...document.querySelectorAll('[role="status"]')].map(n => n.textContent || '').filter(t => t.startsWith('优惠来源暂不可用')) })).catch(() => null) : null
     await jsonFile(join(config.case_dir, `${file}.ui.json`), ui)
     entry.ui = `${file}.ui.json`
     if (page) { await page.screenshot({ path: join(config.case_dir, `${file}.png`) }); entry.screenshot = `${file}.png` }
@@ -386,9 +387,12 @@ async function runDriver(config) {
         proxy.recover(); record('restore_receipt_lookup')
         await page.getByRole('button', { name: '核对送达并取回', exact: true }).click(); record('click_existing_delivery_lookup')
         await wait('original_delivery_retrieved', async () => !(await page.locator('[aria-label="消息发送状态"]').count()))
-        await wait('new_draft_or_terminal', async () => { const run = await snapshot(); return Number(run.state?.turn_id) > Number(initial.state?.turn_id || 1) && !run.command_pending && (!!run.draft_review || TERMINAL.has(run.phase)) }, 330_000)
+        await wait('new_draft_or_terminal', async () => { const run = await snapshot(); return Number(run.state?.turn_id) > Number(initial.state?.turn_id || 1) && !run.command_pending && (!!run.draft_review || run.state?.clarification || run.state?.browser_wait || run.interrupt_id || TERMINAL.has(run.phase)) }, 330_000)
         await waitUiSummary(await snapshot())
         const final = await capture('same-request-recovered')
+        result.stop_reason = final.state?.browser_wait ? 'unexpected_browser_wait'
+          : final.state?.clarification && !final.draft_review ? 'unscripted_clarification'
+            : final.interrupt_id && !final.draft_review ? 'unexpected_approval' : 'script_finished'
         result.recovery = { performed: true, run_id_preserved: final.run_id === initial.run_id, before_turn: initial.state?.turn_id, after_turn: final.state?.turn_id,
           before_party_size: initial.state?.trip_spec?.party_size, after_party_size: final.state?.trip_spec?.party_size, phase: final.phase }
         assert(result.transport_counts.forwarded_lookups > 0)

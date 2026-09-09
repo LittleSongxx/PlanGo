@@ -341,7 +341,7 @@ def drive(client, rid, observation, session_id, case, control, directory, collec
     return "timeout"
 
 
-def collect_case(case, packets, settings, directory, control, source_sha, case_ids, *, manifest_fn=None, fixture=None, fixture_provenance=None, desktop_edits=False):
+def collect_case(case, packets, settings, directory, control, source_sha, case_ids, *, manifest_fn=None, fixture=None, fixture_provenance=None, desktop_edits=False, trial_id="first"):
     token, browser_session = uuid.uuid4().hex, uuid.uuid4().hex
     app = create_app(settings, token=token)
     control["case_stop"] = None
@@ -414,7 +414,7 @@ def collect_case(case, packets, settings, directory, control, source_sha, case_i
                             stage = "desktop-" + checkpoint["id"]
                             envelope["checkpoint"].update(id=stage, as_of=case.get("as_of"))
                             export(stage, envelope, desktop=checkpoint)
-                        if driver == "edit" and result.get("stop_reason") not in {None, "script_finished"}:
+                        if result.get("stop_reason") not in {None, "script_finished"}:
                             stop = result["stop_reason"]
                         collect("before_restart", client.get(f"/api/v1/runs/{rid}").json())
                     level = "imported_state_workflow" if driver == "edit" and not desktop_edits else "imported_state_Electron_API"
@@ -449,7 +449,7 @@ def collect_case(case, packets, settings, directory, control, source_sha, case_i
                        "checkpoint": {"id": "after_restart", "as_of": case.get("as_of"), "captured_at": datetime.now(timezone.utc).isoformat()}},
                        database_state=independent_state(directory / "runs.sqlite", rid))
                 checkpoints["after_restart"]["scope"] = "actual_owned_backend_restart_desktop_closed"
-    result = {"case_id": case["case_id"], "trial_id": "first", "run_id": rid, "stop_reason": "budget_exhausted" if control.get("case_stop") else stop,
+    result = {"case_id": case["case_id"], "trial_id": trial_id, "run_id": rid, "stop_reason": "budget_exhausted" if control.get("case_stop") else stop,
               "raw_stop_reason": stop, "collector_limit_reason": control.get("case_stop") or control["stop"],
               "environment_level": level, "clock": clock, "checkpoints": checkpoints,
               "model_invocations": len(calls), "reported_tokens": sum(c.get("usage", {}).get("total_tokens", 0) for c in calls),

@@ -16,6 +16,7 @@ from pathlib import Path
 
 from plango.browser import bindings
 from plango.outcomes import draft_review
+from plango.requirements import OfferSourceRef
 from plango_harness.agent.contracts import (
     ConstraintCheck,
     Evidence,
@@ -169,9 +170,10 @@ async def seed(runtime, case, case_dir, *, user_id="desktop", browser_session_id
     raw_place = raw_spec.pop("selected_poi")
     raw_offer = raw_spec.pop("selected_offer")
     run_id, place_id = uuid.uuid4().hex, "quality:" + uuid.uuid4().hex
-    source_id = "imported-source:" + uuid.uuid4().hex
+    source_id = "imported-source-" + uuid.uuid4().hex
+    source = OfferSourceRef(command_id=source_id, artifact_id="page:" + source_id)
     offer_hash = hashlib.sha256(json.dumps(raw_offer, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
-    reference = OfferReference(command_id=source_id, artifact_id="page:" + source_id,
+    reference = OfferReference(**source.model_dump(),
                                offer_index=0, offer_hash=offer_hash, place_id=place_id)
     now = datetime.fromisoformat(case["as_of"])
     origin = Location.model_validate(fixture["origin"])

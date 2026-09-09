@@ -38,6 +38,44 @@ def events(work):
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()] if path.exists() else []
 
 
+def invalid_attempts(work):
+    path = Path(work) / "invalidated-attempts.json"
+    if not path.exists():
+        return {}
+    ledger = runner.read(path)
+    assert ledger["adjudication_sha256"] == file_sha(Path(work) / "fixture-adjudication.json")
+    return {row["trial_id"]: row for row in ledger["attempts"]}
+
+
+def adjudicate_fixture(work):
+    """Apply the independent uniform decision, without consulting task outcomes."""
+    work = Path(work).resolve()
+    bundle = runner.read(work / "gold-bundle.json")
+    audit = runner.read(work / "fixture-adjudication.json")
+    assert audit["origin"] == "independent_ai" and audit["reviewer_type"] == "AI" and audit["human_reviewed"] is False
+    assert audit["dataset_sha"] == bundle["dataset_sha"] and audit["product_sha"] == bundle["product_sha"]
+    assert audit["decision"] == "invalidate_fixture_attempts" and audit["reason_category"] == "runner_error"
+    affected = {c["case_id"] for c in bundle["cases"] if c["packet"]["task"]["environment"]["driver"] in STATE_DRIVERS}
+    assert set(audit["affected_case_ids"]) == affected
+    rows = [json.loads(x) for x in (work / "attempt-registry.jsonl").read_text().splitlines()]
+    invalid = []
+    for row in rows:
+        if row["case_id"] not in affected:
+            continue
+        directory = (ROOT / row["directory"]).resolve()
+        assert directory.is_relative_to(work)
+        initial = runner.read(directory / "initial.snapshot.json")
+        ref = initial["snapshot"]["state"]["trip_spec"]["selected_offer"]
+        assert ref["command_id"].startswith("imported-source:"), "Decision only applies to the declared invalid generator"
+        invalid.append({**row, "invalid_reason": {"category": "runner_error", "adjudicator": audit["reviewer"],
+            "detail": "Imported offer command ID violated its reference contract before actor input; all affected workflows invalidated uniformly."},
+            "initial_snapshot_sha256": file_sha(directory / "initial.snapshot.json"),
+            "raw_stop_reason": runner.read(directory / "collection.json")["stop_reason"]})
+    runner.write(work / "invalidated-attempts.json", {"adjudication_sha256": file_sha(work / "fixture-adjudication.json"),
+        "created_at": now(), "attempts": invalid, "unstarted_affected_cases": sorted(affected - {r["case_id"] for r in invalid})})
+    print(json.dumps({"invalid_evaluator_attempts": len(invalid), "old_evidence_retained": True}))
+
+
 def product():
     frozen = runner.read(DATA / "product-freeze.json")
     for path, digest in frozen["files"].items():
@@ -151,7 +189,9 @@ def run(work, case_ids, *, gold_review=None):
     assert case_ids and len(case_ids) == len(set(case_ids)) and set(case_ids) <= set(planned)
     registry = work / "attempt-registry.jsonl"
     previous = [json.loads(x) for x in registry.read_text().splitlines()] if registry.exists() else []
-    assert not set(case_ids) & {x["case_id"] for x in previous}, "Never replace or select the best primary attempt"
+    invalid = invalid_attempts(work)
+    prior = {cid: [r for r in previous if r["case_id"] == cid] for cid in case_ids}
+    assert all(not rows or rows[-1]["trial_id"] in invalid for rows in prior.values()), "Never replace a valid primary attempt"
     adapter_paths = [ROOT / "scripts" / name for name in ("quality_acceptance.py", "quality_runner.py", "quality_state_cases.py", "quality_desktop_cases.cjs", "export_quality_output.ts", "quality_ai_import.py", "quality_human_import.py", "quality_judge.py", "quality_scoring.py")]
     def manifest():
         product()
@@ -159,6 +199,7 @@ def run(work, case_ids, *, gold_review=None):
                 "inputs": {name: file_sha(DATA / name) for name in session["source_files"]},
                 "adapters": {str(path.relative_to(ROOT)): file_sha(path) for path in adapter_paths},
                 "gold_review_sha256": file_sha(gold_review or work / "human-events.jsonl"),
+                "invalidations_sha256": file_sha(work / "invalidated-attempts.json") if invalid else None,
                 "reviewer_type": "independent_ai" if gold_review else "human",
                 "limits": {"calls": runner.MAX_BATCH_CALLS, "case_calls": runner.MAX_CASE_CALLS, "reported_tokens_stop": runner.MAX_BATCH_REPORTED_TOKENS}}
     frozen = manifest()
@@ -178,14 +219,17 @@ def run(work, case_ids, *, gold_review=None):
             break
         directory = folder / cid
         directory.mkdir(mode=0o700)
+        label = "replacement-" + str(len(prior[cid])) if prior[cid] else "first"
+        replacement_for = prior[cid][-1]["trial_id"] if prior[cid] else None
         with registry.open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps({"case_id": cid, "directory": str(directory.relative_to(ROOT)), "reserved_at": now(), "trial_id": cid + ":first"}) + "\n")
+            stream.write(json.dumps({"case_id": cid, "directory": str(directory.relative_to(ROOT)), "reserved_at": now(),
+                                     "trial_id": cid + ":" + label, "replacement_for": replacement_for}) + "\n")
             stream.flush()
             os.fsync(stream.fileno())
         settings = runner.project_settings(directory)
         fixture = fixtures.get(case["source_ids"][0]) if case["environment"]["driver"] in STATE_DRIVERS else None
         result = runner.collect_case(case, packets, settings, directory, control, source_sha, case_ids,
-                    manifest_fn=manifest, desktop_edits=True, fixture=fixture,
+                    manifest_fn=manifest, desktop_edits=True, fixture=fixture, trial_id=label,
                     fixture_provenance={"path": str((DATA / "runtime-fixtures.json").relative_to(ROOT)), "json_pointer": "/" + case["source_ids"][0]} if fixture else None)
         collected.append(result)
         print(json.dumps({"case": cid, "stop": result["stop_reason"], "tokens": result["reported_tokens"]}), flush=True)
@@ -199,6 +243,7 @@ def output_case(original, directory):
     case = copy.deepcopy(original)
     packet = case["packet"]
     result = runner.read(directory / "collection.json")
+    packet["trial_id"] = case["case_id"] + ":" + result["trial_id"]
     checkpoints = result["checkpoints"]
     baseline_ids, outputs, available, hashes = set(), [], [], {}
     def artifact(path):
@@ -241,6 +286,10 @@ def output_case(original, directory):
                 visible["cards"].append({"id": "actual-delivery-status", "kind": "desktop_delivery",
                     "views": [{"name": "actual captured UI", "rendered_text": ui["pending_status"]}],
                     "provenance": "Actual aria-label=消息发送状态 DOM text from this captured desktop checkpoint"})
+            for index, notice in enumerate((ui or {}).get("outcome_notices", [])):
+                visible["cards"].append({"id": "actual-outcome-notice-" + str(index), "kind": "desktop_notice",
+                    "views": [{"name": "actual captured status", "rendered_text": notice}],
+                    "provenance": "Actual role=status outcome notice from the frozen desktop UI"})
         outputs.append(visible)
     for source in packet["source_packets"]:
         source["available_at_checkpoint_ids"] = available.copy()
@@ -271,7 +320,9 @@ def bundle_outputs(work, target):
     before = runner.read(work / "gold-bundle.json")
     registry = [json.loads(x) for x in (work / "attempt-registry.jsonl").read_text().splitlines()]
     by_id = {row["case_id"]: row for row in registry}
-    assert len(registry) == len(by_id) == 30 and set(by_id) == set(before["dataset"]["planned_case_ids"])
+    invalid = invalid_attempts(work)
+    assert len(by_id) == 30 and set(by_id) == set(before["dataset"]["planned_case_ids"])
+    assert all(row["trial_id"] not in invalid for row in by_id.values()), "Every invalid case still needs its declared replacement"
     assert product() == before["product"]
     after = copy.deepcopy(before)
     after["collection"] = {"attempts": []}
@@ -280,8 +331,13 @@ def bundle_outputs(work, target):
         assert directory.is_relative_to(work)
         row = output_case(case, directory)
         after["cases"][index] = row
-        after["collection"]["attempts"].append({"case_id": row["case_id"], "trial_id": row["packet"]["trial_id"],
-             "valid_attempt": True, "outcome": row["packet"]["attempt_outcome"], "replacement_for": None, "invalid_reason": None})
+        for attempt in (r for r in registry if r["case_id"] == row["case_id"]):
+            bad = invalid.get(attempt["trial_id"])
+            after["collection"]["attempts"].append({"case_id": row["case_id"], "trial_id": attempt["trial_id"],
+                 "valid_attempt": not bool(bad), "outcome": None if bad else row["packet"]["attempt_outcome"],
+                 "replacement_for": attempt.get("replacement_for"), "invalid_reason": bad["invalid_reason"] if bad else None,
+                 "observed_stop_reason": bad["raw_stop_reason"] if bad else row["packet"]["capture_audit"]["raw_stop_reason"],
+                 "evidence_directory": attempt["directory"]})
     for key in ("dataset_sha", "product_sha", "collection_sha"):
         after.pop(key, None)
     after = human.seal_bundle(after)
@@ -294,7 +350,7 @@ def bundle_outputs(work, target):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare", "run", "bundle"))
+    parser.add_argument("action", choices=("prepare", "run", "bundle", "adjudicate-fixture"))
     parser.add_argument("--work", required=True, type=Path)
     parser.add_argument("--cases", help="Predeclared subset, normally ten cases per serial batch")
     parser.add_argument("--output", type=Path)
@@ -305,6 +361,8 @@ def main():
         prepare(args.work)
     elif args.action == "run":
         run(args.work, (args.cases or "").split(","), gold_review=args.gold_review)
+    elif args.action == "adjudicate-fixture":
+        adjudicate_fixture(args.work)
     else:
         assert args.output, "bundle requires a new --output path"
         bundle_outputs(args.work, args.output)
