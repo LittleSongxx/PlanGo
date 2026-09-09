@@ -1,0 +1,19 @@
+{
+  "release": {
+    "format": 1,
+    "version": "0.1.0",
+    "revision": "a05f037",
+    "source_dirty": false,
+    "implementation_sha256": "e71ebf1626af0dc7537a15f863377e1241cfc14ed60948f5c3c477d88c434d62",
+    "platform": "linux-x64",
+    "electron": "33.4.11",
+    "created_at": "2026-09-09T02:34:35.638249+00:00"
+  },
+  "archive_bytes": 112828176,
+  "archive_sha256": "c30b58a3a362912c023ae318173f84a6986a7efb6689439acb9659fa52835640",
+  "configured_secret_scan": "passed",
+  "user_document_excluded": true,
+  "fixed_upstream_archive_unchanged": true,
+  "original_author_and_license_preserved": true,
+  "third_party_notices_bytes": 712973
+}

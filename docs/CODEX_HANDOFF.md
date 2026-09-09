@@ -234,3 +234,5 @@ PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plang
 最终全量pytest264+43subtests、Ruff/mypy67文件、TS/构建、浏览器80项及隔离桌面/键盘交互通过；9场景54条归档断言通过。主API/worker已更新门店/UI接续源码，17表原始行与主profile49Cookie/身份/回执保持，健康且无待命令，见[本轮连续性](../eval/plango-merchant-live/main-data-continuity.json)。
 
 原N1读取任务当前PARTIAL_FAILED/read_only，保留真实取得字段与未覆盖范围；所有临时窗口、独立后端已关闭，不存在待用户扫码的活动窗口。`output/merchant-next/session-C0ovDv/`保留真实登录态与数据，重开需要先核实归属；只有遇到新的真实安全验证时再请用户处理。实际UI恢复未新增模型用量。新的本地实现/包路径在最终交付记录中补充；不覆盖上一归档，不push或发布。
+
+本轮实现本地提交：`a05f037 feat: improve merchant previews and desktop readability`。新版归档为 `release/plango-0.1.0-linux-x64-merchant-ui.tar.gz`（约108MiB），包内revision=a05f037、source_dirty=false；SHA256为 `c30b58a3a362912c023ae318173f84a6986a7efb6689439acb9659fa52835640`，旁边保存校验文件。密钥/来源/作者许可证检查通过，见[新版包记录](../eval/plango-merchant-live/package.json)。旧试用归档保留；本次没有重新声称跑过一遍完整安装/冷备恢复，沿用已验收的打包入口并验证新增功能。未push、PR或发布。
