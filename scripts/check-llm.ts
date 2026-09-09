@@ -18,9 +18,9 @@ try {
   }
   assert.deepEqual(await pingLlm(), { ok: true, message: '文本回复已返回；未测试工具调用或图片能力' })
   globalThis.fetch = async () => new Response('unavailable', { status: 503 })
-  assert.deepEqual(await pingLlm(), { ok: false, message: '桌面模型返回 HTTP 503：请核对接口配置或稍后重试' })
+  assert.deepEqual(await pingLlm(), { ok: false, message: '桌面模型暂时不可用：服务没有正常响应，请稍后再测试' })
   globalThis.fetch = async () => new Response('fixture-only https://user:password@example.com/?key=secret', { status: 401 })
-  assert.deepEqual(await pingLlm(), { ok: false, message: '桌面模型返回 HTTP 401：密钥鉴权失败' })
+  assert.deepEqual(await pingLlm(), { ok: false, message: '桌面模型暂时不可用：密钥鉴权失败' })
   globalThis.fetch = async () => { throw new Error('offline https://user:password@example.com/?key=secret') }
   assert.deepEqual(await pingLlm(), { ok: false, message: '桌面模型连接失败或超时，请检查桌面网络与接口地址。' })
   config.baseURL = 'https://user:password@fixture.invalid/v1?key=secret#private'
@@ -31,7 +31,7 @@ try {
   assert.equal(safeServiceOrigin('not a URL'), '地址无效')
   config.apiKey = ''
   globalThis.fetch = async () => { assert.fail('missing credentials must not send a request') }
-  assert.match((await pingLlm()).message, /未配置大模型 API Key/)
+  assert.match((await pingLlm()).message, /还没有设置桌面使用的模型/)
   console.log('Desktop model connectivity check passed')
 } finally {
   Object.assign(config, original)

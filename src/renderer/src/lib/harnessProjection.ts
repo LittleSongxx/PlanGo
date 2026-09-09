@@ -1,3 +1,4 @@
+import { publicStatus } from '../../../shared/userMessages'
 import type { AgentStep, ChatMessage, HarnessEvidence, HarnessEvent, HarnessSnapshot, OutcomeCard, Plan, POISummary, SourceTag, OfferComparison, OfferSourceRef, OfferSelection } from '../../../shared/types'
 
 type Row = Record<string, unknown>
@@ -303,7 +304,7 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
   if (results.length) cards.push({ kind: 'receipt', shareMessage: '', items: results.map(a => {
     const result = row(a.result)
     const observation = row(result.observation)
-    const operationDetail = str(result.note) || str(observation.error) || str(a.error) || str(result.message) || (a.status === 'SUCCEEDED' ? '该步骤已结束，业务结果仍需核对。' : '该步骤未完成，请查看当前页面。')
+    const operationDetail = publicStatus(str(result.note) || str(observation.error) || str(a.error) || str(result.message), 'action') || (a.status === 'SUCCEEDED' ? '该步骤已结束，业务结果仍需核对。' : '该步骤未完成，请查看当前页面。')
     const businessConfirmed = a.status === 'SUCCEEDED' && ((result.scope === 'business_receipt' && row(result.receipt).identity_verified === true) || (result.scope === 'user_confirmation' && result.source === 'user' && result.user_confirmed === true))
     return { business_confirmed: businessConfirmed, run_id: run.run_id, action_id: str(a.action_id), resolution_required: a.status === 'UNKNOWN' && a.resolution_required !== false, label: str(result.shop_name) || str(result.name) || (result.scope === 'browser_interaction' || result.source === 'browser' ? '页面操作' : '操作记录'), status: a.status === 'SUCCEEDED' ? 'ok' : a.status === 'FAILED' || a.status === 'CANCELLED' ? 'fail' : 'pending',
       detail: result.scope === 'browser_interaction' && a.status === 'SUCCEEDED' ? '页面步骤完成，业务结果尚待核验。' : a.status === 'UNKNOWN' ? '提交结果未知，请核查实际订单或业务记录；不会自动重复提交。' : [operationDetail, str(result.reference) ? `业务编号：${str(result.reference)}` : ''].filter(Boolean).join(' · '),
@@ -321,7 +322,8 @@ export function projectConversation(run: HarnessSnapshot, summary = ''): ChatMes
     const role = str(m.role || m.type)
     const content = str(m.content) || (Array.isArray(m.content) ? rows(m.content).map(x => str(x.text)).join('\n') : '')
     return content && ['human', 'user', 'ai', 'assistant'].includes(role)
-      ? [{ id: str(m.id) || undefined, role: role === 'human' || role === 'user' ? 'user' as const : 'assistant' as const, content }] : []
+      ? [{ id: str(m.id) || undefined, role: role === 'human' || role === 'user' ? 'user' as const : 'assistant' as const,
+        content: role === 'human' || role === 'user' ? content : publicStatus(content) }] : []
   })
   const events = [...new Map((run.events || []).filter(e => e.run_id === run.run_id && e.seq <= run.event_seq).map(e => [e.seq, e])).values()].sort((a, b) => a.seq - b.seq)
   // The durable event sequence also covers replies to structured edits and
@@ -331,6 +333,7 @@ export function projectConversation(run: HarnessSnapshot, summary = ''): ChatMes
   const replyTimes = new Set(events.filter(e => e.event_type === 'ASSISTANT_MESSAGE').map(e => e.created_at).filter(Boolean))
   let storedCursor = 0
   const reply = (content: string, id: string) => {
+    content = publicStatus(content)
     if (content && !(messages.at(-1)?.role === 'assistant' && messages.at(-1)?.content === content)) messages.push({ id, role: 'assistant', content })
   }
   if (complete) for (const event of events) {
@@ -399,6 +402,6 @@ export function projectEvents(events: HarnessEvent[]): AgentStep[] {
       : ['SUCCEEDED', 'OBSERVED', 'EXECUTED'].includes(outcome) || /(?:^|_)(?:SUCCEEDED|COMPLETE|COMPLETED|READY|RESOLVED|RETRIEVED|REFLECTED|RECEIVED|EXTRACTED|OBSERVED)(?:_|$)/.test(kind) ? 'done'
       : /^WAITING_/.test(str(e.phase)) ? 'waiting'
       : /STARTED|RUNNING|EXECUTING/.test(kind) ? 'running' : 'idle'
-    return { id: `${e.run_id}:${e.seq}`, label: str(e.payload.label) || eventLabels[kind] || '任务进展已更新', status, detail: str(e.payload.detail) || str(e.payload.message) || str(e.payload.reason) || eventPhaseLabels[str(e.phase)] }
+    return { id: `${e.run_id}:${e.seq}`, label: publicStatus(str(e.payload.label)) || eventLabels[kind] || '任务进展已更新', status, detail: publicStatus(str(e.payload.detail) || str(e.payload.message) || str(e.payload.reason) || eventPhaseLabels[str(e.phase)] || '') }
   })
 }

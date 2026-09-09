@@ -1,3 +1,4 @@
+import { userMessage } from '@shared/userMessages'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useStore } from '../store'
 import type { DiscoverGroup, POISummary, DealRow } from '@shared/types'
@@ -50,7 +51,7 @@ export function DiscoverPanel(): JSX.Element | null {
         }
       } catch (e) {
         if (sequence !== requestSeq.current) return
-        setError(String(e))
+        setError(userMessage(e, 'discover'))
         if (which === 'discover') setGroups([])
         else setDeals([])
       } finally {

@@ -1,3 +1,4 @@
+import { userMessage } from '@shared/userMessages'
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import type { ReminderList } from '@shared/types'
@@ -94,7 +95,7 @@ function ModelSection(): JSX.Element {
     try {
       await window.plango.setConfig(patch)
       const r = await window.plango.pingLlm()
-      setPing(r.ok ? '桌面配置已保存，桌面文本测试通过 ✓ ' + r.message : '桌面配置已保存，桌面测试失败：' + r.message)
+      setPing(r.ok ? '桌面配置已保存，桌面文本测试通过 ✓ ' + r.message : '桌面配置已保存，桌面测试失败：' + userMessage(r.message, 'settings'))
       setApiKey('')
       const config = await window.plango.getConfig()
       setCfg(config.config)
@@ -167,7 +168,7 @@ function SkillsSection(): JSX.Element {
     setSaving(id)
     setError('')
     try { setSkills(await window.plango.toggleSkill(id, enabled)) }
-    catch { setError('技能设置未保存，请重试。') }
+    catch { setError('暂时无法确认技能设置。请重新打开面板核对。') }
     finally { setSaving(null) }
   }
   return (
@@ -210,7 +211,7 @@ function MemorySection(): JSX.Element {
   const prefs = prof?.preferences || []
   const mutate = async (action: () => Promise<any>): Promise<void> => {
     setSaving(true); setError('')
-    try { setProf(await action()); await useStore.getState().refreshRun() } catch { setError('记忆变更尚未确认保存，请重试。') } finally { setSaving(false) }
+    try { setProf(await action()); await useStore.getState().refreshRun() } catch { setError('偏好变更尚未确认。请重新打开偏好列表核对保存状态。') } finally { setSaving(false) }
   }
   const add = async (event: React.FormEvent): Promise<void> => {
     event.preventDefault()
@@ -334,7 +335,7 @@ function ReminderSection(): JSX.Element {
     let active = true
     const refresh = async (): Promise<void> => {
       try { const value = await window.plango.reminders.list(); if (active) setData(value) }
-      catch (e) { if (active) setError(String(e)) }
+      catch (e) { if (active) setError(userMessage(e, 'reminder')) }
     }
     void refresh()
     const timer = setInterval(() => void refresh(), 5000)
@@ -347,14 +348,14 @@ function ReminderSection(): JSX.Element {
     setBusy(true)
     setError('')
     try { setData(await window.plango.reminders.create(text.trim(), date.toISOString())); setText('') }
-    catch (e) { setError(String(e)) }
+    catch (e) { setError(userMessage(e, 'reminder')) }
     finally { setBusy(false) }
   }
   const remove = async (id: string): Promise<void> => {
     setBusy(true)
     setError('')
     try { setData(await window.plango.reminders.remove(id)) }
-    catch (e) { setError(String(e)) }
+    catch (e) { setError(userMessage(e, 'reminder')) }
     finally { setBusy(false) }
   }
   return <div className="space-y-4 text-xs">

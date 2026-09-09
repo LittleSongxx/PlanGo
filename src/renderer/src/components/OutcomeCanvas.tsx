@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
+import { publicStatus, userMessage } from '@shared/userMessages'
 import { canResolveAction, readProgress } from '../lib/harnessProjection'
 import type { OutcomeCard, Plan, DealRow, DishReco, ReceiptItem, SourceTag, TakeoutItem, DiscoverGroup, POISummary, GroupBuyPackage, HarnessEvidence } from '@shared/types'
 import { SourceBadge } from './SourceBadge'
@@ -38,12 +39,12 @@ export function OutcomeCanvas(): JSX.Element {
       </div>
       <div className="flex-1 overflow-y-auto p-5 lg:p-6">
         <RequirementsCard />
-        {run?.offer_comparison_error && <div role="status" className="max-w-4xl mx-auto mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">优惠来源暂不可用：{run.offer_comparison_error}{run.selected_offer && <p className="mt-1 text-xs">原优惠选择记录保留。请重新核对来源后继续，未将失效资料当作当前可用优惠。</p>}</div>}
+        {run?.offer_comparison_error && <div role="status" className="max-w-4xl mx-auto mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">{userMessage(run.offer_comparison_error, 'offer')}{run.selected_offer && <p className="mt-1 text-xs">你之前选择的优惠仍保留在这次安排中。</p>}</div>}
         {!!(reading.observed.length || reading.missing.length) && <div aria-label="资料读取范围" className="max-w-4xl mx-auto plango-card p-4 mb-5 text-sm leading-6 space-y-2">
           {!!reading.observed.length && <div className="flex items-start gap-3"><span className="text-brand-strong font-medium shrink-0">已读</span><span>{reading.observed.join('、')}</span></div>}
           {!!reading.missing.length && <div className="flex items-start gap-3"><span className="text-amber-800 font-medium shrink-0">仍需核对</span><span className="text-neutral-600">{reading.missing.map(field => `${field}${reading.partial.includes(field) ? '（仅取得部分条件）' : ''}`).join('、')}</span></div>}
         </div>}
-        {cards.length === 0 && run?.outcome ? <div className="max-w-4xl mx-auto plango-card p-6"><h2 className="text-base font-semibold">本轮尚无可展示的成果</h2><p className="text-sm text-[var(--muted)] leading-6 mt-3">{String(run.state.reason || '你可以在对话中查看任务记录，调整需求后继续。')}</p></div> : cards.length === 0 ? (
+        {cards.length === 0 && run?.outcome ? <div className="max-w-4xl mx-auto plango-card p-6"><h2 className="text-base font-semibold">本轮尚无可展示的成果</h2><p className="text-sm text-[var(--muted)] leading-6 mt-3">{publicStatus(String(run.state.reason || '你可以在对话中查看任务记录，调整需求后继续。'))}</p></div> : cards.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-5">
             <div aria-hidden="true" className="relative w-32 h-28 mb-7"><div className="absolute left-4 top-3 w-20 h-24 rounded-2xl border border-brand/50 bg-brand-soft rotate-[-10deg]" /><div className="absolute right-3 top-1 w-20 h-24 rounded-2xl border border-[var(--line)] bg-white shadow-panel rotate-[8deg] flex items-center justify-center"><FileText size={30} className="text-brand-strong" /></div><span className="absolute bottom-0 right-0 h-10 w-10 rounded-2xl bg-brand text-brand-ink flex items-center justify-center"><Sparkles size={18} /></span></div>
             <div className="plango-kicker">A LITTLE PLANNING, A BETTER DAY</div>

@@ -1,3 +1,4 @@
+import { userMessage } from '@shared/userMessages'
 import { create } from 'zustand'
 import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent, RequirementEdit, HarnessDeliveryRequest, HarnessDeliveryResult, OfferSelection } from '@shared/types'
 import { projectHarness, projectEvents, runBusy, canResolveAction, canSelectOffer, row } from './lib/harnessProjection'
@@ -243,7 +244,7 @@ export const useStore = create<State>((set, get) => ({
   browserIntent: async (intent) => {
     set({ browserError: '' })
     try { get().applyBrowserState(await window.plango.browser.request(intent)); set({ browserError: '' }) }
-    catch (error) { set({ browserError: (error as Error).message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '') }) }
+    catch (error) { set({ browserError: userMessage(error, 'browser') }) }
   },
   addTab: (url) => { void get().browserIntent({ kind: 'create', url }) },
   closeTab: (id) => { void get().browserIntent({ kind: 'close', id }) },
@@ -277,7 +278,7 @@ export const useStore = create<State>((set, get) => ({
       if (get().activeSessionId !== activeSessionId || get().run?.run_id !== run.run_id) return
       get().applyHarness(snapshot)
     } catch (e) {
-      if (get().activeSessionId === activeSessionId) set({ backendError: String(e), backendReady: false })
+      if (get().activeSessionId === activeSessionId) set({ backendError: userMessage(e), backendReady: false })
     } finally { if (refreshingRun === run.run_id) refreshingRun = null }
   },
 
@@ -286,7 +287,7 @@ export const useStore = create<State>((set, get) => ({
     const activeSessionId = get().activeSessionId
     try {
       const status = await window.plango.harness.status()
-      set({ backendReady: status.ready, backendError: status.error || '' })
+      set({ backendReady: status.ready, backendError: status.error ? userMessage(status.error) : '' })
       if (!status.ready) return
       if (get().pendingDelivery) await get().recoverDelivery()
       if (get().activeSessionId !== activeSessionId) return
@@ -306,13 +307,13 @@ export const useStore = create<State>((set, get) => ({
       const savedId = !initialComposer.activeSessionId && activeSessionId === initialSessionId ? localStorage.getItem('plango_active_run') : null
       const saved = sessions.find(s => s.id === activeSessionId) || sessions.find(s => s.runId === savedId)
       if (saved) get().restoreSession(saved.id)
-    } catch (e) { set({ backendReady: false, backendError: String(e) }) }
+    } catch (e) { set({ backendReady: false, backendError: userMessage(e) }) }
   },
 
   receiveHarnessEvent: (event) => {
     if (get().run?.run_id !== event.run_id) return
     if (event.event_type === 'snapshot') { get().applyHarness(event.payload.snapshot as HarnessSnapshot); return }
-    if (event.event_type === 'connection_error') set({ backendReady: false, backendError: String(event.payload.message || '任务连接中断') })
+    if (event.event_type === 'connection_error') set({ backendReady: false, backendError: userMessage(event.payload.message || '任务连接中断') })
     const events = [...new Map([...get().events, event].map(e => [e.seq, e])).values()].sort((a, b) => a.seq - b.seq)
     set({ events, steps: projectEvents(events) })
   },
@@ -360,7 +361,7 @@ export const useStore = create<State>((set, get) => ({
         const loadedPending = pendingDelivery?.imageRef && !pendingDelivery.request.image ? { ...pendingDelivery, request: { ...pendingDelivery.request, image: await loadDraftImage(pendingDelivery.imageRef) } } : pendingDelivery
         set({ drafts: loadedDrafts, pendingDelivery: loadedPending, composerReady: true, storageError: '' })
         return true
-      } catch (error) { set({ storageError: `原图片尚未恢复，已保留附件引用并停止新发送。${String(error)}` }); return false }
+      } catch (error) { set({ storageError: `原图片尚未恢复，已保留附件引用并停止新发送。${userMessage(error, 'storage')}` }); return false }
       finally { composerHydration = null }
     })()
     return composerHydration
@@ -466,7 +467,7 @@ export const useStore = create<State>((set, get) => ({
       const snapshot = await window.plango.harness.resume(run.run_id, token, ok ? 'approve' : 'reject')
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
     } catch (e) {
-      if (get().activeSessionId === activeSessionId) set({ backendError: String(e) })
+      if (get().activeSessionId === activeSessionId) set({ backendError: userMessage(e) })
     } finally {
       if (get().activeSessionId === activeSessionId) { set({ requestBusy: false, busy: runBusy(get().run) }) }
     }
@@ -479,7 +480,7 @@ export const useStore = create<State>((set, get) => ({
     try {
       const snapshot = await window.plango.harness.resolveAction(runId, actionId, status, note.trim(), reference?.trim() || undefined)
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
-    } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
+    } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: userMessage(e) }) }
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 
@@ -490,7 +491,7 @@ export const useStore = create<State>((set, get) => ({
     try {
       const snapshot = await window.plango.harness.selectPlan(run.run_id, plan.plan_id, plan.version)
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
-    } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
+    } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: userMessage(e) }) }
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 
@@ -501,7 +502,7 @@ export const useStore = create<State>((set, get) => ({
     try {
       const snapshot = await window.plango.harness.selectOffer(runId, selection)
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
-    } catch (error) { if (get().activeSessionId === activeSessionId) set({ backendError: String(error) }) }
+    } catch (error) { if (get().activeSessionId === activeSessionId) set({ backendError: userMessage(error) }) }
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 
@@ -512,7 +513,7 @@ export const useStore = create<State>((set, get) => ({
     try {
       const snapshot = await window.plango.harness.editRequirements(run.run_id, edit)
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
-    } catch (error) { if (get().activeSessionId === activeSessionId) set({ backendError: String(error) }) }
+    } catch (error) { if (get().activeSessionId === activeSessionId) set({ backendError: userMessage(error) }) }
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 
@@ -525,7 +526,7 @@ export const useStore = create<State>((set, get) => ({
     try {
       const snapshot = await window.plango.harness.decideDraft(runId, interruptId, planId, planVersion, decision)
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
-    } catch (error) { if (get().activeSessionId === activeSessionId) set({ backendError: String(error) }) }
+    } catch (error) { if (get().activeSessionId === activeSessionId) set({ backendError: userMessage(error) }) }
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 
@@ -535,7 +536,7 @@ export const useStore = create<State>((set, get) => ({
     try {
       const snapshot = await window.plango.harness.cancel(run.run_id)
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
-    } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
+    } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: userMessage(e) }) }
   },
 
   resumePreparation: async (runId, planId, planVersion, approvalId) => {
@@ -547,7 +548,7 @@ export const useStore = create<State>((set, get) => ({
     try {
       const snapshot = await window.plango.harness.resumePreparation(runId, planId, planVersion, approvalId)
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
-    } catch (error) { if (get().activeSessionId === activeSessionId) set({ backendError: String(error) }) }
+    } catch (error) { if (get().activeSessionId === activeSessionId) set({ backendError: userMessage(error) }) }
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 
@@ -559,7 +560,7 @@ export const useStore = create<State>((set, get) => ({
     try {
       const snapshot = await window.plango.harness.resume(run.run_id, interruptId, 'resume')
       if (get().activeSessionId === activeSessionId) get().applyHarness(snapshot)
-    } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: String(e) }) }
+    } catch (e) { if (get().activeSessionId === activeSessionId) set({ backendError: userMessage(e) }) }
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 
@@ -636,7 +637,7 @@ export const useStore = create<State>((set, get) => ({
       set({ requestBusy: false })
       get().applyHarness(snapshot)
     }).catch(e => {
-      if (get().activeSessionId === id) set({ busy: false, requestBusy: false, backendError: String(e), backendReady: false })
+      if (get().activeSessionId === id) set({ busy: false, requestBusy: false, backendError: userMessage(e), backendReady: false })
     })
   },
   deleteSession: (id) => {

@@ -1,3 +1,4 @@
+import { userMessage } from '@shared/userMessages'
 import { useEffect, useRef, useState } from 'react'
 import type { MerchantCandidates, OfferComparison } from '@shared/types'
 import { sameOfferSource, rows } from '../lib/harnessProjection'
@@ -48,7 +49,7 @@ export function OfferComparisonCard({ comparison, runId, version }: { comparison
       if (request !== sequence.current) return
       if (!sameOfferSource(result.source_ref, comparison.source_ref) || result.merchant.name !== comparison.merchant.name || result.merchant.address !== comparison.merchant.address) throw new Error('候选响应与原网页门店不一致，请刷新后核对。')
       setCandidates(result)
-    } catch (reason) { if (request === sequence.current) setError(String(reason)) }
+    } catch (reason) { if (request === sequence.current) setError(userMessage(reason, 'offer')) }
     finally { if (request === sequence.current) setLoading(false) }
   }
 

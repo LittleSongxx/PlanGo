@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
+import { userMessage } from '@shared/userMessages'
 import { X, Wifi, Puzzle, MessageCircle, Bell, Brain, MapPin } from 'lucide-react'
 import { detectViaAMap, geocodeAddress } from '../lib/amap'
 import { locationLabel } from '@shared/location'
@@ -48,7 +49,7 @@ export function SettingsDrawer(): JSX.Element | null {
                 setPing('测试中…')
                 try {
                   const r = await window.plango.pingLlm()
-                  setPing(r.ok ? '桌面文本接口通过：' + r.message : '桌面测试失败：' + r.message)
+                  setPing(r.ok ? '桌面文本接口通过：' + r.message : '桌面测试失败：' + userMessage(r.message, 'settings'))
                 } catch { setPing('桌面测试失败，请检查连接。') }
               }}
               className="mt-2 text-xs px-3 py-1 rounded-lg bg-neutral-100 hover:bg-neutral-200"

@@ -4,7 +4,7 @@ import { getConfig } from './config'
 export async function pingLlm(): Promise<{ ok: boolean; message: string }> {
   try {
     const cfg = getConfig().llm
-    if (!cfg.apiKey || !cfg.model) return { ok: false, message: '桌面未配置大模型 API Key 或模型名称，请在「连接与能力」填写。' }
+    if (!cfg.apiKey || !cfg.model) return { ok: false, message: '还没有设置桌面使用的模型，请在“连接与能力”中完成配置。' }
     const res = await fetch(`${cfg.baseURL.replace(/\/$/, '')}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` },
@@ -21,7 +21,8 @@ export async function pingLlm(): Promise<{ ok: boolean; message: string }> {
     })
     if (!res.ok) {
       const reason: Record<number, string> = { 401: '密钥鉴权失败', 403: '模型权限不足', 404: '模型名称或接口地址错误', 429: '限流或额度不足' }
-      return { ok: false, message: `桌面模型返回 HTTP ${res.status}：${reason[res.status] || '请核对接口配置或稍后重试'}` }
+      console.warn('[plango] Desktop model check failed', { httpStatus: res.status })
+      return { ok: false, message: `桌面模型暂时不可用：${reason[res.status] || '服务没有正常响应，请稍后再测试'}` }
     }
     const data = await res.json() as { choices?: { message?: { content?: string } }[] }
     const message = (data.choices?.[0]?.message?.content || '')

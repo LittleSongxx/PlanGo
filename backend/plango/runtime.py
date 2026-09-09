@@ -30,6 +30,7 @@ from plango_harness.persistence.database import agent_action, agent_run
 from plango_harness.persistence.runs import InputAcceptance
 from plango_harness.runtime import TERMINAL_PHASES, PlanGoRuntime
 from plango_harness.tools.registry import ToolRegistry
+from pydantic import ValidationError
 from sqlalchemy import func, select, text, update
 
 from .browser import BrowserBridge, bindings, commands, run_context
@@ -927,7 +928,11 @@ class DesktopRuntime(PlanGoRuntime):
             result["offer_comparison"] = await self._offer_comparison(run_id, result["state"], saved)
         except ValueError as error:
             result["offer_comparison"] = None
-            result["offer_comparison_error"] = str(error)
+            result["offer_comparison_error"] = "暂时无法读取优惠信息，请重新打开来源页面核对。"
+            # Validation inputs can contain private source content. Keep field
+            # locations/types for diagnosis without logging values or credentials.
+            issues = [{"type": item["type"], "loc": item["loc"]} for item in error.errors(include_input=False, include_context=False, include_url=False)] if isinstance(error, ValidationError) else []
+            logger.warning("Offer comparison unavailable for run %s: %s %s", run_id, type(error).__name__, issues)
         wait = result["state"].get("browser_wait") or {}
         waiting_command = next((item for item in observations if item["command_id"] == wait.get("command_id")), None)
         failure = (waiting_command or {}).get("result") or {}
@@ -936,7 +941,7 @@ class DesktopRuntime(PlanGoRuntime):
             can_rebind = kind == "tab_closed" and (waiting_command or {}).get("payload", {}).get("operation") in {"extract", "snapshot", "read_page", "extract_tables"} and not (waiting_command or {}).get("payload", {}).get("approved_action_id") and not result["state"].get("browser_receipt_pending")
             message = ("原标签页已关闭。请打开原目标页面，点击继续后重新绑定当前可见标签进行只读核对。" if can_rebind
                        else "原标签页已关闭；未确认的操作不会重试，请先人工核对原操作结果。" if kind == "tab_closed"
-                       else "浏览器步骤未完成（" + kind + "）；请在可见浏览器中处理后再继续。")
+                       else "浏览器步骤尚未完成。请先查看页面提示，核对后再继续。")
             result["state"]["browser_wait"] = {**wait, "error_kind": kind, "message": message}
         result["browser_session_id"] = binding["browser_session_id"]
         result["location_context"] = binding.get("location_context")

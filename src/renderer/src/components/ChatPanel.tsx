@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
+import { deliveryMessage, publicStatus, userMessage } from '@shared/userMessages'
 import { phaseLabel, row } from '../lib/harnessProjection'
 import { StepFlow } from './StepFlow'
 import { Markdown } from './Markdown'
@@ -156,11 +157,11 @@ export function ChatPanel(): JSX.Element {
       </div>
 
       {backendError && <div role="alert" className="mx-4 mt-3 rounded-xl bg-amber-50 border border-amber-200 p-2 text-xs text-amber-800">
-        <div className="break-words">{backendError}</div>
+        <div className="break-words">{userMessage(backendError)}</div>
         <button className="mt-1 underline" onClick={() => void refresh()}>重新连接并恢复任务</button>
       </div>}
       {run && (!!run.state.browser_wait || run.phase === 'WAITING_BROWSER') && <div className="mx-4 mt-3 rounded-xl bg-brand-soft border border-brand/30 p-2 text-xs">
-        <div>{String(row(run.state.browser_wait).message || '请在浏览器中完成登录或接管操作，再继续。')}</div>
+        <div>{publicStatus(String(row(run.state.browser_wait).message || '请在浏览器中完成登录或接管操作，再继续。'), 'action')}</div>
         <div className="mt-2 flex gap-2">
           <button onClick={() => setView('browser')} className="px-2 py-1 bg-white rounded">打开浏览器</button>
           <button disabled={busy || !backendReady} onClick={() => void resumeBrowser()} className="px-2 py-1 bg-brand rounded disabled:opacity-40">已处理，继续</button>
@@ -197,7 +198,7 @@ export function ChatPanel(): JSX.Element {
                 m.role === 'user' ? 'bg-brand text-brand-ink rounded-br-md whitespace-pre-wrap shadow-card' : 'bg-[var(--surface-soft)] border border-[var(--line)] text-brand-ink rounded-tl-md'
               }`}
             >
-              {m.role === 'user' ? m.content : <Markdown>{m.content}</Markdown>}
+              {m.role === 'user' ? m.content : <Markdown>{publicStatus(m.content)}</Markdown>}
             </div>
           </div>
         ))}
@@ -220,7 +221,7 @@ export function ChatPanel(): JSX.Element {
           <p className="mt-1 whitespace-pre-wrap line-clamp-3">{pending.request.text}</p>
           {pending.request.image && <p className="mt-1">含 1 张图片</p>}
           {pending.request.selectedPoi && <p className="mt-1">已选门店：{pending.request.selectedPoi.name}</p>}
-          {pending.error && <p className="mt-1 break-words text-[11px]">{pending.error}</p>}
+          {pending.error && <p className="mt-1 break-words text-[11px]">{deliveryMessage(pending.status, pending.error)}</p>}
           <p className="mt-1 text-[11px]">{pending.sessionId === activeSessionId ? '确认送达后会取回原任务；下方新编辑的草稿会保留。' : '此消息属于另一个会话，可回到原会话查看。'}</p>
           <div className="mt-2 flex flex-wrap gap-3">
             <button disabled={deliveryBusy} className="underline disabled:opacity-40" onClick={() => void recoverDelivery(pending.status === 'not_sent')}>{pending.status === 'not_sent' ? '继续发送原请求' : '核对送达并取回'}</button>
@@ -229,7 +230,7 @@ export function ChatPanel(): JSX.Element {
             {pending.sessionId !== activeSessionId && <button className="underline" onClick={openPendingDelivery}>回到原会话</button>}
           </div>
         </div>}
-        {storageError && <div role="alert" className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">{storageError}<button className="ml-2 underline" onClick={() => void (composerReady ? persistComposer() : hydrateComposer())}>重试保存或恢复</button></div>}
+        {storageError && <div role="alert" className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">{userMessage(storageError, 'storage')}<button className="ml-2 underline" onClick={() => void (composerReady ? persistComposer() : hydrateComposer())}>重试保存或恢复</button></div>}
         {draft?.image && <div className="mb-2 flex items-center gap-2 text-xs text-[var(--muted)]"><img src={draft.image} alt="待发送图片" className="h-12 w-12 rounded-lg object-cover" /><span>图片随本次要求一起发送</span><button aria-label="移除草稿图片" className="plango-icon-button ml-auto" onClick={() => setDraft({ image: undefined })}><X size={14} /></button></div>}
         <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-soft)] p-3 shadow-card focus-within:border-brand-strong transition-colors">
           <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={onPickImage} />

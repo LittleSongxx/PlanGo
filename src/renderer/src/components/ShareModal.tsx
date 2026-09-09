@@ -1,3 +1,4 @@
+import { userMessage } from '@shared/userMessages'
 import { DialogShell } from './DialogShell'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
@@ -37,7 +38,7 @@ export function ShareModal(): JSX.Element | null {
       .then((r) => {
         if (!alive) return
         if (!r.ok || !r.id || !r.url) {
-          setError(r.error || '创建分享失败')
+          setError(userMessage(r.error || '创建分享失败', 'share'))
           return
         }
         setState({ id: r.id, url: r.url, qr: r.qr || '' })
@@ -48,7 +49,7 @@ export function ShareModal(): JSX.Element | null {
           } catch { if (alive) setFeedbackError('反馈暂时无法刷新，正在重试。') }
         }, 3000)
       })
-      .catch((e) => alive && setError(String(e)))
+      .catch((e) => alive && setError(userMessage(e, 'share')))
     return () => {
       alive = false
       if (timer.current) clearInterval(timer.current)

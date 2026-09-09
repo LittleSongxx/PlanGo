@@ -3,6 +3,7 @@ import { ipcMain, shell, type IpcMainInvokeEvent } from 'electron'
 import { z } from 'zod'
 import QRCode from 'qrcode'
 import { IPC } from '@shared/ipc'
+import { errorDiagnostic } from '@shared/userMessages'
 import { cancelBrowserRun, cancelBrowserTab } from './browser-bridge'
 import { getMainWindow, isTrustedRendererUrl } from './index'
 import { handleBrowserIntent, setBrowserLayout } from './browserView'
@@ -32,7 +33,11 @@ function trusted(event: IpcMainInvokeEvent): void {
 }
 
 function handle(channel: string, listener: (...args: any[]) => unknown): void {
-  ipcMain.handle(channel, (event, ...args) => { trusted(event); return listener(...args) })
+  ipcMain.handle(channel, async (event, ...args) => {
+    trusted(event)
+    try { return await listener(...args) }
+    catch (error) { console.warn('[plango] IPC request failed', channel, errorDiagnostic(error)); throw error }
+  })
 }
 
 async function memoryProfile(): Promise<UserProfile> {

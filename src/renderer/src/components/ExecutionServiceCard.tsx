@@ -43,7 +43,7 @@ export function ExecutionServiceCard({ revision = 0 }: { revision?: number }): J
         {check?.checked_at && <div className="mt-1 text-[11px]">{new Date(check.checked_at).toLocaleString('zh-CN')}{check.total_tokens !== undefined ? ` · 本次诊断 ${check.total_tokens} tokens` : ''}</div>}
         <p className="mt-1 text-[11px]">文本测试只验证服务 API 的一次回复；任务工具调用和图像能力仍需按任务核验。{execution.runtime_profile === 'service' ? '摘要来自 API，独立 worker 当前配置尚未单独核对。' : ''}</p>
       </div>
-      {recent && <p className="text-[11px] text-[var(--muted)] break-words">最近任务记录的模型：{recent.name || '未记录'} · {recent.status === 'ok' || recent.status === 'success' ? '调用成功' : `调用状态 ${recent.status}`}。记录更新于 {new Date(recent.recorded_at).toLocaleString('zh-CN')}；这是历史证据，不证明当前连接可用。</p>}
+      {recent && <p className="text-[11px] text-[var(--muted)] break-words">最近任务记录的模型：{recent.name || '未记录'} · {recent.status === 'ok' || recent.status === 'success' ? '调用成功' : '调用未完成'}。记录更新于 {new Date(recent.recorded_at).toLocaleString('zh-CN')}；这是历史证据，不证明当前连接可用。</p>}
       <ul className="space-y-1.5 text-[var(--muted)]">
         <li>高德：{execution.capabilities.amap_configured ? '服务已配置，支持地点、驾车/步行与有日期范围的天气查询' : '服务未配置，规划需补充带来源的地点/路线资料'}；{execution.capabilities.transit === 'same_city' ? '配置后支持同城公交换乘与标准票价估算，跨城和未支持的路段保留未知' : '公交覆盖有限，缺失路线和车费保留未知'}。</li>
         <li>浏览器优先读 DOM；只读 Vision {execution.capabilities.browser_vision_enabled ? '已启用，需模型支持图片' : '未启用'}。上传图片另需模型支持，文本测试不证明支持图片。</li>

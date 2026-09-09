@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
+import { userMessage } from '@shared/userMessages'
 import { FAVORITES } from '../lib/favorites'
 import { ArrowLeft, ArrowRight, RotateCw, Compass, ZoomIn, ZoomOut, Search, Star } from 'lucide-react'
 
@@ -65,7 +66,7 @@ export function BrowserPane(): JSX.Element {
         <div><div className="text-[25px] tracking-[-0.6px] font-semibold text-brand-ink">从一个真实页面开始</div><div className="text-[13px] leading-6 text-[var(--muted)] mt-3 max-w-sm">打开大众点评/美团并登录后，PlanGo会在这个真实浏览器中读取页面；登录态持久保存，需要时可直接接管。</div></div>
         <div className="flex flex-wrap gap-2 justify-center">{FAVORITES.map(favorite => <button key={favorite.url} onClick={() => go(favorite.url)} className="px-4 py-3 text-xs rounded-xl bg-white border border-[var(--line)] hover:border-brand-strong hover:bg-brand-soft shadow-card"><span className="mr-1">{favorite.emoji}</span>{favorite.label}</button>)}</div>
       </div>}
-      {(error || active?.error) && <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-neutral-50 p-6 text-sm"><p>{error || active?.error}</p>{active && <button className="rounded bg-brand px-4 py-2" onClick={() => action('reload')}>重新加载</button>}</div>}
+      {(error || active?.error) && <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-neutral-50 p-6 text-sm"><p>{userMessage(error || active?.error, 'browser')}</p>{active && <button className="rounded bg-brand px-4 py-2" onClick={() => action('reload')}>重新加载</button>}</div>}
       {active?.popup && !active.error && <div className="absolute inset-0 flex items-center justify-center text-sm text-neutral-500">此标签使用独立浏览器窗口，保持相同登录会话。<button className="ml-2 underline" onClick={() => action('focus')}>显示窗口</button></div>}
     </div>
   </div>
