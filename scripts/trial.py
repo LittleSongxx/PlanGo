@@ -183,7 +183,7 @@ def build(destination):
         stage = Path(temporary)
         paths = ["out", "backend/plango", "vendor/plango_harness/backend/plango_harness", "vendor/plango_harness/SNAPSHOT.json", "vendor/plango_harness/upstream-base.tar.gz",
                  "skills", "deploy", "package.json", "package-lock.json", "pyproject.toml", "uv.lock", "alembic.ini", "README.md",
-                 "docker-compose.yml", ".dockerignore", ".env.example", "start.sh", "stop.sh", "docs/试用安装.md"]
+                 "docker-compose.yml", ".dockerignore", ".env.example", "start.sh", "stop.sh", "docs/试用安装.md", "docs/独立试用验收.md"]
         paths += [f"scripts/{name}" for name in ("trial.py", "lifecycle.py", "migrate_config.py")]
         for relative in paths:
             source, target = ROOT / relative, stage / relative
