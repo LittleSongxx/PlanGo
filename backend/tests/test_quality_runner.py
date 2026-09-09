@@ -1,0 +1,98 @@
+"""Offline collector boundaries only: no API server, model or external network."""
+
+import asyncio
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from types import SimpleNamespace
+
+import httpx
+import pytest
+from plango import browser, offers
+from plango_harness.persistence.database import utc_now
+
+_paths = list(sys.path)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+try:
+    import quality_runner as runner
+finally:
+    sys.path[:] = _paths
+
+
+def test_business_clock_keeps_sql_wall_clock_and_restores_runtime():
+    async def original(row, command=None):
+        return "original-reference"
+
+    runtime = SimpleNamespace(_requirement_reference=original)
+    original_datetime = offers.datetime
+    original_browser_datetime = browser.datetime
+    before = utc_now()
+    instant = "2001-02-03T04:05:06+00:00"
+    with runner.business_clock(runtime, {"as_of": instant}) as clock:
+        assert offers.datetime.now(timezone.utc).isoformat() == instant
+        assert browser.datetime.now(timezone.utc).isoformat() == instant
+        assert asyncio.run(runtime._requirement_reference({})) == instant
+        assert before <= utc_now() <= datetime.now(timezone.utc)
+        assert clock["kind"] == "selected_business_clock"
+    assert offers.datetime is original_datetime
+    assert browser.datetime is original_browser_datetime
+    assert runtime._requirement_reference is original
+    observed = "2001-02-02T04:05:06+00:00"
+    with runner.business_clock(runtime, {"as_of": instant}, observed_at=observed):
+        assert offers.datetime.now(timezone.utc).isoformat() == instant
+        assert browser.datetime.now(timezone.utc).isoformat() == observed
+        timestamp = utc_now().timestamp()
+        assert browser.datetime.fromtimestamp(timestamp, timezone.utc) == datetime.fromtimestamp(timestamp, timezone.utc)
+        assert before <= utc_now() <= datetime.now(timezone.utc)
+    with runner.business_clock(runtime, {"as_of": None}) as clock:
+        assert clock["as_of"] is None
+        assert offers.datetime is original_datetime
+        assert browser.datetime is original_browser_datetime
+        assert runtime._requirement_reference is original
+
+
+def test_model_egress_normalizes_default_https_port_and_blocks_other_origins(tmp_path):
+    seen = []
+
+    def transport(request):
+        seen.append(str(request.url))
+        return httpx.Response(200, json={"offline": True})
+
+    async def exercise():
+        log = tmp_path / "egress.jsonl"
+        settings = SimpleNamespace(openai_base_url="https://model.invalid/v1")
+        with runner.model_only_egress(settings, log):
+            async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
+                for url in ("https://model.invalid/v1/messages", "https://model.invalid:443/v1/messages"):
+                    assert (await client.post(url, json={})).status_code == 200
+                for url in ("https://third-party.invalid/", "https://model.invalid.evil.invalid/",
+                            "https://model.invalid:8443/v1/messages", "http://model.invalid/v1/messages"):
+                    with pytest.raises(RuntimeError, match="quality_undeclared_network_blocked"):
+                        await client.post(url, json={})
+        rows = [json.loads(line) for line in log.read_text().splitlines()]
+        assert [row["allowed"] for row in rows] == [True, True, False, False, False, False]
+
+    asyncio.run(exercise())
+    assert len(seen) == 2, "Blocked requests must never reach even the mock transport"
+
+
+def test_manifest_hashes_gold_but_actor_observation_excludes_judging_material():
+    frozen = runner.manifest(["DEV-01"])
+    assert "eval/quality-v1/tasks.dev.json" in frozen["files"]
+    assert "eval/quality-v1/source-packets.dev.json" in frozen["files"]
+    for name in ("gold.dev.json", "oracle-checks.dev.json"):
+        frozen_hash = frozen["files"]["eval/quality-v1/" + name]
+        assert isinstance(frozen_hash, str) and len(frozen_hash) == 64
+        int(frozen_hash, 16)
+    assert not any(Path(path).name == ".env" for path in frozen["files"])
+    secret_gold = "GOLD_ANSWER_MUST_NOT_REACH_ACTOR"
+    case = {"case_id": "DEV-01", "scenario_origin": "real_snapshot_derived", "as_of": None,
+            "gold": secret_gold}
+    packets = {"packets": [{"packet_id": "RAW", "case_ids": ["DEV-01"], "payload": {"text": "原始券售价47元"},
+                            "observed_at": None, "provenance": {"auditor_note": secret_gold}}],
+               "supplemental_audit_packets": [{"payload": {"text": secret_gold}}]}
+    observation, _ = runner.packet_observation(case, packets)
+    assert observation["text"] == "原始券售价47元"
+    assert secret_gold not in json.dumps(observation, ensure_ascii=False)
+    assert observation["fields"]["evaluation_source"]["original_observed_at"] is None
