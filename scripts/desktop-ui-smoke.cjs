@@ -433,6 +433,15 @@ async function main() {
   writeFileSync(join(uiEvidence, '16-offer-saved-restored.png'), (await window.webContents.capturePage()).toPNG())
   console.log(JSON.stringify({ scope: 'controlled D3/D4 full desktop flow', offerEdits, merchantLookups, offerSelections, draftSaves, runId: 'smoke-run', rendererReload: true, uiEvidence, businessActions: 0 }))
   if (process.argv.includes('--soak')) await soak(uiEvidence, guest)
+  // A legacy backend can still return a technical error. Check the real UI
+  // masks it while retaining the selected offer and saved itinerary.
+  snapshot = { ...snapshot, offer_comparison: null, offer_comparison_error: "1 validation error for OfferSourceRef: input_value='PRIVATE_INPUT' https://errors.pydantic.dev/" }
+  window.webContents.reload()
+  await waitFor('readable offer failure', () => js("document.body.innerText.includes('暂时无法读取优惠信息') && document.body.innerText.includes('你之前选择的优惠仍保留')"))
+  assert.equal(await js("/PRIVATE_INPUT|pydantic|validation error|OfferSourceRef/.test(document.body.innerText)"), false)
+  assert.equal(JSON.stringify(snapshot.state.browser_task_context.offer_selection), selectedSource)
+  await sleep(250)
+  writeFileSync(join(uiEvidence, '17-friendly-offer-error.png'), (await window.webContents.capturePage()).toPNG())
   const hostUrl = window.webContents.getURL()
   await js(`location.href=${JSON.stringify(fixtureUrl)}`)
   await sleep(100)

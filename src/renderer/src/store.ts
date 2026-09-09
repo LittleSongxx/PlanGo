@@ -1,4 +1,4 @@
-import { userMessage } from '@shared/userMessages'
+import { userMessage } from '../../shared/userMessages'
 import { create } from 'zustand'
 import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent, RequirementEdit, HarnessDeliveryRequest, HarnessDeliveryResult, OfferSelection } from '@shared/types'
 import { projectHarness, projectEvents, runBusy, canResolveAction, canSelectOffer, row } from './lib/harnessProjection'
