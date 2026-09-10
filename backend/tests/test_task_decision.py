@@ -88,3 +88,34 @@ async def test_one_semantic_call_preserves_request_sources_and_real_tool_results
 
     with pytest.raises(ModelProviderUnavailable):
         await decide_task(SimpleNamespace(structured=unavailable), state)
+
+
+@pytest.mark.parametrize("raw,operation,browser", [
+    # Asking for arithmetic together with the answer names the arithmetic step.
+    ({"operation": "answer", "answer": "人均88元",
+      "calculations": [{"id": "c1", "operation": "divide", "operands": ["176", "2"]}]}, "calculate", None),
+    # A browser step attached to a delivery is extraneous, not a contradiction.
+    ({"operation": "answer", "answer": "已核对", "browser": {"operation": "extract"}}, "answer", None),
+    ({"operation": "read", "browser": {"operation": "extract"}}, "read", "extract"),
+])
+def test_recoverable_decision_shapes_are_normalised_not_discarded(raw, operation, browser):
+    """A schema rejection costs the turn and surfaces as a provider failure.
+
+    The adapter retries a rejected decision once against the schema and then returns its
+    fallback, which the task owner reports as an unavailable model even though the model
+    answered. Shapes that state their intent are normalised instead.
+    """
+    decision = TaskDecision.model_validate(raw)
+    assert decision.operation == operation
+    assert (decision.browser.operation if decision.browser else None) == browser
+
+
+@pytest.mark.parametrize("raw,message", [
+    ({"operation": "answer", "answer": "   "}, "answer_required"),
+    ({"operation": "ask", "question": ""}, "question_required"),
+    ({"operation": "calculate"}, "calculation_required"),
+    ({"operation": "plan"}, "planning_requirements_required"),
+])
+def test_unusable_decisions_are_still_rejected(raw, message):
+    with pytest.raises(ValueError, match=message):
+        TaskDecision.model_validate(raw)

@@ -91,20 +91,27 @@ class TaskDecision(BaseModel):
 
     @model_validator(mode="after")
     def required_output(self):
+        """Normalise shapes that state their intent, and reject only unusable output.
+
+        Rejecting a decision costs the whole turn: the adapter retries once against the
+        schema and then falls back, which surfaces as a provider failure even though the
+        model answered. Asking for arithmetic alongside an answer, or attaching a
+        browser step to a delivery, says plainly what was meant, so it is normalised
+        here. The deterministic calculator, the citation check and the approval boundary
+        for click and type are unchanged by this.
+        """
+        if self.calculations and self.operation != "calculate":
+            self.operation = "calculate"
+        if self.browser is not None and self.operation != "read":
+            self.browser = None
         if self.operation == "plan" and self.requirements is None:
             raise ValueError("planning_requirements_required")
-        if self.browser is not None and self.browser.operation == "finish":
-            raise ValueError("deliver_answer_in_task_answer")
         if self.operation == "answer" and not self.answer.strip():
             raise ValueError("answer_required")
         if self.operation == "ask" and not self.question.strip():
             raise ValueError("question_required")
         if self.operation == "calculate" and not self.calculations:
             raise ValueError("calculation_required")
-        if self.calculations and self.operation != "calculate":
-            raise ValueError("run_calculations_before_answering")
-        if self.browser is not None and self.operation != "read":
-            raise ValueError("browser_step_requires_read")
         return self
 
 
@@ -281,7 +288,8 @@ def validate_citations(decision: TaskDecision, sources: list[dict[str, Any]]) ->
 
 TASK_INSTRUCTIONS = """你是 PlanGo 的任务负责人。读完整原始需求、后续修改、当前规范、实际来源和工具结果，给出一个下一步。
 
-你的职责是把用户要求的事情做完。已有资料能支持的结论就直接给出：该比较的做比较，该判断的下判断，该算的先用calculate算完再答。用户问日期是星期几、几点到几点、多少钱、够不够、能不能用，这些都要给出结论，不要把可以推出的东西列成缺口。未知只限制依赖它的那一条结论，其余照常交付；资料分析不需要坐标或完整规划字段。
+你的职责是把用户要求的事情做完。已有资料能支持的结论就直接给出：该比较的做比较，该判断的下判断。用户问日期是星期几、几点到几点、多少钱、够不够、能不能用，这些都要给出结论，不要把可以推出的东西列成缺口。未知只限制依赖它的那一条结论，其余照常交付；资料分析不需要坐标或完整规划字段。
+一次只给一个下一步。要算数就本次返回operation=calculate并只填calculations，答案留到拿到工具结果后的下一次；不要在同一次里既算又答。资料还没在sources里出现时先read取回，不要凭用户消息里的文字直接下结论。
 
 操作：plan=生成或修改可保存行程；read=需要浏览器步骤，在browser给固定操作；answer=交付答案；ask=缺少只有用户能决定的信息；calculate=调用固定算术工具；refresh_place=按选中地点ID重读商家详情，不改起点、不生成新行程。
 answer是一等交付，不是rationale或待办。answer_status=complete表示用户要的交付已完成，partial表示还有请求没做完；如实说明未知本身可以是完整答案，但缺答案不能标complete。
