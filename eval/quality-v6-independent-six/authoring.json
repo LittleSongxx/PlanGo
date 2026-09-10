@@ -1,0 +1,173 @@
+{
+  "author": {
+    "identity": "独立评测编题作者（全新上下文，无实现代码与历史资料访问）",
+    "role": "dataset author only",
+    "self_approval": "none",
+    "approval_pending": "本数据集须由另一个独立上下文复核 sources/gold 后才可执行"
+  },
+  "created_at": "2026-09-10T18:45:00+08:00",
+  "created_at_timezone": "Asia/Shanghai",
+  "dataset_dir": "eval/quality-v6-independent-six/",
+  "files_written": [
+    "eval/quality-v6-independent-six/sources.json",
+    "eval/quality-v6-independent-six/tasks.json",
+    "eval/quality-v6-independent-six/gold.json",
+    "eval/quality-v6-independent-six/protocol.json",
+    "eval/quality-v6-independent-six/authoring.json"
+  ],
+  "files_not_written_by_author": [
+    "eval/quality-v6-independent-six/runtime-fixtures.json（按契约由 root 依据现有环境适配器生成，作者不编写、不覆盖）"
+  ],
+  "product_freeze": {
+    "frozen_at": "2026-09-10T07:56:42.036524+00:00",
+    "frozen_at_declared_by_root": "2026-09-10T07:56:42+00:00",
+    "product_commit": "e84c1cf99f6c4a8e50a18d5edbf74588a51b183d",
+    "authored_after_freeze": true,
+    "authoring_started_local": "2026-09-10T15:57:00+08:00 之后（冻结时刻本地为 2026-09-10T15:56:42+08:00）"
+  },
+  "files_read": [
+    {
+      "path": "eval/quality-v4-authoring-contract.md",
+      "extent": "全文",
+      "purpose": "唯一规格来源：家族／case_class／driver 分布、文件字段与 ID 规则、初态对象形状、gold 等价表示要求、limits 与 budget_ledger"
+    },
+    {
+      "path": "eval/quality-v6-independent-six/product-freeze.json",
+      "extent": "仅顶层标量键与集合长度：schema_version=2、frozen_at、product_commit、worktree_dirty=false、scope，以及 files(159 项)／model_config(8 项)／rules(2 项) 的条目数量",
+      "purpose": "确认冻结存在与冻结时刻",
+      "not_read": "文件路径与哈希清单内容、model_config 的具体取值、rules 的文本"
+    }
+  ],
+  "directory_listings_performed": [
+    "ls -la eval/quality-v6-independent-six/（编题前该目录只有 product-freeze.json）"
+  ],
+  "files_not_read": [
+    "backend/、vendor/、src/、scripts/ 下的任何实现代码",
+    "eval/quality-v2-30/、eval/quality-v3-*、eval/quality-v4-regression-six*、eval/quality-v4-independent-six/、eval/quality-v5-* 下的任何题目、gold、协议或资料",
+    "任何历史运行输出、评分、审核结果",
+    "output/ 下的任何内容（含 budget_ledger 指向的 output/tightening-F9A9ea/model-budget.jsonl，该路径只按契约原样写入 protocol.json，未打开）",
+    "docs/ 下任何文档（含 docs/架构决策.md、docs/CODEX_HANDOFF.md、docs/CODEX_实施交接.md）",
+    "仓库任何 README.md",
+    "项目里任何面试／交接类 .md 资料"
+  ],
+  "system_execution": {
+    "ran_product_under_test": false,
+    "commands_run": [
+      "读取契约与冻结清单顶层键的 python 内联命令",
+      "校验星期与全部 gold 算式的 python 内联命令（datetime + 四则运算，不 import 项目代码）",
+      "契约要求的 JSON 合法性与引用逐字命中自检命令"
+    ]
+  },
+  "boundary_notes": [
+    {
+      "item": "仓库根目录 AGENTS.md",
+      "status": "被动进入上下文，非作者主动读取",
+      "detail": "该文件由运行环境作为 always-applied workspace rule，在作者产生第一次动作之前就已注入系统提示。作者没有打开、检索或引用该文件。",
+      "content_exposed_that_touches_the_boundary": "其中包含一句关于历史批次总体表现的聚合陈述（旧六题两轮回归仍仅 1/6 通过），以及 docs/ 下若干交接文档的文件名。",
+      "impact_assessment": "该陈述只给出一个聚合通过率与文档名，没有暴露任何历史题目的题干、资料、gold、实体、措辞或实现细节，因此本批 6 题不可能是对任何历史题目的改写或针对性规避。作者未按该数字校准难度：六题的难度与结构完全由契约的家族／case_class／driver 约束、以及『日常真实感 + 保留真实未知 + 区分不同性质的金额』这三条编题目标推导而来。",
+      "declared_risk": "如果复核方认为『知道历史通过率偏低』本身即构成独立性瑕疵，请以本条记录为依据判定，作者不做辩解。"
+    },
+    {
+      "item": "用户任务说明中列出的禁读目录名",
+      "status": "不可避免地出现在任务指令里",
+      "detail": "作者因此知道存在若干历史数据集的目录名，但没有打开其中任何文件，也不知道其内容。"
+    }
+  ],
+  "violations_of_information_boundary": "无（除上面 boundary_notes 中如实披露的 AGENTS.md 被动注入）",
+  "independence_statement": "本批 6 题在产品冻结（2026-09-10T07:56:42+00:00，提交 e84c1cf9）之后由一个全新上下文编写。作者的唯一规格来源是 eval/quality-v4-authoring-contract.md，唯一另外接触的项目文件是 product-freeze.json 的顶层元数据。作者不知道被测系统的实现结构、字段布局、提示词、工具集，也不知道任何历史题目的样貌；没有运行被测系统；没有查看任何实现结果或评分。六组商家、地址、人物口吻、条款、金额与日期均为新造虚构内容。所有 gold 的日期／星期／时刻／金额都由作者用独立计算核对过，并附有可逐字比对的原文引用。作者不自我批准 gold：6 题 status 全部为 draft_pending_independent_ai_review、human_reviewers 为空。数据集发布后作者不再修改资料，也不查看实现或 actor 结果。",
+  "coverage_rationale": {
+    "family_class_driver_matrix": [
+      {
+        "case_id": "v6-reading-suihe-douhua",
+        "family": "reading",
+        "case_class": "delivery",
+        "driver": "read",
+        "source_form": "散文式店家自述 + 到店须知",
+        "user_voice": "口语、指代（『那家豆花铺』『那个点』）、为家人考虑",
+        "what_it_tests": "把『这周六』解析到 2026-09-12，据此判断工作日备料休市不适用；把满座／未满座两种情形分别算成 15:30–17:00 与最晚 21:30（含 21:00 停止点单）；辣度例外条款；并如实保留等位时长与当日备货量这两项资料明确不预告的未知。"
+      },
+      {
+        "case_id": "v6-offers-heshan-noodle",
+        "family": "offers",
+        "case_class": "bounded_answer",
+        "driver": "read",
+        "source_form": "五份并列文档：菜单节选／满减券券面／兑换券券面／活动海报文案／收银台结算须知",
+        "user_voice": "清单式点单 + 直接问『最后到底付多少』",
+        "what_it_tests": "界定清楚的规则冲突：两张券的券面条款都禁止相互叠加，而同期活动海报文案声明『各类券券通用，不设叠加限制』，五份文档都没有规定冲突时以何者为准，故叠加与否无法判定；同时必须交付两种情形下的确定金额（96／88／58 元）、指出只点一份脆骨不触发第二份半价、区分面值 38 元与购券成本 29.9 元，并说明餐位费／餐具消毒费／打包费未标注使最终实付无法闭合。"
+      },
+      {
+        "case_id": "v6-routes-baiheqiao-nanpu",
+        "family": "routes",
+        "case_class": "delivery",
+        "driver": "read",
+        "source_form": "出口指引清单 + 临时封闭例外 + 连廊时间规则 + 明示的估算口径",
+        "user_voice": "指定日期与到站时刻，附带『台阶能不走就不走』的约束和一个返程追问",
+        "what_it_tests": "按日期排除最短的 B 出口（9 月 7 日至 9 月 22 日封闭）、按无障碍要求选坡道并算出 540+90=630 米／9 分钟、按时刻判断去程 20:49 可走连廊而 21:50 返程须改 1 层大堂电梯（630+140=770 米／11 分钟）；并说明检修状态、实时人流、等候时间均未提供，分钟数只是固定步速下的估算。"
+      },
+      {
+        "case_id": "v6-edits-tanglin-yard",
+        "family": "edits",
+        "case_class": "delivery",
+        "driver": "edit",
+        "source_form": "受控初始草稿说明（散文陈述结构化初态）+ 套餐条款",
+        "user_voice": "两次稀疏口语改动，第二次以『哦对』追加并用『那天』指代原日期",
+        "what_it_tests": "两次改动都要落地（3 人→5 人、17:30→18:30、新增人均 120 元），有效总预算取 min(760, 5×120)=600；未提及的日期／时长／出行方式／半径／路线距离／地点／优惠（268 元、面值 338 元、rules_status=unknown）必须原样保留；并如实提示套餐只标示适用 2 至 3 人份、加位与开台费／服务费规则未说明；终态是可见可复核的草稿而不是自动保存。"
+      },
+      {
+        "case_id": "v6-recovery-muxidu-porridge",
+        "family": "recovery",
+        "case_class": "delivery",
+        "driver": "save_restart",
+        "source_form": "受控初始草稿说明 + 夜间营业说明",
+        "user_voice": "无用户消息（agent_input 为空）",
+        "what_it_tests": "实际界面保存一次后重启所属后端与桌面端并读回原 run：规格逐项保持、不新建第二个 run、不二次保存、plan_version 不回退；空总额不得当作 0 元（有效总预算按 6×95=570），未标示的面值不得当作 0 元或被编造，rules_status 仍为 unknown；夜间服务费与粥底食材保持未知。"
+      },
+      {
+        "case_id": "v6-boundaries-qingzhu-courtyard",
+        "family": "boundaries",
+        "case_class": "bounded_answer",
+        "driver": "read",
+        "source_form": "编号条款式（§1–§6）预订与入座须知，含多条例外",
+        "user_voice": "命令式代办 + 两个附加疑问混在一句里",
+        "what_it_tests": "界定清楚两件事：代订做不到（仅到店或电话受理、须知只是文字抄录）、余位无法判定（须知不含实时余位）；同时必须交付四项可确定结论：9 月 20 日为周日故 6 人不能订临院落的竹一至竹四、提前 3 个自然日已满足、宠物只能在院落区域（工作犬例外）导致『带狗』与『带门包间』不可兼得、88 元券周日中午不可用；并把 600 元最低消费与 10% 服务费的 660 元封底同实际消费额区分开。笼统拒答不算通过。"
+      }
+    ],
+    "distribution_check": {
+      "families": "reading / offers / routes / edits / recovery / boundaries 各一题",
+      "drivers": "read × 4（reading、offers、routes、boundaries）、edit × 1、save_restart × 1",
+      "case_classes": "delivery × 4（reading、routes、edits、recovery）、bounded_answer × 2（offers、boundaries）",
+      "bounded_answer_are_not_refusals": "两道 bounded_answer 的核心分别是『解释券面条款与活动文案之间界定清楚的叠加冲突』与『界定清楚代订不可行与余位不可判定』，两题的 must_pass 都要求同时给出可确定的具体金额与规则结论，forbidden_claims 明确禁止只回一句信息不足。",
+      "primary_source_groups": 6
+    },
+    "preserved_genuine_unknowns": [
+      "reading：当日是否满座、排队人数与等位时长、当日豆花备货量与预计售完时间、打包餐盒是否收费",
+      "offers：餐位费／餐具消毒费／打包费是否收取及其金额、两张券能否叠加（文档之间无优先级规定）",
+      "routes：站内直梯与天桥坡道当日检修状态、各层实时人流、等候电梯与过街等候时间、22:00 之后场馆通行安排、B 出口改造是否按期完工",
+      "edits：套餐超出适用人数后的加位／加锅底／加菜规则、开台费与服务费是否收取、当日余位、已选优惠 rules_status 仍为 unknown",
+      "recovery：当日余位与排队、当日食材供应、21:00 之后是否加收夜间服务费、粥底是否含虾蟹类食材、优惠面值未标示、总额上限未声明",
+      "boundaries：竹五／竹六在指定日期是否有空档、当日排队与库存、院落区域遮雨与取暖设施"
+    ],
+    "money_kinds_kept_separate": {
+      "item_price": "招牌牛腩面 38 元/碗、蒜香脆骨 26 元/份、冰镇酸梅汤 12 元/杯；套餐售价 268 元；夜粥拼盘 188 元",
+      "face_value": "满减券面值 30 元、兑换券面值 38 元、套餐标示面值 338 元、夜粥优惠面值未标示（空，非 0）",
+      "coupon_purchase_cost": "兑换券售价 29.9 元，属自付成本，不是账单折扣（结算须知明示按面值抵扣）",
+      "known_subtotal": "菜品原价小计 126 元，明确不是最终应付",
+      "conditional_calculation": "不可叠加时 96／88 元、可叠加时 58 元；竹五按最低消费封底 600×1.10=660 元；有效总预算 min(760,5×120)=600 与 6×95=570",
+      "complete_requested_cost": "offers 与 boundaries 两题都明确指出完整实付因未公示费用项而无法闭合，不能宣布为确定总额"
+    },
+    "as_of_and_time_sensitivity": "六题 as_of 均为 Asia/Shanghai 显式时间戳且都晚于冻结时刻；所有有时效前提的事实（周末与工作日口径、券有效期与周末限制、活动期 9 月 8 日至 9 月 20 日、B 出口 9 月 7 日至 9 月 22 日封闭、连廊 21:30 停止通行、包间提前 3 个自然日、88 元券限周一至周五 11:00 至 14:00）都写在 source 正文里，并在 gold 中给出推导。",
+    "verification_performed": [
+      "用独立的 datetime 计算核对了 2026-09-10（周四）、09-11（周五）、09-12（周六）、09-17（周四）、09-19（周六）、09-20（周日）、09-26（周六）、09-13（周日）、09-22（周二）、09-30（周三）",
+      "核对 15:30+90min=17:00；38×2+26+12×2=126；126−30=96；126−38=88；126−30−38=58；88+29.9=117.9；58+29.9=87.9",
+      "核对 540+90=630、630÷70=9、20:40+9min=20:49；540+90+140=770、770÷70=11、21:50+11min=22:01",
+      "核对 min(760,5×120)=600、18:30+120min=20:30；6×95=570、19:00+150min=21:30；600×1.10=660；2026-09-10 至 2026-09-20 相隔 10 天",
+      "运行契约要求的自检脚本，确认三份文件 JSON 合法、case_id 一致、source_ids 存在、全部 gold 引用在对应 source 正文中逐字命中"
+    ]
+  },
+  "known_limitations": [
+    "作者不了解被测系统的字段布局，gold 一律按语义与数学等价判定（例如接受人均×人数的等价表示、接受运行时映射后的 ID、接受 plan_version 因一次保存而递增）；若复核方发现某条 must_pass 事实上绑定了实现细节，应按契约以复核结论为准。",
+    "recovery 题的 plan_version 判据写成『不小于保存前的 5 且不回退』，以避免对保存是否递增版本作出实现假设。",
+    "reading 与 offers 两题依赖对『这周六』『明天中午』的相对时间解析，判定基准是任务给出的 as_of；gold 已在 accepted_variations 中允许显式写出推算过程。",
+    "boundaries 题假定用户那只小狗不是导盲犬／导听犬等工作犬（用户表述为『她那只小狗』）；gold 已把『指出工作犬例外』列为正确补充而非扣分项。"
+  ]
+}

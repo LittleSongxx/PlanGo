@@ -1,0 +1,68 @@
+{
+  "version": "plango.controlled-bounded.v1",
+  "name": "PlanGo-independent-six-v6",
+  "evaluation_kind": "independent_controlled",
+  "planned_case_ids": [
+    "v6-reading-suihe-douhua",
+    "v6-offers-heshan-noodle",
+    "v6-routes-baiheqiao-nanpu",
+    "v6-edits-tanglin-yard",
+    "v6-recovery-muxidu-porridge",
+    "v6-boundaries-qingzhu-courtyard"
+  ],
+  "primary_source_groups": 6,
+  "case_authoring": {
+    "independence": "本批 6 题在产品冻结之后、由一个全新上下文独立编写。作者未读取任何实现代码（backend/、vendor/、src/、scripts/），未读取任何历史题目与资料（quality-v2-30、quality-v3-*、quality-v4-regression-six*、quality-v4-independent-six、quality-v5-*），未读取任何历史运行输出、评分或审核结果，未读取 docs/ 下任何文档、output/ 下任何内容，也未运行被测系统。",
+    "frozen_product": {
+      "frozen_at": "2026-09-10T07:56:42.036524+00:00",
+      "frozen_at_declared_by_root": "2026-09-10T07:56:42+00:00",
+      "product_commit": "e84c1cf99f6c4a8e50a18d5edbf74588a51b183d",
+      "manifest_access": "只读取了 product-freeze.json 的顶层标量键（schema_version、frozen_at、product_commit、worktree_dirty、scope）与 files/model_config/rules 的条目数量，用于确认冻结存在与冻结时刻；未读取文件哈希清单内容、model_config 取值或 rules 文本。"
+    },
+    "spec_source": "eval/quality-v4-authoring-contract.md 是唯一规格来源。",
+    "authored_at": "2026-09-10T18:45:00+08:00",
+    "authored_after_freeze": true,
+    "entities_and_prose": "六组商家、地名、人物口吻、条款、金额与日期均为新造虚构内容，每份资料正文都明确标注『虚构』。资料正文与用户输入中不含任何评分要点、检查项或 gold 描述。",
+    "wording_and_source_variety": "六题的用户说话方式与资料排版形态各不相同：散文式店家自述与到店须知、五份并列文档（菜单节选／两张券面抄录／活动海报文案／收银台结算须知）、步行指引清单加临时通行例外与估算口径、受控初始草稿说明加套餐条款、受控初始草稿说明加夜间营业说明、编号条款式（§1–§6）预订与入座须知。",
+    "self_approval": "none",
+    "gold_status": "全部 6 题 status 均为 draft_pending_independent_ai_review，human_reviewers 为空，等待另一个独立上下文复核后方可执行。",
+    "disclosed_context_exposure": "仓库根目录 AGENTS.md 由运行环境作为 always-applied workspace rule 在作者第一次动作之前自动注入上下文，并非作者主动读取；详见 authoring.json 的 boundary_notes 字段。除此之外没有接触任何禁读内容。"
+  },
+  "execution_scope": {
+    "summary": "4 题为受控供给观察（supplied observations），2 题为真实 Electron 状态工作流。",
+    "supplied_observations": {
+      "case_ids": [
+        "v6-reading-suihe-douhua",
+        "v6-offers-heshan-noodle",
+        "v6-routes-baiheqiao-nanpu",
+        "v6-boundaries-qingzhu-courtyard"
+      ],
+      "driver": "read",
+      "expected_stop": "terminal",
+      "note": "每题一个 source packet，通过应用正常的浏览器观察路径供给；供给事实不保证被理解。不涉及登录、真实库存、写入、购买、预订或消息发送。"
+    },
+    "actual_electron_state_workflows": [
+      {
+        "case_id": "v6-edits-tanglin-yard",
+        "driver": "edit",
+        "expected_stop": "draft_review",
+        "note": "两次自然语言稀疏改动，终态是可见可复核的草稿，不自动保存。运行时导入的草稿是受控初始条件，不算 actor 成绩。"
+      },
+      {
+        "case_id": "v6-recovery-muxidu-porridge",
+        "driver": "save_restart",
+        "expected_stop": "saved_restored",
+        "note": "无新的用户消息。通过实际界面保存一次，关闭并重开所属 API/DB 与 Electron，读取原 run/profile；恢复期间不允许二次保存或新建 run。仅重建后端生命周期，不要求也不声称整机重启。"
+      }
+    ],
+    "fixtures": "runtime-fixtures.json 由 root 依据现有环境适配器生成，作者不编写也不覆盖隐藏 fixture。共同声明世界：原点 (29.56,106.57)、选定地点 (29.561,106.571)、单段步行 0.2km/3min/零车费、供应与天气与正餐全价未知。",
+    "no_evidence_claims": "不允许任何关于真实预订或支付已完成的证据性声明。"
+  },
+  "limits": {
+    "calls": 80,
+    "case_calls": 12,
+    "reported_tokens_stop": 120000
+  },
+  "budget_ledger": "output/tightening-F9A9ea/model-budget.jsonl",
+  "budget_note": "该额度与回归批次共用，不是新增的独立额度。"
+}
