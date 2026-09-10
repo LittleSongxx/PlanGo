@@ -4,18 +4,30 @@ import json
 from types import SimpleNamespace
 
 import pytest
+from plango.settings import DesktopSettings
 from plango.task import (
+    DELIVERY_INSTRUCTIONS,
+    RECORDED_VS_CURRENT,
+    REQUIREMENT_INSTRUCTIONS,
+    TASK_INSTRUCTIONS,
     BrowserDecision,
     Calculation,
     Citation,
+    DeliveryDecision,
     TaskDecision,
+    _prompt_tokens,
     calculate,
     decide_task,
+    _compact_context,
+    _local_date,
+    fit_decision_prompt,
     task_context,
     validate_citations,
+    _page_in_hand,
 )
 from plango_harness.agent.contracts import TripSpec
-from plango_harness.agent.model_adapter import ModelProviderUnavailable
+from plango_harness.agent.decisions import RequirementOutput
+from plango_harness.agent.model_adapter import ModelAdapter, ModelProviderUnavailable
 
 
 def test_fixed_calculations_keep_scope_and_independent_errors():
@@ -39,6 +51,17 @@ def test_fixed_calculations_keep_scope_and_independent_errors():
     assert all(result["scope"] == "arithmetic_only" for result in results)
     for operand in ["NaN", "Infinity", "1e999999999", "__import__('os').getenv('HOME')"]:
         assert calculate([Calculation(id="invalid", operation="sum", operands=[operand])])[0]["ok"] is False
+    chained = calculate([
+        Calculation(id="adults", operation="multiply", operands=["68", "2"]),
+        Calculation(id="child", operation="multiply", operands=["36", "1"]),
+        Calculation(id="total", operation="sum", operands=["adults", "child", "54"]),
+    ])
+    assert [row["value"] for row in chained if row["ok"]] == ["136", "36", "226"]
+    later = calculate(
+        [Calculation(id="again", operation="sum", operands=["adults", "child"])],
+        chained,
+    )
+    assert later[0]["ok"] is True and later[0]["value"] == "172"
 
 
 async def test_one_semantic_call_preserves_request_sources_and_real_tool_results():
@@ -52,7 +75,7 @@ async def test_one_semantic_call_preserves_request_sources_and_real_tool_results
         "browser_artifacts": [{
             "artifact_id": "page:previous", "type": "browser_page", "source": "browser",
             "url": "https://fixture.invalid/previous", "snapshot_id": "old", "observed_at": "2026-09-10T01:00:00+00:00",
-            "data": {"text": json.dumps({"records": [{"text": source_text, "price": 28.5, "confirmed": False}]}, ensure_ascii=True), "offers": [{"invented": True}]},
+            "data": {"text": json.dumps({"records": [{"text": source_text, "price": 28.5, "confirmed": False}]}, ensure_ascii=True), "offers": [{"name": "午市套餐", "price": 28.5}]},
         }],
     }
     tool_results = calculate([Calculation(id="total", operation="multiply", operands=["28.5", "3"])])
@@ -75,11 +98,18 @@ async def test_one_semantic_call_preserves_request_sources_and_real_tool_results
     assert context["sources"][0]["records"][0]["text"] == source_text
     assert {"ref": "/records/0/price", "text": "28.5"} in context["sources"][0]["records"]
     assert {"ref": "/records/0/confirmed", "text": "false"} in context["sources"][0]["records"]
-    assert "invented" not in json.dumps(context)
-    for citation in [Citation(artifact_id="missing", quote=source_text),
-                     Citation(artifact_id="page:previous", quote="预约成功")]:
-        with pytest.raises(ValueError, match="citation_"):
-            validate_citations(TaskDecision(operation="answer", answer="待核对", citations=[citation]), context["sources"])
+    assert {"ref": "/offers/0/name", "text": "午市套餐"} in context["sources"][0]["records"]
+    assert {"ref": "/offers/0/price", "text": "28.5"} in context["sources"][0]["records"]
+    decision = TaskDecision(
+        operation="answer", answer="按每人28.5元；预约条件未知。",
+        citations=[
+            Citation(artifact_id="missing", quote=source_text),
+            Citation(artifact_id="page:previous", quote="预约成功"),
+            Citation(artifact_id="page:previous", quote=source_text, record_ref=""),
+        ],
+    )
+    validate_citations(decision, context["sources"])
+    assert [item.quote for item in decision.citations] == [source_text]
     assert BrowserDecision(operation="type", idx=1, text="3").arguments() == {"idx": 1, "text": "3"}
     assert task_context(state)["tool_results"] == []
 
@@ -97,6 +127,7 @@ async def test_one_semantic_call_preserves_request_sources_and_real_tool_results
     # A browser step attached to a delivery is extraneous, not a contradiction.
     ({"operation": "answer", "answer": "已核对", "browser": {"operation": "extract"}}, "answer", None),
     ({"operation": "read", "browser": {"operation": "extract"}}, "read", "extract"),
+    ({"operation": "read", "thought": "先看当前页", "scratch": [1]}, "read", None),
 ])
 def test_recoverable_decision_shapes_are_normalised_not_discarded(raw, operation, browser):
     """A schema rejection costs the turn and surfaces as a provider failure.
@@ -119,3 +150,256 @@ def test_recoverable_decision_shapes_are_normalised_not_discarded(raw, operation
 def test_unusable_decisions_are_still_rejected(raw, message):
     with pytest.raises(ValueError, match=message):
         TaskDecision.model_validate(raw)
+
+
+def _page_just_read(text: str) -> dict:
+    request = ("这周六下午想带家里老人和小孩去看看开放时间、轮椅和推车能到哪儿、"
+               "要不要提前登记，还有下午能玩上的项目。说不清的别硬猜。")
+    return {
+        "turn_id": 1, "browser_steps": 1, "input_text": request,
+        "browser_observation": {
+            "ok": True, "outcome": "observed", "url": "https://fixture.invalid/page",
+            "title": "访客说明", "command_id": "obs-1", "snapshot_id": "snap-1",
+            "page_version": "v0", "tab_id": "tab-1", "elements": [], "tables": [],
+            "fields": {"evaluation_source": {"historical_or_controlled": True}},
+        },
+        "browser_artifacts": [{
+            "artifact_id": "page:obs-1", "type": "browser_page", "source": "browser",
+            "title": "访客说明", "url": "https://fixture.invalid/page",
+            "snapshot_id": "snap-1", "observed_at": "2026-09-10T09:00:00+00:00",
+            "data": {"text": text},
+        }],
+        "browser_task_context": {
+            "original_request": request, "request": request, "edits": [],
+            "tool_results": [{"tool": "observe_current_page", "ok": True}],
+        },
+    }
+
+
+def test_a_page_just_read_still_fits_the_next_decision():
+    """The first call's usage plus the page it just read used to trip admission.
+
+    The run then ended without a second model call, so the page never entered
+    a delivery decision. Fitting the prompt is what lets assembly start.
+    """
+    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 40
+            + "周六开放 13:00 至 18:00。材料费未公布。")
+    context = task_context(_page_just_read(text))
+    assert _page_in_hand(context)
+    unfitted = _prompt_tokens(TASK_INSTRUCTIONS + REQUIREMENT_INSTRUCTIONS,
+                              json.dumps(context, ensure_ascii=False, separators=(",", ":")))
+    remaining = 8001  # 12000 cap, 1999 already used, 2000 reserved
+    assert unfitted >= remaining - 256, "the test documents the overflow that blocked delivery"
+    system, user, fitted = fit_decision_prompt(context, remaining)
+    assert _prompt_tokens(system, user) < remaining - 256
+    assert fitted["current_request"] == context["current_request"]
+    assert fitted["sources"][0]["records"][0]["text"] == text
+    assert fitted["tool_results"][0]["tool"] == "observe_current_page"
+    assert "evaluation_source" not in json.dumps(fitted)
+
+
+async def test_decide_task_is_admitted_after_the_page_arrives():
+    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 40
+            + "周六开放 13:00 至 18:00。材料费未公布。")
+    decision = DeliveryDecision(
+        operation="answer",
+        answer="周六 13:00–18:00 开放；轮椅可到一层；材料费未公布。",
+        citations=[Citation(artifact_id="page:obs-1", quote="周六开放 13:00 至 18:00。")],
+    )
+
+    class Provider:
+        def with_structured_output(self, schema, **kwargs):
+            self.schema = schema
+            return self
+
+        def bind(self, **kwargs):
+            return self
+
+        async def ainvoke(self, messages):
+            parsed = decision.to_task() if self.schema is TaskDecision else decision
+            return {"parsed": parsed, "raw": SimpleNamespace(usage_metadata={"total_tokens": 400})}
+
+    adapter = ModelAdapter(DesktopSettings(_env_file=None, max_model_tokens=12000), model=Provider())
+    adapter.reset_run(1999, call_count=1)
+    adapter.set_run_budget(None, token_baseline=0)
+    assert adapter._remaining_tokens() == 8001
+    answer = await decide_task(adapter, _page_just_read(text))
+    assert isinstance(answer, TaskDecision)
+    assert answer.operation == "answer"
+    assert adapter.call_count == 2
+    assert adapter.last_error is None
+
+
+async def test_finished_arithmetic_still_reaches_delivery_after_a_tight_reserve():
+    """A planning reserve used to abort after calculate while the turn still had room.
+
+    The page and the arithmetic were already in hand. Admission subtracted two
+    thousand tokens meant for later planning calls, the delivery schema missed
+    that leftover, and the run reported that no next step could be formed.
+    """
+    text = (
+        "成人体验票 68 元/人。12岁以下儿童体验票 36 元/人。"
+        "公开课材料费：每人另收 18 元（成人儿童同价）。场地使用费已含在体验票内。"
+        + "茶水是否另收未标价。" * 40
+    )
+    state = _page_just_read(text)
+    state["browser_task_context"]["tool_results"] = [
+        {"id": "adults", "operation": "multiply", "operands": ["68", "2"],
+         "scope": "arithmetic_only", "ok": True, "value": "136"},
+        {"id": "child", "operation": "multiply", "operands": ["36", "1"],
+         "scope": "arithmetic_only", "ok": True, "value": "36"},
+        {"id": "materials", "operation": "multiply", "operands": ["18", "3"],
+         "scope": "arithmetic_only", "ok": True, "value": "54"},
+    ]
+    context = task_context(state)
+    decision = DeliveryDecision(
+        operation="answer",
+        answer="两名成人与一名儿童合计 226 元；茶水未标价。",
+        citations=[Citation(artifact_id="page:obs-1", quote="成人体验票 68 元/人。")],
+    )
+
+    class Provider:
+        def with_structured_output(self, schema, **kwargs):
+            self.schema = schema
+            return self
+
+        def bind(self, **kwargs):
+            return self
+
+        async def ainvoke(self, messages):
+            parsed = decision.to_task() if self.schema is TaskDecision else decision
+            return {"parsed": parsed, "raw": SimpleNamespace(usage_metadata={"total_tokens": 400})}
+
+    adapter = ModelAdapter(DesktopSettings(_env_file=None, max_model_tokens=12000), model=Provider())
+    adapter.reset_run(6680, call_count=3)
+    adapter.set_run_budget(None, token_baseline=0)
+    reserved = adapter._remaining_tokens()
+    system, user, fitted = fit_decision_prompt(context, reserved, schema=DeliveryDecision)
+    assert _prompt_tokens(system, user, schema=DeliveryDecision) >= reserved - 256
+    assert fitted["tool_results"][0]["value"] == "136"
+    answer = await decide_task(adapter, state)
+    assert answer.operation == "answer"
+    assert "226" in answer.answer
+    assert adapter.call_count == 4
+    assert adapter.last_error is None
+    assert adapter.token_reserve == 2000
+
+
+def test_compaction_keeps_the_execution_goal():
+    """A live itinerary goal is why the next step is fill/check, not a new plan."""
+    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 40
+            + "周六开放 13:00 至 18:00。材料费未公布。")
+    state = _page_just_read(text)
+    state["execution_goal"] = {
+        "kind": "itinerary_preparation", "run_id": "run-1", "plan_id": "plan-1",
+        "plan_version": 1, "approval_id": "draft:run-1:plan-1:1",
+        "request": state["input_text"],
+        "requirements": TripSpec(goal=state["input_text"], party_size=3, budget=300).model_dump(mode="json"),
+        "stops": [{"place_id": "browser:fixture", "name": "雾岚餐厅", "start_minute": 1110, "end_minute": 1200}],
+    }
+    context = task_context(state)
+    context["location_context"] = {"city": "重庆", "source": "config"}
+    context["reference_at"] = "2026-09-10T15:10:00+08:00"
+    compacted = _compact_context(context, 3)
+    assert compacted.get("execution_goal")
+    assert compacted["execution_goal"]["kind"] == "itinerary_preparation"
+    assert compacted["location_context"]["city"] == "重庆"
+    assert compacted["reference_at"] == "2026-09-10T15:10:00+08:00"
+    assert compacted["local_date"] == context["local_date"]
+    prefix = "PlanGo 真实运行：" + ("可用技能条目。" * 80)
+    _, _, fitted = fit_decision_prompt(
+        context, 8001, schema=DeliveryDecision, prefix=prefix)
+    assert fitted.get("execution_goal")
+    assert fitted["sources"][0]["records"][0]["text"] == text
+
+
+def test_decision_clock_is_the_trip_calendar_not_the_utc_date():
+    """UTC evening is already the next local day; taking .date() of the stamp plans yesterday."""
+    state = {
+        "requirement_reference_at": "2026-09-10T16:41:31+00:00",
+        "trip_spec": TripSpec(goal="今天吃饭"),
+    }
+    assert _local_date(state) == "2026-09-11"
+    context = task_context(state)
+    assert context["local_date"] == "2026-09-11"
+    assert _compact_context(context, 3)["local_date"] == "2026-09-11"
+
+
+async def test_runtime_prefix_does_not_block_the_page_just_read():
+    """The adapter charges system_prefix after fitting; omit it and the second call dies."""
+    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 40
+            + "周六开放 13:00 至 18:00。材料费未公布。")
+    decision = DeliveryDecision(
+        operation="answer",
+        answer="周六 13:00–18:00 开放；轮椅可到一层；材料费未公布。",
+        citations=[Citation(artifact_id="page:obs-1", quote="周六开放 13:00 至 18:00。")],
+    )
+
+    class Provider:
+        def with_structured_output(self, schema, **kwargs):
+            self.schema = schema
+            return self
+
+        def bind(self, **kwargs):
+            return self
+
+        async def ainvoke(self, messages):
+            parsed = decision.to_task() if self.schema is TaskDecision else decision
+            return {"parsed": parsed, "raw": SimpleNamespace(usage_metadata={"total_tokens": 400})}
+
+    adapter = ModelAdapter(DesktopSettings(_env_file=None, max_model_tokens=12000), model=Provider())
+    adapter.system_prefix = "PlanGo 真实运行：Skill 仅提供任务提示。" + ("可用技能条目。" * 80) + "\n"
+    adapter.reset_run(1999, call_count=1)
+    adapter.set_run_budget(None, token_baseline=0)
+    context = task_context(_page_just_read(text))
+    system, user, fitted = fit_decision_prompt(
+        context, adapter._remaining_tokens(), schema=DeliveryDecision, prefix=adapter.system_prefix)
+    assert fitted["sources"][0]["records"][0]["text"] == text
+    assert _prompt_tokens(system, user, schema=DeliveryDecision, prefix=adapter.system_prefix) < adapter._remaining_tokens() - 256
+    assert DELIVERY_INSTRUCTIONS in system
+    answer = await decide_task(adapter, _page_just_read(text))
+    assert answer.operation == "answer"
+    assert adapter.call_count == 2
+    assert adapter.last_error is None
+
+
+async def test_a_page_already_read_can_still_plan():
+    """A leftover page_read goal must not hide plan from the admission schema."""
+    text = "雾岚餐厅人均88元。地址：重庆市渝中区邹容路1号。"
+    state = _page_just_read(text)
+    state["execution_goal"] = {
+        "kind": "page_read", "request": state["input_text"], "source": "browser", "required_fields": [],
+    }
+    seen = []
+
+    async def structured(schema, *, system, user, fallback):
+        seen.append(schema)
+        assert schema is TaskDecision
+        return TaskDecision(
+            operation="plan",
+            requirements=RequirementOutput(party_size=3, budget=300, required_activities=["餐厅"]),
+        )
+
+    class Adapter:
+        system_prefix = ""
+        last_error = None
+
+        def _remaining_tokens(self):
+            return 8001
+
+        async def structured(self, schema, **kwargs):
+            return await structured(schema, **kwargs)
+
+    answer = await decide_task(Adapter(), state)
+    assert answer.operation == "plan"
+    assert seen == [TaskDecision]
+
+
+def test_both_decision_prompts_keep_recorded_comparison_off_the_current_value():
+    """A page-in-hand delivery used to treat a numeric ranking as the actionable pick."""
+    assert "不等于已经得到当前可执行值" in RECORDED_VS_CURRENT
+    assert "不授权任选一份" in RECORDED_VS_CURRENT
+    assert "不要再补一个可执行的首选" in RECORDED_VS_CURRENT
+    assert RECORDED_VS_CURRENT in TASK_INSTRUCTIONS
+    assert RECORDED_VS_CURRENT in DELIVERY_INSTRUCTIONS
+    assert "数字差不能用来选定其中一份作为当前适用值" in TASK_INSTRUCTIONS

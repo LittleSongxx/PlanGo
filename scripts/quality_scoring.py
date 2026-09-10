@@ -23,6 +23,10 @@ from typing import Any
 FACT_LABELS = {"supported", "contradicted", "unsupported", "conflicting", "unverifiable"}
 OUTCOMES = {"completed", "product_failure", "timeout", "external_blocked", "budget_exhausted"}
 INVALID_REASONS = {"runner_error", "fixture_missing", "gold_error"}
+LANES = ("reasoning", "persistence", "infra")
+INFRA_OUTCOMES = {"timeout", "budget_exhausted", "external_blocked"}
+PERSISTENCE_FAMILIES = {"recovery", "save_restore", "persistence"}
+PROCESS_FLAGS = ("got_sources", "calculated", "assembled", "stopped_at_expected_gate")
 
 
 def require(condition: bool, message: str) -> None:
@@ -96,6 +100,44 @@ def score_claims(claims: Any) -> dict[str, Any]:
     }
 
 
+def attempt_lane(attempt: dict[str, Any], case: dict[str, Any]) -> str:
+    declared = attempt.get("lane")
+    if declared in LANES:
+        return declared
+    if attempt.get("outcome") in INFRA_OUTCOMES:
+        return "infra"
+    if case.get("family") in PERSISTENCE_FAMILIES:
+        return "persistence"
+    return "reasoning"
+
+
+def optional_process(attempt: dict[str, Any]) -> dict[str, bool] | None:
+    raw = attempt.get("process")
+    if raw is None:
+        return None
+    require(isinstance(raw, dict), "process must be an object")
+    flags: dict[str, bool] = {}
+    for key in PROCESS_FLAGS:
+        if key not in raw:
+            continue
+        require(type(raw[key]) is bool, f"process.{key} must be an explicit boolean")
+        flags[key] = raw[key]
+    return flags
+
+
+def process_rates(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    rates: dict[str, Any] = {}
+    for key in PROCESS_FLAGS:
+        scored = [
+            row for row in rows
+            if row.get("annotation_complete") and isinstance((row.get("process") or {}).get(key), bool)
+        ]
+        if scored:
+            rates[key] = sum(row["process"][key] for row in scored) / len(scored)
+            rates[f"{key}_n"] = len(scored)
+    return rates
+
+
 def score_attempt(attempt: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
     completed = bool_field(attempt, "annotation_complete")
     if not completed:
@@ -126,6 +168,7 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     pending = len(valid) - len(annotated)
     successes = sum(row["task_success"] for row in annotated)
     with_facts = [row for row in annotated if row["claims"]["factual_claims"]]
+    delivered_facts = [row for row in with_facts if (row.get("process") or {}).get("assembled", True)]
     return {
         "planned": len(rows),
         "attempted": sum(bool(row["trial_ids"]) for row in rows),
@@ -137,6 +180,11 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "tsr": successes / len(valid) if valid and not pending else None,
         "tsr_wilson_95": wilson(successes, len(valid)) if not pending else None,
         "groundedness_macro": sum(row["claims"]["groundedness"] for row in with_facts) / len(with_facts) if with_facts and not pending else None,
+        "groundedness_on_delivered": (
+            sum(row["claims"]["groundedness"] for row in delivered_facts) / len(delivered_facts)
+            if delivered_facts and not pending else None
+        ),
+        "groundedness_delivered_tasks": len(delivered_facts),
         "groundedness_tasks": len(with_facts),
         "groundedness_na_tasks": len(annotated) - len(with_facts),
         "supported_claims": sum(row["claims"]["supported"] for row in annotated),
@@ -213,6 +261,10 @@ def summarize(document: dict[str, Any]) -> dict[str, Any]:
         }
         if valid:
             row.update(score_attempt(latest, case))
+            row["lane"] = attempt_lane(latest, case)
+            process = optional_process(latest)
+            if process is not None:
+                row["process"] = process
         rows.append(row)
     summary = aggregate(rows)
     unresolved = [row["case_id"] for row in rows if row["trial_ids"] and not row["valid_attempt"]]
@@ -233,6 +285,8 @@ def summarize(document: dict[str, Any]) -> dict[str, Any]:
         "source_correlation_notice": "Shared source/template groups make this task-level Wilson interval descriptive only." if related else "No shared registered groups detected; this does not prove independence or population representativeness.",
         "by_class": {value: aggregate([row for row in rows if row["case_class"] == value]) for value in ("delivery", "bounded_answer")},
         "by_family": {value: aggregate([row for row in rows if row["family"] == value]) for value in sorted({case["family"] for case in cases.values()})},
+        "by_lane": {value: aggregate([row for row in rows if row.get("lane") == value]) for value in LANES},
+        "process_rates": process_rates(rows),
         "cases": rows,
     }
     return report

@@ -277,11 +277,12 @@ class BrowserWorld:
             spec.location != previous.location or spec.search_location != previous.search_location
         ))
         if spec:
-            context["geocode_city"] = (spec.search_location.city_code if spec.search_location else None) or spec.location.city_code or context.get("geocode_city")
+            origin = spec.location
+            context["geocode_city"] = (spec.search_location.city_code if spec.search_location else None) or (origin.city_code if origin else None) or context.get("geocode_city")
             context["world_travel_mode"] = spec.travel_mode
             context["world_visit_date"] = spec.visit_date
             context["world_timezone"] = spec.timezone
-            context["world_location"] = spec.search_location or spec.location
+            context["world_location"] = spec.search_location or origin
             context["world_radius_km"] = spec.search_radius_km or 5.0
             if context["world_geography_changed"]:
                 context["places"] = {key: place for key, place in context.get("places", {}).items() if self._in_current_region(place)}
@@ -510,6 +511,8 @@ class BrowserWorld:
         return None
 
     async def search_places(self, query, location, *, limit=8):
+        if location is None:
+            raise ValueError("location_unknown")
         radius = min(50000, max(1, round(run_context.get().get("world_radius_km", 5.0) * 1000)))
         if not self._uses_browser():
             amap_places, amap_evidence = await self.amap.search_places(query, location, limit=limit, radius_m=radius)
@@ -739,8 +742,6 @@ class BrowserWorld:
         elif place:
             start, end = place.open_minute, place.close_minute
         opening = visible["open_now"]
-        if opening is None and start is not None and end is not None:
-            opening = start <= at_minute < end
         observed_fact = any(
             visible[k] is not None
             for k in ("open_now", "reservable", "estimated_wait_min", "open_minute")

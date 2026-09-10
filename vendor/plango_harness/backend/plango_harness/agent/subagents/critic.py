@@ -13,7 +13,13 @@ class CriticAgent:
         self, spec: TripSpec, plan: PlanCandidate, verifier: VerifierResult
     ) -> CritiqueReport:
         fallback = CritiqueReport(
-            verdict="pass" if verifier.executable else "repair",
+            verdict=(
+                "pass"
+                if verifier.executable
+                else "repair"
+                if not verifier.hard_constraints_pass
+                else "ask_user"
+            ),
             issues=verifier.hard_violations + verifier.blocking_evidence,
             repair_actions=[item.detail for item in verifier.hard_violations],
             rationale="确定性 Verifier 结果已作为审查依据",
@@ -34,9 +40,8 @@ class CriticAgent:
                 rationale=fallback.rationale,
             ),
         )
-        if not verifier.executable and output.verdict == "pass":
-            # The deterministic verifier is authoritative for hard safety;
-            # an optimistic model verdict cannot bypass repair.
+        if not verifier.hard_constraints_pass and output.verdict == "pass":
+            # Hard failures stay repairable; incomplete evidence may ask the user.
             output = output.model_copy(update={"verdict": "repair"})
         return CritiqueReport(
             verdict=output.verdict,

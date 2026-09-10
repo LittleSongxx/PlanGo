@@ -18,27 +18,36 @@ from plango_harness.domain.planning import (
 )
 
 
-def preserve_locks(plan: PlanCandidate, prior: PlanCandidate | None) -> PlanCandidate | None:
-    """Compilation refreshes facts; the user's pinned identity/time is retained separately."""
+def preserve_locks(plan: PlanCandidate, prior: PlanCandidate | None, *, window_shift_min: int = 0) -> PlanCandidate | None:
+    """Compilation refreshes facts; the user's pinned identity is retained separately.
+
+    When the user moves the time window, pinned stops move by the same offset.
+    An unchanged window keeps the original clock, so a screening that travel
+    cannot reach is still a hard miss.
+    """
     locked = {stop.place_id: stop for stop in prior.stops if stop.locked} if prior else {}
     if not locked.keys() <= {stop.place_id for stop in plan.stops}:
         return None
+    shift = int(window_shift_min or 0)
     stops = []
     for stop in plan.stops:
         original = locked.get(stop.place_id)
-        stops.append(
-            stop.model_copy(
-                update={
-                    "locked": True,
-                    "start_minute": original.start_minute,
-                    "end_minute": original.end_minute,
-                    "requested_dwell_min": original.requested_dwell_min
-                    or original.end_minute - original.start_minute,
-                }
+        if original:
+            start = min(1439, max(0, original.start_minute + shift))
+            end = min(1440, max(start + 1, original.end_minute + shift))
+            stops.append(
+                stop.model_copy(
+                    update={
+                        "locked": True,
+                        "start_minute": start,
+                        "end_minute": end,
+                        "requested_dwell_min": original.requested_dwell_min
+                        or original.end_minute - original.start_minute,
+                    }
+                )
             )
-            if original
-            else stop
-        )
+        else:
+            stops.append(stop)
     return plan.model_copy(update={"stops": stops})
 
 
@@ -68,6 +77,13 @@ class BrowserPlanEngine(PlanEngine):
             ),
             verifier=verifier,
         )
+
+
+def _category_compatible(left, right):
+    a, b = str(left or "").strip(), str(right or "").strip()
+    if not a or not b or a == "未分类" or b == "未分类":
+        return False
+    return a == b or a in b or b in a
 
 
 async def variants(state, deps):
@@ -115,7 +131,7 @@ async def variants(state, deps):
                 [
                     p
                     for p in observed_places
-                    if p.category == original.category and p.place_id not in occupied
+                    if _category_compatible(p.category, original.category) and p.place_id not in occupied
                 ],
                 key=priority,
             )

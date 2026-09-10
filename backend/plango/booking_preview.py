@@ -97,9 +97,15 @@ def _shows_time(label: str, at: str) -> bool | None:
 
 def booking_preview_outcome(state: Mapping[str, Any]) -> ExecutionOutcome | None:
     goal = state.get("execution_goal") or {}
-    if not isinstance(goal, dict) or goal.get("kind") != "page_read" or not isinstance(goal.get("request"), str):
+    if isinstance(goal, dict) and goal.get("kind") == "itinerary_preparation":
         return None
-    urls = set(_URL.findall(goal["request"]))
+    request = goal.get("request") if isinstance(goal, dict) and isinstance(goal.get("request"), str) else ""
+    if not request:
+        from .outcomes import task_text
+        request = task_text(state) or str(state.get("input_text") or "")
+    if not request:
+        return None
+    urls = set(_URL.findall(request))
     if len(urls) != 1:
         return None
     target = urls.pop()

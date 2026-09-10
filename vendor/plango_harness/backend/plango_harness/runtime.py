@@ -300,7 +300,6 @@ class PlanGoRuntime:
                 "repair_applied": False,
                 "started_at": time.time(),
                 "last_observation": {
-                    "weather_changed": "雨" in reason or "天气" in reason,
                     "refresh_discovery": False,
                 },
             }

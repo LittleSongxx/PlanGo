@@ -23,6 +23,10 @@ def test_controlled_preview_satisfied_is_never_availability_or_business_completi
     state = controlled_state()
     before = deepcopy(state)
     result = booking_preview_outcome(state)
+    from_request = deepcopy(state)
+    from_request.pop("execution_goal")
+    from_request["input_text"] = before["execution_goal"]["request"]
+    assert booking_preview_outcome(from_request) and booking_preview_outcome(from_request).status == "satisfied"
     assert result and result.status == "satisfied"
     assert result.data["scope"] == "booking_parameters"
     assert result.data["business_completed"] is False and result.data["availability_checked"] is False
@@ -126,13 +130,13 @@ def test_controlled_pending_action_and_manual_gate_cannot_be_hidden_by_preview()
 def test_controlled_notice_restart_resumes_original_request_without_cart_or_new_budget(tmp_path):
     from fastapi.testclient import TestClient
     from plango.app import create_app
-    from plango.task import BrowserDecision, TaskDecision
+    from plango.task import BrowserDecision, DeliveryDecision, TaskDecision
     from test_browser_harness import TOKEN, settings, wait_for
     config = settings(tmp_path)
     def application():
         app = create_app(config, token=TOKEN)
         async def actor(schema, **kwargs):
-            assert schema is TaskDecision
+            assert schema in {TaskDecision, DeliveryDecision}
             return TaskDecision(operation="read", browser=BrowserDecision(operation="navigate", url=URL))
         app.state.runtime.model.structured = actor
         return app

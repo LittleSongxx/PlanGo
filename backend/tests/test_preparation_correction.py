@@ -2,7 +2,7 @@
 
 import copy
 import json
-from datetime import datetime
+from datetime import date, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,7 +10,7 @@ from plango.app import create_app
 from plango.graph import artifact
 from plango.outcomes import browser_context, preparation_correction
 from plango.runtime import preparation_resume_contract
-from plango.task import TaskDecision
+from plango.task import DeliveryDecision, TaskDecision
 from plango_harness.agent.decisions import RequirementOutput
 from test_browser_harness import TOKEN, settings, wait_for
 from test_browser_navigation import browser_driver
@@ -33,19 +33,19 @@ def test_same_goal_continues_after_partial_and_unique_time_change_requires_exact
     decisions = []
 
     async def model(schema, *, fallback, **kwargs):
-        if schema is not TaskDecision:
+        if schema not in {TaskDecision, DeliveryDecision}:
             return fallback
         context = json.loads(kwargs['user'])
         if context.get('execution_goal'):
             decisions.append(kwargs['user'])
             return TaskDecision(operation='answer', answer='表单尚有多项不同，待核对。', answer_status='partial')
         return TaskDecision(operation='plan', requirements=RequirementOutput(party_size=3, budget=300,
-            visit_date=datetime.fromisoformat(context['reference_at']).date(), time_window_start='18:30', required_activities=['餐厅']))
+            visit_date=date.fromisoformat(context['local_date']), time_window_start='18:30', required_activities=['餐厅']))
 
     app.state.runtime.model.structured = model
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         run_id = client.post("/api/v1/runs", json={"input_text": "今天18:30，3人吃饭，帮我规划一个餐厅行程，总预算300元", "browser_session_id": "fixture-desktop",
-                                                "location_context": {"city": "重庆", "longitude": 106.57, "latitude": 29.56, "source": "manual"}}).json()["run_id"]
+                                                "location_context": {"city": "重庆", "longitude": 106.57, "latitude": 29.56, "source": "manual", "granularity": "point"}}).json()["run_id"]
         command, respond, approve = browser_driver(client, run_id)
         respond(command("extract"), fields={"places": [{"place_id": "browser:fixture", "name": "雾岚餐厅", "address": "重庆市渝中区邹容路1号", "category": "餐厅", "latitude": 29.56, "longitude": 106.57, "average_price": 50}],
                                            "routes": {"browser:fixture": {"driving_min": 0, "walking_min": 0, "transit_min": 0, "distance_km": 0}}})

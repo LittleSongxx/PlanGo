@@ -18,7 +18,7 @@ function haversine(lng1: number, lat1: number, lng2: number, lat2: number): numb
   return 2 * R * Math.asin(Math.sqrt(a))
 }
 
-// 行程地图（仿 weplan drawMap）：编号 Marker + AMap.Driving 途经点真实路网折线 + 自适应视野。
+// 行程地图：编号 Marker + 按计划标注的直线连接；不二次调用高德算路。
 export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
   const ref = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
@@ -79,49 +79,43 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
           map.add(marker)
         })
 
-        // 真实路网折线：逐段绘制（每段单独一条彩色线 + 中点里程标签），仿 weplan travel-map
-        const mode = plan.travel_mode || 'driving'
-        const Router = mode === 'walking' ? AMap.Walking : mode === 'driving' ? AMap.Driving : undefined
         if (pts.length >= 2) {
+          const stopNodes = plan.nodes.filter((node) => node.poi?.lng && node.poi?.lat)
+          const hasOrigin = pts[0]?.kind === 'start'
           const segColors = ['#8a5a00', '#4b7696', '#a58254', '#857198', '#526779']
+          let pending = false
           for (let i = 0; i < pts.length - 1; i++) {
             const a = pts[i]
             const b = pts[i + 1]
+            const dest = stopNodes[hasOrigin ? i : i + 1] || stopNodes[i]
+            const verified = dest?.distance_kind === 'route'
+            if (!verified) pending = true
             const color = segColors[i % segColors.length]
-            const draw = (status: string, result: any) => {
-              if (disposed) return
-              const route = status === 'complete' ? result?.routes?.[0] : null
-              if (route) {
-                const path: any[] = []
-                for (const step of route.steps || []) for (const pt of step.path || []) path.push(pt)
-                if (path.length) {
-                  new AMap.Polyline({ path, map, strokeColor: color, strokeWeight: 6, strokeOpacity: 0.92, showDir: true, lineJoin: 'round', lineCap: 'round', zIndex: 60 })
-                }
-                // 段中点里程/时长标签
-                const distance = Number(route.distance)
-                const km = distance > 0 ? distance < 1000 ? `${Math.round(distance)}米` : `${(distance / 1000).toFixed(1)}km` : ''
-                const min = route.time ? Math.max(1, Math.round(route.time / 60)) : ''
-                if (km) {
-                  const mid = path[Math.floor(path.length / 2)] || [a.lng, a.lat]
-                  new AMap.Marker({
-                    position: mid,
-                    offset: new AMap.Pixel(-24, -10),
-                    content: `<div style="background:${color};color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:9px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.25)">${mode === 'walking' ? '步行 ' : '驾车 '}${km}${min ? ' · ' + min + '分' : ''}</div>`,
-                    zIndex: 70
-                  }).setMap(map)
-                }
-              } else {
-                setEstimated(true)
-                new AMap.Polyline({ path: [[a.lng, a.lat], [b.lng, b.lat]], map, strokeColor: color, strokeStyle: 'dashed', strokeWeight: 4, strokeOpacity: 0.7 })
-              }
-              try {
-                map.setFitView(null, false, [40, 40, 40, 40])
-              } catch {
-                /* ignore */
-              }
-            }
-            if (Router) new Router({ ...(mode === 'driving' ? { policy: AMap.DrivingPolicy?.LEAST_TIME || 0, showTraffic: false } : {}), hideMarkers: true, map: null }).search([a.lng, a.lat], [b.lng, b.lat], draw)
-            else draw('unavailable', null)
+            new AMap.Polyline({
+              path: [[a.lng, a.lat], [b.lng, b.lat]],
+              map,
+              strokeColor: color,
+              strokeStyle: 'dashed',
+              strokeWeight: verified ? 5 : 4,
+              strokeOpacity: verified ? 0.85 : 0.7,
+            })
+            const label = dest?.transport_summary || (dest?.distance_kind === 'straight_line_lower_bound'
+              ? '直线下界 · 待核验'
+              : dest?.distance_km != null
+                ? `${dest.distance_km}km · 待核验`
+                : '路线待核验')
+            new AMap.Marker({
+              position: [(a.lng + b.lng) / 2, (a.lat + b.lat) / 2],
+              offset: new AMap.Pixel(-24, -10),
+              content: `<div style="background:${color};color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:9px;white-space:nowrap">${label}</div>`,
+              zIndex: 70,
+            }).setMap(map)
+          }
+          if (pending) setEstimated(true)
+          try {
+            map.setFitView(null, false, [40, 40, 40, 40])
+          } catch {
+            /* ignore */
           }
         }
         setTimeout(() => {

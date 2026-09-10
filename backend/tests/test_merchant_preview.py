@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.outcomes import browser_manual_error
-from plango.task import Citation, TaskDecision
+from plango.task import Citation, DeliveryDecision, TaskDecision
 from test_browser_harness import TOKEN, fixture, settings, wait_for
 
 
@@ -21,7 +21,7 @@ def test_app_only_menu_preview_preserves_partial_fields_without_a_vision_loop(tm
 
     async def extract(schema, *, fallback, **kwargs):
         calls.append(schema.__name__)
-        assert schema is TaskDecision
+        assert schema in {TaskDecision, DeliveryDecision}
         context = json.loads(kwargs['user'])
         if not context['sources']:
             return TaskDecision(operation='read')

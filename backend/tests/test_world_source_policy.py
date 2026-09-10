@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.browser import run_context
 from plango.settings import DesktopSettings
-from plango.task import TaskDecision
+from plango.task import DeliveryDecision, TaskDecision
 from plango.world import BrowserWorld, PageData
 from plango_harness.agent.contracts import Evidence, Location, PlaceCandidate, TripSpec
 from plango_harness.agent.decisions import RequirementOutput
@@ -28,7 +28,7 @@ def test_amap_planning_from_empty_desktop_has_draft_without_any_browser_command(
     app = create_app(settings(tmp_path).model_copy(update={"amap_webservice_key": "only-replaced-fixture-methods"}), token=TOKEN)
     async def actor(schema, *, fallback, **kwargs):
         return TaskDecision(operation='plan', requirements=RequirementOutput(party_size=1, budget=300,
-            time_window_start='18:30', visit_date=datetime.now(timezone.utc).date(), required_activities=['餐厅'])) if schema is TaskDecision else fallback
+            time_window_start='18:30', visit_date=datetime.now(timezone.utc).date(), required_activities=['餐厅'])) if schema in {TaskDecision, DeliveryDecision} else fallback
     app.state.runtime.model.structured = actor
     world = app.state.runtime.world_service.provider
     place, fact = fixture_place()
@@ -39,7 +39,7 @@ def test_amap_planning_from_empty_desktop_has_draft_without_any_browser_command(
     world.amap._get = AsyncMock(side_effect=AssertionError("No fixture may reach a real HTTP provider."))
     world.page = AsyncMock(side_effect=AssertionError("Ordinary geo planning must not require a browser tab."))
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
-        run_id = client.post("/api/v1/runs", json={"input_text": "1人，今天18:30吃饭，预算300元，安排一个餐厅行程", "browser_session_id": "empty-desktop", "location_context": {"city": "重庆", "latitude": 29.56, "longitude": 106.57, "source": "manual"}}).json()["run_id"]
+        run_id = client.post("/api/v1/runs", json={"input_text": "1人，今天18:30吃饭，预算300元，安排一个餐厅行程", "browser_session_id": "empty-desktop", "location_context": {"city": "重庆", "latitude": 29.56, "longitude": 106.57, "source": "manual", "granularity": "point"}}).json()["run_id"]
         current = wait_for(client, run_id, lambda v: bool(v.get("interrupt_id")) or v["phase"] in {"FAILED", "INFEASIBLE"})
         assert current["state"].get("selected_plan"), current
         # Amap publishes no queue data, so that stays pending. The itinerary is still
@@ -105,12 +105,12 @@ def test_selected_poi_center_template_never_geocodes_merchant_as_origin(tmp_path
     world.amap.geocode = AsyncMock(side_effect=AssertionError("Canonical selected POI must not become a global origin geocode."))
 
     async def reference_model(schema, *, fallback, **kwargs):
-        return TaskDecision(operation="plan", requirements=RequirementOutput(search_location_reference="selected_place", clarification_needed=True, clarification_fields=["context"], clarification_question="请补充日期和活动。")) if schema is TaskDecision else fallback
+        return TaskDecision(operation="plan", requirements=RequirementOutput(search_location_reference="selected_place", clarification_needed=True, clarification_fields=["context"], clarification_question="请补充日期和活动。")) if schema in {TaskDecision, DeliveryDecision} else fallback
 
     app.state.runtime.model.structured = reference_model
     text = "就以「寿司郎(大融城店)」（观音桥步行街8号大融城LG层055号）为中心，帮我排一套附近的周末方案"
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
-        created = client.post("/api/v1/runs", json={"input_text": text, "browser_session_id": "empty-desktop", "location_context": {"city": "重庆", "latitude": 29.575499, "longitude": 106.532212, "source": "manual"}, "selected_poi": {"poi_id": "fixture", "name": place.name, "source": "amap", "latitude": place.latitude, "longitude": place.longitude}})
+        created = client.post("/api/v1/runs", json={"input_text": text, "browser_session_id": "empty-desktop", "location_context": {"city": "重庆", "latitude": 29.575499, "longitude": 106.532212, "source": "manual", "granularity": "point"}, "selected_poi": {"poi_id": "fixture", "name": place.name, "source": "amap", "latitude": place.latitude, "longitude": place.longitude}})
         assert created.status_code == 202, created.text
         run_id = created.json()["run_id"]
         current = wait_for(client, run_id, lambda v: bool(v.get("interrupt_id")))
@@ -124,7 +124,7 @@ def test_selected_poi_center_template_never_geocodes_merchant_as_origin(tmp_path
         app.state.runtime.model.structured = AsyncMock(side_effect=lambda schema, *, fallback, **kwargs:
             TaskDecision(operation="plan", requirements=RequirementOutput(party_size=3, party_counts={"成人": 3}, planning_source="browser",
                 visit_date=datetime(2026, 9, 9).date(), time_window_start="18:30", duration_minutes=60,
-                clear_budget=True, clear_per_person_budget=True, required_activities=["餐厅"])) if schema is TaskDecision else fallback)
+                clear_budget=True, clear_per_person_budget=True, required_activities=["餐厅"])) if schema in {TaskDecision, DeliveryDecision} else fallback)
         reply = f"今天2026-09-0918:30到19:30，3位成人一起吃晚餐，不设预算，只按当前网页里的「{place.name}」安排一个餐厅行程，不增加其他地点。行程确认后核对预约表单，不要提交。"
         assert client.post(f"/api/v1/runs/{run_id}/messages", json={"text": reply}).status_code == 202
         reading = wait_for(client, run_id, lambda v: bool(v["state"].get("browser_wait")) or v["phase"] == "FAILED")
@@ -142,12 +142,12 @@ def test_selected_poi_center_template_never_geocodes_merchant_as_origin(tmp_path
 def test_clarification_reenters_shared_intent_entry_once(tmp_path):
     app = create_app(settings(tmp_path), token=TOKEN)
     async def actor(schema, **kwargs):
-        assert schema is TaskDecision
+        assert schema in {TaskDecision, DeliveryDecision}
         context = json.loads(kwargs['user'])
         return TaskDecision(operation='ask', question='请确认日期') if context['turn_id'] == 1 else TaskDecision(operation='read')
     app.state.runtime.model.structured = actor
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
-        run_id = client.post("/api/v1/runs", json={"input_text": "周末安排一个行程，预算待定", "browser_session_id": "empty-desktop", "location_context": {"city": "重庆", "latitude": 29.56, "longitude": 106.57, "source": "manual"}}).json()["run_id"]
+        run_id = client.post("/api/v1/runs", json={"input_text": "周末安排一个行程，预算待定", "browser_session_id": "empty-desktop", "location_context": {"city": "重庆", "latitude": 29.56, "longitude": 106.57, "source": "manual", "granularity": "point"}}).json()["run_id"]
         first = wait_for(client, run_id, lambda v: bool(v.get("interrupt_id")))
         text = "不要规划，先读取当前网页菜单"
         assert client.post(f"/api/v1/runs/{run_id}/messages", json={"text": text}).status_code == 202
@@ -163,12 +163,12 @@ def test_current_origin_reference_reuses_known_point_or_clarifies_without_geocod
     app = create_app(settings(tmp_path).model_copy(update={"amap_webservice_key": "never-called-fixture"}), token=TOKEN)
     async def actor(schema, *, fallback, **kwargs):
         return TaskDecision(operation='plan', requirements=RequirementOutput(location_reference='current_origin',
-            clarification_needed=True, clarification_fields=['visit_date'], clarification_question='请确认日期')) if schema is TaskDecision else fallback
+            clarification_needed=True, clarification_fields=['visit_date'], clarification_question='请确认日期')) if schema in {TaskDecision, DeliveryDecision} else fallback
     app.state.runtime.model.structured = actor
     geocode = AsyncMock(side_effect=AssertionError("An existing-origin reference is not a geographic search."))
     app.state.runtime.world_service.provider.amap.geocode = geocode
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
-        for point in ({"latitude": 29.575499, "longitude": 106.532212}, {}):
+        for point in ({"latitude": 29.575499, "longitude": 106.532212, "granularity": "point"}, {}):
             text = "从目前出发地址出发，周末安排一个行程，预算待定"
             rid = client.post("/api/v1/runs", json={"input_text": text, "browser_session_id": "origin-fixture", "location_context": {"city": "重庆", "source": "manual", **point}}).json()["run_id"]
             paused = wait_for(client, rid, lambda v: bool(v.get("interrupt_id")))

@@ -70,7 +70,7 @@ def install_geo_routes(app, runtime, protected):
     @app.post("/api/v1/geo/search", dependencies=protected, response_model=GeoSearchResult)
     async def search(body: GeoSearch):
         context = body.location_context
-        precise = context.granularity not in {"city", "district", "unknown"} and context.detail_source not in {"ip", "amap-ip", "amap-city", "pconline", "ip-api"}
+        precise = context.granularity in {"point", "address"} and context.detail_source not in {"ip", "amap-ip", "amap-city", "pconline", "ip-api"}
         try:
             return await provider.search_pois(body.query, city=context.city, longitude=context.longitude if precise else None,
                 latitude=context.latitude if precise else None, types=body.types, radius_m=body.radius_m, page=body.page,
@@ -110,6 +110,19 @@ def install_geo_routes(app, runtime, protected):
         if not isinstance(component, dict):
             raise HTTPException(502, "amap_invalid_response")
         now = datetime.now(timezone.utc)
+        street = component.get("streetNumber") if isinstance(component.get("streetNumber"), dict) else {}
+        street_name = _text(component.get("street")) or _text(street.get("street"))
+        street_number = _text(street.get("number"))
+        neighborhood = component.get("neighborhood") if isinstance(component.get("neighborhood"), dict) else {}
+        building = component.get("building") if isinstance(component.get("building"), dict) else {}
+        if street_name or street_number or _text(neighborhood.get("name")) or _text(building.get("name")):
+            granularity = "address"
+        elif _text(component.get("township")) or _text(component.get("district")):
+            granularity = "district"
+        elif _text(component.get("city")) or _text(component.get("province")):
+            granularity = "city"
+        else:
+            granularity = "unknown"
         return GeoLocationResult(location=GeoLocation(longitude=body.longitude, latitude=body.latitude,
             address=_text(row.get("formatted_address")), city=_text(component.get("city")) or _text(component.get("province")),
-            district=_text(component.get("district")), granularity="address"), observed_at=now, expires_at=now + timedelta(days=1))
+            district=_text(component.get("district")), granularity=granularity), observed_at=now, expires_at=now + timedelta(days=1))

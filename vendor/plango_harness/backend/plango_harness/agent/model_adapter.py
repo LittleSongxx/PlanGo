@@ -160,14 +160,7 @@ class ModelAdapter:
         return (ascii_chars + 2) // 3 + 2 * (len(text) - ascii_chars) + 256
 
     def _completion_cap(self, remaining_tokens: int, input_tokens: int) -> int:
-        return max(
-            256,
-            min(
-                self.per_call_output_cap,
-                remaining_tokens // 4,
-                remaining_tokens - input_tokens,
-            ),
-        )
+        return max(256, self.per_call_output_cap)
 
     async def _invoke(self, awaitable, *, timeout: float | None):
         if timeout is None:
@@ -330,10 +323,6 @@ class ModelAdapter:
         remaining_seconds = self._remaining_seconds()
         schema_text = json.dumps(schema.model_json_schema(), ensure_ascii=False, separators=(",", ":"))
         input_tokens = self._input_token_estimate(system, user, schema_text) + (2048 if image else 0)
-        if remaining_tokens <= input_tokens + 256:
-            self.fallback_count += 1
-            self._record("structured", "fallback", started, "model_token_budget")
-            return fallback
         if remaining_seconds is not None and remaining_seconds <= 0:
             self.fallback_count += 1
             self._record("structured", "fallback", started, "run_deadline_exhausted")
@@ -378,10 +367,6 @@ class ModelAdapter:
             parsing_error = result.get("parsing_error") if isinstance(result, dict) else None
             if isinstance(result, dict) and "parsed" in result:
                 result = result.get("parsed")
-            if self.total_tokens > self.token_limit:
-                self.fallback_count += 1
-                self._record("structured", "fallback", started, "model_token_budget")
-                return fallback
             if isinstance(parsing_error, Exception):
                 raise parsing_error
             if parsing_error is not None:
@@ -389,6 +374,12 @@ class ModelAdapter:
             if isinstance(result, schema):
                 self._record("structured", "success", started)
                 return result
+            if isinstance(result, BaseModel):
+                result = {
+                    key: value
+                    for key, value in result.model_dump().items()
+                    if key in schema.model_fields
+                }
             if isinstance(result, dict):
                 parsed = schema.model_validate(result)
                 self._record("structured", "success", started)
@@ -408,10 +399,6 @@ class ModelAdapter:
             repair_system = (system + "\n前次结构化输出未通过验证。请依据以下 JSON Schema 返回合法 JSON，不要输出 Markdown。\nJSON Schema: "
                 + schema_text + "\nValidation: " + json.dumps(_validation_hint(exc), ensure_ascii=False, separators=(",", ":")))
             input_tokens = self._input_token_estimate(repair_system, user) + (2048 if image else 0)
-            if remaining_tokens <= input_tokens + 256:
-                self.fallback_count += 1
-                self._record("structured_retry", "fallback", retry_started, "model_token_budget")
-                return fallback
             if remaining_seconds is not None and remaining_seconds <= 0:
                 self.fallback_count += 1
                 self._record("structured_retry", "fallback", retry_started, "run_deadline_exhausted")
@@ -440,10 +427,6 @@ class ModelAdapter:
                     ),
                 )
                 self._capture_usage(message)
-                if self.total_tokens > self.token_limit:
-                    self.fallback_count += 1
-                    self._record("structured_retry", "fallback", retry_started, "model_token_budget")
-                    return fallback
                 content = getattr(message, "content", message)
                 if isinstance(content, list):
                     content = "".join(str(item) for item in content)
@@ -485,10 +468,6 @@ class ModelAdapter:
         remaining_seconds = self._remaining_seconds()
         definitions = json.dumps(tools, ensure_ascii=False, separators=(",", ":"))
         input_tokens = self._input_token_estimate(system, user, definitions)
-        if remaining_tokens <= input_tokens + 256:
-            self.fallback_count += 1
-            self._record("tool_call", "fallback", started, "model_token_budget")
-            return []
         if remaining_seconds is not None and remaining_seconds <= 0:
             self.fallback_count += 1
             self._record("tool_call", "fallback", started, "run_deadline_exhausted")
@@ -524,10 +503,6 @@ class ModelAdapter:
                     ),
                 )
             self._capture_usage(response)
-            if self.total_tokens > self.token_limit:
-                self.fallback_count += 1
-                self._record("tool_call", "fallback", started, "model_token_budget")
-                return []
             calls = getattr(response, "tool_calls", None) or []
             normalized: list[dict[str, Any]] = []
             for call in calls:

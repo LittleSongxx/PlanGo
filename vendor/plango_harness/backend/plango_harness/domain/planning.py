@@ -140,7 +140,7 @@ def place_fits(spec: TripSpec, place: PlaceCandidate, evidence: list[Evidence] |
     """Prune known violations; unknown candidates remain available for evidence gathering."""
     if place.category in spec.excluded_activities:
         return False
-    if spec.max_distance_km == 0 and _distance_km(spec.location, place.latitude, place.longitude) > 0:
+    if spec.max_distance_km == 0 and spec.location is not None and _distance_km(spec.location, place.latitude, place.longitude) > 0:
         return False
     return not any(check.passed is False for check in place_fact_checks(spec, place, evidence))
 
@@ -177,7 +177,7 @@ class FallbackPlanBuilder:
         prefer = tuple(dict.fromkeys([*spec.soft_preferences, *spec.hard_constraints]))
 
         def rank(place, *, category: str | None) -> float:
-            score = place.rating - place.distance_km * 0.08
+            score = (place.rating if place.rating is not None else -1) - place.distance_km * 0.08
             if category is not None and place.category == category:
                 score += 1.5
             text = " ".join([place.name, place.category, *place.tags]).lower()
@@ -553,20 +553,26 @@ class PlanEngine:
                 )
                 continue
 
-            route, route_evidence = await read("estimate_route", (origin.latitude, origin.longitude, place.place_id, cursor),
-                lambda: self.world.estimate_route(origin, place, mode=spec.travel_mode, visit_date=spec.visit_date,
-                                                 timezone_name=spec.timezone, at_minute=cursor))
-            if isinstance(route_evidence, dict):
-                route_evidence = Evidence.model_validate(route_evidence)
-            route_evidence = route_evidence.model_copy(update={
-                "evidence_id": route_evidence.evidence_id + ":" + hashlib.sha1(f"{origin.latitude},{origin.longitude}".encode()).hexdigest()[:8],
-                "payload": {**route_evidence.payload, "destination_place_id": place.place_id,
-                            "requested_visit_date": scope[0], "requested_timezone": spec.timezone,
-                            "origin": [origin.latitude, origin.longitude], "origin_name": origin.name,
-                            "departure_minute": cursor, "requested_mode": spec.travel_mode},
-            })
-            evidence_ids.add(route_evidence.evidence_id)
-            self.last_evidence.append(route_evidence)
+            route_known = False
+            route_evidence = None
+            if origin is None:
+                route = {}
+            else:
+                route, route_evidence = await read("estimate_route", (origin.latitude, origin.longitude, place.place_id, cursor),
+                    lambda: self.world.estimate_route(origin, place, mode=spec.travel_mode, visit_date=spec.visit_date,
+                                                     timezone_name=spec.timezone, at_minute=cursor))
+                if isinstance(route_evidence, dict):
+                    route_evidence = Evidence.model_validate(route_evidence)
+                route_evidence = route_evidence.model_copy(update={
+                    "evidence_id": route_evidence.evidence_id + ":" + hashlib.sha1(f"{origin.latitude},{origin.longitude}".encode()).hexdigest()[:8],
+                    "payload": {**route_evidence.payload, "destination_place_id": place.place_id,
+                                "requested_visit_date": scope[0], "requested_timezone": spec.timezone,
+                                "origin": [origin.latitude, origin.longitude], "origin_name": origin.name,
+                                "departure_minute": cursor, "requested_mode": spec.travel_mode},
+                })
+                route_known = route_evidence.confidence > 0 and not route_evidence.expired
+                evidence_ids.add(route_evidence.evidence_id)
+                self.last_evidence.append(route_evidence)
 
             dwell = stop.requested_dwell_min or max(1, stop.end_minute - stop.start_minute)
             travel = route_minutes(route)
@@ -584,7 +590,11 @@ class PlanEngine:
                 place = place.model_copy(update={"open_minute": hours.get("open_minute"), "close_minute": hours.get("close_minute")})
                 scheduled_open = (hours["open_minute"] <= arrival < hours["close_minute"]) if hours.get("open_minute") is not None and hours.get("close_minute") is not None else None
                 supply = replace(supply, open_now=exact.get("open_now", scheduled_open), reservable=exact.get("reservable"), seats_left=exact.get("seats_left"), estimated_wait_min=exact.get("estimated_wait_min"))
-            visit_start = arrival + max(0, int(supply.estimated_wait_min or 0))  # Provisional timing; missing waits are explicitly unverified below.
+            known_wait = supply.estimated_wait_min
+            wait_min = max(0, int(known_wait)) if known_wait is not None else 0
+            # Missing waits stay unverified. Treating them as zero only schedules a
+            # provisional clock; it must not invent a completed queue.
+            visit_start = arrival + wait_min
             if stop.locked:
                 visit_start = max(visit_start, stop.start_minute)
             service_supply = supply
@@ -604,6 +614,8 @@ class PlanEngine:
             if remaining < 15 or visit_start + adjusted_dwell > window_end:
                 timing_tags.append("time_infeasible")
             if stop.locked and visit_start != stop.start_minute:
+                # Travel (and a known queue, if any) already misses the pin. An
+                # unpublished wait is not turned into a hard miss by assuming zero.
                 timing_tags.append("locked_time_conflict")
             scheduled_start = min(1439, visit_start)
             scheduled_end = min(1440, scheduled_start + adjusted_dwell)
@@ -647,11 +659,13 @@ class PlanEngine:
             fare = route.get("cost_per_person")
             transport_cost = (round(float(fare) * spec.party_size, 2)
                 if isinstance(fare, (int, float)) and not isinstance(fare, bool) and math.isfinite(fare) and fare >= 0
-                and spec.party_size is not None and route_evidence.confidence > 0 and not route_evidence.expired else None)
+                and spec.party_size is not None and route_known else None)
             fresh_cost = round(float(place.average_price) * party_size + (transport_cost or 0), 2)
-            transport_summary = route.get("summary") or f"{origin.name} → {place.name}；交通费用待核验"
+            transport_summary = route.get("summary") or (
+                f"{origin.name} → {place.name}；交通费用待核验" if origin is not None else f"起点未确认 → {place.name}；路线待核验"
+            )
             active_stop_ids = [ref for ref in stop.evidence_ids if ref in place.evidence_ids or any(item.evidence_id == ref and not item.expired and item.confidence > 0 and item.payload.get("place_id") == stop.place_id for item in dated_evidence)]
-            active_stop_ids += [route_evidence.evidence_id, supply_evidence.evidence_id]
+            active_stop_ids += [supply_evidence.evidence_id, *([route_evidence.evidence_id] if route_evidence is not None else [])]
             evidence_ids.update(active_stop_ids)
             tags = list(
                 dict.fromkeys(
@@ -671,12 +685,7 @@ class PlanEngine:
                         *(["supply_unknown"] if service_supply.open_now is None or supply.estimated_wait_min is None else []),
                         *(["not_reservable"] if service_supply.reservable is False else []),
                         *(["reservation_unknown"] if service_supply.reservable is None else []),
-                        *(
-                            ["route_unknown"]
-                            if getattr(route_evidence, "confidence", 0) <= 0
-                            or getattr(route_evidence, "expired", False)
-                            else []
-                        ),
+                        *(["route_unknown"] if not route_known else []),
                     ]
                 )
             )
@@ -695,8 +704,8 @@ class PlanEngine:
                         "supply_source": supply_source,
                         "supply_observed_at": supply_observed,
                         "supply_expires_at": supply_expires,
-                        "distance_km": float(route["distance_km"] if route.get("distance_km") is not None else _distance_km(origin, place.latitude, place.longitude)),
-                        "distance_kind": route.get("distance_kind") or ("route" if route_evidence.confidence > 0 else "straight_line_lower_bound"),
+                        "distance_km": float(route["distance_km"] if route.get("distance_km") is not None else (_distance_km(origin, place.latitude, place.longitude) if origin is not None else 0)),
+                        "distance_kind": route.get("distance_kind") or ("route" if route_known else "straight_line_lower_bound"),
                         "travel_min": travel,
                         "requested_dwell_min": dwell,
                         "tags": tags,
@@ -709,7 +718,7 @@ class PlanEngine:
                 name=place.name,
                 latitude=place.latitude,
                 longitude=place.longitude,
-                city_code=spec.location.city_code,
+                city_code=spec.location.city_code if spec.location else None,
             )
         return plan.model_copy(
             update={
@@ -783,7 +792,7 @@ async def verify_plan(
     per_person_budget = plan.total_cost / (spec.party_size or 1)
     if spec.party_size is None:
         unknown.append(ConstraintCheck(name="party_size", kind="unknown", passed=None, detail="同行人数尚未确认，无法核算预算"))
-    if plan.party_size is not None and plan.party_size != spec.party_size:
+    if spec.party_size is not None and plan.party_size is not None and plan.party_size != spec.party_size:
         hard.append(ConstraintCheck(name="party_pricing", kind="hard", passed=False, detail="计划计价人数与需求不同"))
     roles = {member.role for member in spec.party}
     if (plan.party_counts != spec.party_counts
@@ -797,6 +806,7 @@ async def verify_plan(
         hard.append(ConstraintCheck(name=code, kind="hard", passed=False, detail=f"未满足必达活动或顺序：{code}"))
     window_start = parse_minute(spec.time_window_start)
     window_end = min(1440, window_start + spec.duration_minutes)
+    explicit_window = spec.time_window_start is not None
     # Every explicit condition already gets a three-state check per stop from
     # place_fact_checks; an unobserved one is reported there, not counted as a defect.
     if plan.total_cost > spec.total_budget:
@@ -865,14 +875,24 @@ async def verify_plan(
                 elif observed.payload.get("place_id") != stop.place_id and observed.payload.get("destination_place_id") != stop.place_id:
                     unknown.append(ConstraintCheck(name=f"evidence_irrelevant:{stop.place_id}:{evidence_id}", kind="unknown", passed=None, detail="证据未关联当前站点"))
         if stop.start_minute < window_start:
-            hard.append(
-                ConstraintCheck(
-                    name="window_start",
-                    kind="hard",
-                    passed=False,
-                    detail=f"{stop.name} 早于时间窗口 {format_minute(window_start)}",
+            if explicit_window:
+                hard.append(
+                    ConstraintCheck(
+                        name="window_start",
+                        kind="hard",
+                        passed=False,
+                        detail=f"{stop.name} 早于时间窗口 {format_minute(window_start)}",
+                    )
                 )
-            )
+            else:
+                unknown.append(
+                    ConstraintCheck(
+                        name="window_start",
+                        kind="unknown",
+                        passed=None,
+                        detail=f"{stop.name} 的开始时刻尚未绑定用户窗口，当前时刻为待核验草案",
+                    )
+                )
         venue_hours = [visit_payload(evidence_by_id[ref].payload, spec, evidence_by_id[ref].observed_at) for ref in stop.evidence_ids if ref in evidence_by_id and evidence_by_id[ref].payload.get("place_id") == stop.place_id]
         if spec.visit_date is not None and not any(hours.get("open_minute") is not None or hours.get("close_minute") is not None or hours.get("visit_date") == spec.visit_date.isoformat() for hours in venue_hours):
             unknown.append(ConstraintCheck(name=f"visit_date:{stop.place_id}", kind="unknown", passed=None, detail=f"尚无适用于 {spec.visit_date.isoformat()}（{spec.timezone}）的营业或预约证据"))
@@ -894,13 +914,26 @@ async def verify_plan(
             )
         previous_end = stop.end_minute
         if stop.end_minute > window_end or "time_infeasible" in stop.tags:
-            hard.append(
-                ConstraintCheck(
-                    name="duration", kind="hard", passed=False, detail=f"{stop.name} 超出时间窗口"
+            if explicit_window:
+                hard.append(
+                    ConstraintCheck(
+                        name="duration", kind="hard", passed=False, detail=f"{stop.name} 超出时间窗口"
+                    )
                 )
-            )
+            else:
+                unknown.append(
+                    ConstraintCheck(
+                        name="duration",
+                        kind="unknown",
+                        passed=None,
+                        detail=f"{stop.name} 的时间安排尚未绑定用户窗口，当前时刻为待核验草案",
+                    )
+                )
         if "locked_time_conflict" in stop.tags:
-            hard.append(ConstraintCheck(name="locked_time", kind="hard", passed=False, detail=f"{stop.name} 无法在锁定时间前到达并完成排队"))
+            detail = f"{stop.name} 无法在锁定时间前到达"
+            if stop.estimated_wait_min is not None:
+                detail += "并完成排队"
+            hard.append(ConstraintCheck(name="locked_time", kind="hard", passed=False, detail=detail))
         if stop.requested_dwell_min and stop.end_minute - stop.start_minute < stop.requested_dwell_min:
             soft.append(ConstraintCheck(name="dwell_adjusted", kind="soft", passed=False, detail=f"{stop.name} 停留调整为 {stop.end_minute - stop.start_minute} 分钟，已为出行和排队预留时间"))
         for check in place_fact_checks(spec, stop, evidence_rows):
@@ -987,7 +1020,7 @@ async def simulate_plan(
     spec: TripSpec, plan: PlanCandidate, world: WorldProvider, seed: int
 ) -> tuple[float, str, str]:
     del world  # The plan already contains the observed supply snapshot.
-    rng = random.Random(f"{seed}:{plan.plan_id}:{spec.location.name}")
+    rng = random.Random(f"{seed}:{plan.plan_id}:{spec.location.name if spec.location else ''}")
     failures: list[str] = []
     for _ in range(120):
         elapsed = 0

@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     max_repair_rounds: int = Field(2, validation_alias="PLANGO_MAX_REPAIR_ROUNDS", ge=0, le=20)
     max_context_tokens: int = Field(6000, validation_alias="PLANGO_MAX_CONTEXT_TOKENS")
     max_model_tokens: int = Field(
-        12000, validation_alias="PLANGO_MAX_MODEL_TOKENS", ge=256, le=200000
+        200000, validation_alias="PLANGO_MAX_MODEL_TOKENS", ge=256, le=200000
     )
     event_stream: str = Field("plango:runs", validation_alias="PLANGO_EVENT_STREAM")
     memory_stream: str = Field("plango:memory-embed", validation_alias="PLANGO_MEMORY_STREAM")

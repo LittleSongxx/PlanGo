@@ -123,7 +123,7 @@ class RequirementOutput(ContractModel):
             "time_window_start": None,
             "duration_minutes": 360,
             "budget": None,
-            "location": Location(latitude=39.997, longitude=116.482),
+            "location": None,
             "weather_sensitive": True,
         }
         if self.goal:

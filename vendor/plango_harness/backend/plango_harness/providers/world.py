@@ -65,17 +65,10 @@ def _normalize_category(value: Any) -> str:
     return raw.split(";")[-1] or "本地生活"
 
 
-def _semantic_tags(name: Any, raw_type: Any, category: str) -> list[str]:
-    """Add small, deterministic tags needed by constraint verification."""
-    text = f"{name or ''} {raw_type or ''} {category}"
-    tags = [str(raw_type or "")]
-    if any(word in text for word in ("儿童", "亲子", "游乐", "幼儿")):
-        tags.append("亲子")
-    if any(word in text for word in ("公园", "景区", "广场")):
-        tags.extend(("户外", "散步"))
-    if any(word in text for word in ("室内", "商场", "博物馆", "影院", "馆")):
-        tags.append("室内")
-    return list(dict.fromkeys(tag for tag in tags if tag))
+def _semantic_tags(_name: Any, raw_type: Any, _category: str) -> list[str]:
+    """Keep the published category field; do not invent preference tags from type text."""
+    tag = str(raw_type or "").strip()
+    return [tag] if tag else []
 
 
 def _poi_candidate(item: Any, location: Location | None = None) -> PlaceCandidate | None:
@@ -239,7 +232,7 @@ class SandboxWorldProvider:
                 )
                 for p in self._places
             ]
-        candidates.sort(key=lambda p: p.rating - p.distance_km * 0.08, reverse=True)
+        candidates.sort(key=lambda p: (p.rating is not None, (p.rating or 0) - p.distance_km * 0.08), reverse=True)
         candidates = candidates[:limit]
         observed_at, expires_at = _observed(60)
         evidence = [

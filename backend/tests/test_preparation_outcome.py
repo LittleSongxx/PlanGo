@@ -2,7 +2,7 @@
 
 import copy
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 from zoneinfo import ZoneInfo
 
@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.graph import artifact
 from plango.outcomes import ExecutionGoal, preparation_outcome
-from plango.task import TaskDecision
+from plango.task import DeliveryDecision, TaskDecision
 from plango_harness.agent.contracts import PlaceCandidate, PlanCandidate, PlanStop, TripSpec
 from plango_harness.agent.decisions import RequirementOutput
 from test_browser_harness import TOKEN, settings, wait_for
@@ -50,6 +50,16 @@ def test_matching_native_form_is_ready_to_review_without_business_completion():
     assert outcome.data["entries"][0]["time_source"] == "approved_plan"
     assert outcome.evidence_ids == ["page:read-fixture"]
     assert "尚未提交" in outcome.summary
+
+
+def test_form_identity_does_not_require_chinese_headers():
+    state, observation = prepared_state()
+    form = observation["fields"]["dom"]["forms"][0]
+    form["context_text"] = "雾岚餐厅 重庆市渝中区邹容路1号 3人 18:30"
+    state["browser_artifacts"] = [artifact(observation)]
+    outcome = preparation_outcome(state)
+    assert outcome.status == "satisfied"
+    assert outcome.data["business_completed"] is False
 
 
 @pytest.mark.parametrize("case", ["body_identity", "negated_identity", "wrong_branch", "party", "date", "time", "split_forms", "truncated", "stale", "wrong_snapshot", "fake_submit", "foreign_action", "unknown_date", "old_plan", "unknown_action"])
@@ -103,7 +113,7 @@ def test_read_goal_has_real_content_or_menu_postcondition(tmp_path, user_text, t
     app = create_app(settings(tmp_path), token=TOKEN)
 
     async def finish(schema, *, fallback, **kwargs):
-        assert schema is TaskDecision
+        assert schema in {TaskDecision, DeliveryDecision}
         if not json.loads(kwargs["user"])["browser_steps"]:
             return TaskDecision(operation="read")
         return TaskDecision(operation="answer", answer=text, answer_status="complete" if expected == "SUCCEEDED" else "partial")
@@ -126,7 +136,7 @@ def test_selected_poi_is_refreshed_by_id_and_saved_with_one_fixed_evidence(tmp_p
     app.state.runtime.world_service.provider.amap.get_place = lookup
     app.state.runtime._enqueue_run = AsyncMock(return_value=True)
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
-        response = client.post("/api/v1/runs", json={"input_text": "以选中门店为中心规划", "browser_session_id": "fixture-desktop", "location_context": {"city": "重庆", "longitude": 106.5, "latitude": 29.5, "source": "manual"}, "selected_poi": {"poi_id": "TRUSTED", "name": "客户端伪造名称", "address": "客户端伪造地址", "longitude": 0.0, "latitude": 0.0, "source": "amap"}})
+        response = client.post("/api/v1/runs", json={"input_text": "以选中门店为中心规划", "browser_session_id": "fixture-desktop", "location_context": {"city": "重庆", "longitude": 106.5, "latitude": 29.5, "source": "manual", "granularity": "point"}, "selected_poi": {"poi_id": "TRUSTED", "name": "客户端伪造名称", "address": "客户端伪造地址", "longitude": 0.0, "latitude": 0.0, "source": "amap"}})
         assert response.status_code == 202, response.text
         lookup.assert_awaited_once_with("amap:TRUSTED", refresh=True)
         run_id = response.json()["run_id"]
@@ -144,17 +154,17 @@ def test_plan_approval_reaches_readonly_preparation_then_reenters_planning_on_ed
     """Full API/graph path, using explicitly synthetic provider and DOM observations."""
     app = create_app(settings(tmp_path), token=TOKEN)
     async def actor(schema, *, fallback, **kwargs):
-        if schema is not TaskDecision:
+        if schema not in {TaskDecision, DeliveryDecision}:
             return fallback
         context = json.loads(kwargs['user'])
         return TaskDecision(operation='plan', requirements=RequirementOutput(party_size=4 if context['turn_id'] > 1 else 3,
-            budget=300, visit_date=datetime.fromisoformat(context['reference_at']).date(), time_window_start='18:30', required_activities=['餐厅']))
+            budget=300, visit_date=date.fromisoformat(context['local_date']), time_window_start='18:30', required_activities=['餐厅']))
     app.state.runtime.model.structured = actor
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         run_id = client.post("/api/v1/runs", json={
             "input_text": "今天18:30，3人吃饭，帮我规划一个餐厅行程，总预算300元",
             "browser_session_id": "fixture-desktop",
-            "location_context": {"city": "重庆", "longitude": 106.57, "latitude": 29.56, "source": "manual"},
+            "location_context": {"city": "重庆", "longitude": 106.57, "latitude": 29.56, "source": "manual", "granularity": "point"},
         }).json()["run_id"]
         command, respond, approve = browser_driver(client, run_id)
         provider_fields = {

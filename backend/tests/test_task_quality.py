@@ -16,6 +16,7 @@ from plango.supply import literal_supply
 from plango.world import BrowserWorld, Item, ObservedPlace, PageData
 from plango_harness.agent.contracts import (
     Evidence,
+    Location,
     PartyMember,
     PlaceCandidate,
     PlanCandidate,
@@ -96,6 +97,7 @@ class PlanOutcomeQuality(unittest.IsolatedAsyncioTestCase):
             required_activities=["电影"],
             budget=210,
             per_person_budget=70,
+            location=Location(name="起点", latitude=31.23, longitude=121.47),
         )
         plan = PlanCandidate(
             plan_id="quality-test-screening",
@@ -170,6 +172,96 @@ class PlanOutcomeQuality(unittest.IsolatedAsyncioTestCase):
                         any("锁定" in check.detail for check in result.verifier.hard_violations)
                     )
                 self.assertEqual(result.verifier.executable, not expected_hard)
+
+
+    async def test_moving_the_window_does_not_turn_unknown_queue_into_a_hard_miss(self):
+        """A user-moved window shifts the pin; unpublished wait stays unknown, not INFEASIBLE."""
+        from plango.planning import preserve_locks
+
+        now = datetime.now(timezone.utc)
+        place = PlaceCandidate(
+            place_id="quality-test-teahouse",
+            name="离线测试茶居",
+            category="餐厅",
+            latitude=29.56,
+            longitude=106.57,
+            average_price=64,
+            price_known=True,
+            source="browser",
+        )
+        spec = TripSpec(
+            goal="人数与时间已改，排队未知",
+            party_size=6,
+            required_activities=["餐厅"],
+            time_window_start="11:30",
+            duration_minutes=180,
+            location=Location(name="起点", latitude=29.56, longitude=106.57),
+        )
+        prior = PlanCandidate(
+            plan_id="quality-test-shift",
+            party_size=4,
+            total_cost=128,
+            stops=[
+                PlanStop(
+                    place_id=place.place_id,
+                    name=place.name,
+                    category="餐厅",
+                    start_minute=633,
+                    end_minute=783,
+                    locked=True,
+                    estimated_cost=128,
+                )
+            ],
+        )
+        compiled = PlanCandidate(
+            plan_id="quality-test-shift",
+            party_size=6,
+            total_cost=192,
+            stops=[
+                PlanStop(
+                    place_id=place.place_id,
+                    name=place.name,
+                    category="餐厅",
+                    start_minute=690,
+                    end_minute=840,
+                    estimated_cost=192,
+                )
+            ],
+        )
+        plan = preserve_locks(compiled, prior, window_shift_min=60)
+        self.assertEqual((plan.stops[0].start_minute, plan.stops[0].end_minute), (693, 843))
+
+        async def get_place(_):
+            return place
+
+        async def route(origin, destination, **kwargs):
+            return {"walking_min": 3, "distance_km": 0.2}, Evidence(
+                evidence_id="quality-walk",
+                source="browser",
+                observed_at=now,
+                expires_at=now + timedelta(minutes=10),
+                payload={"place_id": place.place_id},
+            )
+
+        async def supply(place_id, at_minute):
+            return Supply(
+                place_id=place_id,
+                open_now=True,
+                estimated_wait_min=None,
+                reservable=None,
+                seats_left=None,
+                source="browser",
+                observed_at=now,
+                expires_at=now + timedelta(minutes=2),
+            )
+
+        world = SimpleNamespace(get_place=get_place, estimate_route=route, get_supply=supply)
+        result = await BrowserPlanEngine(world).evaluate(spec, plan)
+        self.assertTrue(result.verifier.hard_constraints_pass)
+        self.assertTrue(result.verifier.unknown_evidence)
+        self.assertTrue(result.verifier.executable)
+        self.assertFalse(result.verifier.blocking_evidence)
+        self.assertIsNone(result.plan.stops[0].estimated_wait_min)
 
 
 class FactAttributionQuality(unittest.IsolatedAsyncioTestCase):

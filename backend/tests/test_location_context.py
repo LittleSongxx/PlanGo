@@ -9,7 +9,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from plango.app import create_app as product_app
 from plango.settings import DesktopSettings
-from plango.task import TaskDecision
+from plango.task import DeliveryDecision, TaskDecision
 from plango_harness.agent.contracts import Location
 from plango_harness.agent.decisions import RequirementOutput
 
@@ -23,7 +23,7 @@ def create_app(*args, **kwargs):
         '预算改为500元': RequirementOutput(budget=500),
     }
     async def actor(schema, *, fallback, **kwargs):
-        if schema is not TaskDecision:
+        if schema not in {TaskDecision, DeliveryDecision}:
             return fallback
         text = json.loads(kwargs['user'])['current_request']
         return TaskDecision(operation='read') if text == '读取菜单' else TaskDecision(operation='plan', requirements=outputs[text])
@@ -68,6 +68,7 @@ class LocationContextCheck(unittest.TestCase):
                                 "longitude": lon,
                                 "latitude": lat,
                                 "source": "device",
+                                "granularity": "point",
                             },
                         },
                     )

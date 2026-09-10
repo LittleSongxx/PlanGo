@@ -41,6 +41,7 @@ from plango_harness.agent.subagents import (
     ReflectionAgent,
     RequirementAgent,
 )
+from plango_harness.agent.subagents.requirement import RequirementNotUsable
 from plango_harness.agent.subgraphs import (
     advocate_subgraph,
     critic_subgraph,
@@ -53,6 +54,7 @@ from plango_harness.domain.planning import (
     ToolBudgetExceeded,
     compile_plan_draft,
     goal_errors,
+    parse_minute,
 )
 from plango_harness.memory.repository import MemoryRepository
 from plango_harness.persistence.actions import ActionLedger
@@ -78,7 +80,7 @@ class GraphDeps:
     max_context_tokens: int = 6000
     max_tool_calls: int = 48
     max_run_seconds: int = 300
-    max_model_tokens: int = 12000
+    max_model_tokens: int = 200000
     node_timeout_seconds: int = 60
 
     def tool_limit(self, state) -> int:
@@ -350,15 +352,15 @@ def _coordinator_decision(state: PlanGoState, deps: GraphDeps) -> SupervisorDeci
     if isinstance(verifier, dict):
         verifier = VerifierResult.model_validate(verifier)
     if verifier is not None and not verifier.executable:
+        critique = state.get("critique")
+        critique_verdict = (
+            critique.get("verdict")
+            if isinstance(critique, dict)
+            else getattr(critique, "verdict", "")
+        )
+        if critique_verdict == "ask_user":
+            return SupervisorDecision(next_action="ask_user", reason="Critic 需要用户补充约束")
         if not verifier.hard_constraints_pass:
-            critique = state.get("critique")
-            critique_verdict = (
-                critique.get("verdict")
-                if isinstance(critique, dict)
-                else getattr(critique, "verdict", "")
-            )
-            if critique_verdict == "ask_user":
-                return SupervisorDecision(next_action="ask_user", reason="Critic 需要用户补充约束")
             if state.get("repair_applied"):
                 return SupervisorDecision(next_action="finish", reason="修复后硬约束仍未通过")
             if state.get("repair_round", 0) < deps.max_repair_rounds:
@@ -468,10 +470,28 @@ def build_graph(
             # across graph resume; do not ask a second model to reinterpret it.
             output = RequirementOutput.model_validate(proposal["output"])
         else:
-            output = await requirement_agent.run(
-                state["input_text"], state.get("memory_context", []), previous_spec,
-                state.get("messages", []), reference_at=state.get("requirement_reference_at"),
-            )
+            try:
+                output = await requirement_agent.run(
+                    state["input_text"], state.get("memory_context", []), previous_spec,
+                    state.get("messages", []), reference_at=state.get("requirement_reference_at"),
+                )
+            except RequirementNotUsable as error:
+                if previous_spec is not None:
+                    return {
+                        "messages": [],
+                        "trip_spec": previous_spec,
+                        "phase": RunPhase.REQUIREMENTS_READY,
+                        "clarification": None,
+                        "reason": "本轮需求未能形成可用补丁，已保留上一版需求。",
+                        "trace": _trace(state, "requirement_unusable", error=str(error)),
+                    }
+                return {
+                    "messages": [],
+                    "phase": RunPhase.FAILED,
+                    "clarification": None,
+                    "reason": "本轮未能形成可用需求，不是模型服务配置故障。",
+                    "trace": _trace(state, "requirement_unusable", error=str(error)),
+                }
         accepted = state.get("trip_spec") or previous_spec
         merge_base = TripSpec.model_validate(accepted) if accepted is not None else None
         spec = output.to_trip_spec(state["input_text"], base=merge_base)
@@ -504,7 +524,7 @@ def build_graph(
         selected_raw = state.get("selected_poi") or {}
         selected_poi = PlaceCandidate.model_validate(selected_raw) if selected_raw else None
         selected_location = Location(name=selected_poi.name, latitude=selected_poi.latitude, longitude=selected_poi.longitude) if selected_poi else None
-        location_name: str | None = output.location_name or (previous_spec.location.name if previous_spec else None)
+        location_name: str | None = output.location_name or (previous_spec.location.name if previous_spec and previous_spec.location else None)
         resolved_location = None
         tool_call_count = int(state.get("tool_call_count", 0))
         geocode_response: dict[str, Any] | None = None
@@ -512,6 +532,26 @@ def build_graph(
         location_origin = None
         if origin_pending:
             resolved_location = previous_spec.location if previous_spec else None
+            # A first-turn client point may already be the origin. An edit that
+            # left location unresolved must not invent coordinates from context.
+            if resolved_location is None and previous_spec is None and hasattr(deps.world, "requirement_origin"):
+                location_name, resolved_location, location_origin = await deps.world.requirement_origin(
+                    state, output.location_name, previous_spec
+                )
+                if resolved_location is not None:
+                    origin_pending = False
+                    kept = [
+                        field
+                        for field in output.clarification_fields
+                        if field not in {"location", "location_name", "location_reference"}
+                    ]
+                    output = output.model_copy(
+                        update={
+                            "clarification_fields": kept,
+                            "clarification_needed": bool(kept) and output.clarification_needed,
+                            "clarification_question": output.clarification_question if kept else "",
+                        }
+                    )
         elif hasattr(deps.world, "requirement_origin"):
             location_name, resolved_location, location_origin = await deps.world.requirement_origin(state, output.location_name, previous_spec)
             if offer_selection and previous_spec is None and resolved_location is None and not output.location_name and output.location_reference is None:
@@ -991,7 +1031,16 @@ def build_graph(
                     "draft_errors": draft_errors,
                 }
         if hasattr(deps.planner, "preserve_locks"):
-            selected = deps.planner.preserve_locks(selected, prior)
+            shift = 0
+            previous = state.get("previous_spec")
+            if previous is not None and spec.time_window_start:
+                prior_spec = TripSpec.model_validate(previous) if isinstance(previous, dict) else previous
+                if prior_spec.time_window_start:
+                    shift = parse_minute(spec.time_window_start) - parse_minute(prior_spec.time_window_start)
+            try:
+                selected = deps.planner.preserve_locks(selected, prior, window_shift_min=shift)
+            except TypeError:
+                selected = deps.planner.preserve_locks(selected, prior)
             if selected is None:
                 return {"phase": RunPhase.FAILED, "selected_plan": None, "verifier": None,
                         "clarification": None, "plan_draft": draft, "draft_errors": draft_errors,
@@ -1101,7 +1150,7 @@ def build_graph(
         spec = state.get("trip_spec")
         assert spec is not None
         report = await critic_agent.run(spec, selected, verifier)
-        if (not verifier.executable and not state.get("repair_applied")
+        if (not verifier.hard_constraints_pass and not state.get("repair_applied")
                 and state.get("repair_round", 0) < deps.max_repair_rounds):
             report = report.model_copy(update={"verdict": "repair"})
         repair_round = state.get("repair_round", 0) + (1 if report.verdict == "repair" else 0)
@@ -1510,9 +1559,7 @@ def build_graph(
             "deadline_at": state.get("deadline_at")
             or (state.get("started_at") or time.time()) + deps.max_run_seconds,
             "timeout_stage": None,
-            "last_observation": {
-                "weather_changed": "雨" in str(text) or "天气" in str(text)
-            },
+            "last_observation": {},
             "trace": _trace(state, "clarification_received"),
         }
 
@@ -1539,19 +1586,6 @@ def build_graph(
         }
 
     async def coordinate(state: PlanGoState) -> dict[str, Any]:
-        if int(state.get("model_token_count", 0)) >= deps.token_limit(state):
-            return {
-                "phase": RunPhase.FAILED,
-                "outcome": RunPhase.FAILED.value,
-                "reason": "超过本次运行的模型 token 上限",
-                "next_action": "finish",
-                "trace": _trace(
-                    state,
-                    "budget_exhausted",
-                    budget="model_tokens",
-                    limit=deps.token_limit(state),
-                ),
-            }
         started_at = state.get("started_at")
         deadline_at = (state.get("turn_budget") or {}).get("deadline_at") or state.get("deadline_at") or (
             started_at + deps.max_run_seconds if started_at else None
@@ -1585,6 +1619,13 @@ def build_graph(
         # enforce data/approval prerequisites; do not reinterpret the route here.
         action = decision.next_action
         requested_action = action
+        override_reason = ""
+        if action != "finish" and _semantic_cycle(
+            list(state.get("trace") or [])
+            + [{"event": "supervisor_decision", "payload": {"effective_action": action}}]
+        ):
+            action = "finish"
+            override_reason = "semantic_cycle"
         verifier = state.get("verifier")
         if isinstance(verifier, dict):
             verifier = VerifierResult.model_validate(verifier)
@@ -1605,7 +1646,7 @@ def build_graph(
                 "supervisor_decision",
                 requested_action=requested_action,
                 effective_action=action,
-                override_reason="",
+                override_reason=override_reason,
                 coordinator_reason=_short_reason(decision.reason),
                 routing="deterministic_coordinator",
                 component_kind="coordinator",
@@ -1619,7 +1660,14 @@ def build_graph(
                 model_last_latency_ms=deps.model.last_latency_ms,
             ),
         }
-        if not terminal_phase and action == "finish" and verifier is not None and not verifier.executable:
+        if not terminal_phase and override_reason == "semantic_cycle":
+            result.update(
+                {
+                    "phase": RunPhase.FAILED,
+                    "reason": "同轮规划振荡，停止重复搜索",
+                }
+            )
+        elif not terminal_phase and action == "finish" and verifier is not None and not verifier.executable:
             result.update(
                 {
                     "phase": RunPhase.INFEASIBLE,

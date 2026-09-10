@@ -106,6 +106,10 @@ class ObservedForm(BaseModel):
 
 
 def read_goal(state, context):
+    if (state.get("browser_image_turn_id") == state.get("turn_id", 1)
+            and str(state.get("browser_image_context") or "").strip()
+            and (context.get("mode") != "browser" or context.get("kind") != "extract")):
+        return ReadGoal(kind="page_read", request=task_text({**state, "browser_task_context": context}), source="user_image").model_dump(mode="json")
     if context.get("mode") != "browser" or context.get("kind") != "extract":
         return None
     request = task_text({**state, "browser_task_context": context})
@@ -212,7 +216,10 @@ def _read_page_fields(data, title):
 
 
 def read_outcome(state, now=None):
-    raw = state.get("execution_goal") or read_goal(state, state.get("browser_task_context") or {})
+    goal = state.get("execution_goal") or {}
+    if isinstance(goal, dict) and goal.get("kind") == "itinerary_preparation":
+        return None
+    raw = goal if isinstance(goal, dict) and goal.get("kind") in {"page_read", "menu_read"} else read_goal(state, state.get("browser_task_context") or {})
     if not raw or raw.get("kind") not in {"page_read", "menu_read"}:
         return None
     goal = ReadGoal.model_validate(raw)
@@ -274,13 +281,25 @@ def read_outcome(state, now=None):
     )
 
 
-def _form_control(form, aliases):
+def _form_control(form, aliases, input_type=None):
     values = []
     for control in form.controls:
         labels = {re.sub(r"[\s:：*（）()]", "", value).casefold() for value in [control.name, *control.label.split(" / ")]}
         if not control.disabled and labels & aliases and isinstance(control.value, str):
             values.append(control)
-    return values[0] if len(values) == 1 else None
+    if len(values) == 1:
+        return values[0]
+    if input_type:
+        typed = [control for control in form.controls if not control.disabled and control.input_type == input_type and isinstance(control.value, str)]
+        return typed[0] if len(typed) == 1 else None
+    return None
+
+
+def _form_identity(compact, name, address):
+    if not name or not address or name not in compact or address not in compact:
+        return False
+    first = compact.find(name)
+    return first >= 0 and not re.search(r"并非|不是|非本次", compact[:first])
 
 
 def preparation_outcome(state, now=None):
@@ -325,14 +344,10 @@ def preparation_outcome(state, now=None):
                     continue
                 if not form.form_id.startswith(page["snapshot_id"] + ":"):
                     continue
-                # Merchant identity must be inside this native form, not a page header/footer or another form.
                 compact = re.sub(r"\s+", " ", form.context_text).strip()
-                name = re.escape(re.sub(r"\s+", " ", stop.name).strip())
-                address = re.escape(re.sub(r"\s+", " ", stop.address).strip())
-                # ponytail: explicit form identity headers only; other layouts need source-specific adapters.
-                header = r"^(?:(?:预约信息|预订信息|预约表单|预订表单)[:：]?\s+)?(?:(?:商家|门店|餐厅|店铺|预约商家|预约门店)[:：]\s*)?"
-                identity = header + name + r"[\s,，]+(?:(?:地址|门店地址|商家地址|餐厅地址)[:：]\s*)?" + address + r"(?=$|[\s,，])"
-                if not re.search(identity, compact):
+                name = re.sub(r"\s+", " ", stop.name).strip()
+                address = re.sub(r"\s+", " ", stop.address).strip()
+                if not _form_identity(compact, name, address):
                     continue
                 elements = {element.get("idx"): element for element in data.get("elements") or [] if isinstance(element, dict)}
                 if any(control.idx not in elements or elements[control.idx].get("tag") not in {"input", "textarea", "select"}
@@ -340,9 +355,9 @@ def preparation_outcome(state, now=None):
                        or elements[control.idx].get("disabled") is True for control in form.controls if not control.disabled):
                     continue
                 controls = {
-                    "party_size": _form_control(form, {"人数", "用餐人数", "就餐人数", "预约人数", "同行人数", "party_size", "partysize", "guests", "people"}),
-                    "date": _form_control(form, {"日期", "预约日期", "预订日期", "到店日期", "用餐日期", "visit_date", "reservation_date", "date"}),
-                    "time": _form_control(form, {"时间", "预约时间", "预订时间", "到店时间", "用餐时间", "visit_time", "reservation_time", "time"}),
+                    "party_size": _form_control(form, {"人数", "用餐人数", "就餐人数", "预约人数", "同行人数", "party_size", "partysize", "guests", "people"}, "number"),
+                    "date": _form_control(form, {"日期", "预约日期", "预订日期", "到店日期", "用餐日期", "visit_date", "reservation_date", "date"}, "date"),
+                    "time": _form_control(form, {"时间", "预约时间", "预订时间", "到店时间", "用餐时间", "visit_time", "reservation_time", "time"}, "time"),
                 }
                 expected_time = f"{stop.start_minute // 60:02d}:{stop.start_minute % 60:02d}"
                 if any(control is None for control in controls.values()):
@@ -355,9 +370,7 @@ def preparation_outcome(state, now=None):
                 if action.scheme not in {"http", "https"} or action.username or action.password or (action.scheme, action.netloc) != (source.scheme, source.netloc):
                     continue
                 submits = [index for index in form.submit_indices if index in elements and elements[index].get("tag") in {"button", "input"}
-                           and elements[index].get("input_type") in {"submit", "image"} and not elements[index].get("disabled")
-                           and re.sub(r"\s+", "", str(elements[index].get("text") or elements[index].get("name") or ""))
-                           in {"预约", "提交预约", "确认预约", "立即预约", "预订", "提交预订", "确认预订", "立即预订", "订位", "确认订位", "取号", "确认取号"}]
+                           and elements[index].get("input_type") in {"submit", "image"} and not elements[index].get("disabled")]
                 if len(submits) != 1:
                     continue
                 matching_form_count += 1

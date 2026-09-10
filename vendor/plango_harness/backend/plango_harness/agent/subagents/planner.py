@@ -75,9 +75,6 @@ class PlannerAgent:
         if not places:
             raise ValueError("no_observed_places")
         party_size = spec.party_size or 1
-        goal = f"{' '.join(spec.hard_constraints)} {' '.join(spec.soft_preferences)}"
-        wants_child = any(word in goal for word in ("孩子", "亲子", "带娃", "儿童"))
-        wants_indoor = any(word in goal for word in ("室内", "避雨", "下雨"))
         report_boost: dict[str, float] = {}
         report_penalty: dict[str, float] = {}
         for report in advocate_reports or []:
@@ -98,12 +95,7 @@ class PlannerAgent:
                     report_boost[str(place_id)] = report_boost.get(str(place_id), 0) + 0.35
 
         def score(place: PlaceCandidate) -> float:
-            value = place.rating - place.distance_km * 0.08
-            text = " ".join([place.name, place.category, *place.tags])
-            if wants_child and any(word in text for word in ("亲子", "儿童", "动物")):
-                value += 0.8
-            if wants_indoor and "室内" in text:
-                value += 0.5
+            value = (place.rating if place.rating is not None else -1) - place.distance_km * 0.08
             value += report_boost.get(place.place_id, 0.0)
             value -= report_penalty.get(place.place_id, 0.0)
             return value
@@ -125,9 +117,8 @@ class PlannerAgent:
             if candidates:
                 selected.append(candidates[0])
         if not goals and not selected:
-            suitable = [p for p in ordered if not wants_child or set(p.tags) & {"亲子", "儿童", "动物"}]
-            affordable = [p for p in (suitable or ordered) if p.average_price * party_size <= spec.total_budget]
-            selected = (sorted(affordable or suitable or ordered, key=priority) if prefer_nearby else sorted(affordable or suitable or ordered, key=score, reverse=True))[:1]
+            affordable = [p for p in ordered if not p.price_known or p.average_price * party_size <= spec.total_budget]
+            selected = (sorted(affordable or ordered, key=priority) if prefer_nearby else sorted(affordable or ordered, key=score, reverse=True))[:1]
         # Optional additions never consume the cost/window needed by a goal.
         total = sum(p.average_price * party_size for p in selected)
         for category in spec.optional_activities:

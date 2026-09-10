@@ -72,6 +72,17 @@ async def test_expired_or_other_merchant_tags_cannot_prove_a_condition(options):
     assert place_fits(spec, place, evidence), "Unproven is not violated; the venue stays available"
     _, plan, evidence = observed_case()
     assert (await verify_plan(TripSpec(goal="普通午餐"), plan, None, evidence=evidence)).executable
+    assert TripSpec(goal="普通午餐").budget is None
+
+
+async def test_unbound_visit_window_keeps_duration_as_unknown_draft():
+    """An invented 14:00 window must not hard-fail a draft the user never timed."""
+    _, plan, evidence = observed_case()
+    plan = plan.model_copy(update={"stops": [plan.stops[0].model_copy(update={
+        "end_minute": 1300, "tags": [*plan.stops[0].tags, "time_infeasible"]})]})
+    result = await verify_plan(TripSpec(goal="午餐"), plan, None, evidence=evidence)
+    assert not any(check.name in {"duration", "window_start"} for check in result.hard_violations)
+    assert any(check.name == "duration" and check.kind == "unknown" for check in result.unknown_evidence)
 
 
 async def test_unlinked_place_tags_are_not_observed_facts():

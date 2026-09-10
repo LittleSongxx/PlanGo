@@ -10,11 +10,13 @@ from plango_harness.agent.state import planning_reset
 def test_replanning_keeps_accepted_input_but_revokes_previous_decisions():
     spec = TripSpec(goal='原计划', party_size=3, budget=280, must_visit_place_ids=['selected'])
     state = {'trip_spec': spec, 'selected_plan': {'plan_id': 'old', 'version': 2},
-             'approval_decision': 'approve', 'execution_goal': {'plan_id': 'old'}}
+             'approval_decision': 'approve', 'execution_goal': {'plan_id': 'old'},
+             'browser_wait': {'command_id': 'old-extract'}, 'browser_action': {'operation': 'extract'}}
     reset = planning_reset(state)
     assert reset['trip_spec'] == reset['previous_spec'] == spec
     assert reset['selected_plan'] is None and reset['approval_decision'] is None
     assert reset['execution_goal'] is None
+    assert reset['browser_wait'] is None and reset['browser_action'] is None
     assert planning_reset(reset)['trip_spec'] == spec
 
 

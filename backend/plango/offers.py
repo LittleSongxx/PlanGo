@@ -246,13 +246,13 @@ def compare_offers(artifact, constraints, *, now=None):
         within = False if False in checks else True if checks and all(value is True for value in checks) else None
         if within is False:
             reasons.append("已知费用已超出确认的预算")
-        # Provenance decides whether we may speak at all; a deterministic comparison
-        # decides ineligible; anything the page simply left out is reported, not a verdict.
-        status = "unknown" if source_missing or not grounded else "ineligible" if reasons else "unknown" if missing else "eligible"
         missing = [*missing, *dict.fromkeys(unstated)]
+        status = "unknown" if source_missing or not grounded else "ineligible" if reasons else "unknown" if missing else "eligible"
         reference = {"command_id": command_id, "offer_index": index, "offer_hash": offer_hash(raw)}
+        listed = float(price) if price is not None else None
         entries.append({"offer_index": index, "offer_hash": reference["offer_hash"], "source_ref": reference, "grounded": grounded and not source_missing,
-                        "name": offer_name, "kind": kind, "price_basis": price_basis, "status": status, "price": float(price) if price is not None else None,
+                        "name": offer_name, "kind": kind, "price_basis": price_basis, "status": status,
+                        "listed_price": listed, "price": listed,
                         "face_value": float(face) if face is not None else None, "original_price": float(original) if original is not None else None,
                         "people": people, "known_cost": float(known_cost) if known_cost is not None else None, "total_cost": float(total) if total is not None else None,
                         "within_budget": within, "reasons": list(dict.fromkeys(reasons)), "missing_rules": list(dict.fromkeys(missing)), "quote": quote})

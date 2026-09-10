@@ -28,13 +28,9 @@ class AdvocateAgent:
             return AdvocateReport(role=role, verdict="reject", score=0, concerns=["没有观测地点"])
         scored: list[tuple[float, PlaceCandidate]] = []
         for place in places:
-            score = max(0.0, min(1.0, place.rating / 5))
+            score = max(0.0, min(1.0, (place.rating or 0) / 5))
             estimated = place.average_price * (spec.party_size or 1)
             if role in ("预算", "健康") and place.price_known and estimated <= spec.total_budget:
-                score += 0.2
-            if role == "家庭" and any(
-                "亲子" in tag or "儿童" in tag for tag in place.tags
-            ):
                 score += 0.2
             scored.append((min(1.0, score), place))
         scored.sort(key=lambda item: item[0], reverse=True)

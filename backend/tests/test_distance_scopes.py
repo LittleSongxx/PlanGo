@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock
 from plango.browser import run_context
 from plango.settings import DesktopSettings
 from plango.world import BrowserWorld
-from plango_harness.agent.contracts import PlanCandidate, PlanStop, TripSpec
+from plango_harness.agent.contracts import Location, PlanCandidate, PlanStop, TripSpec
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.requirements import requirement_delta
 from plango_harness.agent.subagents.requirement import RequirementAgent
@@ -31,7 +31,7 @@ def test_legacy_limits_and_independent_set_clear_are_preserved():
 
 
 async def test_separate_limits_reach_search_and_actual_route_verification():
-    spec = TripSpec(goal="半径小于道路绕行距离", search_radius_km=.5, max_distance_km=2)
+    spec = TripSpec(goal="半径小于道路绕行距离", location=Location(name="重庆", latitude=29.56, longitude=106.57), search_radius_km=.5, max_distance_km=2)
     world = BrowserWorld(DesktopSettings(amap_webservice_key="controlled-no-http"), None, None)
     world.amap._get = AsyncMock(return_value={"status": "1", "pois": []})
     token = run_context.set({"world_source": "amap"})

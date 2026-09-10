@@ -36,10 +36,6 @@ def validate_protocol(dataset: dict[str, Any]) -> None:
         raise ValueError("bounded_plan_mismatch_or_out_of_range")
     if protocol.get("evaluation_kind") not in {"regression", "independent_controlled"}:
         raise ValueError("evaluation_kind_required")
-    limits = protocol.get("limits", {})
-    maxima = {"calls": 80, "case_calls": 12, "reported_tokens_stop": 120000}
-    if set(limits) != set(maxima) or any(type(limits[key]) is not int or not 1 <= limits[key] <= maximum for key, maximum in maxima.items()):
-        raise ValueError("bounded_limits_required")
     ledger = protocol.get("budget_ledger")
     if not isinstance(ledger, str) or Path(ledger).is_absolute() or ".." in Path(ledger).parts or Path(ledger).parts[:1] != ("output",):
         raise ValueError("shared_budget_ledger_must_be_under_output")

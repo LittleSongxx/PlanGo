@@ -2,13 +2,13 @@
 
 import copy
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
-from plango.task import TaskDecision
+from plango.task import DeliveryDecision, TaskDecision
 from plango_harness.agent.contracts import Evidence, PlaceCandidate, TripSpec
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.graph import GraphDeps
@@ -24,7 +24,7 @@ def canonical_place():
 def test_explicit_revalidation_continues_the_same_paused_run_and_keeps_original_event(tmp_path):
     app = create_app(settings(tmp_path), token=TOKEN)
     async def actor(schema, *, fallback, **kwargs):
-        if schema is not TaskDecision:
+        if schema not in {TaskDecision, DeliveryDecision}:
             return fallback
         context = json.loads(kwargs['user'])
         if context['turn_id'] > 1:
@@ -32,13 +32,13 @@ def test_explicit_revalidation_continues_the_same_paused_run_and_keeps_original_
                 return TaskDecision(operation='refresh_place')
             return TaskDecision(operation='plan', requirements=RequirementOutput(refresh_sources=True))
         return TaskDecision(operation='plan', requirements=RequirementOutput(party_size=3, budget=300,
-            visit_date=datetime.fromisoformat(context['reference_at']).date(), time_window_start='18:30', required_activities=['餐厅']))
+            visit_date=date.fromisoformat(context['local_date']), time_window_start='18:30', required_activities=['餐厅']))
     app.state.runtime.model.structured = actor
     lookup = AsyncMock(return_value=canonical_place())
     app.state.runtime.world_service.provider.amap.get_place = lookup
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         run_id = client.post("/api/v1/runs", json={"input_text": "今天18:30，3人吃饭，帮我规划一个餐厅行程，总预算300元", "browser_session_id": "fixture-desktop",
-            "location_context": {"city": "重庆", "longitude": 106.57, "latitude": 29.56, "source": "manual"}, "selected_poi": {"poi_id": "fixture", "name": "雾岚餐厅", "longitude": 106.57, "latitude": 29.56}}).json()["run_id"]
+            "location_context": {"city": "重庆", "longitude": 106.57, "latitude": 29.56, "source": "manual", "granularity": "point"}, "selected_poi": {"poi_id": "fixture", "name": "雾岚餐厅", "longitude": 106.57, "latitude": 29.56}}).json()["run_id"]
         command, respond, _ = browser_driver(client, run_id)
         fields = {"places": [{**canonical_place().model_dump(mode="json"), "open_minute": 0, "close_minute": 1440}],
                   "routes": {"amap:fixture": {"driving_min": 0, "walking_min": 0, "transit_min": 0, "distance_km": 0}}}

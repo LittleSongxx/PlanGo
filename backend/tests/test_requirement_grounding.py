@@ -11,7 +11,7 @@ from plango_harness.agent.graph import GraphDeps, build_graph
 from plango_harness.agent.model_adapter import ModelAdapter, ModelProviderUnavailable
 from plango_harness.agent.requirements import requirement_delta
 from plango_harness.agent.state import initial_state
-from plango_harness.agent.subagents.requirement import RequirementAgent
+from plango_harness.agent.subagents.requirement import RequirementAgent, RequirementNotUsable
 from plango_harness.settings import Settings
 from pydantic import ValidationError
 
@@ -155,6 +155,40 @@ def test_requirement_numeric_boundaries_reject_invalid_values(values):
 def test_conflicting_structured_operations_are_model_errors(values):
     with pytest.raises(ValidationError):
         RequirementOutput(**values)
+
+
+async def test_requirement_token_budget_is_not_a_provider_outage():
+    previous = original()
+    model = SimpleNamespace(
+        structured=AsyncMock(side_effect=lambda schema, fallback, **kwargs: fallback),
+        last_error="model_token_budget",
+    )
+    with pytest.raises(RequirementNotUsable, match="model_token_budget"):
+        await RequirementAgent(model).run("人数改为4人", [], previous)
+
+
+async def test_first_turn_keeps_a_known_client_origin_instead_of_asking():
+    origin = Location(name="重庆", latitude=29.56, longitude=106.57)
+    proposal = RequirementOutput(
+        party_size=2, clarification_needed=True,
+        clarification_fields=["location"], clarification_question="请提供起点",
+    )
+    world = SimpleNamespace(
+        strict_location=True,
+        requirement_origin=AsyncMock(return_value=("重庆", origin, {"source": "manual", "name": "重庆"})),
+    )
+    deps = GraphDeps(
+        model=SimpleNamespace(structured=AsyncMock(return_value=proposal)),
+        world=world, tools=SimpleNamespace(schemas=lambda: [], execute=AsyncMock()),
+        planner=None, memory=None, runs=None, action_provider=None,
+    )
+    nodes = {}
+    build_graph(deps, extension=lambda graph: nodes.update(requirements=graph.nodes["requirements"].runnable))
+    state = initial_state(run_id="origin", user_id="fixture", input_text="2人吃饭")
+    result = await nodes["requirements"].ainvoke(state)
+    assert result["trip_spec"].location == origin
+    assert result["clarification"] is None
+    world.requirement_origin.assert_awaited()
 
 
 async def test_unavailable_model_preserves_state_and_does_not_invent_a_user_question():

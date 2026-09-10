@@ -387,16 +387,16 @@ class ActionAndPlanningCheck(unittest.TestCase):
 
     def test_real_provider_contract_compiles_and_exact_selection_preserves_spec(self):
         with tempfile.TemporaryDirectory() as directory:
-            from plango.task import TaskDecision
+            from plango.task import DeliveryDecision, TaskDecision
             from plango_harness.agent.decisions import RequirementOutput
             app = create_app(settings(directory), token=TOKEN)
             async def planning_actor(schema, *, fallback, **kwargs):
                 import json
-                if schema is TaskDecision and json.loads(kwargs["user"]).get("execution_goal"):
+                if schema in {TaskDecision, DeliveryDecision} and json.loads(kwargs["user"]).get("execution_goal"):
                     return TaskDecision(operation="answer", answer="页面是帮助中心，尚未准备好表单。", answer_status="partial")
                 return TaskDecision(operation="plan", requirements=RequirementOutput(
                     party_size=2, budget=400, location_name="望京", time_window_start="14:00", duration_minutes=240,
-                    required_activities=["展览", "餐厅"], activity_order=["展览", "餐厅"])) if schema is TaskDecision else fallback
+                    required_activities=["展览", "餐厅"], activity_order=["展览", "餐厅"])) if schema in {TaskDecision, DeliveryDecision} else fallback
             app.state.runtime.model.structured = planning_actor
             with TestClient(
                 app,
@@ -590,11 +590,23 @@ class BoundaryCheck(unittest.TestCase):
                     return self
 
                 async def ainvoke(self, messages):
-                    from plango.task import TaskDecision
+                    from plango.task import DeliveryDecision, TaskDecision
                     calls.append(messages)
-                    assert self.schema in {ImageReading, TaskDecision}
+                    assert self.schema in {ImageReading, TaskDecision, DeliveryDecision}
+                    if self.schema in {TaskDecision, DeliveryDecision}:
+                        parsed = (
+                            TaskDecision(operation="read")
+                            if "帮我预约餐厅" in str(messages[-1]["content"])
+                            else TaskDecision(operation="answer", answer="图片中套餐128元；这是图片文字，尚未实时核验。")
+                        )
+                        if self.schema is DeliveryDecision:
+                            parsed = DeliveryDecision.model_validate(
+                                {key: value for key, value in parsed.model_dump().items() if key != "requirements"}
+                            )
+                    else:
+                        parsed = ImageReading(text="用户截图：餐厅套餐价格128元")
                     return {
-                        "parsed": TaskDecision(operation="read") if self.schema is TaskDecision and "帮我预约餐厅" in str(messages[-1]["content"]) else TaskDecision(operation="answer", answer="图片中套餐128元；这是图片文字，尚未实时核验。") if self.schema is TaskDecision else ImageReading(text="用户截图：餐厅套餐价格128元"),
+                        "parsed": parsed,
                         "raw": SimpleNamespace(
                             usage_metadata={
                                 "input_tokens": 30,

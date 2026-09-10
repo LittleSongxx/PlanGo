@@ -20,7 +20,7 @@ from test_selected_poi_refresh import canonical_place
 def seed_page(client, *, command_id="offers-original", age=0, grounded=True, merchant=None):
     runtime = client.app.state.runtime
     created = client.post("/api/v1/runs", json={"input_text": "读取当前网页门店与优惠", "browser_session_id": "fixture",
-        "location_context": {"city": "重庆", "source": "manual", "longitude": 106.57, "latitude": 29.56}}).json()
+        "location_context": {"city": "重庆", "source": "manual", "longitude": 106.57, "latitude": 29.56, "granularity": "point"}}).json()
     rid = created["run_id"]
     place = merchant or canonical_place()
     identity = place.name + "\n地址：" + place.address

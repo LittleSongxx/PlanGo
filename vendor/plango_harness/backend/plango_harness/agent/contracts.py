@@ -120,15 +120,15 @@ class TripSpec(ContractModel):
     time_window_start: str | None = None
     duration_minutes: int = Field(default=360, ge=30, le=1440)
     time_window: dict[str, Any] | None = None
-    budget: float | None = Field(default=400, ge=0, le=1_000_000)
+    budget: float | None = Field(default=None, ge=0, le=1_000_000)
     per_person_budget: float | None = Field(default=None, ge=0, le=1_000_000)
-    party_size: int | None = Field(default=1, ge=1, le=12)
+    party_size: int | None = Field(default=None, ge=1, le=12)
     party_counts: PartyCounts = Field(default_factory=dict, max_length=12)
     required_activities: list[Activity] = Field(default_factory=list, max_length=8)
     optional_activities: list[Activity] = Field(default_factory=list, max_length=8)
     excluded_activities: list[Activity] = Field(default_factory=list, max_length=8)
     activity_order: list[Activity] = Field(default_factory=list, max_length=8)
-    location: Location = Field(default_factory=lambda: Location(latitude=39.997, longitude=116.482))
+    location: Location | None = None
     search_location: Location | None = None
     must_visit_place_ids: list[str] = Field(default_factory=list, max_length=8)
     selected_offer: OfferReference | None = None
@@ -218,9 +218,9 @@ class PlaceCandidate(ContractModel):
     category: str
     latitude: float
     longitude: float
-    rating: float = Field(default=4.0, ge=0, le=5)
+    rating: float | None = Field(default=None, ge=0, le=5)
     average_price: float = Field(default=0, ge=0)
-    price_known: bool = True
+    price_known: bool = False
     open_minute: int | None = Field(default=None, ge=0, le=1440)
     close_minute: int | None = Field(default=None, ge=0, le=1440)
     distance_km: float = Field(default=0, ge=0)

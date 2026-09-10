@@ -85,12 +85,4 @@ class DiscoveryAgent:
 
     @staticmethod
     def _default_queries(spec: TripSpec) -> list[str]:
-        text = f"{spec.goal} {' '.join(spec.hard_constraints)}"
-        queries: list[str] = list(spec.required_activities) or ["活动"]
-        if any(word in text for word in ("孩子", "亲子", "娃")):
-            queries.insert(0, "亲子")
-        if any(word in text for word in ("展", "博物馆", "文化")):
-            queries.insert(0, "展览")
-        if any(word in text for word in ("室内", "下雨")):
-            queries.insert(0, "室内")
-        return queries[:6]
+        return (list(spec.required_activities) or ["活动"])[:6]

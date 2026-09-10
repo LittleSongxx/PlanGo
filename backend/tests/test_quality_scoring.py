@@ -187,6 +187,27 @@ class QualityScoringTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "explicit boolean"):
             SCORING.summarize(data)
 
+    def test_lanes_and_undelivered_cards_are_extra_denominators(self):
+        data = document()
+        data["planned_cases"][0]["family"] = "reading"
+        data["attempts"][0]["process"] = {
+            "got_sources": True, "calculated": False, "assembled": False, "stopped_at_expected_gate": False,
+        }
+        add_case(data, case_id="C")
+        data["planned_cases"][1].update(family="recovery")
+        data["attempts"][1].update(outcome="timeout", family="recovery", claims=[])
+        data["planned_cases"][1]["family"] = "recovery"
+        report = SCORING.summarize(data)
+        self.assertEqual(report["tsr"], 0.5)
+        self.assertEqual(report["groundedness_macro"], 1)
+        self.assertIsNone(report["groundedness_on_delivered"])
+        self.assertEqual(report["groundedness_delivered_tasks"], 0)
+        self.assertEqual(report["by_lane"]["reasoning"]["valid"], 1)
+        self.assertEqual(report["by_lane"]["infra"]["valid"], 1)
+        self.assertEqual(report["by_lane"]["persistence"]["valid"], 0)
+        self.assertEqual(report["process_rates"]["assembled"], 0)
+        self.assertEqual(report["process_rates"]["got_sources"], 1)
+
     def test_cli_does_not_overwrite_and_rejects_duplicate_json_keys(self):
         with tempfile.TemporaryDirectory(prefix="plango-quality-scoring-") as temporary:
             source = Path(temporary) / "annotations.json"

@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.graph import BrowserDecision
 from plango.outcomes import draft_review
-from plango.task import TaskDecision
+from plango.task import DeliveryDecision, TaskDecision
 from plango_harness.agent.contracts import ConstraintCheck, Evidence, VerifierResult
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.graph import GraphDeps
@@ -26,7 +26,7 @@ def test_unknown_supply_has_explicit_draft_decision_and_preparation_scope(tmp_pa
     app = create_app(settings(tmp_path), token=TOKEN)
 
     async def choose(schema, *, fallback, **kwargs):
-        if schema is not TaskDecision:
+        if schema not in {TaskDecision, DeliveryDecision}:
             return fallback
         context = json.loads(kwargs['user'])
         if context.get('execution_goal'):
@@ -34,12 +34,12 @@ def test_unknown_supply_has_explicit_draft_decision_and_preparation_scope(tmp_pa
             return TaskDecision(operation='read', browser=step)
         return TaskDecision(operation='plan', requirements=RequirementOutput(
             party_size=4 if context['turn_id'] > 1 else 3, budget=300, time_window_start='18:30',
-            visit_date=date.fromisoformat(context['reference_at'][:10]), required_activities=['餐厅']))
+            visit_date=date.fromisoformat(context['local_date']), required_activities=['餐厅']))
 
     app.state.runtime.model.structured = choose
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         run_id = client.post("/api/v1/runs", json={"input_text": "今天18:30，3人吃饭，帮我规划一个餐厅行程，总预算300元", "browser_session_id": "fixture-desktop",
-                                                "location_context": {"city": "重庆", "longitude": 106.57, "latitude": 29.56, "source": "manual"}}).json()["run_id"]
+                                                "location_context": {"city": "重庆", "longitude": 106.57, "latitude": 29.56, "source": "manual", "granularity": "point"}}).json()["run_id"]
         command, respond, _ = browser_driver(client, run_id)
         provider = {"places": [{"place_id": "browser:fixture", "name": "雾岚餐厅", "address": "重庆市渝中区邹容路1号", "category": "餐厅", "latitude": 29.56, "longitude": 106.57, "average_price": 50, "open_minute": 0, "close_minute": 1440}],
                     "routes": {"browser:fixture": {"driving_min": 0, "walking_min": 0, "transit_min": 0, "distance_km": 0}}}

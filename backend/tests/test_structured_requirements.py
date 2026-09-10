@@ -16,7 +16,7 @@ from langgraph.types import Command
 from plango.app import create_app
 from plango.browser import run_context
 from plango.requirements import RequirementEdit
-from plango.task import TaskDecision
+from plango.task import DeliveryDecision, TaskDecision
 from plango.world import BrowserWorld
 from plango_harness.agent.contracts import Location, TripSpec
 from plango_harness.agent.decisions import RequirementOutput
@@ -48,7 +48,7 @@ def test_search_radius_reaches_existing_amap_request_and_cache_key(tmp_path):
         token = run_context.set({"world_source": "amap"})
         try:
             for radius in (2, 5, 5, None, 50, 100):
-                spec = TripSpec(goal="受控搜索范围", max_distance_km=radius)
+                spec = TripSpec(goal="受控搜索范围", location=Location(name="重庆", latitude=29.56, longitude=106.57), max_distance_km=radius)
                 world.bind_run_state({"trip_spec": spec})
                 await world.search_places("餐厅", spec.location)
             calls = world.amap._get.call_args_list
@@ -103,7 +103,7 @@ def test_same_run_explicit_edits_and_lock_preserve_history_and_invalidate_approv
     requirement_calls = []
 
     async def choose(schema, *, fallback, **kwargs):
-        if schema is TaskDecision:
+        if schema in {TaskDecision, DeliveryDecision}:
             return TaskDecision(operation="plan", requirements=RequirementOutput(party_size=3, budget=300,
                 visit_date=date(2026, 9, 10), time_window_start="18:30", required_activities=["餐厅"]))
         if schema.__name__ == "RequirementOutput":
@@ -121,7 +121,7 @@ def test_same_run_explicit_edits_and_lock_preserve_history_and_invalidate_approv
     headers = {"Authorization": "Bearer " + TOKEN}
     with TestClient(app, headers=headers) as client:
         run_id = client.post("/api/v1/runs", json={"input_text": "2026-09-10 18:30，3人吃饭，帮我规划一个餐厅行程，总预算300元", "browser_session_id": "fixture-desktop",
-                                                "location_context": {"city": "重庆", "longitude": 106.57, "latitude": 29.56, "source": "manual"}}).json()["run_id"]
+                                                "location_context": {"city": "重庆", "longitude": 106.57, "latitude": 29.56, "source": "manual", "granularity": "point"}}).json()["run_id"]
         provider = {"places": [{"place_id": "browser:fixture", "name": "受控样本餐厅", "address": "重庆市渝中区邹容路1号", "category": "餐厅", "latitude": 29.56, "longitude": 106.57, "average_price": 50, "open_minute": 0, "close_minute": 1440}],
                     "routes": {"browser:fixture": {"driving_min": 0, "walking_min": 0, "transit_min": 0, "distance_km": 0}}}
 

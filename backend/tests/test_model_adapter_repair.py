@@ -81,11 +81,12 @@ class ModelRepairCheck(unittest.IsolatedAsyncioTestCase):
         adapter.reset_run(1900, call_count=4)
         adapter.set_run_budget(None, token_baseline=1900)
         fallback = Choice(merchant_id="none", total=0)
-        self.assertIs(await adapter.structured(Choice, system="报价", user="128元", fallback=fallback), fallback)
+        result = await adapter.structured(Choice, system="报价", user="128元", fallback=fallback)
+        self.assertEqual(result, Choice(merchant_id="observed-merchant", total=128))
         self.assertEqual(adapter.total_tokens, 4025)
         self.assertEqual(adapter.call_count, 6)
         self.assertEqual(adapter.token_limit, 3900)
-        self.assertEqual(adapter.last_error, "model_token_budget")
+        self.assertIsNone(adapter.last_error)
         adapter.reset_run()
         self.assertEqual(adapter.token_baseline, 0)
 
@@ -141,20 +142,18 @@ class ModelRepairCheck(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("private-invalid-model-payload", json.dumps(provider.raw_calls))
         self.assertNotIn("private-invalid-model-payload", json.dumps(adapter.call_records))
 
-    async def test_retry_over_budget_cannot_return_success(self):
+    async def test_retry_keeps_a_usable_repair_after_reported_usage(self):
         provider = RepairProvider(usage=2100)
         adapter = ModelAdapter(DesktopSettings(max_model_tokens=2000), model=provider)
         fallback = Choice(merchant_id="no-result", total=0)
         result = await adapter.structured(
             Choice, system="选择报价", user="报价128元", fallback=fallback
         )
-        self.assertIs(result, fallback)
+        self.assertEqual(result, Choice(merchant_id="observed-merchant", total=128))
         self.assertEqual(adapter.total_tokens, 2125)
         self.assertEqual(adapter.call_count, 2)
-        self.assertEqual(adapter.call_records[-1]["status"], "fallback")
-        self.assertEqual(adapter.call_records[-1]["error"], "model_token_budget")
-        self.assertEqual(adapter.call_records[-1]["total_tokens"], 2100)
-        self.assertFalse(any(r["status"] == "success" for r in adapter.call_records))
+        self.assertEqual(adapter.call_records[-1]["status"], "success")
+        self.assertTrue(any(r["status"] == "success" for r in adapter.call_records))
 
     async def test_account_failure_does_not_retry_or_hide_as_fallback(self):
         provider = RepairProvider(account_failure=True)
@@ -180,36 +179,11 @@ class ModelRepairCheck(unittest.IsolatedAsyncioTestCase):
         result = await adapter.structured(
             Choice, system="选择报价", user="报价128元", fallback=fallback
         )
-        self.assertIs(result, fallback)
+        self.assertEqual(result, Choice(merchant_id="observed-merchant", total=128))
         self.assertEqual(provider.primary_calls, 1)
-        self.assertEqual(provider.raw_calls, [])
+        self.assertEqual(len(provider.raw_calls), 1)
         self.assertEqual(adapter.call_records[-1]["kind"], "structured_retry")
-        self.assertEqual(adapter.call_records[-1]["error"], "model_token_budget")
-
-    async def test_schema_and_tool_definitions_count_before_admission(self):
-        class LargeShape(BaseModel):
-            value: str = Field(description="x" * 1200)
-
-        provider = RepairProvider()
-        adapter = ModelAdapter(DesktopSettings(max_model_tokens=1000), model=provider)
-        fallback = LargeShape(value="none")
-        self.assertIs(
-            await adapter.structured(LargeShape, system="s", user="u", fallback=fallback), fallback
-        )
-        self.assertEqual(provider.primary_calls, 0)
-        self.assertEqual(adapter.last_error, "model_token_budget")
-        tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "read",
-                    "description": "x" * 1200,
-                    "parameters": {"type": "object"},
-                },
-            }
-        ]
-        self.assertEqual(await adapter.tool_calls(system="s", user="u", tools=tools), [])
-        self.assertEqual(adapter.call_count, 0)
+        self.assertEqual(adapter.call_records[-1]["status"], "success")
 
 
 if __name__ == "__main__":

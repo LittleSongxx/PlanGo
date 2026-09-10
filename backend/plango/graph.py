@@ -41,8 +41,37 @@ from .outcomes import (
 )
 from .planning import variants
 from .skills import read_skill
-from .task import BrowserDecision, TaskDecision, calculate, decide_task
+from .task import BrowserDecision, DecisionNotUsable, TaskDecision, calculate, decide_task
 from .world import dianping_preview_data, table_data
+
+
+def _current_page_artifact(state):
+    observation = state.get("browser_observation") or {}
+    if not observation.get("ok") or not observation.get("command_id"):
+        return None
+    identity = "page:" + str(observation["command_id"])
+    return next((item for item in state.get("browser_artifacts") or [] if item.get("artifact_id") == identity), None)
+
+
+def _unread_tab(state) -> bool:
+    """True when nothing from the current tab or image has been read yet."""
+    if _current_page_artifact(state) or state.get("browser_image_turn_id"):
+        return False
+    return not any(
+        item.get("type") in {"browser_page", "image", "browser_visual"}
+        and ((item.get("data") or {}).get("text") or (item.get("data") or {}).get("visual_text"))
+        for item in state.get("browser_artifacts") or []
+    )
+
+
+def _working_from_draft(state) -> bool:
+    """An imported or already-selected place/plan is the task, not an unread tab."""
+    if state.get("selected_poi") or state.get("selected_plan"):
+        return True
+    spec = state.get("trip_spec") or state.get("previous_spec") or {}
+    if not isinstance(spec, dict):
+        spec = spec.model_dump() if hasattr(spec, "model_dump") else {}
+    return bool(spec.get("selected_offer") or spec.get("must_visit_place_ids"))
 
 
 def _kept(state, results) -> str:
@@ -54,11 +83,49 @@ def _kept(state, results) -> str:
     """
     rows = [row for row in (results or []) if isinstance(row, dict)]
     kept = []
-    if state.get("browser_artifacts"):
+    turn = state.get("turn_id", 1)
+    if _current_page_artifact(state) or state.get("browser_image_turn_id") == turn:
         kept.append("读到的资料")
     if any(row.get("scope") == "arithmetic_only" and row.get("ok") for row in rows):
         kept.append("计算结果")
     return "，已保留" + "和".join(kept) if kept else "，本轮没有读到资料也没有完成计算"
+
+
+def _page_assembly_results(state):
+    """Deterministic listings and comparisons from the current page, not a model guess."""
+    if any((row.get("tool") == "compare_offers") for row in (state.get("browser_task_context") or {}).get("tool_results") or []):
+        return []
+    current = _current_page_artifact(state)
+    if not current:
+        return []
+    data = current.get("data") or {}
+    if not (data.get("offers") or data.get("menu")):
+        return []
+    from .offers import compare_offers
+
+    raw = state.get("trip_spec") or state.get("previous_spec")
+    constraints = {}
+    if raw:
+        spec = TripSpec.model_validate(raw)
+        dump = spec.model_dump(mode="json")
+        constraints = {key: dump[key] for key in ("party_size", "visit_date", "budget", "per_person_budget", "timezone")}
+    comparison = compare_offers(current, constraints)
+    return [{
+        "tool": "compare_offers",
+        "ok": True,
+        "result": {
+            "merchant": comparison.get("merchant"),
+            "source": comparison.get("source"),
+            "constraints": comparison.get("constraints"),
+            "entries": [
+                {key: entry.get(key) for key in (
+                    "name", "listed_price", "price", "status", "people",
+                    "known_cost", "total_cost", "reasons", "missing_rules", "quote",
+                )}
+                for entry in comparison.get("entries") or []
+            ],
+        },
+    }]
 
 
 def artifact(observation, data=None):
@@ -166,7 +233,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
                     "action_proposal": None, "browser_action": None, "approval_decision": None, "browser_receipt_pending": False,
                     "clarification": None, "interrupt_id": None, "reason": "正在重新读取原计划表单；每项修改仍需批准，不会自动提交。"}
         old = state.get("browser_task_context") or {}
-        turn, text = state.get("turn_id", 1), str(state.get("input_text") or "")
+        turn, text = state.get("turn_id", 1), str(state.get("pending_message") or state.get("input_text") or "")
         same_turn = old.get("turn_id") == turn
         binding = await runtime.bridge.binding(state["run_id"])
         context = {**old, "original_request": old.get("original_request") or old.get("request") or text,
@@ -561,12 +628,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
             and after.get("snapshot_id") != action["snapshot_id"]
             and after.get("tab_id") == action["tab_id"]
         )
-        identity_verified = bool(
-            receipt
-            and receipt.get("scope") == "business_receipt"
-            and receipt.get("identity_verified") is True
-        )
-        status = "SUCCEEDED" if identity_verified or low_level else "UNKNOWN"
+        status = "SUCCEEDED" if low_level else "UNKNOWN"
         result = {
             "ok": status == "SUCCEEDED",
             "status": status,
@@ -611,11 +673,9 @@ def build_desktop_graph(runtime, deps, checkpointer):
             )
         else:
             update.update(
-                phase=RunPhase.SUCCEEDED if identity_verified else RunPhase.PARTIAL_FAILED,
-                outcome="SUCCEEDED" if identity_verified else "PARTIAL_FAILED",
-                reason="业务身份与回执已核验。"
-                if identity_verified
-                else "页面出现确认与编号，但尚未核对是否属于本次商家、人数和业务要求；结果待确认，不会重复提交。"
+                phase=RunPhase.PARTIAL_FAILED,
+                outcome="PARTIAL_FAILED",
+                reason="页面出现确认与编号，但尚未核对是否属于本次商家、人数和业务要求；结果待确认，不会重复提交。"
                 if receipt
                 else "页面未出现可核验的业务回执，结果未知；不会重复提交。",
             )
@@ -630,7 +690,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
             return {"browser_next": BrowserDecision().model_dump(), "execution_outcome": evaluated.model_dump(mode="json"),
                     "phase": RunPhase.SUCCEEDED, "outcome": "SUCCEEDED", "reason": evaluated.summary}
         if evaluated and evaluated.data.get("scope") == "booking_parameters":
-            if not observation.get("snapshot_id"):
+            if not observation.get("snapshot_id") and observation.get("url"):
                 return {"browser_next": BrowserDecision(operation="extract").model_dump()}
             if urlsplit(str(observation.get("url") or "")).path.endswith("/reserve/message"):
                 interrupt({"type": "browser", "id": "browser:" + observation["command_id"],
@@ -648,10 +708,11 @@ def build_desktop_graph(runtime, deps, checkpointer):
             task = TaskDecision(operation="read", browser=BrowserDecision(operation="type", **correction))
         else:
             task = None
-            results = list(context.get("tool_results", []))
+            results = [*context.get("tool_results", []), *_page_assembly_results(state)]
+            context["tool_results"] = results
             for attempt in range(2):
                 try:
-                    task = await decide_task(deps.model, state, results)
+                    task = await decide_task(deps.model, {**state, "browser_task_context": context}, results)
                     break
                 except ValueError as error:
                     if attempt:
@@ -693,9 +754,24 @@ def build_desktop_graph(runtime, deps, checkpointer):
         if task.operation == "calculate":
             if state.get("tool_call_count", 0) >= deps.tool_limit(state):
                 raise ValueError("calculation_tool_budget_exhausted")
-            context["tool_results"] = [*context.get("tool_results", []), *calculate(task.calculations)]
+            context["tool_results"] = [
+                *context.get("tool_results", []),
+                *calculate(task.calculations, context.get("tool_results")),
+            ]
             return {**update, "tool_call_count": state.get("tool_call_count", 0) + 1}
         if task.operation == "ask":
+            if _unread_tab(state) and not _working_from_draft(state):
+                # Same class as an invented navigate: do not ask the user to
+                # paste a page that the current tab has not been read yet.
+                # Routing keys off context.operation; leaving it as ask would
+                # skip extract and fall through to a blank clarification.
+                context["operation"] = "read"
+                context["tool_results"] = [*context.get("tool_results", []),
+                                           {"tool": "observe_current_page", "ok": True,
+                                            "note": "尚未读取当前页，先看当前页再决定是否向用户追问"}]
+                update["browser_task_context"] = context
+                update["browser_next"] = BrowserDecision(operation="extract").model_dump()
+                return update
             context["question"] = task.question
             return {**update, "clarification": {"question": task.question}, "phase": RunPhase.REQUIREMENTS_READY}
         if task.operation == "answer":
@@ -713,14 +789,13 @@ def build_desktop_graph(runtime, deps, checkpointer):
         decision = task.browser or BrowserDecision(operation="extract")
         if decision.operation == "finish":
             raise ValueError("browser_finish_requires_task_answer")
-        if (decision.operation in {"navigate", "open_tab"} and not observation.get("snapshot_id")
+        if (decision.operation in {"navigate", "open_tab"}
                 and str(decision.url or "") not in task_text(state)):
-            # Leaving for an address the user never gave, before having looked at the page
-            # at all, discards whatever they already had open for this and costs a load.
-            # Read the current page once; the next decision can still navigate from there.
+            # An address the user never wrote is a guess, whether or not a snapshot
+            # already exists. Leaving after one look still drops the page they had.
             context["tool_results"] = [*context.get("tool_results", []),
                                        {"tool": "observe_current_page", "ok": True,
-                                        "note": "已先读取当前页面，未离开；如仍需其他地址可在下一步导航",
+                                        "note": "已留在当前页面，未前往用户消息里没有写出的地址",
                                         "requested_url": decision.url}]
             decision = BrowserDecision(operation="extract", rationale=decision.rationale)
             update["browser_task_context"] = context
@@ -733,8 +808,6 @@ def build_desktop_graph(runtime, deps, checkpointer):
             return {**update, "browser_next": BrowserDecision().model_dump(), "browser_vision_reason": decision.vision_reason,
                     "phase": RunPhase.RESEARCHING, "reason": "正在读取当前页面截图"}
         update["browser_next"] = decision.model_dump()
-        if not preparing:
-            update["execution_goal"] = {"kind": "page_read", "request": task_text(state), "source": "browser", "required_fields": []}
         if decision.operation in {"click", "type"}:
             if not observation.get("snapshot_id") or not observation.get("tab_id"):
                 raise ValueError("write_requires_current_browser_snapshot")

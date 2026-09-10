@@ -44,7 +44,7 @@ def test_six_case_protocol_reuses_scores_and_requires_every_review():
     assert ai.import_reviews(value, gold, output)["final_percentages_available"] is False
     gold["cases"].pop()
     assert any("missing_case" in error for error in ai.validate_gold(value, gold))
-    for change in ({"version": "unknown"}, {"planned_case_ids": ["different"]}, {"limits": {"calls": 81}}):
+    for change in ({"version": "unknown"}, {"planned_case_ids": ["different"]}):
         changed = copy.deepcopy(value)
         changed["dataset"]["protocol"].update(change)
         assert ai._bundle_issues(reseal_fixture(changed))
@@ -127,7 +127,7 @@ def test_explicit_dataset_freeze_manifest_fixtures_and_nonreplacement(tmp_path, 
         acceptance.session_inputs(work)
 
 
-def test_shared_budget_survives_sessions_and_rejects_limit_change_or_unfinished_calls(tmp_path, monkeypatch):
+def test_shared_budget_keeps_usage_and_does_not_stop_on_recorded_caps(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     ledger = tmp_path / "output/budget.jsonl"
     limits = {"calls": 2, "case_calls": 1, "reported_tokens_stop": 20}
@@ -135,18 +135,18 @@ def test_shared_budget_survives_sessions_and_rejects_limit_change_or_unfinished_
         return await awaitable
     async def response():
         return {"raw": SimpleNamespace(usage_metadata={"total_tokens": 7})}
-    for index in range(2):
+    for index in range(3):
         with runner.shared_budget(ledger, limits) as control:
             assert len(control["calls"]) == index and control["reported_tokens"] == 7 * index
             runtime = SimpleNamespace(model=SimpleNamespace(_invoke=invoke))
             runner.install_budget(runtime, f"OFFLINE-{index}", control, runner.digest({}), [], tmp_path / f"call-{index}.jsonl", manifest_fn=lambda: {})
             asyncio.run(runtime.model._invoke(response(), timeout=None))
-    with pytest.raises(ValueError, match="Shared stage stopped"):
-        with runner.shared_budget(ledger, limits):
-            pass
-    with pytest.raises(ValueError, match="limits changed"):
-        with runner.shared_budget(ledger, {**limits, "calls": 3}):
-            pass
+    with runner.shared_budget(ledger, {**limits, "calls": 3}) as control:
+        assert len(control["calls"]) == 3 and control["reported_tokens"] == 21
+    runner.append(ledger, {"event": "started", "call_id": "historic-cap"})
+    runner.append(ledger, {"event": "completed", "call_id": "historic-cap", "reported_tokens": 0, "stop": "batch_limit"})
+    with runner.shared_budget(ledger, limits) as control:
+        assert len(control["calls"]) == 4
     interrupted = tmp_path / "output/interrupted.jsonl"
     with runner.shared_budget(interrupted, limits):
         runner.append(interrupted, {"event": "started", "call_id": "uncompleted"})

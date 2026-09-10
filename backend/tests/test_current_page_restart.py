@@ -3,7 +3,7 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from plango.task import TaskDecision
+from plango.task import DeliveryDecision, TaskDecision
 from test_browser_harness import TOKEN, create_app, fixture, settings, wait_for
 
 
@@ -24,7 +24,7 @@ def test_new_explicit_current_page_read_after_restart_does_not_reuse_previous_ta
 
     async def extract(schema, *, fallback, **kwargs):
         import json
-        assert schema is TaskDecision
+        assert schema in {TaskDecision, DeliveryDecision}
         if not json.loads(kwargs["user"])["browser_steps"]:
             return TaskDecision(operation="read")
         return TaskDecision(operation="answer", answer="已读取当前页面的门店、地址和优惠预览。")

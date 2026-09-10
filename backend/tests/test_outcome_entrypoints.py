@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.graph import ImageReading
-from plango.task import Calculation, Citation, TaskDecision
+from plango.task import Calculation, Citation, DeliveryDecision, TaskDecision
 from plango_harness.agent.decisions import RequirementOutput
 from test_browser_harness import TOKEN, fixture, settings, wait_for
 
@@ -25,7 +25,7 @@ def test_sources_calculation_answer_and_sparse_followup_share_one_task(tmp_path,
     async def actor(schema, **kwargs):
         if schema is ImageReading:
             return ImageReading(text=text)
-        assert schema is TaskDecision, 'No second intent classifier or restaurant extractor'
+        assert schema in {TaskDecision, DeliveryDecision}, 'No second intent classifier or restaurant extractor'
         context = json.loads(kwargs['user'])
         contexts.append(context)
         if not context['sources']:
@@ -60,7 +60,7 @@ def test_sources_calculation_answer_and_sparse_followup_share_one_task(tmp_path,
     # Restart and edit only a decided field. An ambiguous field retains its accepted value.
     restored = create_app(config, token=TOKEN)
     async def edit_actor(schema, **kwargs):
-        assert schema is TaskDecision
+        assert schema in {TaskDecision, DeliveryDecision}
         context = json.loads(kwargs['user'])
         assert context['original_request'] == original and context['trip_spec'] is None
         assert context['sources'] and context['tool_results'] == []

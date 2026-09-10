@@ -6,6 +6,14 @@ from plango_harness.agent.contracts import TripSpec
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.model_adapter import ModelAdapter, ModelProviderUnavailable
 
+
+class RequirementNotUsable(ValueError):
+    """The model answered but the requirement patch could not be used.
+
+    This is not a provider failure. Reporting it as one told the user to check
+    their service configuration when the previous spec should have been kept.
+    """
+
 REQUIREMENT_INSTRUCTIONS = (
     "你是 PlanGo 的需求理解节点。结合当前消息、上一版需求和对话理解本轮意图，返回稀疏需求补丁。"
     "省略、指代、否定、范围及单位由你统一理解；未要求修改的字段返回null，不要重建整份需求。"
@@ -54,5 +62,8 @@ class RequirementAgent:
             fallback=fallback,
         )
         if output is fallback:
-            raise ModelProviderUnavailable("model_unavailable")
+            error = str(getattr(self.model, "last_error", None) or "")
+            if error in {"", "model_unavailable"}:
+                raise ModelProviderUnavailable("model_unavailable")
+            raise RequirementNotUsable(error)
         return output

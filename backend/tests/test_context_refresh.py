@@ -41,7 +41,7 @@ async def test_date_edit_refreshes_identity_and_forecast_before_advocacy_without
     settings = DesktopSettings(amap_webservice_key="mock-transport-only")
     model = ModelAdapter(settings)
     model.structured = AsyncMock(return_value=RequirementOutput(visit_date=tomorrow, time_window_start="14:00"))
-    world = BrowserWorld(settings, SimpleNamespace(binding=AsyncMock(return_value={"location_context": {"city": "重庆", "source": "manual", "latitude": 29.56, "longitude": 106.57}})), model)
+    world = BrowserWorld(settings, SimpleNamespace(binding=AsyncMock(return_value={"location_context": {"city": "重庆", "source": "manual", "latitude": 29.56, "longitude": 106.57, "granularity": "point"}})), model)
     await world.amap.client.aclose()
     world.amap.client = httpx.AsyncClient(transport=httpx.MockTransport(respond))
     deps = GraphDeps(model=model, world=world, tools=ToolRegistry(), planner=None, memory=None, runs=None, action_provider=None, max_tool_calls=4)

@@ -71,9 +71,10 @@ async def test_combined_schema_admission_keeps_reported_usage_and_run_limit():
     assert adapter.total_tokens == 731 and adapter.token_limit == 12000
     assert adapter.call_records[-1]["schema"] == "TaskDecision"
     assert adapter._structured_schema is None
-    blocked = TaskDecision(operation="read")
-    assert await adapter.structured(TaskDecision, system=TASK_INSTRUCTIONS, user="未裁剪资料" * 3000, fallback=blocked) is blocked
-    assert invoke.await_count == 1 and adapter.total_tokens == 731
+    fallback = TaskDecision(operation="read")
+    again = await adapter.structured(TaskDecision, system=TASK_INSTRUCTIONS, user="未裁剪资料" * 3000, fallback=fallback)
+    assert again == expected and invoke.await_count == 2
+    assert adapter.total_tokens == 1462
 
 
 

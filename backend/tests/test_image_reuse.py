@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.graph import ImageReading
 from plango.outcomes import read_outcome
-from plango.task import TaskDecision, task_context
+from plango.task import DeliveryDecision, TaskDecision, task_context
 from plango_harness.agent.graph import GraphDeps
 from plango_harness.agent.model_adapter import ModelAdapter
 from test_browser_harness import TOKEN, settings, wait_for
@@ -22,7 +22,7 @@ def test_same_uploaded_image_on_second_user_turn_reuses_original_source_without_
     async def classify_or_read(schema, **kwargs):
         if schema is ImageReading:
             return ImageReading(text="合成OCR样本：套餐128元，仅为图片文字")
-        assert schema is TaskDecision
+        assert schema in {TaskDecision, DeliveryDecision}
         return TaskDecision(operation="answer", answer="已读取图片文字：套餐128元，仅为图片文字。")
     model = AsyncMock(side_effect=classify_or_read)
     app.state.runtime.model.structured = model
@@ -70,7 +70,7 @@ async def test_hash_alone_does_not_skip_ocr_and_static_image_age_is_not_live_fre
     digest = hashlib.sha256(IMAGE.encode()).hexdigest()
     original = {"artifact_id": "image:" + digest, "type": "image", "source": "user", "observed_at": "2000-01-01T00:00:00+00:00", "data": {"text": "已有图片文字"}}
     state = {"run_id": "fixture", "turn_id": 2, "input_text": "再次读取图片文字", "processed_image_hash": digest, "browser_image_context": "已有图片文字",
-             "browser_image_turn_id": 1, "browser_artifacts": [original], "execution_goal": {"kind": "page_read", "request": "再次读取图片文字", "source": "user_image"}}
+             "browser_image_turn_id": 1, "browser_artifacts": [original]}
     if case == "empty_text":
         state["browser_image_context"] = ""
     elif case == "missing_artifact":

@@ -3,7 +3,7 @@
 from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.outcomes import read_outcome
-from plango.task import BrowserDecision, TaskDecision
+from plango.task import BrowserDecision, DeliveryDecision, TaskDecision
 from test_browser_harness import TOKEN, fixture, settings, wait_for
 
 
@@ -14,7 +14,7 @@ def test_qr_login_pauses_before_page_models_and_resumes_original_run_after_resta
     calls = []
     async def classify_only(schema, **kwargs):
         calls.append(schema)
-        assert schema is TaskDecision, "A login page must not reach extraction or Vision"
+        assert schema in {TaskDecision, DeliveryDecision}, "A login page must not reach extraction or Vision"
         return TaskDecision(operation="read", browser=BrowserDecision(operation="extract"))
 
     app.state.runtime.model.structured = classify_only
@@ -37,7 +37,7 @@ def test_qr_login_pauses_before_page_models_and_resumes_original_run_after_resta
 
     restored_app = create_app(config, token=TOKEN)
     async def resumed_model(schema, **kwargs):
-        assert schema is TaskDecision, "Resume must preserve the already classified user turn"
+        assert schema in {TaskDecision, DeliveryDecision}, "Resume must preserve the already classified user turn"
         return TaskDecision(operation="answer", answer="已读取当前页面，登录状态与菜单内容待人工确认。")
     restored_app.state.runtime.model.structured = resumed_model
     with TestClient(restored_app, headers=headers) as client:

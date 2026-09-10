@@ -2,12 +2,12 @@
 
 import json
 
-from plango.task import BrowserDecision, Citation, TaskDecision
+from plango.task import BrowserDecision, Citation, DeliveryDecision, TaskDecision
 
 
 def browser_actor(next_step=None):
     async def actor(schema, *, fallback, **kwargs):
-        if schema is not TaskDecision:
+        if schema not in {TaskDecision, DeliveryDecision}:
             return await next_step(schema, fallback=fallback, **kwargs) if next_step else fallback
         context = json.loads(kwargs['user'])
         if not context.get('browser_steps'):

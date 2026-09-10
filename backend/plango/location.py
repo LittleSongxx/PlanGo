@@ -35,40 +35,45 @@ def select_origin(state, extracted_name, previous_spec, context):
             "市"
         )
 
+    def precise_client_point():
+        return (
+            context is not None
+            and context.granularity in {"point", "address"}
+            and context.detail_source not in {"ip", "amap-ip", "amap-city", "pconline", "ip-api"}
+            and context.latitude is not None
+            and context.longitude is not None
+        )
+
     explicit = str(extracted_name or "").strip()
     previous_origin = state.get("location_origin") or {}
+    previous_location = previous_spec.location if previous_spec is not None else None
     if explicit:
         name = explicit
         source = "user"
-    elif previous_spec and previous_origin.get("source", "user") == "user":
+    elif previous_location is not None and previous_origin.get("source", "user") == "user":
         return (
-            previous_spec.location.name,
-            previous_spec.location,
-            previous_origin or {"source": "user", "name": previous_spec.location.name},
+            previous_location.name,
+            previous_location,
+            previous_origin or {"source": "user", "name": previous_location.name},
         )
     elif context:
         name = context.city
         source = context.source
-    elif previous_spec:
+    elif previous_location is not None:
         return (
-            previous_spec.location.name,
-            previous_spec.location,
-            previous_origin or {"source": "user", "name": previous_spec.location.name},
+            previous_location.name,
+            previous_location,
+            previous_origin or {"source": "user", "name": previous_location.name},
         )
     else:
         return None, None, {"source": "unknown", "name": None}
     metadata = {"source": source, "name": name}
-    if (
-        context
-        and same_name(name, context.city)
-        and context.latitude is not None
-        and context.longitude is not None
-    ):
+    if context and same_name(name, context.city) and precise_client_point():
         return (
             name,
             Location(name=name, latitude=context.latitude, longitude=context.longitude),
             {**metadata, "coordinate_source": context.source},
         )
-    if previous_spec and same_name(name, previous_spec.location.name):
-        return name, previous_spec.location, metadata
+    if previous_location is not None and same_name(name, previous_location.name):
+        return name, previous_location, metadata
     return name, None, metadata

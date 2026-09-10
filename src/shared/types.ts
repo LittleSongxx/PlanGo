@@ -191,7 +191,7 @@ export interface DraftReviewCardDetails { runId: string; interruptId: string; pl
 
 export type OutcomeCard =
   | { kind: 'task_answer'; text: string; complete: boolean; citations: { title: string; quote: string; url: string }[] }
-  | { kind: 'booking_preview'; complete: boolean; partySize?: number; date: string; time: string; labels: string[]; observedAt: string; sourceUrl: string }
+  | { kind: 'booking_preview'; complete: boolean; merchant?: string; partySize?: number; date: string; time: string; labels: string[]; observedAt: string; sourceUrl: string }
   | { kind: 'draft_review'; draft: DraftReviewCardDetails }
   | { kind: 'preparation'; ready: boolean; current?: boolean; summary: string; observedAt?: string; pendingChecks?: string[]; resume?: HarnessPreparationResume & { run_id: string };
       entries: { name: string; address: string; partySize?: number; date: string; time: string; timezone: string }[];

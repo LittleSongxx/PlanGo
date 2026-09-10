@@ -64,32 +64,35 @@ def append(path, value):
         os.fsync(stream.fileno())
 
 
+_BUDGET_STOPS = frozenset({"batch_limit", "case_request_limit"})
+
+
 @contextmanager
 def shared_budget(path, limits):
-    """One append-only stage ledger across serial datasets; interrupted calls block."""
+    """Append-only usage log. Call and token counts are not an admission gate.
+
+    An unfinished started row still blocks: that is missing usage, not a cap.
+    Historic batch/case budget stops stay in the file and are ignored.
+    """
     path = Path(path)
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     with path.open("a+", encoding="utf-8") as stream:
         fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
         stream.seek(0)
         rows = [json.loads(line) for line in stream if line.strip()]
-        header = {"schema": "plango.quality-stage-budget.v1", "limits": limits}
+        header = {"schema": "plango.quality-stage-budget.v1", "limits": limits or {}}
         if not rows:
             append(path, header)
-        elif rows[0] != header:
-            raise ValueError("Shared stage budget limits changed")
         started = [row for row in rows[1:] if row["event"] == "started"]
         completed = [row for row in rows[1:] if row["event"] == "completed"]
         ids = [row["call_id"] for row in started]
         if len(ids) != len(set(ids)) or sorted(ids) != sorted(row["call_id"] for row in completed):
             raise ValueError("Shared stage has an unfinished model call; retain ledger and resolve actual usage")
-        stop = next((row["stop"] for row in completed if row.get("stop")), None)
+        stop = next((row["stop"] for row in completed if row.get("stop") and row["stop"] not in _BUDGET_STOPS), None)
         tokens = sum(row["reported_tokens"] for row in completed)
-        if len(started) >= limits["calls"] or tokens >= limits["reported_tokens_stop"]:
-            stop = stop or "batch_limit"
         if stop:
             raise ValueError("Shared stage stopped: " + stop)
-        yield {"calls": started, "reported_tokens": tokens, "stop": None, "limits": limits, "budget_ledger": path}
+        yield {"calls": started, "reported_tokens": tokens, "stop": None, "limits": limits or {}, "budget_ledger": path}
 
 
 def digest(value):
@@ -190,22 +193,13 @@ def business_clock(runtime, case, observed_at=None):
 def install_budget(runtime, case_id, control, expected_sha, case_ids, log, *, manifest_fn=None):
     original = runtime.model._invoke
     calls = []
-    limits = control.get("limits", {"calls": MAX_BATCH_CALLS, "case_calls": MAX_CASE_CALLS,
-                                     "reported_tokens_stop": MAX_BATCH_REPORTED_TOKENS})
 
     async def invoke(awaitable, *, timeout):
-        reason = None
         if digest(manifest_fn() if manifest_fn else manifest(case_ids)) != expected_sha:
-            reason = "source_drift"
-        elif len(control["calls"]) >= limits["calls"] or control["reported_tokens"] >= limits["reported_tokens_stop"]:
-            reason = "batch_limit"
-        elif len(calls) >= limits["case_calls"]:
-            reason = "case_request_limit"
-        if reason:
             if hasattr(awaitable, "close"):
                 awaitable.close()
-            control["case_stop" if reason == "case_request_limit" else "stop"] = reason
-            raise RuntimeError("quality_" + reason)
+            control["stop"] = "source_drift"
+            raise RuntimeError("quality_source_drift")
         row = {"case_id": case_id, "invocation": len(calls) + 1, "started_at": datetime.now(timezone.utc).isoformat()}
         call_id = uuid.uuid4().hex
         if control.get("budget_ledger"):

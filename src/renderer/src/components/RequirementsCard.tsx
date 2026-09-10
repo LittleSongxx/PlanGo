@@ -12,7 +12,7 @@ const fieldLabels: Partial<Record<keyof RequirementFields, string>> = {
 function valuesOf(run: HarnessSnapshot): Record<keyof RequirementFields, string> {
   const spec = row(run.state.trip_spec || run.state.previous_spec || run.offer_comparison?.constraints)
   return Object.fromEntries(Object.keys(fieldLabels).map(key => [key,
-    String(key === 'location_name' ? row(spec.location).name || '' : key === 'search_location_name' ? row(spec.search_location || spec.location).name || '' : key === 'route_distance_km' ? spec.max_distance_km ?? (Array.isArray(spec.hard_constraints) && spec.hard_constraints.includes('距离优先') ? 5 : '') : key === 'search_radius_km' && spec.search_radius_km === undefined ? spec.max_distance_km ?? '' : spec[key] ?? '')
+    String(key === 'location_name' ? row(spec.location).name || '' : key === 'search_location_name' ? row(spec.search_location).name || '' : key === 'route_distance_km' ? spec.max_distance_km ?? (Array.isArray(spec.hard_constraints) && spec.hard_constraints.includes('距离优先') ? 5 : '') : key === 'search_radius_km' && spec.search_radius_km === undefined ? spec.max_distance_km ?? '' : spec[key] ?? '')
   ])) as Record<keyof RequirementFields, string>
 }
 

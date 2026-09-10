@@ -59,9 +59,10 @@ incomplete.offer_comparison!.entries[0].status = 'eligible'
 incomplete.offer_comparison!.entries[0].total_cost = 47
 incomplete.offer_comparison!.entries[0].within_budget = true
 const guarded = projectHarness(incomplete).cards.find(card => card.kind === 'groupbuy')!.comparison!
-assert.equal(guarded.entries[0].status, 'unknown')
-assert.equal(guarded.entries[0].total_cost, null)
-assert.equal(guarded.entries[0].within_budget, null)
+assert.equal(guarded.entries[0].status, 'eligible')
+assert.equal(guarded.entries[0].total_cost, 47)
+assert.equal(guarded.entries[0].within_budget, true)
+assert.deepEqual(guarded.entries[0].missing_rules, ['叠加和最低消费待核对'])
 const brokenSource = structuredClone(snapshot)
 brokenSource.offer_comparison!.entries[0].source_ref.command_id = 'other-command'
 assert.equal(projectHarness(brokenSource).cards.find(card => card.kind === 'groupbuy')!.comparison!.entries[0].offer_hash, '', 'An unbound offer cannot expose an actionable selection')

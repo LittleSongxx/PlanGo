@@ -203,6 +203,8 @@ class ToolRegistry:
 
     async def _search_places(self, ctx: ToolContext, args: SearchPlacesArgs) -> dict[str, Any]:
         assert ctx.trip_spec is not None
+        if ctx.trip_spec.location is None:
+            raise ValueError("location_unknown")
         places, evidence = await ctx.world.search_places(
             args.query, ctx.trip_spec.location, limit=args.limit
         )
@@ -226,6 +228,8 @@ class ToolRegistry:
         place = await ctx.world.get_place(args.place_id)
         if place is None:
             raise ValueError("place_not_found")
+        if ctx.trip_spec.location is None:
+            raise ValueError("location_unknown")
         route, evidence = await ctx.world.estimate_route(ctx.trip_spec.location, place,
             mode=ctx.trip_spec.travel_mode, visit_date=ctx.trip_spec.visit_date, timezone_name=ctx.trip_spec.timezone,
             at_minute=parse_minute(ctx.trip_spec.time_window_start) if ctx.trip_spec.time_window_start else None)
@@ -235,6 +239,8 @@ class ToolRegistry:
     async def _get_weather(self, ctx: ToolContext, args: BaseModel) -> dict[str, Any]:
         del args
         assert ctx.trip_spec is not None
+        if ctx.trip_spec.location is None:
+            raise ValueError("location_unknown")
         if ctx.trip_spec.visit_date is not None and getattr(ctx.world, "strict_location", False):
             weather, evidence = await ctx.world.get_weather(ctx.trip_spec.location, ctx.trip_spec.visit_date, ctx.trip_spec.timezone)  # type: ignore[call-arg]
         else:

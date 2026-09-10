@@ -31,7 +31,7 @@ function projectOfferComparison(value: OfferComparison): OfferComparison {
     entries: rows(data.entries).filter(entry => str(entry.name)).map(entry => {
       const ref = row(entry.source_ref), missing = strings(entry.missing_rules)
       const validRef = entry.grounded === true && origin.valid === true && !!str(reference.command_id) && reference.command_id === origin.command_id && reference.artifact_id === origin.artifact_id && ref.command_id === reference.command_id && ref.offer_index === entry.offer_index && ref.offer_hash === entry.offer_hash && Number.isSafeInteger(entry.offer_index) && Number(entry.offer_index) >= 0 && /^[a-f0-9]{64}$/.test(str(entry.offer_hash))
-      const status = entry.status === 'ineligible' ? 'ineligible' : entry.status === 'eligible' && !missing.length && validRef ? 'eligible' : 'unknown'
+      const status = !validRef || entry.status === 'unknown' ? 'unknown' : entry.status === 'ineligible' ? 'ineligible' : entry.status === 'eligible' ? 'eligible' : 'unknown'
       return { offer_index: num(entry.offer_index) ?? -1, offer_hash: validRef ? str(entry.offer_hash) : '', name: str(entry.name), grounded: entry.grounded === true,
         price_basis: ['per_person', 'per_package', 'voucher', 'single_item'].includes(str(entry.price_basis)) ? entry.price_basis as 'per_person' | 'per_package' | 'voucher' | 'single_item' : 'unknown',
         kind: ['voucher', 'package', 'single_item'].includes(str(entry.kind)) ? entry.kind as 'voucher' | 'package' | 'single_item' : 'unknown', status,
@@ -166,6 +166,7 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
   if (bookingPreview) {
     const requested = row(preview.requested), labels = row(preview.visible_labels)
     cards.push({ kind: 'booking_preview', complete: run.phase === 'SUCCEEDED' && !run.command_pending && readOutcome.status === 'satisfied',
+      merchant: str(labels.merchant_label) || str(row(state.selected_poi).name) || undefined,
       partySize: num(requested.party_size), date: str(requested.date), time: str(requested.time), labels: [str(labels.party_label), str(labels.date_label), str(labels.time_label)],
       observedAt: str(preview.observed_at), sourceUrl: str(preview.source_url) })
   }

@@ -85,7 +85,7 @@ function CardView({ card }: { card: OutcomeCard }): JSX.Element {
       </Card>
     case 'booking_preview':
       return <Card accent>
-        <div className="flex items-center justify-between gap-3"><div><div className="plango-kicker">预约条件预览</div><h3 className="mt-1 font-semibold text-lg">悦廊 · {card.complete ? '参数显示已核对' : '参数尚待核对'}</h3></div><SourceBadge source="browser" /></div>
+        <div className="flex items-center justify-between gap-3"><div><div className="plango-kicker">预约条件预览</div><h3 className="mt-1 font-semibold text-lg">{card.merchant ? `${card.merchant} · ` : ''}{card.complete ? '参数显示已核对' : '参数尚待核对'}</h3></div><SourceBadge source="browser" /></div>
         <div className="my-4 rounded-xl border border-[var(--line)] bg-[var(--surface-soft)] p-4"><p className="font-medium">{card.partySize ?? '待确认'} 人 · {card.date} {card.time} · 北京时间</p><p className="mt-2 text-xs leading-6 text-[var(--muted)]">网页显示：{card.labels.filter(Boolean).join(' · ') || '尚未取得完整控件'}<br />年份来自预填链接，网页控件只显示星期、月、日。</p></div>
         <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-6 text-amber-900">未查询空位，未提交预约。网站购物车和查询流程已阻断；这些参数不能证明有位或预订成功。</p>
         <p className="mt-3 text-xs text-[var(--muted)]">核对记录：{card.observedAt ? new Date(card.observedAt).toLocaleString('zh-CN') : '时间未知'}</p>

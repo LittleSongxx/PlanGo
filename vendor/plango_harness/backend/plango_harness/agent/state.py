@@ -243,9 +243,13 @@ def planning_reset(state: dict[str, Any]) -> dict[str, Any]:
         "action_proposal": None, "action_results": [], "approval_decision": None,
         "interrupt_id": None, "clarification": None, "advocate_reports": [], "delegated_roles": [],
         "evidence": state.get("evidence", []), "weather": state.get("weather"),
-        "memory_delta": [], "execution_goal": None, "execution_outcome": None,
+        "memory_delta": [],         "execution_goal": None, "execution_outcome": None,
         "preparation_restart": None,
         "execution_started": False, "reflection_done": False,
+        # A new turn is not the in-flight extract/write that paused the last one.
+        # Leaving that wait in the projection makes the next user message look
+        # like a resume, and the new text never becomes the current task.
+        "browser_wait": None, "browser_next": None, "browser_action": None,
         "requirement_patch": [], "requirement_refresh": {},
         "structured_requirement_edit": None,
         "last_observation": None,

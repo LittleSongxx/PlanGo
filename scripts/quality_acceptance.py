@@ -324,7 +324,7 @@ def prepare(work, *, dataset=None, freeze=None):
     if (dataset / "protocol.json").exists():
         inputs["protocol.json"] = dataset / "protocol.json"
         protocol = metadata["protocol"]
-        with runner.shared_budget(ROOT / protocol["budget_ledger"], protocol["limits"]):
+        with runner.shared_budget(ROOT / protocol["budget_ledger"], protocol.get("limits") or {}):
             pass
     runner.write(work / "session.json", {"created_at": now(), "dataset_sha": bundle["dataset_sha"],
         "product_sha": bundle["product_sha"], "dataset_path": str(dataset.relative_to(ROOT)), "freeze_path": str(freeze.relative_to(ROOT)),
@@ -356,7 +356,7 @@ def run(work, case_ids, *, gold_review=None, dataset=None, freeze=None):
     if protocol:
         ledger = repository_path(ROOT / protocol["budget_ledger"])
         assert ledger.exists(), "Shared budget ledger missing; never restart its allowance"
-    budget = runner.shared_budget(ledger, protocol["limits"]) if protocol else nullcontext({"calls": [], "reported_tokens": 0, "stop": None})
+        budget = runner.shared_budget(ledger, protocol.get("limits") or {}) if protocol else nullcontext({"calls": [], "reported_tokens": 0, "stop": None})
     with budget as control:
         _run(work, case_ids, gold_review=gold_review, dataset=dataset, freeze=freeze, control=control)
 

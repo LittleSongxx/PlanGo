@@ -15,7 +15,7 @@ from plango.app import create_app
 from plango.browser import BrowserScreenshot, run_context
 from plango.graph import BrowserDecision, VisualReading, vision_blocked, vision_reason_supported
 from plango.outcomes import current_visual_observation
-from plango.task import TaskDecision
+from plango.task import DeliveryDecision, TaskDecision
 from test_browser_harness import TOKEN, fixture, settings, wait_for
 from test_browser_navigation import browser_driver
 
@@ -113,7 +113,7 @@ def test_graph_vision_is_opt_in_once_readonly_and_checks_durable_unknown(tmp_pat
     async def model(schema, *, fallback, **kwargs):
         nonlocal unknown_recorded
         calls.append(schema)
-        if schema is TaskDecision:
+        if schema in {TaskDecision, DeliveryDecision}:
             context = json.loads(kwargs["user"])
             if context.get("browser_steps", 0) == 0:
                 return TaskDecision(operation="read")
@@ -212,7 +212,7 @@ def test_rejected_browser_approval_does_not_enter_visual_fallback(tmp_path):
 
     async def model(schema, *, fallback, **kwargs):
         calls.append(schema)
-        if schema is TaskDecision:
+        if schema in {TaskDecision, DeliveryDecision}:
             if not json.loads(kwargs["user"])["browser_steps"]:
                 return TaskDecision(operation="read")
             return TaskDecision(operation="read", browser=BrowserDecision(operation="click", idx=0))

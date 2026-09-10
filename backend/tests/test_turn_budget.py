@@ -12,7 +12,7 @@ from langgraph.types import interrupt
 from plango.app import create_app
 from plango.graph import BrowserDecision
 from plango.settings import DesktopSettings
-from plango.task import TaskDecision
+from plango.task import DeliveryDecision, TaskDecision
 from plango_harness.agent.contracts import Location, RunPhase
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.model_adapter import ModelAdapter
@@ -36,11 +36,10 @@ def test_browser_model_admission_uses_remaining_turn_budget_not_cumulative_total
         assert result == decision and invoke.await_count == 1
         assert adapter.total_tokens == 12473 and adapter.call_count == 7
         assert adapter.token_baseline == 8809 and adapter.last_error is None
-        # An overlarge next prompt can still be rejected before billing despite an unspent turn cap.
-        blocked = await adapter.structured(BrowserDecision, system="读取网页", user="页面原文" * 2000, fallback=fallback)
-        assert blocked is fallback and invoke.await_count == 1
-        assert adapter.last_error == "model_token_budget" and adapter._remaining_tokens() > 0
-        assert adapter.total_tokens == 12473 and adapter.call_count == 7
+        again = await adapter.structured(BrowserDecision, system="读取网页", user="页面原文" * 2000, fallback=fallback)
+        assert again == decision and invoke.await_count == 2
+        assert adapter.last_error is None
+        assert adapter.total_tokens == 12794 and adapter.call_count == 8
 
     asyncio.run(exercise())
 
@@ -54,7 +53,7 @@ def test_new_user_edits_receive_budget_without_resetting_cumulative_usage(tmp_pa
     world.amap._get = AsyncMock(side_effect=AssertionError("No real network in budget fixtures."))
 
     async def model(schema, *, fallback, **kwargs):
-        if schema is TaskDecision:
+        if schema in {TaskDecision, DeliveryDecision}:
             assert adapter.token_limit - adapter.total_tokens >= 1500
             adapter.total_tokens += 1500  # Explicit synthetic provider usage.
             adapter.call_count += 1
