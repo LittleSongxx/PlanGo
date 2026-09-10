@@ -42,9 +42,13 @@ def test_amap_planning_from_empty_desktop_has_draft_without_any_browser_command(
         run_id = client.post("/api/v1/runs", json={"input_text": "1人，今天18:30吃饭，预算300元，安排一个餐厅行程", "browser_session_id": "empty-desktop", "location_context": {"city": "重庆", "latitude": 29.56, "longitude": 106.57, "source": "manual"}}).json()["run_id"]
         current = wait_for(client, run_id, lambda v: bool(v.get("interrupt_id")) or v["phase"] in {"FAILED", "INFEASIBLE"})
         assert current["state"].get("selected_plan"), current
-        # Amap publishes no queue data, so that stays pending. The itinerary still
-        # reaches the user for approval instead of dead-ending in a clarification.
-        assert current["phase"] == "WAITING_APPROVAL", current
+        # Amap publishes no queue data, so that stays pending. The itinerary is still
+        # delivered as a reviewable draft instead of dead-ending in a clarification,
+        # and it does not jump to an execution approval the user never asked for.
+        assert current["interrupt_id"].startswith("draft:"), current
+        review = current["state"]["clarification"]
+        assert review["kind"] == "draft_review" and review["can_prepare"] is True
+        assert any(c["name"].startswith("supply:") for c in review["unknowns"])
         assert any(c["name"].startswith("supply:") for c in current["state"]["verifier"]["unknown_evidence"])
         assert not current["state"]["verifier"]["blocking_evidence"]
         assert client.get("/api/v1/browser/commands?browser_session_id=empty-desktop").json()["commands"] == []

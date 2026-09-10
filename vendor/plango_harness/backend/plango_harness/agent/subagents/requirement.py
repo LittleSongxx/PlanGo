@@ -14,6 +14,8 @@ REQUIREMENT_INSTRUCTIONS = (
     "取消排队上限用clear_max_queue，取消路程上限用clear_route_distance，取消搜索半径用clear_search_radius。"
     "同一字段的设置、清除和未知标志不能同时出现。真实歧义在clarification_fields列出具体字段，"
     "clarification_question只询问这些字段，其余已知修改照常返回。"
+    "一个数值可能落在多个字段上时（例如只说“预算180”，既可能是总额budget也可能是人均per_person_budget），"
+    "不要替用户挑一个写进去：把该字段列入clarification_fields并询问，其余能确定的修改照常返回。"
     "预算总额用budget，人均用per_person_budget；金额单位元，时长和排队单位分钟，距离单位公里。"
     "搜索范围用search_radius_km，实际路程上限用route_distance_km，不使用旧字段max_distance_km。"
     "party记录角色资料，party_size记录总人数，party_counts只修改已知角色人数，退出记0，不猜未知分配。"

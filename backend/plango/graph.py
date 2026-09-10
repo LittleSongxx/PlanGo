@@ -638,7 +638,15 @@ def build_desktop_graph(runtime, deps, checkpointer):
                     break
                 except ValueError as error:
                     if attempt:
-                        raise
+                        # The model answered but never produced a usable decision. Report
+                        # that, keeping the sources and calculations already obtained,
+                        # instead of ending the run as a provider or configuration fault.
+                        context["tool_results"] = [*results, {"tool": "decision_validation", "ok": False, "error": str(error)}]
+                        return {"browser_task_context": context, "browser_next": BrowserDecision().model_dump(),
+                                "phase": RunPhase.PARTIAL_FAILED, "outcome": "PARTIAL_FAILED",
+                                "reason": "本轮未能形成可用的下一步，已保留读到的资料和计算结果；请补充或换个说法再试。",
+                                "trace": [{"event": "task_decision_unusable", "phase": "RESEARCHING", "agent_id": "task",
+                                           "payload": {"error": str(error), "turn_id": state.get("turn_id", 1)}}]}
                     results.append({"tool": "decision_validation", "ok": False, "error": str(error)})
         assert task is not None
         context["decision_count"] = context.get("decision_count", 0) + 1
@@ -836,7 +844,12 @@ def build_desktop_graph(runtime, deps, checkpointer):
             update = await variants(state, deps)
             current = {**state, **update}
             verifier = VerifierResult.model_validate(current["verifier"]) if current.get("verifier") else None
-            if current.get("selected_plan") and verifier and verifier.hard_constraints_pass and not verifier.executable:
+            # A plan with open items is delivered as a reviewable draft so the user
+            # decides; only a fully observed one goes on to the execution approval. This
+            # asked for executable before unknown facts stopped blocking, which would
+            # now send a plan with pending items straight to an approval nobody asked
+            # for. It wants "is anything still open", which is evidence_complete.
+            if current.get("selected_plan") and verifier and verifier.hard_constraints_pass and not verifier.evidence_complete:
                 review = draft_review(current)
                 delivered = draft_outcome(current)
                 return {**update, "phase": RunPhase.PLAN_DRAFTED, "outcome": None, "clarification": review,
