@@ -222,6 +222,8 @@ def install_budget(runtime, case_id, control, expected_sha, case_ids, log, *, ma
                 # Private dev diagnostics only; never supplied to the judge as
                 # source evidence, and never persisted as product facts.
                 row["unverified_analysis"] = parsed.model_dump(mode="json")
+            elif type(parsed).__name__ in {"TaskIntent", "RequirementOutput"}:
+                row["unverified_requirements"] = {"schema": type(parsed).__name__, "proposal": parsed.model_dump(mode="json")}
             usage = usage_of(result)
             row.update(status="response", usage=usage, usage_missing=not bool(usage))
             if not usage:

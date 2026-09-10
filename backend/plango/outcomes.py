@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import math
 import re
 from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
@@ -11,6 +10,8 @@ from typing import Any, Literal
 from urllib.parse import urlsplit
 
 from plango_harness.agent.contracts import Evidence, PlanStop, TripSpec
+from plango_harness.agent.decisions import RequirementOutput
+from plango_harness.agent.subagents.requirement import RequirementAgent
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 PLANNING = re.compile(r"行程|出行规划|路线规划|(?:帮我|给我|请)(?:做|制定)?规划|规划(?:一下|一份|重庆|出游|旅游|路线)|安排.{0,12}(?:半天|一天|游玩)")
@@ -484,12 +485,15 @@ def draft_outcome(state):
 
 
 class TaskIntent(BaseModel):
-    """Language-level objective only; selecting a route never grants an action."""
+    """One interpretation of this turn's objective and sparse requirements; no authority."""
     model_config = ConfigDict(extra="forbid")
     kind: Literal["planning", "extract", "reasoning", "write", "continue"] = "continue"
+    requirements: RequirementOutput | None = None
+    analysis_goals: list[Literal["cost", "comparison", "applicability", "distance", "duration", "arrival"]] = Field(default_factory=list, max_length=6)
 
 
-def update_task_context(state: dict[str, Any], intent: TaskIntent | None = None) -> dict[str, Any]:
+def update_task_context(state: dict[str, Any], intent: TaskIntent | None = None,
+                        *, requirements: RequirementOutput | None = None) -> dict[str, Any]:
     text = str(state.get("input_text") or "")
     requested = intent_text(text)
     old = dict(state.get("browser_task_context") or {})
@@ -522,6 +526,10 @@ def update_task_context(state: dict[str, Any], intent: TaskIntent | None = None)
             "per_person_budget": spec.per_person_budget if spec else old.get("per_person_budget"),
             "visit_date": spec.visit_date.isoformat() if spec and spec.visit_date else old.get("visit_date"),
             "time_window_start": spec.time_window_start if spec else old.get("time_window_start"),
+            "duration_minutes": spec.duration_minutes if spec else old.get("duration_minutes"),
+            "route_distance_km": spec.max_distance_km if spec else old.get("route_distance_km"),
+            "search_radius_km": spec.search_radius_km if spec else old.get("search_radius_km"),
+            "timezone": spec.timezone if spec else old.get("timezone", "Asia/Shanghai"),
         }
     else:
         context = dict(old)
@@ -545,98 +553,65 @@ def update_task_context(state: dict[str, Any], intent: TaskIntent | None = None)
         context["source_analysis"] = kind == "reasoning"
         if kind == "reasoning":
             context["comparison_scope"] = text if intent.kind != "continue" else old.get("comparison_scope", text)
-    edits, spans, invalid = price_fields(text)
-    context.update(edits)
-    context["budget_ambiguous"] = "budget" in invalid
-    if "party_size" in edits:
-        context["party_ambiguous"] = edits["party_size"] is None
+            context["analysis_goals"] = list(dict.fromkeys(intent.analysis_goals)) if intent.kind != "continue" or intent.analysis_goals else old.get("analysis_goals", [])
+    raw_spec = state.get("trip_spec") or state.get("previous_spec")
+    previous = TripSpec.model_validate(raw_spec) if raw_spec else None
+    # The fallback shares the planning parser; a model proposal is never
+    # overwritten by a second language parser in the browser path.
+    if requirements is None:
+        if intent is None:
+            requirements = RequirementAgent._fallback(text, [], previous,
+                                                      reference_at=state.get("requirement_reference_at"))
+        elif intent.requirements is not None:
+            requirements = RequirementAgent._grounded_patch(intent.requirements, text=text, previous_spec=previous,
+                                                             require_initial=mode == "planning")
+        else:
+            requirements = RequirementOutput(field_evidence={})
+    for field, target, clear in (
+        ("party_size", "party_size", "party_size_unknown"),
+        ("budget", "total_budget", "clear_budget"),
+        ("per_person_budget", "per_person_budget", "clear_per_person_budget"),
+        ("visit_date", "visit_date", "visit_date_unknown"),
+        ("time_window_start", "time_window_start", "time_window_start_unknown"),
+        ("duration_minutes", "duration_minutes", None),
+        ("route_distance_km", "route_distance_km", "clear_route_distance"),
+        ("search_radius_km", "search_radius_km", "clear_search_radius"),
+        ("travel_mode", "travel_mode", None),
+    ):
+        if clear and getattr(requirements, clear):
+            context[target] = None
+        elif (value := getattr(requirements, field)) is not None:
+            context[target] = value.isoformat() if field == "visit_date" else value
+    constraint_base = previous or TripSpec(goal=str(context.get("request") or text),
+        hard_constraints=context.get("hard_constraints", []), soft_preferences=context.get("soft_preferences", []),
+        party_counts=context.get("party_counts", {}))
+    merged = requirements.to_trip_spec(text, constraint_base)
+    context.update(hard_constraints=merged.hard_constraints, soft_preferences=merged.soft_preferences, party_counts=merged.party_counts)
+    context["clarification_fields"] = [field for field in requirements.clarification_fields
+        if context.get("mode") == "planning" or field not in {"context", "location", "search_location"}]
+    context["clarification_question"] = requirements.clarification_question
+    context["budget_ambiguous"] = bool({"budget", "per_person_budget"} & set(requirements.clarification_fields))
+    context["party_ambiguous"] = "party_size" in requirements.clarification_fields or context.get("party_size") is None
+    context["field_evidence"] = {**context.get("field_evidence", {}), **(requirements.field_evidence or {})}
+    context["requirements_verified"] = requirements.field_evidence is not None and "context" not in requirements.clarification_fields
     if context.get("kind") == "extract" and (CURRENT_PAGE.search(text) or re.search(r"https?://", text)) and READ_REQUEST.search(requested):
         context.pop("offer_source", None)  # A new explicit read supplies candidates; it never changes the selected offer.
     context.update(turn_id=turn, latest=text)
     return context
 
 
-def price_fields(text: str) -> tuple[dict[str, Any], list[tuple[int, int]], set[str]]:
-    """Parse a bounded set of explicit financial edits; preserve unsupported clauses."""
-    edits: dict[str, Any] = {}
-    spans: list[tuple[int, int]] = []
-    invalid: set[str] = set()
-    modifier = r"\s*(?:(?:改为|改成|改|调整到|设为|最多|不超过|控制在|为|是|[:：])\s*)?"
-    number = r"(\d+(?:\.\d+)?)\s*元?"
-    patterns = [
-        (
-            "total_budget",
-            r"(?:总预算|总额(?:上限)?|总价(?:上限)?|合计预算|预算总额)" + modifier + number,
-        ),
-        ("per_person_budget", r"(?:人均预算|每人预算|人均上限|每人上限)" + modifier + number),
-        ("per_person_budget", r"(?:人均|每人)\s*(?:最多|不超过|至多|限制在)\s*" + number),
-        ("per_person_budget", r"(?:人均|每人)\s*" + number + r"(?:以内|以下|之内)"),
-    ]
-    events: list[tuple[int, str, float | None, tuple[int, int]]] = []
-    for field, pattern in patterns:
-        for match in re.finditer(pattern, text):
-            value = float(match[1])
-            if math.isfinite(value) and 0 <= value <= 1_000_000:
-                events.append((match.start(), field, value, match.span()))
-            else:
-                invalid.add("budget")
-    for field, pattern in [
-        ("total_budget", r"取消(?:总预算|总额限制)|总预算不限|不设总预算"),
-        ("per_person_budget", r"取消人均预算|人均预算不限|不设人均预算"),
-    ]:
-        events.extend((m.start(), field, None, m.span()) for m in re.finditer(pattern, text))
-    for _, field, budget_value, span in sorted(events):
-        edits[field] = budget_value
-        spans.append(span)
-    digits = dict(zip("一二两三四五六七八九十", [1, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
-    for match in re.finditer(
-        r"(?<![\d-])(\d{1,2}|一|二|两|三|四|五|六|七|八|九|十)(?:个|位)?人", text
-    ):
-        count = int(match[1]) if match[1].isdigit() else digits[match[1]]
-        edits["party_size"] = count if 1 <= count <= 12 else None
-        spans.append(match.span())
-    for match in re.finditer(
-        r"人数(?:还|尚)?(?:没|未)(?:有)?确定|人数未知|先别按.{0,6}(?:人)?算|不确定.{0,5}(?:几个人|人数)",
-        text,
-    ):
-        edits["party_size"] = None
-        spans.append(match.span())
-    return edits, spans, invalid
-
-
 def uncovered_price_requirements(context: dict[str, Any], names: list[str]) -> list[str]:
-    """Whitelist fulfilled atoms; any unhandled request remains explicitly incomplete."""
-    unknown: list[str] = []
-    for request in [str(context.get("request") or ""), *context.get("edits", [])]:
-        text = request
-        _, spans, _ = price_fields(text)
-        for start, end in sorted(spans, reverse=True):
-            text = text[:start] + " " * (end - start) + text[end:]
-        for name in sorted(names, key=len, reverse=True):
-            text = text.replace(name, "")
-        if re.search(r"只(?:比|比较|核对)价格|其余条件(?:暂时)?不用考虑", text):
-            unknown.clear()
-            text = re.sub(r"只(?:比|比较|核对)价格|其余条件(?:暂时)?不用考虑", "", text)
-        # These phrases request only arithmetic/ranking or refer to the observed objects.
-        text = re.sub(
-            r"说明推荐理由|推荐(?:最便宜|便宜)?(?:的)?一家|最便宜|更便宜|便宜|最省钱|不超预算|预算内|人均价格|人均价|总价格|总价|价格|费用|(?:说明|计算)?(?:差价|差额)|差多少|核对|比较|对比|比价|推荐|选择|挑选|帮我选|帮我们选",
-            "",
-            text,
-        )
-        text = re.sub(
-            r"当前(?:页面|网页)|这个(?:页面|网页)|页面(?:上|中|的)?|网页(?:上|中|的)?|这两家(?:餐厅|店)?|两家(?:餐厅|店)?|餐厅|商家|套餐|一家|哪个|哪家|那个",
-            "",
-            text,
-        )
-        text = re.sub(
-            r"算一下|算算|计算|各自|给出|请|帮我|帮我们|麻烦|我们|我想|想要|我们有|一共|合计|共|一下|谢谢|以及|和|与|并|及|再|的|吧|先|按|做|选|又",
-            "",
-            text,
-        )
-        text = re.sub(r'[\s，,。；;：:、！？!?（）()“”"\'<>→—-]', "", text)
-        if text and text not in unknown:
-            unknown.append(text[:160])
-    return unknown
+    """A price-only projection cannot verify the turn's other accepted constraints."""
+    unknown = [*context.get("hard_constraints", []), *context.get("soft_preferences", [])]
+    if not context.get("requirements_verified", False):
+        unknown.append("本轮需求尚未完成语义核对")
+    unknown += [goal for goal in context.get("analysis_goals", []) if goal not in {"cost", "comparison"}]
+    unknown += [str(field) for field in context.get("clarification_fields", [])]
+    for field, label in (("visit_date", "到店日期与可用时段"), ("time_window_start", "到店时间"),
+                         ("route_distance_km", "实际路程上限"), ("search_radius_km", "地点范围")):
+        if context.get(field) is not None:
+            unknown.append(label)
+    return list(dict.fromkeys(unknown))
 
 
 def task_text(state: dict[str, Any]) -> str:
@@ -791,21 +766,56 @@ class CitedNumber(BaseModel):
     quote: str = Field(min_length=1, max_length=1000)
 
 
-class SourceAnalysis(BaseModel):
-    """Extraction only: the model cannot assign applicability or calculate totals."""
+class SourceCharge(CitedNumber):
+    """A literal charge; only its unit is normalized by the model."""
+    unit: Literal["group", "person", "package"]
+    currency: Literal["CNY", "USD", "EUR", "GBP", "unknown"] = "unknown"
+    operation: Literal["add", "deduct"] = "add"
+    threshold: CitedNumber | None = None
+    applies_to: list[int] = Field(default_factory=list, max_length=8)
+
+
+class SourceCondition(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    package_price: CitedNumber | None = None
-    covered_people: CitedNumber | None = None
-    meal_total: CitedNumber | None = None
-    fare_per_person: CitedNumber | None = None
+    quote: str = Field(min_length=1, max_length=2000)
+    assessment: Literal["no_condition", "satisfied", "conflict", "unknown"] = "unknown"
+    request_quote: str = Field(default="", max_length=2000)
+
+
+class SourceLeg(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["travel", "wait"] = "travel"
     distance_m: CitedNumber | None = None
     duration_seconds: CitedNumber | None = None
-    meal_coverage: str = Field(default="", max_length=1000)
-    fees_included: str = Field(default="", max_length=1000)
-    validity: str = Field(default="", max_length=1000)
-    reservation: str = Field(default="", max_length=1000)
-    stacking: str = Field(default="", max_length=1000)
-    other_limits: str = Field(default="", max_length=1000)
+
+
+class SourceWindow(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    quote: str = Field(min_length=1, max_length=1000)
+    dates: list[str] = Field(default_factory=list, max_length=2)
+    times: list[str] = Field(default_factory=list, max_length=2)
+    excluded: bool = False
+    boundary: Literal["range", "latest", "earliest"] = "range"
+    weekdays: list[int] = Field(default_factory=list, max_length=7)
+
+
+class SourceOption(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    record: int = Field(ge=0, strict=True)
+    entity: str = Field(default="", max_length=200)
+    quote: str = Field(default="", max_length=7500)
+    charges: list[SourceCharge] = Field(default_factory=list, max_length=8)
+    quantity: CitedNumber | None = None
+    covered_people: CitedNumber | None = None
+    windows: list[SourceWindow] = Field(default_factory=list, max_length=4)
+    conditions: list[SourceCondition] = Field(default_factory=list, max_length=12)
+    legs: list[SourceLeg] = Field(default_factory=list, max_length=8)
+
+
+class SourceAnalysis(BaseModel):
+    """Source-bound alternatives and charges, with no model totals or verdicts."""
+    model_config = ConfigDict(extra="forbid")
+    options: list[SourceOption] = Field(default_factory=list, max_length=6)
 
 
 def analysis_source(state):
@@ -826,166 +836,427 @@ def analysis_source(state):
     return None
 
 
-def source_analysis(state, extracted: SourceAnalysis):
-    """A bounded calculation over cited literal fields, not a merchant guarantee."""
+def analysis_records(page):
+    """Keep each captured JSON text record separate; plain pages remain one record."""
+    records = []
+    def collect(value):
+        if isinstance(value, dict):
+            if isinstance(value.get("text"), str) and value["text"].strip():
+                records.append({key: value[key] for key in ("text", "title", "name", "expires_at") if key in value})
+            for key, child in value.items():
+                if key != "text":
+                    collect(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child)
+    text = page["data"]["text"]
+    try:
+        collect(json.loads(text))
+    except (ValueError, RecursionError):
+        pass
+    return [{"record": index, **record} for index, record in enumerate(records or [{"text": text}])]
+
+
+def _source_quote(text, quote):
+    """Recover the complete surrounding clause so a short quote cannot crop negation."""
+    if not quote or text.count(quote) != 1:
+        return None
+    start = text.index(quote)
+    end = start + len(quote)
+    prefix = list(re.finditer(r"[，,。；;\n]", text[:start]))
+    suffix = re.search(r"[，,。；;\n]", text[end:])
+    return text[prefix[-1].end() if prefix else 0:end + suffix.start() if suffix else len(text)].strip()
+
+
+def _source_instruction(text):
     from .supply import _INSTRUCTION
+
+    # Conditional rules are analyzable data. Imperatives to invent or emit facts
+    # remain rejected; none of these source statements grants browser authority.
+    return any(match.group() not in {"如果", "假设"} for match in _INSTRUCTION.finditer(text))
+
+
+def _source_number(fact, text, units):
+    quote = _source_quote(text, fact.quote) if fact else None
+    if not quote or _source_instruction(quote) or re.search(r"不是|并非|未确认|未确定|尚未|不含|不包含", quote):
+        return None
+    # The numeric token must be inside the supplied quote; its surrounding atom
+    # supplies negation and units without confusing a second amount in the clause.
+    source_start = text.index(fact.quote)
+    source_end = source_start + len(fact.quote)
+    matches = {(Decimal(match[1]) * factor, match.start(1), match.end(1)) for pattern, factor in units
+               for match in re.finditer(pattern, text, re.I)
+               if source_start <= match.start(1) and match.end(1) <= source_end}
+    if len(matches) != 1:
+        return None
+    value, start, end = next(iter(matches))
+    return (value, quote, (start, end)) if value == Decimal(str(fact.value)) else None
+
+
+def _source_no_requirement(quote):
+    """Only explicit absence of a requirement can skip its satisfaction check."""
+    return bool(re.fullmatch(
+        r"(?:无需|无须|不需要|不必|不用)(?:提前)?预约|(?:无|没有)(?:额外费用|其他门槛|其他条件|其他限制)", quote.strip()))
+
+
+def source_analysis(state, extracted: SourceAnalysis):
+    """Evaluate cited quantities and conditions; a computed answer is never write authority."""
+    from datetime import timedelta
 
     page = analysis_source(state)
     if not page or (state.get("browser_task_context") or {}).get("kind") != "reasoning":
         return None
-    text = page["data"]["text"]
-    documents: list[str] = []
-    def find_text(value):
-        if isinstance(value, dict):
-            documents.extend(item for key, item in value.items() if key == "text" and isinstance(item, str))
-            for item in value.values():
-                find_text(item)
-        elif isinstance(value, list):
-            for item in value:
-                find_text(item)
-    try:
-        find_text(json.loads(text))
-    except (ValueError, RecursionError):
-        pass
-    if len(documents) > 1 or len(page["data"].get("offers") or []) > 1:
-        return None  # A single analysis cannot silently join separate source records/offers.
-    if extracted.package_price and (len(page["data"].get("places") or []) > 1 or len(set(re.findall(r"套餐\s*[A-Za-z一二三四五六七八九十\d]+", text))) > 1):
-        return None
-    number = r"(\d+(?:\.\d+)?)"
-    patterns = {
-        "package_price": [(r"(?:售价|套餐价|套餐价格)\s*[:：]?\s*[¥￥]?\s*" + number + r"\s*元\s*[/／]\s*(?:份|套餐)(?=$|[\s，。；;、：:}\"])", 1),
-                          (r"每份套餐(?:售价|价格)?\s*[:：]?\s*[¥￥]?\s*" + number + r"\s*元(?!\s*[/／])", 1)],
-        "covered_people": [(r"(?:覆盖|适用|可供|供)\s*" + number + r"\s*(?:位|名)?(?:成年人|成人|人)", 1)],
-        "meal_total": [(r"(?:完整|全部|总)(?:餐费|用餐费用)(?:已)?(?:确认|确定)?(?:为|是|[:：])?\s*[¥￥]?\s*" + number + r"\s*元", 1)],
-        "fare_per_person": [(r"单程(?:标准)?(?:票价|车费)\s*[:：]?\s*[¥￥]?\s*" + number + r"\s*元\s*[/／]\s*人", 1),
-                            (r"(?:每人|每位)单程(?:标准)?(?:票价|车费)\s*[:：]?\s*[¥￥]?\s*" + number + r"\s*元", 1)],
-        "distance_m": [(number + r"\s*(?:米|m\b)", 1), (number + r"\s*(?:公里|千米|km\b)", 1000)],
-        "duration_seconds": [(number + r"\s*秒", 1), (number + r"\s*分钟", 60)],
-    }
-    values, citations = {}, {}
-    for key, expressions in patterns.items():
-        fact = getattr(extracted, key)
-        if not fact or fact.quote not in text or _INSTRUCTION.search(fact.quote) or re.search(r"[$€£]|\b(?:USD|EUR|GBP)\b", fact.quote):
-            continue
-        if key == "package_price" and re.search(r"人均|每人|每位|元\s*[/／]\s*人", fact.quote):
-            continue
-        if key == "covered_people" and re.search(r"(?:成人|成年人).{0,12}(?:儿童|小孩)", text):
-            continue  # Mixed age composition needs an explicit group breakdown.
-        matches = [(match, factor) for pattern, factor in expressions for match in re.finditer(pattern, text, re.I)]
-        quoted = list(re.finditer(re.escape(fact.quote), text))
-        observed = {Decimal(match[1]) * factor for match, factor in matches
-                    if not re.search(r"不是|并非|未确认|不含|往返|人均|每人|每位", re.split(r"[。；;\n]", text[:match.start()])[-1][-20:])
-                    and not _INSTRUCTION.search(re.split(r"[。；;\n]", text[:match.start()])[-1] + match.group())
-                    and len(quoted) == 1 and quoted[0].start() <= match.start(1) and match.end(1) <= quoted[0].end()}
-        if len(matches) == 1 and observed == {Decimal(str(fact.value))}:
-            # A short model quote can identify the numeric span, while the
-            # original full match still proves its label/unit and preserves it.
-            values[key], citations[key] = Decimal(str(fact.value)), matches[0][0].group()
-    def clause(key, positive, negative=""):
-        quote = getattr(extracted, key)
-        valid = bool(quote and quote in text and not _INSTRUCTION.search(quote) and re.search(positive, quote)
-                     and not (negative and re.search(negative, text))
-                     and not any(re.search(r"(?:不是|并非|未确认|未|不)\s*$", text[max(0, match.start() - 8):match.start()])
-                                 for match in re.finditer(re.escape(quote), text)))
-        if valid:
-            citations[key] = quote
-        return valid
-
+    records = analysis_records(page)
     context = state["browser_task_context"]
     request = task_text(state)
+    requested = context.get("analysis_goals") or []
+    if not requested:
+        return None
     party = context.get("party_size")
     budget = _amount(context.get("total_budget"))
     per_budget = _amount(context.get("per_person_budget"))
     if per_budget is not None and isinstance(party, int):
         budget = min(budget, per_budget * party) if budget is not None else per_budget * party
-    missing, conflicts, lines = [], [], []
-    total = None
+    number = r"(?<![\d.+-])(\d+(?:\.\d+)?)(?![\d.])"
+    money_units = [(number + r"\s*(?:元|CNY\b|RMB\b)", 1), (r"[¥￥]\s*" + number, 1)]
+    people_units = [(number + r"\s*(?:位|名|个)?(?:成年人|成人|儿童|小孩|人)", 1)]
+    route_units = {
+        "distance_m": [(number + r"\s*(?:米|m\b)", 1), (number + r"\s*(?:公里|千米|km\b)", 1000)],
+        "duration_seconds": [(number + r"\s*秒", 1), (number + r"\s*分钟", 60), (number + r"\s*小时", 3600)],
+    }
+    entries: list[dict[str, Any]] = []
+    all_quotes: dict[str, str] = {}
+    lines: list[str] = []
+    missing: list[str] = []
+    conflicts: list[str] = []
+    delivered = set()
     def display(value):
         rendered = format(value, "f")
         return rendered.rstrip("0").rstrip(".") if "." in rendered else rendered
-    if re.search(r"路线|公交|交通|票价|车费", request) and "meal_total" in values:
-        meal, fare = values["meal_total"], values.get("fare_per_person")
-        lines.append(f"资料给出的完整餐费为{display(meal)}元。")
-        if "distance_m" in values:
-            lines.append(f"给定路线{display(values['distance_m'])}米（{display(values['distance_m'] / 1000)}公里）。")
-        if "duration_seconds" in values:
-            lines.append(f"给定用时{display(values['duration_seconds'])}秒（{display(values['duration_seconds'] / 60)}分钟）。")
-        if fare is None:
-            missing.append("单程标准票价未明确，不能按0元计算")
-        if not isinstance(party, int):
-            missing.append("同行人数待确认")
-        if fare is not None and isinstance(party, int):
-            total = meal + fare * party
-            lines.append(f"单程标准票价{display(fare)}元/人，{party}人交通费小计{display(fare * party)}元；与餐费合计{display(total)}元。")
-        if budget is not None:
-            lines.append(f"总预算{display(budget)}元，扣除餐费后剩余{display(budget - meal)}元用于交通等支出。")
-        lines.append("上述核算只含已给出的餐费与单程标准票价；返程及其他未说明费用另需核对。")
-    elif "package_price" in values and re.search(r"套餐|适用|条款", request):
-        price, people = values["package_price"], values.get("covered_people")
-        adult_only = bool(re.search(r"成人|成年人", citations.get("covered_people", "")))
-        people_unit = "名成人" if adult_only else "人"
-        lines.append(f"资料中的套餐售价为{display(price)}元/份。")
-        if people is not None:
-            lines.append(f"一份条款明确覆盖{display(people)}{people_unit}。")
-        if people is None or not isinstance(party, int):
-            missing.append("套餐覆盖人数或同行人数尚未明确")
-        elif people != party:
-            conflicts.append(f"一份仅明确覆盖{display(people)}{people_unit}，本次{party}人，不能认定按该份数适用或足够")
-        if not re.search(r"(?:仅|只)(?:买|购买|购入|使用|用)?(?:一|1)份", request):
-            missing.append("购买份数尚未明确，未自动加购")
-        if not clause("meal_coverage", r"(?:全部|所有)餐品|完整(?:覆盖|用餐|餐费)", r"不含.{0,8}(?:餐品|餐费)|餐品另点"):
-            missing.append("完整餐品覆盖范围未明确")
-        if not clause("fees_included", r"(?:包含|已含|包括).{0,25}(?:全部|所有)(?:必付)?费用|无额外费用|无服务费(?:或|和|及)其他加收|不收取(?:其他|任何额外)费用",
-                      r"(?:不含|未含|不包括).{0,12}(?:费|加收)|(?:费|加收).{0,6}(?:另计|另收)|(?:另收|加收).{0,12}(?:费|元)"):
-            missing.append("所有必付费用未确认全含，不能把套餐售价当完整餐费")
-        if not clause("reservation", r"无需预约|不需要预约|不用预约"):
-            missing.append("预约要求未满足或未明确")
-        if not (clause("stacking", r"(?:不允许|不可|不能|不与).{0,12}(?:叠加|同享|同用)") and re.search(r"不叠加|不与.{0,8}(?:同用|同享)", request)):
-            missing.append("本次优惠叠加条件尚未核对")
-        if not clause("other_limits", r"(?:没有|无|不设)其他(?:门槛|条件|限制)"):
-            missing.append("其他使用门槛尚未核对")
-        validity = extracted.validity
-        date_pattern = r"(\d{4})[-年](\d{1,2})[-月](\d{1,2})日?"
-        def dates(value):
+    for index, option in enumerate(extracted.options):
+        label = option.entity or f"资料{option.record + 1}"
+        if option.record >= len(records):
+            missing.append(f"{label}的资料记录无法对应")
+            continue
+        record = records[option.record]
+        text = record["text"]
+        if record.get("expires_at"):
             try:
-                return list(dict.fromkeys(datetime(int(y), int(m), int(d)).date() for y, m, d in re.findall(date_pattern, value)))
+                expires = datetime.fromisoformat(str(record["expires_at"]).replace("Z", "+00:00"))
+                if not expires.tzinfo or expires <= datetime.now(timezone.utc):
+                    raise ValueError("expired source")
             except ValueError:
-                return []
-        date_values, requested_dates = dates(validity), dates(str(context.get("latest") or context.get("request") or ""))
-        if not requested_dates:
-            requested_dates = dates(str(context.get("visit_date") or ""))
-        times = re.findall(r"(?<!\d)([0-2]?\d):([0-5]\d)", validity)
-        requested_times = re.findall(r"(?<!\d)([0-2]?\d):([0-5]\d)", str(context.get("latest") or context.get("request") or ""))
-        if not requested_times:
-            requested_times = re.findall(r"(?<!\d)([0-2]?\d):([0-5]\d)", str(context.get("time_window_start") or ""))
-        minutes = [int(h) * 60 + int(m) for h, m in times]
-        current_minute = int(requested_times[-1][0]) * 60 + int(requested_times[-1][1]) if requested_times else None
-        if not (clause("validity", r"使用|可用|有效|适用|只限|仅限") and 1 <= len(date_values) <= 2 and len(requested_dates) == 1
-                and len(minutes) == 2 and 0 <= minutes[0] <= minutes[1] < 1440 and current_minute is not None):
-            missing.append("具体使用日期或时段尚不能按原文核对")
-        elif not (date_values[0] <= requested_dates[0] <= date_values[-1] and minutes[0] <= current_minute <= minutes[1]):
-            conflicts.append("所选日期或时间不在原文使用范围内")
-        if (not re.search(r"不(?:再)?另设节假日限制|节假日(?:可用|通用)|当日(?:允许使用|可用)", validity)
-                or re.search(r"(?:节假日|周末|周[一二三四五六日天])(?:不可用|不适用|除外)|仅限周", text)):
-            missing.append("节假日或当日使用条件未明确")
-        if not missing and not conflicts:
-            total = price
-            lines.append((f"若同行{party}人均符合条款中的成人范围，" if adult_only else "按本次人数、份数与日期时段，") + "且遵守上述所给条款条件，可按一份核算。")
-        if adult_only:
-            lines.append("条款的人数范围是成人；仅说明同行人数不代表已确认年龄资格。")
-    else:
+                missing.append(f"{label}的来源有效期已过或无法核对")
+                continue
+        same_record = [other for other in extracted.options if other.record == option.record]
+        block = _source_quote(text, option.quote) if option.quote else text if len(same_record) == 1 else None
+        peers = [other.entity for other in extracted.options if other.record == option.record and other.entity and other.entity != option.entity]
+        peers += [str(place.get("name") or "") for place in page["data"].get("places") or [] if place.get("name") != option.entity]
+        if (not block or _source_instruction(block) or option.entity and option.entity not in block
+                or any(peer and peer in block for peer in peers)):
+            missing.append(f"{label}的实体与原文范围无法唯一对应")
+            continue
+        if option.quote and any(other.record == option.record and other is not option and option.quote in other.quote for other in extracted.options):
+            missing.append(f"{label}与其他选项的原文范围重叠")
+            continue
+        notes, gaps, violations, quotes = [], [], [], {"source": block}
+        option_delivered = set()
+        conditions_known = True
+        for condition in option.conditions:
+            quote = _source_quote(block, condition.quote)
+            user_quote = _source_quote(str(state.get("input_text") or ""), condition.request_quote) if condition.request_quote else None
+            if not quote or _source_instruction(quote):
+                gaps.append("部分使用条件未能对应原文")
+                conditions_known = False
+                continue
+            quotes[f"condition:{len(quotes)}"] = quote
+            assessment = condition.assessment
+            # A model's interpretation can be shown with citations, but cannot
+            # prove a reservation/eligibility or re-authorize an old user statement.
+            if assessment != "no_condition" or not _source_no_requirement(quote):
+                assessment = "unknown"
+            if user_quote:
+                quotes[f"request:{len(quotes)}"] = user_quote
+            notes.append("原文条件：" + quote)
+            if assessment == "unknown":
+                gaps.append("条件尚待核对：" + quote)
+                conditions_known = False
+            else:
+                notes.append("按所给原文，该项无需另满足条件。")
+            option_delivered.add("applicability")
+        subtotal, deductions = Decimal(0), []
+        calculated = 0
+        cost_complete = True
+        used_quotes = set()
+        package_count = None
+        expense_values = {}
+        for charge_index, charge in enumerate(option.charges):
+            checked = _source_number(charge, block, money_units)
+            if (not checked or charge.currency != "CNY"
+                    or re.search(r"[$€£]|\b(?:USD|EUR|GBP)\b|原价|门市价", checked[1] if checked else block)
+                    or charge.operation == "add" and re.search(r"面值|抵用金额", checked[1] if checked else block)):
+                gaps.append("部分费用的数值、币种或售价口径无法核对")
+                cost_complete = False
+                continue
+            amount, quote, token_span = checked
+            token_id = (option.record, text.index(block) + token_span[0], text.index(block) + token_span[1])
+            if token_id in used_quotes:
+                gaps.append("同一费用不能重复计入")
+                cost_complete = False
+                continue
+            used_quotes.add(token_id)
+            person_unit = bool(re.search(r"[/／]\s*(?:人|位)|每(?:人|位)|人均", quote))
+            package_unit = bool(re.search(r"[/／]\s*(?:份|套餐|套|张)|每(?:份|套|张)|一份|这份", quote))
+            multiplier = None
+            if re.search(r"[/／]\s*\d", quote):
+                gaps.append("计价分母无法对应，未自动换算")
+            elif charge.unit == "person" and person_unit and not package_unit:
+                multiplier = Decimal(party) if isinstance(party, int) and not isinstance(party, bool) else None
+                if multiplier is None:
+                    gaps.append("同行人数待确认")
+            elif charge.unit == "package" and package_unit and not person_unit:
+                quantity = option.quantity
+                quantity_quote = _source_quote(request, quantity.quote) if quantity else None
+                proposed = Decimal(str(quantity.value)) if quantity else None
+                if (quantity_quote and not re.search(r"(?:不|不要|别|不用)(?:再)?(?:买|购买|使用|加购)", quantity_quote)
+                        and proposed is not None and 1 <= proposed <= 100 and proposed == proposed.to_integral_value()
+                        and (re.search(r"(?<![\d.])" + re.escape(display(proposed)) + r"\s*(?:份|套|张)", quantity_quote)
+                             or proposed == 1 and re.search(r"[一壹]\s*(?:份|套|张)", quantity_quote))):
+                    multiplier = proposed
+                    package_count = proposed
+                    quotes["quantity"] = quantity_quote
+                else:
+                    gaps.append("购买份数尚未明确，未自动加购")
+            elif charge.unit == "group" and not person_unit and not package_unit:
+                multiplier = Decimal(1)
+            else:
+                gaps.append("每人、每份和整组计价单位不一致")
+            quotes[f"charge:{len(quotes)}"] = quote
+            notes.append("原文费用：" + quote)
+            if multiplier is None:
+                cost_complete = False
+                continue
+            if charge.operation == "deduct":
+                threshold = _source_number(charge.threshold, block, money_units) if charge.threshold else None
+                if charge.threshold and threshold is None:
+                    gaps.append("优惠使用门槛金额无法核对，未扣减")
+                    cost_complete = False
+                    continue
+                if threshold:
+                    quotes[f"threshold:{len(quotes)}"] = threshold[1]
+                if (not charge.applies_to or len(charge.applies_to) != len(set(charge.applies_to))
+                        or any(i < 0 or i >= len(option.charges) or option.charges[i].operation != "add" for i in charge.applies_to)):
+                    gaps.append("抵扣缺少对应消费项目，未把面值直接当作退款")
+                    cost_complete = False
+                    continue
+                deductions.append((amount * multiplier, threshold[0] if threshold else None, quote, charge.applies_to))
+            else:
+                calculated += 1
+                subtotal += amount * multiplier
+                expense_values[charge_index] = amount * multiplier
+                notes.append(f"该项{display(amount)}元" + (f"×{display(multiplier)}={display(amount * multiplier)}元" if charge.unit != "group" else "计入已知费用"))
+        coverage = _source_number(option.covered_people, block, people_units)
+        if option.covered_people and coverage is None:
+            gaps.append("套餐覆盖人数无法按原文核对，成人与儿童不得混合计算资格")
+        if coverage:
+            covered, quote, _ = coverage
+            quotes["covered_people"] = quote
+            if re.search(r"成人|成年人", quote) and re.search(r"儿童|小孩", quote):
+                gaps.append("覆盖人数包含成人与儿童，需分别核对，不能合并为通用人数")
+            elif not covered == covered.to_integral_value() or covered < 1:
+                gaps.append("覆盖人数不是有效人数")
+            elif isinstance(party, int) and package_count is not None:
+                option_delivered.add("applicability")
+                if package_count * covered < party:
+                    violations.append(f"每份仅明确覆盖{display(covered)}人，本次{party}人，所选份数不足")
+                else:
+                    notes.append(f"按原文人数口径，{display(package_count)}份覆盖{display(package_count * covered)}人，足以覆盖本次{party}人；年龄等资格另行核对。")
+            notes.append("原文覆盖范围：" + quote)
+            if re.search(r"成人|成年人|儿童|小孩", quote):
+                notes.append("同行总人数不代表年龄资格已核对。")
+                counts = context.get("party_counts") or {}
+                eligible_count = counts.get("成人", 0) if re.search(r"成人|成年人", quote) else sum(counts.get(key, 0) for key in ("儿童", "孩子"))
+                if not isinstance(party, int) or eligible_count != party:
+                    gaps.append("尚未从本次已确认人数资料核对年龄资格")
+        totals = {"distance_m": Decimal(0), "duration_seconds": Decimal(0)}
+        complete_route = {key: bool(option.legs) for key in totals}
+        legs = option.legs
+        route_quotes = set()
+        for leg_index, leg in enumerate(legs):
+            for field, units in route_units.items():
+                fact = getattr(leg, field)
+                checked = _source_number(fact, block, units)
+                if checked and (option.record, field, checked[2]) in route_quotes:
+                    checked = None
+                if checked:
+                    route_quotes.add((option.record, field, checked[2]))
+                    totals[field] += checked[0]
+                    quotes[f"{field}:{leg_index}"] = checked[1]
+                elif fact:
+                    gaps.append("部分路线数值或单位无法核对")
+                    complete_route[field] = False
+                elif option.legs and not (field == "distance_m" and leg.kind == "wait"):
+                    complete_route[field] = False
+        for field, constraint in (("distance_m", "route_distance_km"), ("duration_seconds", "duration_minutes")):
+            goal = "distance" if field == "distance_m" else "duration"
+            if not complete_route[field] and (goal in requested or context.get(constraint) is not None):
+                gaps.append("来源缺少完整路程，尚不能核对距离上限" if field == "distance_m" else "来源缺少完整用时，尚不能核对时长上限")
+        arrival = None
+        arrival_date = context.get("visit_date")
+        for field, total in totals.items():
+            if not complete_route[field]:
+                continue
+            option_delivered.add("distance" if field == "distance_m" else "duration")
+            notes.append(f"资料给定{'各段距离合计' if field == 'distance_m' else '各段用时合计'}{display(total)}{'米' if field == 'distance_m' else '秒'}。")
+            limit = context.get("route_distance_km") if field == "distance_m" else context.get("duration_minutes")
+            if isinstance(limit, (int, float)) and total > Decimal(str(limit)) * (1000 if field == "distance_m" else 60):
+                violations.append("给定路线距离超出本次路程限制" if field == "distance_m" else "给定用时超出本次总时长")
+        if complete_route["duration_seconds"] and "arrival" in requested:
+            try:
+                departure = datetime.strptime(str(context.get("time_window_start")), "%H:%M")
+                reached = departure + timedelta(seconds=float(totals["duration_seconds"]))
+                offset = (reached.date() - departure.date()).days
+                arrival = reached.strftime("%H:%M:%S")
+                if arrival_date:
+                    arrival_date = (datetime.strptime(str(arrival_date), "%Y-%m-%d") + timedelta(days=offset)).date().isoformat()
+                notes.append(f"按本次{departure:%H:%M}出发及给定各段用时，预计{'次日' if offset == 1 else str(offset) + '天后' if offset else ''}{arrival}到达；未计原资料未给出的等候或换乘时间。")
+                option_delivered.add("arrival")
+            except ValueError:
+                gaps.append("出发时刻未明确，尚不能计算到达时间")
+        window_groups: dict[tuple, list[bool]] = {}
+        for window in option.windows:
+            quote = _source_quote(block, window.quote)
+            if not quote or _source_instruction(quote):
+                gaps.append("日期时段缺少原文依据")
+                continue
+            date_values = [f"{int(y):04d}-{int(m):02d}-{int(d):02d}" for y, m, d in re.findall(r"(\d{4})[-年](\d{1,2})[-月](\d{1,2})日?", quote)]
+            times = [f"{int(h):02d}:{m}" for h, m in re.findall(r"(?<!\d)([0-2]?\d):([0-5]\d)", quote)]
+            days = {day: position for position, day in enumerate("一二三四五六日")}
+            weekdays: set[int] = set()
+            for match in re.finditer(r"(?:周|星期)([一二三四五六日天])(?:\s*(?:至|到|[-—])\s*(?:周|星期)?([一二三四五六日天]))?", quote):
+                start = days.get(match[1], 6)
+                end = days.get(match[2], 6) if match[2] else start
+                if start <= end:
+                    weekdays.update(range(start, end + 1))
+            if "周末" in quote:
+                weekdays.update((5, 6))
+            excluded = bool(re.search(r"不可|不适用|不能|除外|排除|不在|不得", quote))
+            if (window.dates != list(dict.fromkeys(date_values)) or window.times != list(dict.fromkeys(times))
+                    or set(window.weekdays) != weekdays or window.excluded != excluded
+                    or not (window.dates or window.times or weekdays)):
+                gaps.append("日期时段、星期或排除条件未能完整对应原文")
+                continue
+            matches = []
+            for bounds, selected, temporal in ((window.dates, arrival_date, "日期"),
+                                               (window.times, arrival or context.get("time_window_start"), "时间")):
+                if not bounds:
+                    continue
+                try:
+                    for bound in bounds:
+                        datetime.strptime(bound, "%Y-%m-%d" if temporal == "日期" else "%H:%M")
+                except ValueError:
+                    gaps.append("来源含无效日期或时刻")
+                    continue
+                if not selected or bounds[0] > bounds[-1] or window.boundary != "range" and len(bounds) != 1:
+                    gaps.append(f"本次{temporal}或来源范围尚不能核对")
+                    continue
+                current = str(selected)
+                lower, upper = bounds[0], bounds[-1]
+                if temporal == "时间":
+                    current = current if len(current) == 8 else current + ":00"
+                    lower, upper = lower + ":00", upper + ":00"
+                matches.append(current <= upper if window.boundary == "latest" else current >= lower if window.boundary == "earliest" else lower <= current <= upper)
+            if weekdays:
+                try:
+                    matches.append(datetime.strptime(str(arrival_date), "%Y-%m-%d").weekday() in weekdays)
+                except ValueError:
+                    gaps.append("日期未明确，尚不能核对星期条件")
+            quotes[f"window:{len(quotes)}"] = quote
+            notes.append("资料时段：" + quote)
+            if matches:
+                passed = not all(matches) if window.excluded else all(matches)
+                group = (bool(window.dates), bool(window.times), bool(window.weekdays), window.boundary, window.excluded)
+                window_groups.setdefault(group, []).append(passed)
+                option_delivered.add("applicability")
+        # Separate opening intervals are alternatives; independent date, weekday
+        # and earliest/latest constraints all apply. Every exclusion still applies.
+        window_matches = [all(values) if group[-1] else any(values) for group, values in window_groups.items()]
+        if window_matches:
+            if all(window_matches):
+                notes.append("按给定日期、时刻与原文范围核算，已核对的日期/时段/星期条件相符。其他条件见各项原文核对。")
+            else:
+                violations.append("所选日期或时间不在原文允许使用范围内" + ("，按给定路线到达已不满足时段" if arrival else ""))
+        conditional_cost = None
+        for deduction, threshold, quote, targets in deductions:
+            eligible = sum((expense_values.get(i, Decimal(0)) for i in targets), Decimal(0))
+            if len(deductions) > 1:
+                gaps.append("多项优惠的叠加顺序尚未核对，未重复扣减")
+                cost_complete = False
+                continue
+            if any(i not in expense_values for i in targets):
+                gaps.append("抵扣对应的消费金额尚未核对")
+                cost_complete = False
+                continue
+            if threshold is not None and eligible < threshold:
+                violations.append(f"优惠前对应消费金额{display(eligible)}元未达到{display(threshold)}元门槛，未扣减该优惠")
+                option_delivered.add("applicability")
+            elif not calculated or deduction > eligible:
+                gaps.append("优惠缺少足够的对应消费金额，未产生负消费或直接抵现")
+                cost_complete = False
+            elif violations:
+                notes.append("当前已知条件不适用，未扣减该优惠；保留无优惠的已知费用。")
+            elif not cost_complete:
+                gaps.append("对应费用尚未完整核对，未计算优惠后的金额")
+            elif not conditions_known or gaps:
+                gaps.append("优惠条件尚未确认，未作为已享优惠扣减")
+                conditional_cost = subtotal - deduction
+                notes.append(f"仅在所给优惠条件均满足的假设下，扣减{display(deduction)}元后的计算值为{display(conditional_cost)}元；当前未确认这些条件，已知小计保留无优惠金额。")
+                cost_complete = False
+            else:
+                subtotal -= deduction
+                notes.append(f"按原文扣减{display(deduction)}元，已知项目小计为{display(subtotal)}元；依据：{quote}")
+        if calculated and (cost_complete or conditional_cost is not None):
+            option_delivered.add("cost")
+        if not option_delivered:
+            missing.extend(f"{label}：{gap}" for gap in gaps)
+            continue
+        cost = float(subtotal) if calculated else None
+        entry: dict[str, Any] = {"entity": label, "record": option.record, "known_subtotal": cost, "calculation_complete": cost_complete, "conditional_subtotal": float(conditional_cost) if conditional_cost is not None else None,
+                 "missing_rules": list(dict.fromkeys(gaps)), "conflicts": list(dict.fromkeys(violations)), "quotes": quotes,
+                 "route": {key: float(value) if complete_route[key] else None for key, value in totals.items()}, "arrival_time": arrival, "delivered": sorted(option_delivered)}
+        entries.append(entry)
+        delivered.update(option_delivered)
+        all_quotes.update({f"{index}:{key}": value for key, value in quotes.items()})
+        lines.append(label + "：\n" + "\n".join(dict.fromkeys(notes)))
+        if cost is not None:
+            lines.append(f"上述已知项目小计{display(subtotal)}元" + (f"，{'未超出' if subtotal <= budget else '超出'}{display(budget)}元预算。" if budget is not None else "。"))
+            if budget is not None:
+                lines.append(f"按已知项目扣除后预算剩余{display(budget - subtotal)}元。")
+        if "applicability" in requested and "applicability" in option_delivered:
+            lines.append("按已列出的原文依据，本次存在明确不适用条件。" if violations else "部分适用条件仍未知，当前不能确认完整适用。" if gaps else "按所给资料与本次要求，已列出的条件相符；这只是资料条件判断，实时供给仍未核实。")
+        missing.extend(f"{label}：{gap}" for gap in entry["missing_rules"])
+        conflicts.extend(f"{label}：{violation}" for violation in entry["conflicts"])
+    if not entries:
         return None
-    if budget is not None:
-        lines.append(f"已知范围合计{display(total)}元，{'未超出' if total <= budget else '超出'}{display(budget)}元预算。" if total is not None
-                     else f"当前不能确认完整总价不超过{display(budget)}元预算。")
+    delivered = set.intersection(*(set(entry["delivered"]) for entry in entries))
+    if len(entries) != len(extracted.options):
+        delivered.clear()  # A good option cannot hide another option's rejected source.
+    if len(entries) == len(extracted.options) and len(entries) > 1 and all(entry["known_subtotal"] is not None and entry["calculation_complete"] for entry in entries):
+        ranked = sorted(entries, key=lambda entry: entry["known_subtotal"])
+        difference = Decimal(str(ranked[-1]["known_subtotal"])) - Decimal(str(ranked[0]["known_subtotal"]))
+        lines.append(f"按各选项已明确的计价范围，{ranked[0]['entity']}的已知项目小计最低，与最高项相差{display(difference)}元；各自覆盖范围和使用条件仍须分别核对。")
+        delivered.add("comparison")
+    unanswered = sorted(set(requested) - delivered)
+    missing.extend("尚未完成" + {"cost": "费用核算", "comparison": "选项比较", "applicability": "条件判断", "distance": "路程核算", "duration": "用时核算", "arrival": "到达时间核算"}[goal] for goal in unanswered)
     lines.extend(conflicts)
     if missing:
-        lines.append("仍缺依据：" + "；".join(missing) + "。")
-    lines.append("以上是按所给资料的条件分析；没有重新验证实时商家供给，不代表已购买、预约或完成交易。原文见当前资料卡。")
+        lines.append("仍缺依据：" + "；".join(dict.fromkeys(missing)) + "。")
+    lines.append("以上是所给资料的条件核算。已知项目小计不代表完整消费保证；未列明的费用、年龄资格、预约及优惠使用条件仍需按原文核对。没有查询实时供给、购买或提交预约。")
     return ExecutionOutcome(kind="page_read", status="mismatch" if conflicts else "needs_evidence" if missing else "satisfied", summary="\n".join(lines),
-        evidence_ids=[page["artifact_id"]], data={"scope": "source_analysis", "business_completed": False, "answered": True,
-        "total_cost": float(total) if total is not None else None, "missing_rules": missing, "conflicts": conflicts,
-        "facts": {key: float(value) for key, value in values.items()}, "quotes": citations, "source_url": page["url"]})
+        evidence_ids=[page["artifact_id"]], data={"scope": "source_analysis", "business_completed": False, "answered": not unanswered,
+        "total_cost": entries[0]["known_subtotal"] if len(entries) == 1 and entries[0]["calculation_complete"] else None, "complete_cost": False,
+        "entries": entries, "requested": requested, "delivered": sorted(delivered), "missing_rules": list(dict.fromkeys(missing)), "conflicts": conflicts,
+        "quotes": all_quotes, "source_url": page["url"]})
 
 
 def current_visual_observation(state: dict[str, Any]) -> dict[str, Any] | None:

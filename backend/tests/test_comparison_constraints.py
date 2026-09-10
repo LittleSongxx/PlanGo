@@ -2,7 +2,8 @@
 
 import unittest
 
-from plango.outcomes import price_comparison, update_task_context
+from plango.outcomes import TaskIntent, price_comparison, update_task_context
+from plango_harness.agent.decisions import RequirementOutput
 from test_comparison_scope import offline_state
 
 PRICES = [("雾岚餐厅", 68), ("杉木餐厅", 82)]
@@ -10,7 +11,7 @@ PRICES = [("雾岚餐厅", 68), ("杉木餐厅", 82)]
 
 class UnresolvedConstraintQuality(unittest.TestCase):
     def test_per_person_cap_cannot_be_ignored(self):
-        state = offline_state("比较雾岚餐厅和杉木餐厅，3人，每人最多60元，推荐便宜的一家", PRICES)
+        state = offline_state("比较雾岚餐厅和杉木餐厅，3人，每人最多60元，推荐便宜的一家", PRICES, party_size=3, per_person_budget=60)
         result = price_comparison(state)
         self.assertTrue(
             result is None or not result["complete"],
@@ -19,7 +20,8 @@ class UnresolvedConstraintQuality(unittest.TestCase):
 
     def test_price_evidence_cannot_verify_food_avoidance(self):
         state = offline_state(
-            "比较雾岚餐厅和杉木餐厅，3人，总预算240元，不吃花生，推荐便宜的一家", PRICES
+            "比较雾岚餐厅和杉木餐厅，3人，总预算240元，不吃花生，推荐便宜的一家", PRICES,
+            party_size=3, budget=240, hard_constraints=["忌口:花生"],
         )
         result = price_comparison(state)
         self.assertTrue(
@@ -33,9 +35,10 @@ class UnresolvedConstraintQuality(unittest.TestCase):
             )
 
     def test_explicitly_unknown_party_cannot_reuse_previous_count(self):
-        state = offline_state("比较雾岚餐厅和杉木餐厅，3人，总预算240元，推荐便宜的一家", PRICES)
+        state = offline_state("比较雾岚餐厅和杉木餐厅，3人，总预算240元，推荐便宜的一家", PRICES, party_size=3, budget=240)
         state.update(input_text="人数还没确定，先别按3人算", turn_id=2)
-        state["browser_task_context"] = update_task_context(state)
+        state["browser_task_context"] = update_task_context(state, TaskIntent(requirements=RequirementOutput(
+            party_size_unknown=True, field_evidence={"party_size_unknown": state["input_text"]})))
         result = price_comparison(state)
         self.assertTrue(
             result is None or not result["complete"],

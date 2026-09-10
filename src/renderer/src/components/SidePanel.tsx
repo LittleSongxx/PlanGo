@@ -4,10 +4,10 @@ import { useStore } from '../store'
 import type { ReminderList } from '@shared/types'
 import { DialogShell } from './DialogShell'
 import { ExecutionServiceCard } from './ExecutionServiceCard'
-import { X, Cpu, MessageCircle, Puzzle, Brain, Check, Loader2, Plug, Heart, Lock, MapPin, Bell } from 'lucide-react'
+import { X, Cpu, Puzzle, Brain, Check, Loader2, Plug, Heart, Lock, MapPin, Bell } from 'lucide-react'
 
-// 右侧面板：模型/API 切换 + 微信/飞书入口 + 技能 + 记忆呈现（多 Agent/越用越懂的"外部旋钮"）。
-type Tab = 'model' | 'social' | 'skills' | 'memory' | 'reminders'
+// 当前可用的模型配置、技能、记忆与提醒。
+type Tab = 'model' | 'skills' | 'memory' | 'reminders'
 
 // Existing OpenAI-compatible provider presets; credentials are supplied by the user.
 const PRESETS: { id: string; name: string; baseURL: string; model: string; note: string }[] = [
@@ -35,7 +35,6 @@ export function SidePanel(): JSX.Element | null {
 
         <div className="flex gap-1 m-5 mb-0 p-1 rounded-xl bg-[var(--surface-soft)]" role="tablist" aria-label="能力类型">
           <TabBtn cur={tab} me="model" set={setTab} icon={<Cpu size={13} />} label="模型" />
-          <TabBtn cur={tab} me="social" set={setTab} icon={<MessageCircle size={13} />} label="微信/飞书" />
           <TabBtn cur={tab} me="skills" set={setTab} icon={<Puzzle size={13} />} label="技能" />
           <TabBtn cur={tab} me="memory" set={setTab} icon={<Brain size={13} />} label="记忆" />
           <TabBtn cur={tab} me="reminders" set={setTab} icon={<Bell size={13} />} label="提醒" />
@@ -43,7 +42,6 @@ export function SidePanel(): JSX.Element | null {
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {tab === 'model' && <ModelSection />}
-          {tab === 'social' && <SocialSection />}
           {tab === 'skills' && <SkillsSection />}
           {tab === 'memory' && <MemorySection />}
           {tab === 'reminders' && <ReminderSection />}
@@ -146,15 +144,6 @@ function ModelSection(): JSX.Element {
 
     </div>
   )
-}
-
-function SocialSection(): JSX.Element {
-  const [im, setIm] = useState<{ connected: boolean; note: string } | null>(null)
-  useEffect(() => { window.plango.imStatus().then(setIm).catch(() => setIm({ connected: false, note: '连接状态获取失败' })) }, [])
-  return <div className="space-y-3 text-xs text-neutral-600">
-    <div className="rounded-xl border border-neutral-200 p-3"><div className="font-semibold text-sm mb-2">微信 / 飞书 · 尚未接入</div>{im?.note || '当前未连接消息平台。'}</div>
-    <div>打开行程卡的「分享给同行人」，复制链接或使用二维码，让同行人投票和留下意见；意见可以继续并入当前方案。</div>
-  </div>
 }
 
 function SkillsSection(): JSX.Element {

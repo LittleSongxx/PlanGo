@@ -423,6 +423,7 @@ def _advocate_roles(spec: TripSpec) -> list[str]:
 def build_graph(
     deps: GraphDeps, checkpointer: Any | None = None, *, extension=None,
     entry: str = "load_memory", replan_entry: str = "load_memory",
+    after_memory: str = "requirements",
     after_verify: str = "supervisor", after_execute: str = "reflect",
 ):
     requirement_agent = RequirementAgent(deps.model)
@@ -455,6 +456,7 @@ def build_graph(
         if isinstance(previous_spec, dict):
             previous_spec = TripSpec.model_validate(previous_spec)
         edit = state.get("structured_requirement_edit") or {}
+        proposal = state.get("requirement_proposal") or {}
         explicit = edit.get("fields", {}) if edit.get("turn_id") == state.get("turn_id", 1) else None
         offer_selection = edit.get("offer_selection") if explicit is not None else None
         if explicit is not None:
@@ -470,6 +472,11 @@ def build_graph(
                               clear_per_person_budget=explicit.get("per_person_budget") is None,
                               required_activities=["餐厅"])
             output = RequirementOutput.model_validate(values)
+        elif (proposal.get("turn_id") == state.get("turn_id", 1)
+              and proposal.get("input_text") == state["input_text"] and proposal.get("output") is not None):
+            # The desktop entry already validated this exact turn. Reuse it
+            # across graph resume; do not ask a second model to reinterpret it.
+            output = RequirementOutput.model_validate(proposal["output"])
         else:
             output = await requirement_agent.run(
                 state["input_text"], state.get("memory_context", []), previous_spec,
@@ -1857,7 +1864,7 @@ def build_graph(
     graph.add_node("supervisor", coordinate)
     graph.add_node("finalize", finalize)
     graph.add_edge(START, entry)
-    graph.add_edge("load_memory", "requirements")
+    graph.add_edge("load_memory", after_memory)
     graph.add_edge("requirements", "supervisor")
     graph.add_edge("discovery", "supervisor")
     graph.add_conditional_edges("supervisor", after_supervisor)

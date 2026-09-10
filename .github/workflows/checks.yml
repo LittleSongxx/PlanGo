@@ -23,6 +23,7 @@ jobs:
           activate-environment: plango
           python-version: '3.12'
       - run: npm ci
+      - run: npm exec -- install-electron --no
       - run: npm run setup:backend -- --dev
       - run: npm run check
       - run: python scripts/check_lifecycle.py
@@ -37,3 +38,10 @@ jobs:
       - run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop
       - run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:map-title
       - run: env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:full-stack
+      - run: python scripts/check_service_recovery.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: service-recovery-check
+          path: output/service-recovery-*/report.json
+          if-no-files-found: ignore

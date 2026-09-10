@@ -63,7 +63,7 @@ async function main() {
   const Module = require('node:module')
   const loaded = new Module(outfile, module); loaded.filename = outfile; loaded.paths = Module._nodeModulePaths(process.cwd())
   loaded._compile(readFileSync(outfile,'utf8'),outfile); api = loaded.exports
-  const { executeBrowserCommand: execute, validateBrowserCommand, browserCommandGuard, allowedBrowserSite, createBrowserTab, activateBrowserTab, handleBrowserIntent, releaseBrowserRun, activateBrowserRun, cancelBrowserRun } = api
+  const { executeBrowserCommand: execute, acknowledgeBrowserCommand, validateBrowserCommand, browserCommandGuard, allowedBrowserSite, createBrowserTab, activateBrowserTab, handleBrowserIntent, releaseBrowserRun, activateBrowserRun, cancelBrowserRun } = api
   await app.whenReady()
   host = new BrowserWindow({show:true,width:900,height:650,webPreferences:{sandbox:true,contextIsolation:true,nodeIntegration:false}})
   await host.loadURL('data:text/html,<html><body>PlanGo controlled browser host</body></html>')
@@ -116,6 +116,11 @@ async function main() {
   assert(clicked.ok && clicked.outcome === 'executed' && (await a.page('window.submits')) === 1 && !clicked.receipt, 'real click has no invented receipt')
   assert(JSON.stringify(await execute(approvedClick)) === JSON.stringify(clicked) && (await a.page('window.submits')) === 1, 'same durable command replays its receipt, not its side effect')
   assert((await execute({ ...approvedClick, arguments: { idx: 1 } })).error_kind === 'command_conflict', 'same command ID cannot change parameters')
+  acknowledgeBrowserCommand({ ...approvedClick, arguments: { idx: 1 } })
+  assert(JSON.stringify(await execute(approvedClick)) === JSON.stringify(clicked), 'a mismatched acknowledgement cannot discard the original receipt')
+  acknowledgeBrowserCommand(approvedClick)
+  assert((await execute(approvedClick)).error_kind === 'command_already_delivered' && (await a.page('window.submits')) === 1, 'acknowledged command drops its result but retains a non-replayable identity')
+  assert((await execute({ ...approvedClick, arguments: { idx: 1 } })).error_kind === 'command_conflict', 'compacted identity still rejects changed parameters')
   const repeat = await execute(command('click', { idx: 0 }, { tab_id: a.id, expected_snapshot_id: fresh.snapshot_id, approved_action_id: 'approved' }))
   assert(repeat.error_kind === 'stale_snapshot' && (await a.page('window.submits')) === 1, 'snapshot cannot repeat a write')
   const expired = command('snapshot', {}, { expires_at: '2000-01-01T00:00:00Z' })
@@ -156,6 +161,7 @@ async function main() {
   assert(cancelled.error_kind === 'run_cancelled', 'takeover stops later commands')
   const prior = await execute(command('snapshot', {}, { tab_id: b.id }))
   releaseBrowserRun('run-a')
+  assert((await execute(approvedClick)).error_kind === 'command_already_delivered', 'terminal release cannot erase an acknowledged write identity')
   activateBrowserTab(b.id)
   const oldWrite = await execute(command('click', { idx: 0 }, { tab_id: b.id, expected_snapshot_id: prior.snapshot_id, approved_action_id: 'old-approved' }))
   assert(oldWrite.error_kind === 'run_cancelled' && !(await b.page('window.submits')), 'terminal release blocks queued old writes')
@@ -345,6 +351,22 @@ async function main() {
   server.removeListener('connection', countConnection)
   const stillNormal = await makeTab('after-preview')
   assert((await stillNormal.page('document.body.innerText')).includes('真实菜单测试页'), 'other owned ordinary tabs continue to load')
+  const retainedRead = command('extract', {}, { run_id: 'retention-run', tab_id: stillNormal.id })
+  const retainedResult = await execute(retainedRead)
+  assert(retainedResult.ok && retainedResult.text.includes('128 元'), 'pending observation remains available for transport retry')
+  acknowledgeBrowserCommand(retainedRead)
+  const compactedRead = await execute(retainedRead)
+  assert(compactedRead.error_kind === 'command_already_delivered' && !compactedRead.text && !compactedRead.fields && !compactedRead.elements && !compactedRead.screenshot, 'acknowledgement removes all large observation fields from the executor cache')
+  let bounded = false
+  for (let index = 0; index < 10_001; index++) {
+    const expiredCommand = command('snapshot', {}, { expires_at: '2000-01-01T00:00:00Z' })
+    const result = await execute(expiredCommand)
+    if (result.error_kind === 'browser_command_capacity') { bounded = true; break }
+    acknowledgeBrowserCommand(expiredCommand)
+  }
+  assert(bounded, 'identity cache has a fixed capacity and refuses new commands instead of evicting old write identities')
+  assert((await execute(approvedClick)).error_kind === 'command_already_delivered', 'capacity pressure cannot revive an old acknowledged write')
+  assert((await execute({ ...approvedClick, arguments: { idx: 1 } })).error_kind === 'command_conflict', 'capacity pressure preserves changed-payload rejection')
   console.log(`Browser regression: ${checks} assertions passed (real WebContentsView + trusted bridge + Playwright)`)
 }
 async function finish(code) {

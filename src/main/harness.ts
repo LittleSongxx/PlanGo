@@ -5,7 +5,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { app } from 'electron'
 import { getConfig, getHarnessEnvironment, safeServiceOrigin } from './config'
 import type { HarnessStatus } from '../shared/types'
-import { executeBrowserCommand, releaseBrowserRun, activateBrowserRun, cancelBrowserRun } from './browser-bridge'
+import { executeBrowserCommand, acknowledgeBrowserCommand, releaseBrowserRun, activateBrowserRun, cancelBrowserRun } from './browser-bridge'
 import { getMainWindow } from './index'
 import { HarnessClient } from './harnessClient'
 import { IPC } from '../shared/ipc'
@@ -60,7 +60,7 @@ async function connect(): Promise<HarnessClient> {
   const environment = getHarnessEnvironment()
   const baseURL = environment.PLANGO_BACKEND_URL || 'http://127.0.0.1:8011'
   const candidate = new HarnessClient({
-    baseURL, ...id, dataDir: dataDir(), execute: executeBrowserCommand,
+    baseURL, ...id, dataDir: dataDir(), execute: executeBrowserCommand, onReceiptDelivered: acknowledgeBrowserCommand,
     onTerminal: releaseBrowserRun,
     onActivate: (runId, supersede) => { if (supersede) cancelBrowserRun(runId); activateBrowserRun(runId) },
     enabledSkills: () => listSkills().filter(skill => skill.enabled).map(skill => skill.id),

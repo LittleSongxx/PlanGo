@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import type { AgentReply, OutcomeCard, AgentStep, HarnessApi, HarnessEvent, ReminderApi } from '@shared/types'
+import type { HarnessApi, HarnessEvent, ReminderApi } from '@shared/types'
 import type { LocationInfo, GeoLocationResult } from '@shared/location'
 import type { BrowserIntent, BrowserLayout, BrowserViewState, BrowserActivity } from '@shared/browserView'
 
@@ -8,25 +8,14 @@ interface PlangoApi {
   harness: HarnessApi
   reminders: ReminderApi
   onHarnessEvent: (cb: (event: HarnessEvent) => void) => () => void
-  chat: (message: string, history: unknown[]) => Promise<AgentReply>
-  confirm: (token: string, ok: boolean) => Promise<AgentReply>
-  onStep: (cb: (s: AgentStep & { patch?: boolean }) => void) => () => void
-  onCard: (cb: (c: OutcomeCard) => void) => () => void
   onProactive: (cb: (p: { id: string; ts: number; text: string; kind: string }) => void) => () => void
-  onImIncoming: (cb: (m: { from: string; text: string; ts: number }) => void) => () => void
   browser: { request: (intent: BrowserIntent) => Promise<BrowserViewState>; layout: (value: BrowserLayout) => Promise<void>;
     onState: (cb: (value: BrowserViewState) => void) => () => void; onActivity: (cb: (value: BrowserActivity) => void) => () => void }
   getConfig: () => Promise<{ config: any; cities: { city: string; count: number }[] }>
   setConfig: (patch: any) => Promise<any>
-  setSource: (source: string) => Promise<string>
   pingLlm: () => Promise<{ ok: boolean; message: string }>
   listSkills: () => Promise<{ id: string; name: string; description: string; enabled: boolean }[]>
   toggleSkill: (id: string, enabled: boolean) => Promise<{ id: string; name: string; description: string; enabled: boolean }[]>
-  imStatus: () => Promise<{ connected: boolean; note: string }>
-  imLoginQr: () => Promise<{ dataUrl: string; note: string }>
-  imSimulate: (text: string, from?: string) => Promise<{ ok: boolean }>
-  proactiveList: () => Promise<{ reminders: unknown[]; history: unknown[] }>
-  proactiveTrigger: () => Promise<{ id: string; ts: number; text: string; kind: string }>
   getMemory: () => Promise<any>
   memoryGreeting: () => Promise<{ text: string }>
   memoryDelete: (payload: { kind: 'pref' | 'fav' | 'episode'; value: string }) => Promise<any>

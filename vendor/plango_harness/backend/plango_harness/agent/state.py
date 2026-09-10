@@ -87,6 +87,7 @@ class PlanGoState(TypedDict, total=False):
     pending_message: str | None
     requirement_reference_at: Annotated[str | None, _latest_reference]
     requirement_patch: list[dict[str, Any]]
+    requirement_proposal: dict[str, Any] | None
     requirement_refresh: dict[str, bool]
     previous_plan: PlanCandidate | None
     selected_poi: dict[str, Any] | None

@@ -33,15 +33,7 @@ const api = {
     status: (checkModel = false) => ipcRenderer.invoke(IPC.harnessRequest, 'status', { checkModel })
   },
   onHarnessEvent: (cb: (event: unknown) => void) => sub(IPC.harnessEvent, cb),
-  // 对话主线
-  chat: (message: string, history: unknown[]) => ipcRenderer.invoke(IPC.agentChat, { message, history }),
-  confirm: (token: string, ok: boolean) => ipcRenderer.invoke(IPC.agentConfirm, { token, ok }),
-
-  // 事件订阅（main → renderer）
-  onStep: (cb: (s: unknown) => void) => sub(IPC.agentStep, cb),
-  onCard: (cb: (c: unknown) => void) => sub(IPC.agentStreamCard, cb),
   onProactive: (cb: (p: unknown) => void) => sub(IPC.proactivePush, cb),
-  onImIncoming: (cb: (m: unknown) => void) => sub(IPC.imIncoming, cb),
 
   browser: {
     request: (intent: BrowserIntent) => ipcRenderer.invoke(IPC.browserRequest, intent),
@@ -53,21 +45,11 @@ const api = {
   // 配置 / LLM
   getConfig: () => ipcRenderer.invoke(IPC.getConfig),
   setConfig: (patch: unknown) => ipcRenderer.invoke(IPC.setConfig, patch),
-  setSource: (source: string) => ipcRenderer.invoke('config:setSource', source),
   pingLlm: () => ipcRenderer.invoke(IPC.pingLlm),
 
   // 技能
   listSkills: () => ipcRenderer.invoke(IPC.listSkills),
   toggleSkill: (id: string, enabled: boolean) => ipcRenderer.invoke(IPC.toggleSkill, id, enabled),
-
-  // IM
-  imStatus: () => ipcRenderer.invoke(IPC.imStatus),
-  imLoginQr: () => ipcRenderer.invoke(IPC.imLoginQr),
-  imSimulate: (text: string, from?: string) => ipcRenderer.invoke('im:simulate', { text, from }),
-
-  // 主动关心
-  proactiveList: () => ipcRenderer.invoke(IPC.proactiveList),
-  proactiveTrigger: () => ipcRenderer.invoke('proactive:trigger'),
 
   // 记忆
   getMemory: () => ipcRenderer.invoke(IPC.memoryGet),

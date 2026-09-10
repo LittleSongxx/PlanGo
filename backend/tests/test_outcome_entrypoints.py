@@ -6,7 +6,9 @@ import unittest
 from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.graph import BrowserDecision, ImageReading
+from plango.outcomes import TaskIntent
 from plango.world import ObservedPlace, PageData
+from plango_harness.agent.decisions import RequirementOutput
 from test_browser_harness import TOKEN, fixture, settings, wait_for
 from test_task_quality import TERMINAL
 
@@ -38,7 +40,13 @@ class OutcomeEntrypointQuality(unittest.TestCase):
                 update={"openai_api_key": "offline-fixture-replaced"}
             )
             app = create_app(config, token=TOKEN)
-            app.state.runtime.model.structured = literal_facts_only
+            async def accepted_goal_and_literals(schema, **kwargs):
+                if schema is TaskIntent:
+                    fields = {"party_size": 3, **({"budget": 240} if image else {})}
+                    return TaskIntent(kind="reasoning", analysis_goals=["cost", "comparison"], requirements=RequirementOutput(
+                        **fields, field_evidence={field: goal for field in fields}))
+                return await literal_facts_only(schema, **kwargs)
+            app.state.runtime.model.structured = accepted_goal_and_literals
             app.state.runtime.model._model = object()  # TEST only; every call is replaced above.
             with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
                 payload = {"input_text": goal, "browser_session_id": "fixture-desktop"}

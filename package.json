@@ -22,6 +22,7 @@
     "test:desktop": "electron --no-sandbox scripts/desktop-ui-smoke.cjs",
     "test:full-stack": "conda run --no-capture-output -n plango electron --no-sandbox scripts/full-stack-smoke.cjs",
     "test:deployed": "conda run --no-capture-output -n plango electron --no-sandbox scripts/full-stack-smoke.cjs --deployed",
+    "test:service-recovery": "conda run --no-capture-output -n plango python scripts/check_service_recovery.py",
     "test:llm": "tsx scripts/check-llm.ts",
     "check": "npm run typecheck && npm run test:desktop-storage && npm run test:desktop-correctness && npm run test:ui && npm run test:llm && npm run test:transport && npm run test:share && npm run test:backend && npm run build",
     "upstream:check": "conda run --no-capture-output -n plango python scripts/sync_planora.py check",
@@ -55,7 +56,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
-    "electron": "^33.2.1",
+    "electron": "44.3.0",
     "electron-vite": "^2.3.0",
     "lucide-react": "^0.460.0",
     "postcss": "^8.4.49",
@@ -68,7 +69,7 @@
     "zustand": "^5.0.1"
   },
   "engines": {
-    "node": ">=20.11"
+    "node": ">=22.12.0"
   },
   "productName": "PlanGo"
 }

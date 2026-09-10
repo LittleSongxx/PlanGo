@@ -25,6 +25,7 @@ from typing_extensions import TypedDict
 
 
 class RequirementState(TypedDict, total=False):
+    requirement_proposal: dict[str, Any] | None
     consumed_command_id: str | None
     interrupt_id: str | None
     structured_requirement_edit: dict[str, Any] | None
@@ -58,6 +59,7 @@ class RequirementState(TypedDict, total=False):
 
 
 class RequirementInput(TypedDict, total=False):
+    requirement_proposal: dict[str, Any] | None
     structured_requirement_edit: dict[str, Any] | None
     turn_budget: dict[str, Any]
     browser_task_context: dict[str, Any]
@@ -158,21 +160,6 @@ class DiscoveryOutput(TypedDict, total=False):
     trace: list[dict[str, Any]]
 
 
-class AdvocateState(TypedDict, total=False):
-    turn_budget: dict[str, Any]
-    evidence: list[Evidence]
-    run_id: str
-    user_id: str
-    turn_id: int
-    trip_spec: TripSpec
-    place_candidates: list[PlaceCandidate]
-    advocate_role: str
-    advocate_reports: Annotated[list[AdvocateReport], operator.add]
-    delegated_roles: Annotated[list[str], operator.add]
-    artifacts: Annotated[list[AgentArtifact], operator.add]
-    trace: list[dict[str, Any]]
-
-
 class AdvocateInput(TypedDict, total=False):
     turn_budget: dict[str, Any]
     evidence: list[Evidence]
@@ -182,6 +169,13 @@ class AdvocateInput(TypedDict, total=False):
     trip_spec: TripSpec
     place_candidates: list[PlaceCandidate]
     advocate_role: str
+
+
+class AdvocateState(AdvocateInput, total=False):
+    advocate_reports: Annotated[list[AdvocateReport], operator.add]
+    delegated_roles: Annotated[list[str], operator.add]
+    artifacts: Annotated[list[AgentArtifact], operator.add]
+    trace: list[dict[str, Any]]
 
 
 class AdvocateOutput(TypedDict, total=False):

@@ -151,6 +151,41 @@ def run_setup(command, label, **kwargs):
         raise RuntimeError(f"{label}失败；请检查 {SETUP_LOG}")
 
 
+def prepare_node():
+    """Install locked development dependencies and their matching Electron binary without launching it."""
+    RUN.mkdir(parents=True, exist_ok=True)
+    for command in ("node", "npm"):
+        if not shutil.which(command):
+            raise RuntimeError(f"缺少 {command}；源码启动与构建需要 Node.js 22.12+ 和 npm。")
+    run_setup(["node", "-e", "const [a,b]=process.versions.node.split('.').map(Number); process.exit(a>22||(a===22&&b>=12)?0:1)"], "检查 Node.js 22.12+…")
+    lock = ROOT / "package-lock.json"
+    expected = json.loads(lock.read_text())["packages"]["node_modules/electron"]["version"]
+    lock_hash = hashlib.sha256((ROOT / "package.json").read_bytes() + lock.read_bytes()).hexdigest()
+    stamp = RUN / "node-dependencies.sha256"
+    electron = ROOT / "node_modules/electron"
+    try:
+        installed = json.loads((electron / "package.json").read_text()).get("version")
+    except (OSError, ValueError):
+        installed = None
+    if (not stamp.exists() or stamp.read_text() != lock_hash or installed != expected
+            or not (ROOT / "node_modules/.bin/electron-vite").exists()
+            or not (ROOT / "node_modules/.bin/install-electron").exists()):
+        run_setup(["npm", "ci"], "安装本仓库 Node 依赖…")
+        stamp.write_text(lock_hash)
+
+    def binary_ready():
+        try:
+            return ((electron / "dist/version").read_text().strip().removeprefix("v") == expected
+                    and (electron / "dist/electron").is_file() and os.access(electron / "dist/electron", os.X_OK))
+        except OSError:
+            return False
+
+    if not binary_ready():
+        run_setup(["npm", "exec", "--", "install-electron", "--no"], f"下载并校验 Electron {expected}（不启动桌面）…")
+        if not binary_ready():
+            raise RuntimeError(f"Electron {expected} 二进制缺失或版本不符；请执行 npm exec -- install-electron --no 并检查 {SETUP_LOG}")
+
+
 def start():
     if (ROOT / "trial-upgrade-in-progress.json").exists():
         raise RuntimeError("试用升级尚未完成；请按 trial-upgrade-in-progress.json 保留的原应用与冷备份恢复后再启动。")
@@ -171,16 +206,11 @@ def start():
     if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
         raise RuntimeError("未发现桌面显示环境；请在图形桌面的终端运行 start.sh。")
     if INSTALL:
+        if not ELECTRON.is_file() or not os.access(ELECTRON, os.X_OK):
+            raise RuntimeError("试用包的 Electron 二进制缺失或不可执行；请从可信归档恢复应用文件，保留原 profile 与数据卷。")
         run_setup([sys.executable, str(ROOT / "scripts/trial.py"), "doctor"], "检查试用配置（日志不包含密钥）…")
     else:
-        run_setup(["node", "-e", "const [a,b]=process.versions.node.split('.').map(Number); process.exit(a>20||(a===20&&b>=11)?0:1)"], "检查 Node.js 20.11+…")
-        lock_hash = hashlib.sha256((ROOT / "package.json").read_bytes() + (ROOT / "package-lock.json").read_bytes()).hexdigest()
-        stamp = RUN / "node-dependencies.sha256"
-        if (not stamp.exists() or stamp.read_text() != lock_hash
-                or not (ROOT / "node_modules/.bin/electron-vite").exists()
-                or not (ROOT / "node_modules/electron/dist/electron").exists()):
-            run_setup(["npm", "ci"], "安装本仓库 Node 依赖…")
-            stamp.write_text(lock_hash)
+        prepare_node()
         run_setup([sys.executable, str(ROOT / "scripts/setup_backend.py")], "准备 plango Python 环境与本项目配置…")
     with SETUP_LOG.open("a") as log:
         result = subprocess.run([*compose(), "config", "--format", "json"], cwd=ROOT,

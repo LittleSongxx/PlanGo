@@ -107,6 +107,7 @@ def backup(root, destination):
     volumes = volume_names(config["project"])
     if destination.exists():
         raise RuntimeError("Backup destination already exists; prior evidence was preserved")
+    source_release = release(root) if (root / "trial-release.json").exists() else {}
     destination.mkdir(parents=True, mode=0o700)
     try:
         for name, suffix in zip(volumes, VOLUMES):
@@ -125,6 +126,8 @@ def backup(root, destination):
         (destination / ".env").chmod(0o600)
         manifest = {"format": 1, "created_at": datetime.now(timezone.utc).isoformat(), "source": str(root),
                     **config, "postgres_major": 16, "redis_major": 7,
+                    "electron": source_release.get("electron"), "platform": source_release.get("platform"),
+                    "source_version_unknown": not bool(source_release.get("electron")),
                     "files": {p.name: digest(p) for p in destination.iterdir() if p.is_file()}}
         write_json(destination / "backup.json", manifest)
     except BaseException:
@@ -163,13 +166,37 @@ def extract(archive_path, destination, profile=False):
 
 def release(root):
     value = json.loads((root / "trial-release.json").read_text())
-    required = ("electron/electron", "out/main/index.js", "out/preload/index.js", "out/renderer/index.html",
+    required = ("electron/electron", "electron/version", "out/main/index.js", "out/preload/index.js", "out/renderer/index.html",
                 "backend/plango/app.py", "vendor/plango_harness/SNAPSHOT.json", "vendor/plango_harness/upstream-base.tar.gz",
                 "scripts/lifecycle.py", "scripts/trial.py", "scripts/migrate_config.py", "deploy/Dockerfile",
                 "package.json", "docker-compose.yml", ".env.example", "THIRD_PARTY_NOTICES.txt")
     if value.get("format") != 1 or any(not (root / name).is_file() for name in required):
         raise RuntimeError("Incomplete or unsupported release; the existing application was preserved")
+    if (root / "electron/version").read_text().strip().removeprefix("v") != value.get("electron"):
+        raise RuntimeError("Release Electron version does not match its binary directory")
     return value
+
+
+def check_electron_transition(old, new, allow=False, allow_unknown=False):
+    if old.get("platform") and old["platform"] != new.get("platform"):
+        raise RuntimeError("Platform changes are not supported")
+
+    def version(value):
+        if not isinstance(value, str) or not re.fullmatch(r"\d+\.\d+\.\d+", value):
+            raise RuntimeError("A stable Electron version is required")
+        return tuple(map(int, value.split(".")))
+
+    target = version(new.get("electron"))
+    if not old.get("electron"):
+        if allow and allow_unknown:
+            return True  # Only an independent restore may accept explicitly unknown source versions.
+        raise RuntimeError("Source Electron version is unknown; preserve the backup and use an independent restore with --allow-electron-upgrade")
+    source = version(old["electron"])
+    if target < source:
+        raise RuntimeError("Electron downgrade is not supported; preserve the original backup")
+    if target != source and not allow:
+        raise RuntimeError("Electron upgrade requires browser compatibility validation and --allow-electron-upgrade")
+    return False
 
 
 def build(destination):
@@ -177,6 +204,9 @@ def build(destination):
         raise RuntimeError("This trial currently supports Linux x86_64 / WSLg only")
     if destination.exists():
         raise RuntimeError("Release already exists; choose a new output path")
+    from lifecycle import prepare_node
+
+    prepare_node()
     subprocess.run(["npm", "run", "build"], cwd=ROOT, check=True)
     modules = call(["npm", "ls", "--omit=dev", "--all", "--parseable"], cwd=ROOT, text=True).splitlines()[1:]
     with tempfile.TemporaryDirectory(prefix="plango-release-") as temporary:
@@ -234,7 +264,7 @@ def build(destination):
     print(f"Linux trial saved: {destination}")
 
 
-def install(archive, target, project, port, reuse=None):
+def install(archive, target, project, port, reuse=None, allow_electron_upgrade=False):
     project_name(project)
     if target.exists():
         raise RuntimeError("Install target already exists; use upgrade for an installed trial")
@@ -259,6 +289,8 @@ def install(archive, target, project, port, reuse=None):
         info = release(stage)
         if info.get("platform") != "linux-x64" or platform.machine() != "x86_64":
             raise RuntimeError("Unsupported release platform")
+        if old:
+            check_electron_transition(old, info, allow_electron_upgrade)
         profile = old["profile"] if old else str(target / "profile")
         if old:
             shutil.copy2(reuse / ".env", stage / ".env")
@@ -317,12 +349,13 @@ def doctor(root):
         raise RuntimeError("Configuration diagnostics failed; only boolean results were printed")
 
 
-def restore(root, directory):
+def restore(root, directory, allow_electron_upgrade=False):
     config = metadata(root)
     cold(root, config)
     manifest = verify_backup(directory)
     if manifest["postgres_major"] != 16 or manifest["redis_major"] != 7:
         raise RuntimeError("Storage major versions differ; restore using the original release")
+    source_version_unknown = check_electron_transition(manifest, release(root), allow_electron_upgrade, allow_unknown=True)
     project = project_name(config["project"])
     if project == manifest["project"]:
         raise RuntimeError("Restore requires an independent destination project; original data is preserved")
@@ -358,10 +391,10 @@ def restore(root, directory):
         (root / ".env").chmod(0o600)
         if (stage / "profile").exists():
             os.rename(stage / "profile", profile)
-    print("Restored all three cold volumes and the same browser identity/receipts; services remain stopped")
+    print(f"Restored all three cold volumes and the same browser identity/receipts; services remain stopped; source_version_unknown={str(source_version_unknown).lower()}")
 
 
-def upgrade(root, archive, destination):
+def upgrade(root, archive, destination, allow_electron_upgrade=False):
     if not (root / "trial-install.json").exists():
         raise RuntimeError("Use install --reuse-backup to adopt a checkout; in-place upgrade is for installed trials")
     marker = root / "trial-upgrade-in-progress.json"
@@ -372,8 +405,7 @@ def upgrade(root, archive, destination):
         extract(archive, stage)
         old = release(root)
         new = release(stage)
-        if new.get("platform") != old.get("platform") or new.get("electron") != old.get("electron"):
-            raise RuntimeError("Platform/Electron changes need explicit browser compatibility validation")
+        check_electron_transition(old, new, allow_electron_upgrade)
         backup(root, destination)
         # Keep old files outside TemporaryDirectory: a failed rollback or interrupted upgrade must not delete them.
         rollback = Path(tempfile.mkdtemp(prefix=".plango-previous-", dir=root.parent))
@@ -424,21 +456,22 @@ def main():
     add.add_argument("--project", default="plango-trial")
     add.add_argument("--port", type=int, default=18021, choices=range(1024, 65536), metavar="PORT")
     add.add_argument("--reuse-backup", type=Path)
+    add.add_argument("--allow-electron-upgrade", action="store_true", help="Allow a verified forward Electron version change; never allow downgrade")
     commands.add_parser("doctor")
     save = commands.add_parser("backup")
     save.add_argument("destination", type=Path)
     save.add_argument("--root", type=Path, default=ROOT)
     recover = commands.add_parser("restore")
     recover.add_argument("backup", type=Path)
+    recover.add_argument("--allow-electron-upgrade", action="store_true", help="Allow a forward or explicitly unknown source version into an independent empty target")
     update = commands.add_parser("upgrade")
     update.add_argument("archive", type=Path)
     update.add_argument("--backup", type=Path, required=True)
+    update.add_argument("--allow-electron-upgrade", action="store_true", help="Allow a verified forward Electron change; cold backup remains mandatory")
     args = parser.parse_args()
     os.umask(0o077)
-    if args.command == "pack":
-        build(args.archive.resolve())
-    elif args.command == "install":
-        install(args.archive.resolve(), args.target.resolve(), args.project, args.port, args.reuse_backup.resolve() if args.reuse_backup else None)
+    if args.command == "install":
+        install(args.archive.resolve(), args.target.resolve(), args.project, args.port, args.reuse_backup.resolve() if args.reuse_backup else None, args.allow_electron_upgrade)
     elif args.command == "doctor":
         doctor(ROOT)
     else:
@@ -450,12 +483,14 @@ def main():
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
                 raise RuntimeError("Another lifecycle/maintenance operation is active") from None
-            if args.command == "backup":
+            if args.command == "pack":
+                build(args.archive.resolve())
+            elif args.command == "backup":
                 backup(root, args.destination.resolve())
             elif args.command == "restore":
-                restore(root, args.backup.resolve())
+                restore(root, args.backup.resolve(), args.allow_electron_upgrade)
             else:
-                upgrade(root, args.archive.resolve(), args.backup.resolve())
+                upgrade(root, args.archive.resolve(), args.backup.resolve(), args.allow_electron_upgrade)
 
 
 if __name__ == "__main__":

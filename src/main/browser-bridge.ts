@@ -1,10 +1,13 @@
 // Only the trusted main process binds durable Harness commands to visible browser contents.
 import { allowedBrowserSite, browserErrorMessage, browserCommandGuard, isBrowserWrite, validateBrowserCommand, type BrowserCommand, type BrowserObservation } from '@shared/browser'
+import { createHash } from 'node:crypto'
 import { executeBrowserOperation, captureScreenshot } from './browserDriver'
 import { activateBrowserTab, createBrowserTab, getActiveBrowserTab, getBrowserTab, getBrowserTabSignal, isBrowserTabVisible, loadBrowserURL, notifyBrowserActivity, onBrowserPopup } from './browserView'
 
 export type BrowserActionResult = Partial<BrowserObservation>
-const commands = new Map<string, { fingerprint: string; result: Promise<BrowserObservation> }>()
+const commands = new Map<string, { fingerprint: string; result?: Promise<BrowserObservation> }>()
+// ponytail: keep at most 10,000 process-local identities; persist an indexed tombstone ledger if longer sessions are needed. Never evict an identity and replay a write.
+const maxCommandIdentities = 10_000
 const bindings = new Map<string, string>()
 const tabOwners = new Map<string, string>()
 const cancelledRuns = new Set<string>()
@@ -46,13 +49,23 @@ function failure(commandId: string, kind: string, outcome: BrowserObservation['o
   return { command_id: commandId, ok: false, outcome, error_kind: kind, error: browserErrorMessage(kind) }
 }
 
+const commandFingerprint = (command: BrowserCommand): string => createHash('sha256').update(JSON.stringify(command)).digest('hex')
+
+export function acknowledgeBrowserCommand(raw: BrowserCommand): void {
+  const command = validateBrowserCommand(raw)
+  const saved = commands.get(command.command_id)
+  // The durable transport keeps the full receipt. Drop large observations only after its acknowledgement is safely recorded.
+  if (saved?.fingerprint === commandFingerprint(command)) delete saved.result
+}
+
 export async function executeBrowserCommand(raw: BrowserCommand): Promise<BrowserObservation> {
   let command: BrowserCommand
   try { command = validateBrowserCommand(raw) }
   catch { return failure(typeof raw?.command_id === 'string' ? raw.command_id : '', 'invalid_command') }
-  const fingerprint = JSON.stringify(command)
+  const fingerprint = commandFingerprint(command)
   const cached = commands.get(command.command_id)
-  if (cached) return cached.fingerprint === fingerprint ? cached.result : failure(command.command_id, 'command_conflict')
+  if (cached) return cached.fingerprint === fingerprint ? cached.result || failure(command.command_id, 'command_already_delivered') : failure(command.command_id, 'command_conflict')
+  if (commands.size >= maxCommandIdentities) return failure(command.command_id, 'browser_command_capacity')
   command.expires_at ||= new Date(Date.now() + 25_000).toISOString()
   const epoch = runEpochs.get(command.run_id) || 0
   const run = async (): Promise<BrowserObservation> => {

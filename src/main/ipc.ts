@@ -17,7 +17,7 @@ import { geocode, reverse } from './data/amap'
 import { createShare, getShareFeedback } from './share/server'
 import { computeLiveDiscover } from './discover'
 import { projectHarness } from '../renderer/src/lib/harnessProjection'
-import type { AgentReply, DealRow, HarnessSnapshot, Plan, POISummary, UserProfile } from '@shared/types'
+import type { DealRow, Plan, POISummary, UserProfile } from '@shared/types'
 
 const id = z.string().min(1).max(512)
 const offerSource = z.object({ command_id: id, artifact_id: id }).strict()
@@ -50,11 +50,6 @@ async function memoryProfile(): Promise<UserProfile> {
     favorite_provenance: Object.fromEntries((data.favorites || []).filter((p: any) => p && typeof p === 'object').map((p: any) => [String(p.name || p.value?.name || p.value || ''), { explicit: p.explicit === true, source: String(p.source || '') }])),
     avoid_shops: [], home_city: getConfig().city, footprints: data.footprints || []
   }
-}
-
-function projectedReply(run: HarnessSnapshot): AgentReply {
-  const projection = projectHarness(run)
-  return { content: '任务已由 Harness 受理。', steps: [], cards: projection.cards, activities: [] }
 }
 
 export function registerIpc(): void {
@@ -167,11 +162,6 @@ export function registerIpc(): void {
       default: throw new Error('Unknown Harness operation')
     }
   })
-  handle(IPC.agentChat, async (raw: unknown) => {
-    const p = z.object({ message: text }).parse(raw)
-    return projectedReply(await (await getHarness()).createRun(p.message))
-  })
-  handle(IPC.agentConfirm, () => { throw new Error('旧确认已失效，请从当前 Harness 任务重新确认。') })
   handle(IPC.getConfig, () => ({ config: { ...getConfigMasked(), harness: { baseURL: safeServiceOrigin(getHarnessEnvironment().PLANGO_BACKEND_URL || 'http://127.0.0.1:8011'), autoStart: getHarnessEnvironment().PLANGO_BACKEND_AUTOSTART !== 'false' } }, cities: [] }))
   handle(IPC.setConfig, async (raw: unknown) => {
     const patch = z.object({
@@ -192,10 +182,6 @@ export function registerIpc(): void {
   handle(IPC.listSkills, () => listSkills())
   handle(IPC.toggleSkill, (skillId: string, enabled: boolean) => { toggleSkill(id.parse(skillId), z.boolean().parse(enabled)); return listSkills() })
 
-  handle(IPC.imStatus, () => ({ connected: false, note: '微信渠道尚未连接。可以使用真实方案二维码分享。' }))
-  handle(IPC.imLoginQr, () => ({ dataUrl: '', note: '尚未配置可用的微信渠道；没有可登录的二维码。' }))
-  handle(IPC.proactiveList, async () => (await getHarness()).request('/api/v1/reminders'))
-  handle('proactive:trigger', () => { throw new Error('提醒由真实计划或订阅事件触发。') })
   handle(IPC.memoryGet, () => memoryProfile())
   handle(IPC.memoryGreeting, async () => {
     const profile = await memoryProfile()

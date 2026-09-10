@@ -18,7 +18,7 @@ R0→P3 本轮核心实施已完成，实际验收见 [实施进度](docs/实施
 
 Linux/WSLg 试用包的独立安装、非开发启动、配置诊断、升级与冷备份恢复见 [试用安装](docs/试用安装.md)。下面是源码开发环境的启动方式；试用包不需要 Node/npm、Vite 或主机 conda。
 
-需要 Node.js 20.11+、conda、uv、Docker Engine 与 Compose，以及能运行 Electron 的桌面环境。先安装依赖并初始化本项目配置：
+需要 Node.js 22.12+、conda、uv、Docker Engine 与 Compose，以及能运行 Electron 的桌面环境。先安装依赖并初始化本项目配置：
 
 Linux/WSL 图形桌面可直接使用一键脚本，脚本会自动定位本仓库：
 
@@ -33,10 +33,15 @@ Linux/WSL 图形桌面可直接使用一键脚本，脚本会自动定位本仓�
 
 ```bash
 npm ci
+npm exec -- install-electron --no
 npm run setup:backend
 ```
 
-安装脚本创建或复用 Python 3.12 的 `plango` 环境，按本仓库 `uv.lock` 安装运行依赖，环境独立于兄弟项目。它保留已有 `.env`，不存在时从模板创建；自动生成缺失的后端 token、数据库密码，并写入 `PLANGO_PYTHON`。`.env` 被 Git 忽略，权限设为 0600，不要再用模板覆盖它。
+Electron 44 不在 `npm ci` 的安装钩子里下载二进制；上面的 `install-electron` 使用官方入口下载并校验锁定版本，不启动窗口。一键启动和试用构建也会检查版本，只在依赖变化或二进制缺失/不匹配时补装，下载失败不会启动桌面。网络代理按本机 Node/npm 环境配置，不写入项目默认代理。
+
+已有 Electron 33 profile 首次升级前保留完整冷备份，先运行[隔离兼容检查](docs/试用安装.md#升级已有安装与接续当前项目)。试用升级仍需显式 `--allow-electron-upgrade`；已知降级拒绝。旧备份版本未知时可显式恢复到独立空目标，不会丢弃旧备份或伪造来源版本。
+
+Python 安装脚本创建或复用 Python 3.12 的 `plango` 环境，按本仓库 `uv.lock` 安装运行依赖，环境独立于兄弟项目。它保留已有 `.env`，不存在时从模板创建；自动生成缺失的后端 token、数据库密码，并写入 `PLANGO_PYTHON`。`.env` 被 Git 忽略，权限设为 0600，不要再用模板覆盖它。
 
 在本项目 `.env` 填写模型与高德配置。默认模板使用 `PLANGO_BACKEND_AUTOSTART=false` 连接 Docker 后端；已有配置不会被自动改成这个模式。
 
@@ -82,7 +87,7 @@ npm run dev
 
 也可以直接发送“人数改为3人，其他不变”或“日期改成2026年9月12日，取消单段路程上限”。修改保留同一任务和未提及条件；角色人数与总人数分开，日期不会作为目标地区查询。
 
-打开包含明确报价、规则或路线的资料页后，可以发送“只按这份条款判断适用性并给出总价”或“根据给定路线能确认不超预算吗”。当前支持来源唯一、计价单位明确的套餐条件核算，以及已知完整餐费加单程标准票价的预算分析。成人资格、额外费用、日期/时段等必须按原文核对；多套餐歧义、缺票价或缺规则会保留未知，不自动购买或预约。实现与失败保留记录见[评测驱动修复](eval/plango-quality-fixes/README.md)。
+打开包含明确报价、规则或路线的资料页后，可以发送“只按这份条款判断适用性并给出总价”或“根据给定路线核对费用、路程和到达时间”。当前代码按来源记录区分选项，核对计价单位、抵扣门槛、分段路线和日期时段；每项结果保留原文和缺失条件。明确收费才计入已知小计，未确认优惠仅显示条件计算，缺票价、资格或使用规则仍为未知。费用、比较、适用性、距离、用时和到达时间分别检查是否回答；这些实现尚不证明新资料下可靠交付，也不自动购买或预约。当前机制见[架构说明](docs/Agent架构与选型.md)，旧实现与失败保留在[评测驱动修复](eval/plango-quality-fixes/README.md)。
 
 悦廊的网页预约条件可通过官方预填链接核对，当前仅支持参数预览：购物车、空位查询与预约接口保持阻断，不能据此判断有位。结果会保留实际网页标签和核对时间，关闭后可继续原任务；见[本次验证](eval/plango-booking-preview/README.md)。
 
@@ -119,7 +124,7 @@ PLANGO_BACKEND_AUTOSTART=true PLANGO_RUNTIME_PROFILE=desktop PLANGO_BACKEND_URL=
 ## 功能与真实边界
 
 - 行程经过需求、候选、编译与验证；数量以有效结果为准，选方案需提交确切 ID 和版本。
-- 成果页的“行程需求”卡可直接修改起点、搜索中心/范围、日期/时间、人数、预算及交通方式，并锁定/解锁当前方案的一站。保存走同一任务的稀疏规范补丁；空预算即取消，旧方案审批失效，原记录保留。范围同时约束搜索与路线，直接编辑上限50公里；锁定不冻结营业/价格证据。
+- 成果页的“行程需求”卡可直接修改起点、搜索中心/范围、日期/时间、人数、预算及交通方式，并锁定/解锁当前方案的一站。保存走同一任务的稀疏规范补丁；空预算即取消，旧方案审批失效，原记录保留。搜索范围与单段路程分别校验，直接编辑上限50公里；锁定不冻结营业/价格证据。
 - 登录或验证码页会暂停到人工接管；已实测的大众点评扫码路由也在模型读取前暂停。首站已由用户完成登录，真实门店地址/推荐菜/优惠预览有只读证据；完整菜单、使用细则和真实表单仍未覆盖。登录页本身不算商家读取成功。
 - 浏览器实际导航、读取、滚动、输入和点击。审批绑定任务轮次、页面、快照与参数；改需求或页面后需重新核对。
 - 网页、菜单和优惠标记来源；缺价保持未知，套餐总价不当人均，邻店报价不归给目标店。复杂饮食等未完整验证的条件可保持部分完成。
@@ -162,9 +167,12 @@ env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop-storage-browser
 
 ```bash
 conda run --no-capture-output -n plango python scripts/check_deployment.py
+conda run --no-capture-output -n plango python scripts/check_service_recovery.py
 PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plango-e2e env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed
 PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plango-e2e env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed -- --vision
 ```
+
+`check_service_recovery.py` 自动创建并清理专属 `plango-e2e-*` Compose项目，使用无模型、无真实浏览器的受控传输样本检查PostgreSQL/Redis/API/worker队列与恢复；CI沿用此门禁，报告保存在 `output/service-recovery-*/report.json`。它不读取用户模型凭据，不属于质量评测。
 
 `test:deployed` 必须连接独立 `plango-e2e` 服务（先用 `PLANGO_SERVICE_PORT=18011 docker compose -p plango-e2e up --build -d --wait` 启动），脚本核对容器归属和端口，拒绝主用户服务。它调用真实模型并仅重启测试 API/worker，页面分别为受控菜单和 Canvas，保留任务与恢复证据；不进行真实商家交易。`scripts/check_vision_capability.py` 是单独的有界真实图像能力检查，输入为仓库中的受控浏览器截图。各阶段已审查证据保存在 `eval/plango-r0/`、`eval/plango-p0/`、`eval/plango-p1/` 和 `eval/plango-live-*/`；今后的完整链路脚本默认写入带时间目录的 `output/full-stack-smoke/`，不覆盖历史。
 
@@ -184,6 +192,8 @@ npm run services:down
 ## 模块与上游维护
 
 当前实现见 [Agent架构与选型](docs/Agent架构与选型.md)、[架构图](figures/plango-agent-architecture.md) 与 [任务闭环图](figures/plango-task-lifecycle.md)。外层是集中式 Plan-and-Execute 工作流，页面内是受控 ReAct 循环；确定性协调器、LLM专业节点和领域服务职责分开。single/multi 表示是否启用额外视角，并非两套运行架构。产品当前不集成 MCP，Skills 不授予工具权限。
+
+自然语言轮次先加载记忆，再用同一结构化调用产生目标和稀疏需求补丁；规划复用同轮已核验补丁，结构化需求卡沿原入口提交。浏览器大结果在回执确认落盘后释放，命令身份继续防重放。现有 `inspect_trace.py` 可关联run/turn、schema、Token、调用延迟和阶段时间偏移；未配置外部追踪平台，也未证明长期稳定或成本优势。
 
 固定决策见 [架构决策](docs/架构决策.md)。[迁移前审计](docs/模块替换与Agent工作流审计.md)、[旧工作流](figures/yoyu-current-workflow.md) 和 [历史目标建议](figures/yoyu-target-workflow.md) 保留作历史证据，不代表当前缺口或已实现功能。
 

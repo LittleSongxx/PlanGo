@@ -3,12 +3,6 @@ export const IPC = {
   harnessRequest: 'harness:request',
   harnessEvent: 'harness:event',
   reminderRequest: 'reminders:request',
-  // Agent 对话（主线）
-  agentChat: 'agent:chat',
-  agentConfirm: 'agent:confirm', // 两步确认：token 回传执行
-  agentStep: 'agent:step', // main→renderer 推送步骤流
-  agentStreamCard: 'agent:card', // main→renderer 推送成果卡片
-
   // Renderer submits bounded user intents; main owns browser contents and execution.
   browserRequest: 'browser:view-request',
   browserLayout: 'browser:view-layout',
@@ -24,14 +18,8 @@ export const IPC = {
   listSkills: 'skills:list',
   toggleSkill: 'skills:toggle',
 
-  // IM Bridge
-  imStatus: 'im:status',
-  imLoginQr: 'im:login-qr',
-  imIncoming: 'im:incoming', // main→renderer
-
   // 主动关心
   proactivePush: 'proactive:push', // main→renderer
-  proactiveList: 'proactive:list',
 
   // 记忆
   memoryGet: 'memory:get',

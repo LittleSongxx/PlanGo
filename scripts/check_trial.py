@@ -25,6 +25,11 @@ def rejected(action):
 def main():
     with tempfile.TemporaryDirectory(prefix="plango trial check ") as temporary:
         base = Path(temporary)
+        with patch.object(lifecycle, "prepare_node", side_effect=RuntimeError("fixture Electron install failure")) as prepare, patch.object(trial.subprocess, "run") as process:
+            rejected(lambda: trial.build(base / "missing-electron.tar.gz"))
+            prepare.assert_called_once()
+            process.assert_not_called()
+            assert not (base / "missing-electron.tar.gz").exists(), "Missing Electron must stop before compilation or archive creation"
         root = base / "installed"
         root.mkdir()
         for name in trial.PAYLOAD:
@@ -50,6 +55,23 @@ def main():
             rejected(lambda: trial.extract(bad, base / "unpacked"))
         rejected(lambda: trial.release(root))
         rejected(lambda: trial.project_name("planora"))
+        old_browser = {"platform": "linux-x64", "electron": "33.4.11"}
+        new_browser = {"platform": "linux-x64", "electron": "44.3.0"}
+        rejected(lambda: trial.check_electron_transition(old_browser, new_browser))
+        assert trial.check_electron_transition(old_browser, new_browser, True) is False
+        rejected(lambda: trial.check_electron_transition(new_browser, old_browser, True))
+        rejected(lambda: trial.check_electron_transition(old_browser, {**new_browser, "platform": "darwin-arm64"}, True))
+        rejected(lambda: trial.check_electron_transition({}, new_browser, True))
+        assert trial.check_electron_transition({}, new_browser, True, allow_unknown=True) is True
+        old_backup = {"project": "plango-trial-check", "profile": str(root / "profile"), **old_browser}
+        for source, target, allowed in ((old_backup, new_browser, False), ({**old_backup, **new_browser}, old_browser, True), ({"project": old_backup["project"], "profile": old_backup["profile"]}, new_browser, True)):
+            with patch.object(trial, "containers", return_value=[]), patch.object(trial, "verify_backup", return_value=source), patch.object(trial, "volume_names", return_value=[]), patch.object(trial, "release", return_value=target):
+                destination = base / "reuse-version-rejected"
+                rejected(lambda: trial.install(archive, destination, "plango-trial-check", 28011, base / "retained-backup", allowed))
+                assert not destination.exists(), "Reuse must reject unsafe version changes before installing into the original profile"
+        with patch.object(trial, "cold"), patch.object(trial, "verify_backup", return_value={"postgres_major": 16, "redis_major": 7, "project": "plango-trial-check"}), patch.object(trial, "release", return_value=new_browser), patch.object(trial, "containers") as containers:
+            rejected(lambda: trial.restore(root, base / "unknown-version-backup", True))
+            containers.assert_not_called()  # Explicit unknown-version acceptance still cannot restore over the source project.
         with patch.object(trial, "containers", return_value=[{"State": "running"}]):
             rejected(lambda: trial.install(archive, base / "conflict", "plango-trial-check", 28011))
 
@@ -92,6 +114,14 @@ def main():
             for name in (".env", "trial-install.json", "profile/harness/browser-receipts.json"):
                 assert (root / name).read_bytes() == initial[name]
 
+        with patch.object(trial, "release", side_effect=lambda directory: old_browser if directory == root else new_browser), patch.object(trial, "backup", side_effect=backup) as cold_backup:
+            rejected(lambda: trial.upgrade(root, archive, base / "upgrade-without-flag"))
+            cold_backup.assert_not_called()
+            trial.upgrade(root, archive, base / "electron-upgrade-backup", True)
+            cold_backup.assert_called_once_with(root, base / "electron-upgrade-backup")
+            assert (base / "electron-upgrade-backup/application/electron").exists()
+            assert receipt.read_bytes() == initial["profile/harness/browser-receipts.json"]
+
         # Diagnostic checks never print credential values, even when other preconditions fail.
         output = io.StringIO()
         with contextlib.redirect_stdout(output), patch.object(trial.shutil, "which", return_value=None):
@@ -113,7 +143,7 @@ def main():
             assert lifecycle.is_electron({"args": [executable + " --user-data-dir=" + profile + " ."]})
             assert not lifecycle.is_electron({"args": [executable + " . --user-data-dir=" + profile + "-other"]})
             assert not lifecycle.is_electron({"args": [executable, "."]})
-        print("Trial controlled checks passed: paths, ownership, private diagnostics, upgrade rollback/double failure and UNKNOWN preservation.")
+        print("Trial controlled checks passed: paths, ownership, private diagnostics, Electron upgrade opt-in/downgrade rejection/unknown-version isolation, mandatory upgrade backup, rollback/double failure and UNKNOWN preservation.")
 
 
 if __name__ == "__main__":

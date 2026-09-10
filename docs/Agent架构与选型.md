@@ -1,6 +1,6 @@
 # PlanGo 的 Agent 架构与选型
 
-更新：2026-09-09。本文按当前工作树中的实现说明架构，不把设计目标或开发工具能力记为产品能力。阶段验收、部署状态与尚未通过的真实用户流程以 [实施进度](实施进度.md) 为准；本轮使用真实用户行为验证功能，不开展完整的角色收益或 DOM/Vision 指标评测。
+更新：2026-09-10。本文按当前工作树中的实现说明架构，不把设计目标或开发工具能力记为产品能力。阶段验收、部署状态与尚未通过的真实用户流程以 [当前交接](CODEX_HANDOFF.md) 和 [实施进度](实施进度.md) 为准。历史质量结果保留；本轮代码和受控回归不证明新来源质量、真实商家履约或独立使用验收完成。
 
 ## 1. 当前系统是什么
 
@@ -36,11 +36,11 @@ PlanGo 是 **集中式 Agent Workflow：行程层先规划、校验、审批，�
 
 ## 3. 一次任务如何闭环
 
-桌面入口是 `task_context` → `image_entry`。上下文判断当前任务是行程规划、页面读取、写操作还是执行准备。纯图片读取也有独立来源验收，用户图片不能冒充当前网页。
+桌面入口是 `load_memory` → `task_context` → `image_entry`。先读取已有记忆，再判断当前任务是行程规划、页面读取、写操作还是执行准备。纯图片读取也有独立来源验收，用户图片不能冒充当前网页。
 
-2026-09-10：每个新自然语言轮次通过现有 ModelAdapter 产生 `TaskIntent`，区分规划、摘录、资料判断、操作与继续原目标；分类结果持久到同轮上下文，结构化需求卡直接走原字段入口。目标分类占用原轮次预算，不新增授权；阶段推进仍由确定性协调器完成。分类失败时保留原有界 fallback，语义判断是否可靠由受控评测检查，不能仅凭新增模型调用声称问题已解决。用户文字分类可以发生在页面读取之前，登录观测仍在 PageData、BrowserDecision 或 Vision 处理前暂停。
+2026-09-10：每个新自然语言轮次通过现有 ModelAdapter 产生 `TaskIntent`，同时输出规划/摘录/资料判断/操作/继续原目标、`RequirementOutput` 稀疏补丁及 `analysis_goals` 交付维度。它使用已加载记忆、上一版规范和固定消息时间；共享出处校验后的补丁持久为绑定 `turn_id/input_text` 的 `requirement_proposal`。规划节点复用本轮提案，不再调用第二个模型重解同一输入；结构化需求卡直接走原字段入口。分类与补丁占用原轮次预算，不新增授权。分类失败才使用原有界 fallback；来源引用存在不等于语义已经可靠。用户文字分类可以发生在页面读取之前，登录观测仍在 PageData、BrowserDecision 或 Vision 处理前暂停。
 
-行程规划路径为：`load_memory` → `requirements` → `supervisor` → `discovery` → 可选 `advocate_fanout/advocate_worker` → `synthesis` → `verify` → `browser_variants` → `supervisor` → `propose_actions/approval`。协调器根据实际产物选择阶段，缺证据、地点冲突等可以进入澄清；有界修复后仍失败则保留原因。
+桌面入口选择规划后，路径为：`requirements` → `supervisor` → `discovery` → 可选 `advocate_fanout/advocate_worker` → `synthesis` → `verify` → `browser_variants` → `supervisor` → `propose_actions/approval`。协调器根据实际产物选择阶段，缺证据、地点冲突等可以进入澄清；有界修复后仍失败则保留原因。
 
 `browser_variants` 对“没有已知硬冲突、但事实尚不完整”的计划进入 `browser_draft_review`，不要求用户回答实时排队或库存。该 interrupt 复用持久命令和现有 checkpoint；`draft-decision` 同时绑定 interrupt、plan ID 与版本。用户可保存 `draft_ready` 草案，或在人数、日期、当前门店身份与地址来源足够时明确选择“仅准备表单”。后者的 ExecutionGoal 带 `plan_verification=draft` 与全部 `pending_checks`；原 Verifier 仍为不可执行。未知值不会升级为已核验，已知硬冲突不能走这个准备入口。
 
@@ -58,7 +58,7 @@ PlanGo 是 **集中式 Agent Workflow：行程层先规划、校验、审批，�
 - 输入或普通链接导航完成，只证明浏览器交互完成，循环继续观察。
 - 业务提交只有核对本次身份与业务回执才可称完成；无法核验保留 `UNKNOWN`，不得重新提交碰碰运气。
 
-用户编辑已批准计划，会清除旧执行目标与结果，返回需求解析。`build_graph` 的 `entry`、`replan_entry`、`after_verify`、`after_execute` 是四个显式组合点，桌面层分别使用 `task_context`、`task_context`、`browser_variants`、`browser_first`。扩展层只注册本项目节点和边，已删除此前先构建再逐条删边的拼接方式。
+用户编辑已批准计划，会清除旧执行目标与结果，返回需求解析。`build_graph` 保留显式组合点：桌面 `entry/replan_entry` 均为 `load_memory`，`after_memory=task_context`，`after_verify=browser_variants`，`after_execute=browser_first`。扩展层只注册本项目节点和边，已删除此前先构建再逐条删边的拼接方式。
 
 澄清回答也回到同一个 `replan_entry`，不另写一套上下文合并入口。`ask_user` 只增加一次用户 turn，后续 `task_context` 更新该任务的意图/最新文本/编辑记录，再走需要的专业节点；因此“按当前网页继续规划”和“不要规划，先读取页面”可以分别保留规划来源与切换任务类型。
 
@@ -72,7 +72,7 @@ PlanGo 是 **集中式 Agent Workflow：行程层先规划、校验、审批，�
 
 `RequirementOutput` 表达稀疏补丁：未提及保留，明确修改设置，明确取消清除，未知仍保留未知。`RequirementOutput.to_trip_spec` 合并旧规范，随后 `agent/requirements.py::requirement_delta` 比较规范字段，最后才决定刷新。`planning_reset` 统一用户编辑、重规划和澄清回答的失效边界。
 
-2026-09-10：真实模型的修改须携带 `field_evidence`，引用本轮完整原文子句；共享边界核对出处、类型、单位和清除冲突，不再用 fallback 的空值覆盖带依据的模型字段。只有适配器实际返回原 fallback 对象才使用旧解析；缺依据则保留条件并澄清。`planning_reset` 与 Runtime 重入共用规范保留规则，清除旧计划、校验与审批产物，解析或地理暂停不再清空原 TripSpec。规划转资料判断也保留已接受人数、预算、日期和时间。完整子句校验是否过严、未提及默认字段是否干扰有效修改，仍需结合真实输出继续检查；出处存在不等于语义蕴含证明。
+2026-09-10：真实模型的修改须携带 `field_evidence`，引用本轮完整原文子句；共享边界核对出处、类型、单位和清除冲突，不再用 fallback 的空值覆盖带依据的模型字段。只有适配器实际返回原 fallback 对象才使用旧解析；缺依据则保留条件并澄清。`planning_reset` 与 Runtime 重入共用规范保留规则，清除旧计划、校验与审批产物，解析或地理暂停不再清空原 TripSpec。规划和资料判断共用该补丁，已接受人数、预算、日期和时间投影到同一上下文；旧 `price_fields` 独立文字解析已移除。无新参数的资料读取/分析不因缺少规划字段而要求补起点或活动。完整子句校验是否过严、未提及默认字段是否干扰有效修改，仍需结合真实输出继续检查；出处存在不等于语义蕴含证明。
 
 Planner、Advocate 和 Critic 的模型输入不再包含累积的 `TripSpec.goal` 原文，只传当前结构化规范；例如预算已取消时，模型看到 `budget=null/per_person_budget=null`，人数、日期、当前硬约束和明确偏好照常保留。原消息及 goal 仍持久保存用于需求合并与审计。Advocate 报告/角色列表采用追加 reducer，重规划写入 `[]` 不会清掉历史；因此实际工作流按 run/turn 选择当前报告，worker 绑定真实任务、轮次和分派角色，模型不能自行改归属。旧 checkpoint 未携带 run ID 的报告按所在任务归属兼容，仍受轮次过滤。
 
@@ -152,7 +152,7 @@ MCP 本身是 host/client/server 的工具与上下文协议，见 [官方架构
 
 ## 8. 本轮已整改和验收边界
 
-已针对实际混乱修改代码：四个显式工作流组合点替代删边拼接；统一 planning_reset；规范需求差分替代关键词清空；子图契约补齐；日期与 Evidence 适用范围绑定；选店与起点分离；协调器命名及事件修正；删除 single 模式对所有专业提示词的串改。这些改动保留持久节点 ID 和子图 namespace，不通过删除 checkpoint 进行升级。
+已针对实际混乱修改代码：显式工作流组合点替代删边拼接；统一 planning_reset；规范需求差分替代关键词清空；子图契约补齐；日期与 Evidence 适用范围绑定；选店与起点分离；协调器命名及事件修正；删除 single 模式对所有专业提示词的串改。这些改动保留持久节点 ID 和子图 namespace，不通过删除 checkpoint 进行升级。
 
 本轮最小辅助回归包含固定时区日期与预算差分、真实编译 Discovery/Advocate 子图传参、single 模式 Browser/Skills 提示词保留、显式北京起点后的预算编辑、审批后 Preparation 再改人数，以及空桌面直接地理规划、来源隔离和变更地区后拒绝旧网页事实。它们均为明确标记的合成样本，不证明真实商家可用。空桌面检查通过同一 API/compiled graph 路径，断言没有任何 page 调用或浏览器命令，最终生成供给未知的待核验草案。最终仍按真实桌面用户路径检查地区/起点/日期/预算/锁定/选店、阅读结果、执行准备与人工接管；缺失业务事实继续展示未知。
 
@@ -178,7 +178,13 @@ P3 的记忆入口、可信范围投影、反馈幂等与遗忘代码已落盘�
 
 浏览器结果CAS与BROWSER_OBSERVATION在同一数据库事务写入；Redis死信发布与ACK用原子脚本，发布失败不确认原消息。截图回执可以迟到并按原内容确认，但PNG、命令、页面身份、未来时间及采集早于命令等校验仍保留；Vision实际使用前重新校验30秒新鲜度，过期不送模型、不重拍、不放开写权限。
 
-模型连接、超时、鉴权、权限、额度、限流与结构化错误分别记录，只有真实结构化回复失败进入JSON修复，SDK负责有界传输重试；参见[官方Python SDK错误接口](https://github.com/openai/openai-python#error-handling)。业务事件、命令与模型用量是当前排错依据；可选OTel span接口尚未配置collector/exporter，不宣称已经具有全链路外部追踪。当前共享TS协议与Pydantic/Zod校验手工维护，没有部署全量OpenAPI代码生成。
+模型连接、超时、鉴权、权限、额度、限流与结构化错误分别记录，只有真实结构化回复失败进入JSON修复，SDK负责有界传输重试；参见[官方Python SDK错误接口](https://github.com/openai/openai-python#error-handling)。`inspect_trace.py` 按结构化 schema/调用类型汇总实际 Token、调用延迟和 fallback，关联 run/turn/plan，并显示已有阶段事件的时间偏移；记录截断会明确标记。输入 Token 估计只用于预算准入，实际用量以服务返回为准；阶段时间包含等待间隔，不等于逐工具耗时、端到端延迟或货币成本。可选OTel API span接口保留，未使用的SDK直接依赖已移除，仍未配置collector/exporter。当前共享TS协议与Pydantic/Zod校验手工维护，没有部署全量OpenAPI代码生成。
+
+主进程在服务端接受回执、且本地送达记录安全落盘后，释放命令缓存中的完整结果 Promise，只保留命令ID与SHA256内容指纹。同ID不能重做已送达动作，参数不同时拒绝；未确认与UNKNOWN回执保留原保护。进程内身份最多10,000条，到上限拒绝新命令，不以淘汰身份换取重放；这限制了长期会话容量，不证明WSL崩溃根因或长期稳定性。
+
+源码锁定 Electron 44.3.0，构建要求 Node.js 22.12+。33.4.11→44.3.0 的隔离检查覆盖受控Cookie/localStorage重开及身份/UNKNOWN文件保留；浏览器适配检查仍沿同一WCV、Playwright/CDP和回执边界。它们不证明真实商家登录或跨机器解密兼容，升级仍需完整冷备份，见[试用安装](试用安装.md)。
+
+CI新增 `scripts/check_service_recovery.py`：创建专属PostgreSQL/Redis/API/worker项目，检查输入幂等、Redis待确认消息恢复、API/worker重启、原checkpoint及终态重复投递，结束仅清理自己的测试资源。浏览器结果由受控传输样本提供，不调用模型或真实网页；它补服务恢复门禁，不能计作TSR或商家验收。运行结果以本轮交接记录为准。
 
 地图与计划内路线使用规范计划中的origin和travel_mode，不能改用设备全局位置或固定驾车方式；附近发现仍使用用户当前指定位置。外部导航也保留当前方式，按[高德URI模式定义](https://lbs.amap.com/api/uri-api/guide/travel/route)使用car/bus/walk。
 
@@ -213,6 +219,12 @@ ReadGoal兼容旧checkpoint，由明确请求推导门店身份/地址、菜单�
 `search_radius_km`独立于路线约束`max_distance_km`；旧checkpoint/旧字段保留兼容，新UI/API以`route_distance_km`明确路程语义。多结果geocode拒绝默认取第一项。同城公交通过两端真实citycode查询，按bus/walking段合计距离和时长，单人标准票价乘人数一次；缺费用保留null，真实铁路/出租车和跨城路线仍未知。PlanStop中的交通费用及说明随原计划保存，方案/分享使用已知估算小计与未估项，不以总预算通过冒充完整消费保证。
 
 用户可见回复以`ASSISTANT_MESSAGE`写入已有事件账本，与状态投影同一SQL事务；不添加到模型messages或另建对话事实表。前端以完整连续事件序列按接受顺序重建问答，旧任务只恢复已存GRAPH_INTERRUPTED问题，保留已有AI消息；缺日志时回退原消息，不编造回答。重放按同轮/内容/阶段去重，新轮相同内容仍独立；当前输入未执行时不将旧reason当新答复。
+
+资料分析使用同一当前command/artifact、URL、snapshot和有效期。`SourceAnalysis`按来源记录及实体拆分选项，携带收费单位、抵扣门槛与对应消费、用户明确份数、分段路线/等待和日期时段的原文；金额、单位及引用由确定性代码核对后计算。不得跨记录拼接商家规则，不从人数自动加购、不重复乘交通人数，也不把单程改成往返。资格、预约、叠加和额外费用等未能核验的条件继续未知；有条件的优惠计算与已享优惠分开显示。
+
+`analysis_goals`分别验收费用、比较、适用性、距离、用时和到达时间。只完成费用摘录不能替代用户要求的路线或时段判断；结果携带 `requested/delivered` 和缺项。已知小计不等于完整消费保证，`scope=source_analysis` 始终不证明业务完成或授予写权限。上述是当前实现范围，语义抽取与可见交付的可靠性仍须独立来源评测。
+
+本轮同时删除不可达的旧Agent IPC、空IM渠道入口和死卡片；`pgvector` Python包装直接依赖移除，已有数据库/SQL向量路径保留。没有加入新的编排、记忆或检索框架。
 
 ## 13. 无业务副作用的参数预览
 

@@ -104,7 +104,7 @@ class ModelAdapter:
             if "dashscope" in settings.openai_base_url
             else "openai-compatible",
             model=settings.openai_model,
-            prompt_version="plango-structured-v2-schema-repair",
+            prompt_version="plango-structured-v3-shared-turn",
             thinking_mode="disabled" if "dashscope" in settings.openai_base_url else "provider_default",
         )
         self.call_count = 0
@@ -116,6 +116,7 @@ class ModelAdapter:
         self.last_latency_ms = 0.0
         self.last_error: str | None = None
         self.last_call_kind: str | None = None
+        self._structured_schema: str | None = None
         self.call_records: list[dict[str, Any]] = []
         self.deadline_at: float | None = None
         self.cleanup_reserve_seconds = 5.0
@@ -151,8 +152,12 @@ class ModelAdapter:
 
     @staticmethod
     def _input_token_estimate(system: str, user: str, definitions: str = "") -> int:
-        # Admission heuristic, not an exact provider tokenizer. Count schemas too; reported usage is authoritative.
-        return len(system) + len(user) + len(definitions) + 256
+        # ponytail: provider-neutral admission estimate, not billing. ASCII JSON
+        # is not one token per character; retain extra room for non-ASCII and
+        # message framing. Use a provider tokenizer if measured error warrants it.
+        text = system + user + definitions
+        ascii_chars = sum(character.isascii() for character in text)
+        return (ascii_chars + 2) // 3 + 2 * (len(text) - ascii_chars) + 256
 
     def _completion_cap(self, remaining_tokens: int, input_tokens: int) -> int:
         return max(
@@ -216,6 +221,8 @@ class ModelAdapter:
             "prompt_version": self.metadata.prompt_version,
             "thinking_mode": self.metadata.thinking_mode,
         }
+        if self._structured_schema:
+            record["schema"] = self._structured_schema
         if provider_error is not None:
             http_status = getattr(provider_error, "status_code", None)
             code = getattr(provider_error, "code", None)
@@ -301,7 +308,11 @@ class ModelAdapter:
         self, schema: type[T], *, system: str, user: str, fallback: T, image: str | None = None,
     ) -> T:
         async with self._call_lock:
-            return await self._structured(schema, system=system, user=user, fallback=fallback, image=image)
+            self._structured_schema = schema.__name__
+            try:
+                return await self._structured(schema, system=system, user=user, fallback=fallback, image=image)
+            finally:
+                self._structured_schema = None
 
     async def _structured(
         self,

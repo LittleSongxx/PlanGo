@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.browser import run_context
 from plango.graph import BrowserDecision
+from plango.outcomes import TaskIntent
 from plango.planning import BrowserPlanEngine
 from plango.supply import literal_supply
 from plango.world import BrowserWorld, Item, ObservedPlace, PageData
@@ -24,6 +25,7 @@ from plango_harness.agent.contracts import (
     PlanStop,
     TripSpec,
 )
+from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.subagents.requirement import RequirementAgent
 from plango_harness.providers.world import Supply
 from test_browser_harness import TOKEN, fixture, settings, wait_for
@@ -87,6 +89,9 @@ class BrowserOutcomeQuality(unittest.TestCase):
 
             async def extract_only(schema, *, fallback, **kwargs):
                 model_calls.append(schema)
+                if schema is TaskIntent:
+                    return TaskIntent(kind="reasoning", requirements=RequirementOutput(party_size=3, budget=240,
+                        field_evidence={"party_size": "3人", "budget": "总预算240元"}))
                 if schema is PageData:
                     return PageData(
                         places=[

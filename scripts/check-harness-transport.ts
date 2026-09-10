@@ -11,9 +11,11 @@ const received: BrowserObservation[] = []
 const events: unknown[] = []
 let commands: BrowserCommand[] = []
 let failures = 1
+let missingAcknowledgements = 1
 let executions = 0
 let releases = 0
 let activations = 0
+let receiptAcknowledgements = 0
 let state = { run_id: 'run-test', input_text: 'fixture', phase: 'RESEARCHING', event_seq: 1, version: 1, state: {} }
 let selected: unknown
 const token = 'transport-fixture-only'
@@ -63,7 +65,8 @@ const server = createServer(async (req, res) => {
   if (url.pathname === '/api/v1/health/ready') return send({ ready: true })
   if (url.pathname === '/api/v1/browser/commands') return send({ commands, cursor: 0 })
   if (url.pathname.endsWith('/result')) {
-    if (failures-- > 0) { res.statusCode = 503; return send({ detail: 'fixture transient failure' }) }
+    if (failures-- > 0) { assert.equal(receiptAcknowledgements, 0, 'A failed delivery cannot release the executor result'); res.statusCode = 503; return send({ detail: 'fixture transient failure' }) }
+    if (missingAcknowledgements-- > 0) { assert.equal(receiptAcknowledgements, 0, 'HTTP success without acceptance cannot release the executor result'); return send({ accepted: false }) }
     received.push(JSON.parse(body)); return send({ accepted: true })
   }
   if (url.pathname.endsWith('/events')) return send({ events: Array.from({ length: state.event_seq }, (_, i) => ({ run_id: state.run_id, seq: i + 1, event_type: 'fixture', payload: {} })).filter(event => event.seq > Number(url.searchParams.get('after') || 0)) })
@@ -77,7 +80,12 @@ const server = createServer(async (req, res) => {
 await new Promise<void>(r => server.listen(0, '127.0.0.1', r))
 const port = (server.address() as { port: number }).port
 const base = { baseURL: `http://127.0.0.1:${port}`, token, browserSessionId: 'desktop-test', dataDir: root,
-  emit: (event: unknown) => { events.push(event) }, onTerminal: () => { releases++ }, onActivate: () => { activations++ } }
+  emit: (event: unknown) => { events.push(event) }, onTerminal: () => { releases++ }, onActivate: () => { activations++ },
+  onReceiptDelivered: (command: BrowserCommand) => {
+    const journal = new Map<string, any>(JSON.parse(readFileSync(join(root, 'browser-receipts.json'), 'utf8')))
+    assert.equal(journal.get(command.command_id)?.delivered, true, 'Release follows the durable acknowledgement, not only the HTTP response')
+    receiptAcknowledgements++
+  } }
 const waitFor = async (predicate: () => boolean) => {
   const until = Date.now() + 6500
   while (!predicate()) { assert.ok(Date.now() < until, 'fixture deadline exceeded'); await new Promise(r => setTimeout(r, 20)) }
@@ -86,10 +94,18 @@ const command: BrowserCommand = { command_id: 'command-one', run_id: 'run-test',
 let client: HarnessClient | undefined
 try {
   client = new HarnessClient({ ...base, execute: async c => { executions++; return { command_id: c.command_id, ok: true, outcome: 'executed' } } })
+  const writeJournal = (client as any).writeJournal.bind(client)
+  let diskFailure = false
+  ;(client as any).writeJournal = (path: string, rows: [string, any][]) => {
+    if (!diskFailure && rows.some(([, receipt]) => receipt.delivered)) { diskFailure = true; throw new Error('fixture acknowledgement disk failure') }
+    return writeJournal(path, rows)
+  }
   assert.equal((await client.status()).ready, true)
   commands = [command]
   client.startBrowserPolling()
   await waitFor(() => received.length > 0)
+  await waitFor(() => receiptAcknowledgements > 0)
+  assert.equal(diskFailure, true, 'A failed acknowledgement save is retried before releasing the result')
   assert.equal(executions, 1, 'failed POST must retry receipt, never click')
   commands = [{ ...command, arguments: { idx: 99 } }]
   await waitFor(() => events.length > 0)

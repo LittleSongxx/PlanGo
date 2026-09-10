@@ -11,6 +11,7 @@ interface Options {
   browserSessionId: string
   dataDir: string
   execute: (command: BrowserCommand) => Promise<BrowserObservation>
+  onReceiptDelivered?: (command: BrowserCommand) => void
   emit: (event: HarnessEvent) => void
   onTerminal?: (runId: string) => void
   onActivate?: (runId: string, supersede: boolean) => void
@@ -508,18 +509,22 @@ export class HarnessClient {
       receipt.result = { command_id: id, ok: false, outcome: 'unknown', error_kind: 'desktop_restarted_during_command' }
       this.persist()
     }
-    await this.request(`/api/v1/browser/commands/${encodeURIComponent(id)}/result`, 'POST', {
+    const accepted = await this.request<{ accepted: boolean }>(`/api/v1/browser/commands/${encodeURIComponent(id)}/result`, 'POST', {
       ...receipt.result, browser_session_id: this.options.browserSessionId
     })
+    if (accepted.accepted !== true) throw new Error('Browser receipt was not acknowledged')
     receipt.delivered = true
-    this.persist()
+    try { this.persist() } catch (error) { receipt.delivered = false; throw error }
+    this.options.onReceiptDelivered?.(receipt.command)
   }
 
   private persist(): void {
     // ponytail: retain the latest 200 delivered receipts; pending commands are never pruned.
     const delivered = [...this.receipts].filter(([, value]) => value.delivered)
-    for (const [id] of delivered.slice(0, Math.max(0, delivered.length - 200))) this.receipts.delete(id)
-    this.writeJournal(this.journalPath, [...this.receipts])
+    const pruned = new Set(delivered.slice(0, Math.max(0, delivered.length - 200)).map(([id]) => id))
+    const retained = [...this.receipts].filter(([id]) => !pruned.has(id))
+    this.writeJournal(this.journalPath, retained)
+    this.receipts = new Map(retained)
   }
 
   private writeJournal(path: string, value: unknown): void {

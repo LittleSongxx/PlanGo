@@ -200,15 +200,10 @@ export type OutcomeCard =
       menuCount?: number; offerCount?: number; places?: { name: string; address?: string; averagePrice?: number; priceUnit?: string; quote?: string }[] }
   | { kind: 'plan'; plan: Plan }
   | { kind: 'plans'; variants: { plan: Plan; styleLabel: string; per: number | null; overBudget?: number }[]; city: string; budget?: number }
-  | { kind: 'deal'; title: string; rows: DealRow[] }
   | { kind: 'price_comparison'; title: string; source: SourceTag; data: PriceComparison }
   | { kind: 'dishes'; shopName: string; dishes: DishReco[]; mode?: 'menu' | 'recommended_dishes' | 'excerpt' | 'recommendation'; source?: SourceTag }
-  | { kind: 'queue'; shopName: string; number: string; ahead: number; etaMin: number; source: SourceTag }
-  | { kind: 'consensus'; planId: string; question: string; options: string[] }
   | { kind: 'receipt'; items: ReceiptItem[]; shareMessage: string }
   | { kind: 'confirm'; token: string; title: string; detail: string; danger: boolean }
-  | { kind: 'takeout'; shopName: string; deliverTo: string; etaMin: number; deliveryFee: number; packFee: number; items: TakeoutItem[]; total: number; source: SourceTag }
-  | { kind: 'discover'; city: string; groups: DiscoverGroup[]; source: SourceTag }
   | { kind: 'groupbuy'; shopName: string; packages: GroupBuyPackage[]; source: SourceTag; comparison?: OfferComparison; runId?: string; version?: number }
 
 export interface OfferSourceRef { command_id: string; artifact_id: string }
@@ -263,13 +258,6 @@ export interface DiscoverGroup {
   items: POISummary[]
 }
 
-export interface TakeoutItem {
-  name: string
-  price: number
-  qty: number
-  reason: string
-}
-
 export interface DealRow {
   shop: string
   original: number
@@ -300,13 +288,6 @@ export interface ReceiptItem {
   status: 'ok' | 'fail' | 'pending'
   detail: string
   source: SourceTag
-}
-
-export interface AgentReply {
-  content: string
-  steps: AgentStep[]
-  cards: OutcomeCard[]
-  activities: string[]
 }
 
 // Persisted Planora contracts at the desktop boundary. Domain payloads are

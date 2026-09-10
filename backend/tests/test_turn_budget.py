@@ -10,6 +10,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 from plango.app import create_app
 from plango.graph import BrowserDecision
+from plango.outcomes import TaskIntent
 from plango.settings import DesktopSettings
 from plango_harness.agent.contracts import Location, RunPhase
 from plango_harness.agent.decisions import RequirementOutput
@@ -52,7 +53,7 @@ def test_new_user_edits_receive_budget_without_resetting_cumulative_usage(tmp_pa
     world.amap._get = AsyncMock(side_effect=AssertionError("No real network in budget fixtures."))
 
     async def model(schema, *, fallback, **kwargs):
-        if schema is RequirementOutput:
+        if schema in {RequirementOutput, TaskIntent}:
             assert adapter.token_limit - adapter.total_tokens >= 1500
             adapter.total_tokens += 1500  # Explicit synthetic provider usage.
             adapter.call_count += 1

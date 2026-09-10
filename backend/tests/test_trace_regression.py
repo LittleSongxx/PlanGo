@@ -44,3 +44,19 @@ def test_user_edits_do_not_reuse_historical_cycles_or_role_requests():
     snapshot["state"]["input_text"] = "PRIVATE_PROMPT_SENTINEL"
     assert "PRIVATE_PROMPT_SENTINEL" not in json.dumps(inspect["summarize"](snapshot))
     assert inspect["pointer"]({"a/b": [{"~": None}]}, "/a~1b/0/~0") is None
+
+
+def test_diagnostic_cost_breakdown_preserves_missing_usage_and_does_not_invent_tool_latency():
+    root = Path(__file__).resolve().parents[2]
+    inspect = runpy.run_path(str(root / "scripts/inspect_trace.py"))
+    summary = inspect["summarize"]({"run_id": "controlled", "state": {
+        "turn_id": 2, "model_call_count": 3, "model_calls": [
+            {"kind": "TaskIntent", "status": "success", "total_tokens": 120, "latency_ms": 12.5},
+            {"kind": "TaskIntent", "status": "error", "latency_ms": 30}],
+        "trace": [{"event": "requirements_ready", "ts": 100}, {"event": "approval_requested", "ts": 105}],
+    }})
+    assert summary["model_records"]["by_kind"]["TaskIntent"] == {
+        "calls": 2, "reported_tokens": 120, "missing_usage": 1, "latency_ms": 42.5, "failures": 1}
+    assert summary["model_records"]["records_may_be_truncated"]
+    assert [row["offset_seconds"] for row in summary["timeline"]["events"]] == [0, 5]
+    assert "not per-tool or end-to-end latency" in summary["timeline"]["scope"]

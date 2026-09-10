@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { publicStatus, userMessage } from '@shared/userMessages'
 import { canResolveAction, readProgress } from '../lib/harnessProjection'
-import type { OutcomeCard, Plan, DealRow, DishReco, ReceiptItem, SourceTag, TakeoutItem, DiscoverGroup, POISummary, GroupBuyPackage, HarnessEvidence } from '@shared/types'
+import type { OutcomeCard, Plan, DishReco, ReceiptItem, SourceTag, GroupBuyPackage, HarnessEvidence } from '@shared/types'
 import { SourceBadge } from './SourceBadge'
 import { PlanMap } from './PlanMap'
 import { PoiImage } from './PoiImage'
@@ -10,7 +10,7 @@ import { ResultFeedback } from './ResultFeedback'
 import { DraftReviewCard } from './DraftReviewCard'
 import { RequirementsCard } from './RequirementsCard'
 import { OfferComparisonCard } from './OfferComparisonCard'
-import { MapPin, Clock, Utensils, Ticket, Users, CheckCircle2, XCircle, AlertTriangle, Send, ListChecks, Tag, Wallet, Globe, Navigation, Mic, MicOff, Compass, ArrowRight, Sparkles, FileText } from 'lucide-react'
+import { MapPin, Clock, Utensils, Ticket, CheckCircle2, XCircle, AlertTriangle, Send, ListChecks, Wallet, Globe, Navigation, Mic, MicOff, ArrowRight, Sparkles, FileText } from 'lucide-react'
 
 const cardPriority = (card: OutcomeCard): number => card.kind === 'confirm' || card.kind === 'draft_review' ? 2 : card.kind === 'booking_preview' || card.kind === 'preparation' && card.current ? 1 : 0
 
@@ -102,21 +102,11 @@ function CardView({ card }: { card: OutcomeCard }): JSX.Element {
       return <PlansCard variants={card.variants} city={card.city} budget={card.budget} />
     case 'price_comparison':
       return <PriceComparisonCard card={card} />
-    case 'deal':
-      return <DealCard title={card.title} rows={card.rows} />
     case 'dishes':
       return <DishesCard shopName={card.shopName} dishes={card.dishes} mode={card.mode} source={card.source} />
-    case 'takeout':
-      return <TakeoutCard {...card} />
-    case 'discover':
-      return <DiscoverCard city={card.city} groups={card.groups} source={card.source} />
     case 'groupbuy':
       if (card.comparison && card.runId && card.version) return <OfferComparisonCard comparison={card.comparison} runId={card.runId} version={card.version} />
       return <GroupBuyCard shopName={card.shopName} packages={card.packages} source={card.source} />
-    case 'queue':
-      return <QueueCard {...card} />
-    case 'consensus':
-      return <ConsensusCard question={card.question} options={card.options} />
     case 'receipt':
       return <ReceiptCard items={card.items} shareMessage={card.shareMessage} />
     case 'confirm':
@@ -518,37 +508,6 @@ function PriceComparisonCard({ card }: { card: Extract<OutcomeCard, { kind: 'pri
   </Card>
 }
 
-function DealCard({ title, rows }: { title: string; rows: DealRow[] }): JSX.Element {
-  const total = rows.reduce((s, r) => s + r.saved, 0)
-  return (
-    <Card>
-      <div className="flex items-center gap-1.5 mb-2 font-semibold text-sm">
-        <Tag size={14} className="text-brand-ink" /> {title}
-      </div>
-      <div className="space-y-2">
-        {rows.map((r, i) => (
-          <div key={i} className="text-xs border border-neutral-100 rounded-lg p-2">
-            <div className="flex items-center justify-between">
-              <span className="font-medium">{r.shop}</span>
-              <span>
-                <span className="text-neutral-400 line-through mr-1">¥{r.original}</span>
-                <span className="text-red-500 font-semibold">¥{r.final}</span>
-              </span>
-            </div>
-            <div className="text-neutral-500 mt-1">
-              {r.reason}
-              {r.used.length ? ` · 用券：${r.used.join('+')}` : ''}
-            </div>
-            {r.credentials?.length ? <div className="text-[11px] text-amber-600 mt-0.5">需出示：{r.credentials.join('、')}</div> : null}
-            {r.filtered_fake?.length ? <div className="text-[11px] text-neutral-400 mt-0.5">已识别假低价：{r.filtered_fake.join('、')}</div> : null}
-          </div>
-        ))}
-      </div>
-      <div className="mt-2 text-xs text-right text-red-500 font-semibold">合计可省约 ¥{total}</div>
-    </Card>
-  )
-}
-
 function DishesCard({ shopName, dishes, mode = 'recommendation', source }: { shopName: string; dishes: DishReco[]; mode?: 'menu' | 'recommended_dishes' | 'excerpt' | 'recommendation'; source?: SourceTag }): JSX.Element {
   const send = useStore((s) => s.send)
   const recos = dishes.filter((d) => !d.excluded)
@@ -619,174 +578,6 @@ function GroupBuyCard({ shopName, packages, source }: { shopName: string; packag
         ))}
       </div>
       <div className="mt-4 text-xs leading-6 text-[var(--muted)]">价格来自读取时的页面，尚未确认实时可用。当前仅核对资料；下单前需要单独确认。</div>
-    </Card>
-  )
-}
-
-function DiscoverCard({ city, groups, source }: { city: string; groups: DiscoverGroup[]; source: SourceTag }): JSX.Element {
-  const send = useStore((s) => s.send)
-  const openRoute = useStore((s) => s.openRoute)
-  const coords = useStore((s) => s.coords)
-  return (
-    <Card accent>
-      <div className="flex items-center gap-1.5 mb-2">
-        <Compass size={15} className="text-brand-ink" />
-        <span className="font-semibold text-[15px]">{city} · 今日附近热点</span>
-        <SourceBadge source={source} />
-        <span className="ml-auto text-[11px] text-neutral-400">以你当前定位为圆心</span>
-      </div>
-      <div className="space-y-3">
-        {groups.map((g) => (
-          <div key={g.label}>
-            <div className="text-xs font-semibold text-neutral-600 mb-1.5">
-              {g.emoji} {g.label}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {g.items.map((p) => {
-                return (
-                  <div key={p.poi_id} className="rounded-xl border border-neutral-200 overflow-hidden bg-white">
-                    <PoiImage src={p.image} name={p.name} className="h-24 rounded-none" />
-                    <div className="p-2">
-                      <div className="text-xs font-medium truncate">{p.name}</div>
-                      <div className="text-[11px] text-neutral-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                        {(p.filtered_score ?? p.raw_score) ? <span className="text-amber-600">★{p.filtered_score ?? p.raw_score}</span> : null}
-                        {p.price_per_person ? <span>¥{p.price_per_person}</span> : null}
-                        {p.distance_m ? <span>{p.distance_m < 1000 ? `${Math.round(p.distance_m)} 米` : `${(p.distance_m / 1000).toFixed(1)} 公里`}</span> : null}
-                      </div>
-                      <div className="mt-1.5 flex gap-1">
-                        <button
-                          onClick={() => void send(`就以「${p.name}」为中心，帮我排一套附近的周末方案`)}
-                          className="flex-1 text-[10px] py-1 rounded-lg bg-brand text-brand-ink font-medium"
-                        >
-                          去规划
-                        </button>
-                        {p.lng && p.lat && (
-                          <button
-                            onClick={() => openRoute({ origin: coords || undefined, dest: `${p.lng},${p.lat}`, destName: p.name, city })}
-                            className="px-2 text-[10px] py-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 border border-neutral-200"
-                          >
-                            路线
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    </Card>
-  )
-}
-
-function TakeoutCard({
-  shopName,
-  deliverTo,
-  etaMin,
-  deliveryFee,
-  packFee,
-  items,
-  total,
-  source
-}: {
-  shopName: string
-  deliverTo: string
-  etaMin: number
-  deliveryFee: number
-  packFee: number
-  items: TakeoutItem[]
-  total: number
-  source: SourceTag
-}): JSX.Element {
-  const send = useStore((s) => s.send)
-  return (
-    <Card>
-      <div className="flex items-center gap-1.5 mb-2 font-semibold text-sm">
-        <Utensils size={14} className="text-brand-ink" /> 外卖点单 · {shopName} <SourceBadge source={source} />
-      </div>
-      <div className="flex items-center gap-3 text-xs text-neutral-600 mb-1 flex-wrap">
-        <span className="flex items-center gap-1"><MapPin size={12} /> 送到：{deliverTo}</span>
-        <span className="flex items-center gap-1"><Clock size={12} /> 预计 {etaMin} 分钟送达</span>
-      </div>
-      <div className="flex items-center gap-1 mb-2 text-[10px] text-neutral-400">
-        改送到：
-        {['我的位置（当前定位）', '家', '公司'].map((addr) => (
-          <button
-            key={addr}
-            onClick={() => void send(`外卖改送到「${addr}」，重新算下配送费和预计送达`)}
-            className={`px-1.5 py-0.5 rounded ${deliverTo === addr ? 'bg-brand/20 text-brand-ink' : 'bg-neutral-100 hover:bg-neutral-200'}`}
-          >
-            {addr === '我的位置（当前定位）' ? '我的位置' : addr}
-          </button>
-        ))}
-      </div>
-      <div className="space-y-1.5 mb-2">
-        {items.map((it, i) => (
-          <div key={i} className="flex items-start gap-2 text-xs">
-            <CheckCircle2 size={13} className="text-green-500 mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <span className="font-medium">{it.name}</span>
-              <span className="text-neutral-400 ml-1">×{it.qty}</span>
-              <span className="text-neutral-500 ml-1">— {it.reason}</span>
-            </div>
-            <span className="text-neutral-600">¥{it.price * it.qty}</span>
-          </div>
-        ))}
-      </div>
-      <div className="text-[11px] text-neutral-500 border-t border-neutral-100 pt-1.5 flex justify-between">
-        <span>配送 ¥{deliveryFee}{deliveryFee === 0 ? '（满减免）' : ''} · 打包 ¥{packFee}</span>
-        <span className="text-red-500 font-semibold text-sm">合计 ¥{total}</span>
-      </div>
-      <button onClick={() => void send(`就按这份外卖清单下单，送到「${deliverTo}」`)} className="mt-2 w-full py-1.5 text-xs rounded-lg bg-brand text-brand-ink font-medium">
-        继续下单准备（需确认）
-      </button>
-    </Card>
-  )
-}
-
-function QueueCard({ shopName, number, ahead, etaMin, source }: { shopName: string; number: string; ahead: number; etaMin: number; source: SourceTag }): JSX.Element {
-  return (
-    <Card>
-      <div className="flex items-center gap-1.5 mb-2 font-semibold text-sm">
-        <ListChecks size={14} className="text-brand-ink" /> 排队取号 · {shopName} <SourceBadge source={source} />
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="text-center">
-          <div className="text-3xl font-bold text-brand-ink">{number}</div>
-          <div className="text-[10px] text-neutral-400">您的号码</div>
-        </div>
-        <div className="text-xs text-neutral-600 space-y-1">
-          <div>前面还有 <b className="text-red-500">{ahead}</b> 桌</div>
-          <div>预计等待 <b>{etaMin}</b> 分钟</div>
-          <div className="text-neutral-400">建议先去逛，到点PlanGo提醒你</div>
-        </div>
-      </div>
-    </Card>
-  )
-}
-
-function ConsensusCard({ question, options }: { question: string; options: string[] }): JSX.Element {
-  const send = useStore((s) => s.send)
-  const opMap: Record<string, string> = { 想改正餐: '把正餐换一家', 想改玩乐: '把玩乐换一个', 换个时间: '整体推后30分钟' }
-  return (
-    <Card>
-      <div className="flex items-center gap-1.5 mb-2 font-semibold text-sm">
-        <Users size={14} className="text-brand-ink" /> 群体确认
-      </div>
-      <div className="text-xs text-neutral-600 mb-2">{question}</div>
-      <div className="flex flex-wrap gap-1.5">
-        {options.map((o) => (
-          <button
-            key={o}
-            onClick={() => void send(o.includes('同意') ? '大家都同意，就这么定，帮我一键执行' : opMap[o] || o)}
-            className="text-[11px] px-2.5 py-1 rounded-full bg-neutral-100 hover:bg-brand/20 border border-neutral-200"
-          >
-            {o}
-          </button>
-        ))}
-      </div>
     </Card>
   )
 }

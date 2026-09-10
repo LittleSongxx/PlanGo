@@ -22,7 +22,7 @@ def main():
         for path in ("start.sh", "stop.sh", "scripts/lifecycle.py"):
             shutil.copy2(source / path, root / path)
         (root / "package.json").write_text('{"main":"desktop.cjs"}')
-        (root / "package-lock.json").write_text("{}")
+        (root / "package-lock.json").write_text(json.dumps({"packages": {"node_modules/electron": {"version": "44.3.0"}}}))
         (root / "docker-compose.yml").write_text("name: plango\n")
         (root / "scripts/setup_backend.py").write_text(
             "import pathlib,subprocess\n"
@@ -35,9 +35,11 @@ def main():
         vite.write_text("const cp=require('node:child_process'); const path=require('node:path'); "
                         "cp.spawn(path.resolve('node_modules/electron/dist/electron'), ['.','--test-flag'], {stdio:'inherit'}); "
                         "setInterval(()=>{},1000);")
+        (vite.parent / "install-electron").write_text("fixture installer is handled by the npm shim")
         electron = root / "node_modules/electron/dist/electron"
         electron.parent.mkdir(parents=True)
         electron.symlink_to(node)
+        (electron.parent.parent / "package.json").write_text('{"version":"44.3.0"}')
         (root / "desktop.cjs").write_text(
             "const cp=require('node:child_process'); const fs=require('node:fs'); "
             "const child=cp.spawn('/bin/sleep',['600'],{cwd:'/tmp',stdio:'ignore'}); "
@@ -54,6 +56,13 @@ def main():
                 "import json,os,pathlib,sys\n"
                 "name=pathlib.Path(sys.argv[0]).name\n"
                 "with open('calls.jsonl','a') as f: f.write(json.dumps([name,*sys.argv[1:]])+'\\n')\n"
+                "if name=='npm' and sys.argv[1:]==['ci']:\n"
+                "    pathlib.Path('node_modules/electron/dist/electron').unlink(missing_ok=True)\n"
+                "if name=='npm' and sys.argv[1:]==['exec','--','install-electron','--no']:\n"
+                "    if pathlib.Path('fail-electron-install').exists(): sys.exit(1)\n"
+                "    executable=pathlib.Path('node_modules/electron/dist/electron')\n"
+                f"    if not executable.exists(): executable.symlink_to({node!r})\n"
+                "    (executable.parent/'version').write_text('44.3.0')\n"
                 "if name=='docker' and sys.argv[1]=='ps':\n"
                 "    if pathlib.Path('fail-docker').exists(): sys.exit(1)\n"
                 "    print(json.dumps({'root':'/another-checkout' if pathlib.Path('conflict').exists() else str(pathlib.Path.cwd()),'files':str(pathlib.Path.cwd()/'docker-compose.yml')}))\n"
@@ -72,6 +81,14 @@ def main():
                 f"    os.execv({node!r},[{node!r},str(pathlib.Path.cwd()/'node_modules/.bin/electron-vite'),'dev'])\n"
             )
             binary.chmod(0o755)
+        node_shim = binaries / "node"
+        node_shim.write_text("#!/usr/bin/env python3\nimport os,pathlib,sys\n"
+            "args=sys.argv[1:]\n"
+            "version=pathlib.Path('node-version')\n"
+            "if args and args[0]=='-e' and version.exists():\n"
+            "    args[1]='Object.defineProperty(process.versions,'+repr('node')+',{value:'+repr(version.read_text())+'});'+args[1]\n"
+            f"os.execv({node!r},[{node!r},*args])\n")
+        node_shim.chmod(0o755)
         environment = dict(os.environ, PATH=f"{binaries}:{os.environ['PATH']}",
                            DISPLAY=":isolated-check", ELECTRON_RUN_AS_NODE="1")
 
@@ -93,12 +110,24 @@ def main():
 
         outsiders = []
         try:
+            for version in ("20.19.0", "22.11.0"):
+                (root / "node-version").write_text(version)
+                assert "22.12+" in invoke("start", success=False)
+                assert ["npm", "ci"] not in calls()
+            (root / "node-version").write_text("22.12.0")
+            (root / "fail-electron-install").touch()
+            assert "Electron 44.3.0" in invoke("start", success=False)
+            assert ["npm", "run", "dev"] not in calls()
+            assert calls().count(["npm", "ci"]) == 1
+            (root / "fail-electron-install").unlink()
             assert "已启动" in invoke("start")
+            (root / "node-version").unlink()
             pids = json.loads((root / "test-pids.json").read_text())
             assert all(alive(pid) for pid in pids)
             assert "已运行" in invoke("start")
             assert calls().count(["npm", "run", "dev"]) == 1
             assert calls().count(["npm", "ci"]) == 1
+            assert calls().count(["npm", "exec", "--", "install-electron", "--no"]) == 2
             (root / "fail-services").touch()
             assert "失败" in invoke("start", success=False)
             assert all(alive(pid) for pid in pids)
@@ -135,12 +164,22 @@ def main():
             assert unrelated.poll() is None and other.poll() is None and all(alive(pid) for pid in foreign_pids)
             assert "已停止" in invoke("stop")
             assert calls().count(["npm", "run", "dev"]) == 1
+            electron.unlink()
+            assert "已启动" in invoke("start")
+            assert calls().count(["npm", "ci"]) == 1, "Missing binary must not reinstall all Node dependencies"
+            assert calls().count(["npm", "exec", "--", "install-electron", "--no"]) == 3
+            invoke("stop")
+            (electron.parent / "version").write_text("33.4.11")
+            assert "已启动" in invoke("start")
+            assert calls().count(["npm", "ci"]) == 1
+            assert calls().count(["npm", "exec", "--", "install-electron", "--no"]) == 4
+            invoke("stop")
             # An adopted child that changed cwd remains ours after its parent exits.
             manual = subprocess.Popen([node, str(vite), "dev"], cwd=root)
             outsiders.append(manual)
             time.sleep(0.3)
             assert "已运行" in invoke("start")
-            assert calls().count(["npm", "run", "dev"]) == 1
+            assert calls().count(["npm", "run", "dev"]) == 3
             adopted_pids = json.loads((root / "test-pids.json").read_text())
             manual.terminate()
             manual.wait(timeout=3)
@@ -180,7 +219,7 @@ def main():
             (root / ".env").unlink()
             invoke("stop")
             assert calls()[-1][calls()[-1].index("--env-file") + 1] == "/dev/null"
-            print("Lifecycle checks passed: start/reuse, locks, ownership conflicts, stale PID, manual adoption, orphan cleanup, failure/interrupt cleanup, process isolation, retained volumes, missing .env.")
+            print("Lifecycle checks passed: Node 22.12 boundary, explicit Electron install/retry/version repair without repeated npm ci, start/reuse, locks, ownership conflicts, stale PID, manual adoption, orphan cleanup, failure/interrupt cleanup, process isolation, retained volumes, missing .env.")
         finally:
             (root / "conflict").unlink(missing_ok=True)
             (root / "fail-docker").unlink(missing_ok=True)

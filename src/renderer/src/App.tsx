@@ -37,7 +37,6 @@ export default function App(): JSX.Element {
     const unHarness = window.plango.onHarnessEvent((event) => useStore.getState().receiveHarnessEvent(event))
     void useStore.getState().hydrateHarness()
     const un3 = window.plango.onProactive((p) => addProactive(p))
-    const un4 = window.plango.onImIncoming((m) => addProactive({ id: 'im' + m.ts, ts: m.ts, text: `【微信·${m.from}】${m.text}`, kind: 'im' }))
     const applyLocation = (location: LocationInfo): void => {
       if ((!location?.city && !location?.coords) || locationPriority(location.source) < locationPriority(useStore.getState().citySource)) return
       setLocationInfo(location)
@@ -63,7 +62,6 @@ export default function App(): JSX.Element {
       unHarness()
       stopBrowser()
       un3?.()
-      un4?.()
       un5?.()
     }
   }, [addProactive, setCity, setLocationInfo])

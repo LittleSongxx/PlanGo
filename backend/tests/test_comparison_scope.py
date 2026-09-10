@@ -2,13 +2,15 @@
 
 import unittest
 
-from plango.outcomes import price_comparison, update_task_context
+from plango.outcomes import TaskIntent, price_comparison, update_task_context
+from plango_harness.agent.decisions import RequirementOutput
 
 
-def offline_state(text, prices):
-    """TEST-only normalized facts, as if extracted from a literal merchant price list."""
+def offline_state(text, prices, **fields):
+    """Controlled structured model proposal and observed prices; no language-quality claim."""
     state = {"run_id": "quality-comparison-scope", "turn_id": 1, "input_text": text}
-    state["browser_task_context"] = update_task_context(state)
+    state["browser_task_context"] = update_task_context(state, TaskIntent(kind="reasoning", requirements=RequirementOutput(
+        **fields, field_evidence={field: text for field in fields})))
     state["browser_artifacts"] = [
         {
             "artifact_id": "offline-price-list",
@@ -36,6 +38,7 @@ class ComparisonScopeQuality(unittest.TestCase):
         state = offline_state(
             "比较雾岚餐厅和杉木餐厅，3人，总预算240元，推荐更便宜的一家",
             [("远山餐厅", 68), ("海湾餐厅", 82)],
+            party_size=3, budget=240,
         )
         result = price_comparison(state)
         self.assertTrue(
@@ -46,10 +49,11 @@ class ComparisonScopeQuality(unittest.TestCase):
                 result["data"]["recommendation"], "不得将未请求的两家冒充目标比较结果"
             )
 
-    def test_natural_total_price_cap_cannot_disappear(self):
+    def test_accepted_total_price_cap_cannot_disappear(self):
         state = offline_state(
             "比较雾岚餐厅和杉木餐厅，3人，总价不超过240元，推荐更便宜的一家",
             [("雾岚餐厅", 90), ("杉木餐厅", 100)],
+            party_size=3, budget=240,
         )
         self.assertEqual(state["browser_task_context"]["total_budget"], 240)
         result = price_comparison(state)

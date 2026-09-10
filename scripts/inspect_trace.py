@@ -18,7 +18,21 @@ def summarize(snapshot):
     tokens = state.get("model_token_count", 0)
     tools = state.get("tool_call_count", 0)
     discovery = [item.get("payload", {}) for item in trace if item.get("event") == "discovery_complete"]
+    by_kind = {}
+    for item in calls:
+        row = by_kind.setdefault(item.get("schema", item.get("kind", "unknown")), {"calls": 0, "reported_tokens": 0, "missing_usage": 0, "latency_ms": 0, "failures": 0})
+        row["calls"] += 1
+        row["failures"] += item.get("status") != "success"
+        row["latency_ms"] = round(row["latency_ms"] + item.get("latency_ms", 0), 2)
+        if isinstance(item.get("total_tokens"), int):
+            row["reported_tokens"] += item["total_tokens"]
+        else:
+            row["missing_usage"] += 1
+    timed = [item for item in trace if isinstance(item.get("ts"), (int, float))]
+    origin = min((item["ts"] for item in timed), default=0)
     return {
+        "identity": {"run_id": snapshot.get("run_id", state.get("run_id")), "turn_id": state.get("turn_id"),
+                     "plan_version": state.get("plan_version"), "phase": snapshot.get("phase", state.get("phase"))},
         "cumulative": {
             "tokens": tokens, "tools": tools,
             "model_calls": state.get("model_call_count", 0),
@@ -38,7 +52,13 @@ def summarize(snapshot):
             "token_budget_fallback": sum(item.get("error") == "model_token_budget" for item in calls),
             "tokens": sum(item.get("total_tokens", 0) for item in calls),
             "largest_input_tokens": max((item.get("input_tokens", 0) for item in calls), default=0),
+            "by_kind": by_kind,
+            "records_may_be_truncated": state.get("model_call_count", 0) > len(calls),
         },
+        "timeline": {"scope": "Recorded stage wall-clock offsets; includes gaps, not per-tool or end-to-end latency",
+                     "truncated": len(timed) > 80,
+                     "events": [{"event": item.get("event"), "agent_id": item.get("agent_id"),
+                                 "offset_seconds": round(item["ts"] - origin, 3)} for item in timed[-80:]]},
         "trace": {
             "records": len(trace),
             "clarifications": sum(item.get("event") == "clarification_requested" for item in trace),

@@ -174,7 +174,8 @@ class ModelRepairCheck(unittest.IsolatedAsyncioTestCase):
 
     async def test_repair_prompt_overhead_is_charged_before_second_call(self):
         provider = RepairProvider()
-        adapter = ModelAdapter(DesktopSettings(max_model_tokens=1100), model=provider)
+        # Enough for the first schema, but not the extra validation/repair prompt.
+        adapter = ModelAdapter(DesktopSettings(max_model_tokens=900), model=provider)
         fallback = Choice(merchant_id="none", total=0)
         result = await adapter.structured(
             Choice, system="选择报价", user="报价128元", fallback=fallback

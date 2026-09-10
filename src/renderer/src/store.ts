@@ -165,9 +165,6 @@ interface State {
   send: (text: string, image?: string, selectedPoi?: SelectedPoi) => Promise<void>
   confirm: (token: string, ok: boolean) => Promise<void>
 
-  applyStep: (s: AgentStep & { patch?: boolean }) => void
-  addCard: (c: OutcomeCard) => void
-  clearCards: () => void
   addProactive: (p: ProactiveMsg) => void
   setSettings: (open: boolean) => void
   setView: (v: WorkView) => void
@@ -564,27 +561,6 @@ export const useStore = create<State>((set, get) => ({
     finally { if (get().activeSessionId === activeSessionId) set({ requestBusy: false, busy: runBusy(get().run) }) }
   },
 
-  applyStep: (s) =>
-    set((state) => {
-      if (s.patch) {
-        return { steps: state.steps.map((x) => (x.id === s.id ? { ...x, status: s.status, detail: s.detail ?? x.detail, source: s.source ?? x.source } : x)) }
-      }
-      if (state.steps.find((x) => x.id === s.id)) return {}
-      return { steps: [...state.steps, s] }
-    }),
-  addCard: (c) =>
-    set((s) => {
-      // 单例卡：代表"当前结果"的卡片重复产出时替换旧的，避免"点一次加一张"堆叠；
-      // 交易/历史类卡（回执/排号/确认/群体确认）保留追加。
-      const SINGLETON = new Set(['plans', 'plan', 'deal', 'dishes', 'takeout', 'groupbuy', 'discover'])
-      const cards = SINGLETON.has(c.kind) ? [...s.cards.filter((x) => x.kind !== c.kind), c] : [...s.cards, c]
-      return {
-        cards,
-        // PlanGo一产出成果卡片，主工作区自动切到"成果区"大视图（confirm 卡除外，避免打断浏览）
-        view: c.kind === 'confirm' ? s.view : 'outcome'
-      }
-    }),
-  clearCards: () => set({ cards: [] }),
   addProactive: (p) => set((s) => ({ proactive: [p, ...s.proactive].slice(0, 20) })),
   setSettings: (open) => set({ settingsOpen: open }),
   setView: (v) => set({ view: v }),

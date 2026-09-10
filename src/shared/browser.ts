@@ -124,6 +124,8 @@ export function browserErrorMessage(kind: string): string {
     approval_required: '该操作需要具体页面审批。',
     command_expired: '这条操作已过期，请重新读取页面并核对。',
     command_conflict: '操作身份与参数不一致，已阻止执行。',
+    command_already_delivered: '这条操作的回执已保存，请从原任务核对结果；不会重复执行。',
+    browser_command_capacity: '本次桌面会话的操作记录已达上限。请核对原任务状态后重开应用，系统会保留原任务与未确认的回执。',
     invalid_command: '浏览器操作参数无效，未执行。',
     stale_snapshot: '页面或表单已变化，请重新读取并核对。',
     snapshot_required: '需要先读取当前页面，再选择操作目标。',

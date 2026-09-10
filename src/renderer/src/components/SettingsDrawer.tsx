@@ -12,7 +12,6 @@ export function SettingsDrawer(): JSX.Element | null {
   const setSettings = useStore((s) => s.setSettings)
   const [config, setConfig] = useState<any>(null)
   const [skills, setSkills] = useState<any[]>([])
-  const [im, setIm] = useState<{ connected: boolean; note: string } | null>(null)
   const [ping, setPing] = useState<string>('')
 
   useEffect(() => {
@@ -21,7 +20,6 @@ export function SettingsDrawer(): JSX.Element | null {
       setConfig(r.config)
     })
     window.plango.listSkills().then(setSkills)
-    window.plango.imStatus().then(setIm)
   }, [open])
 
   if (!open) return null
@@ -84,7 +82,7 @@ export function SettingsDrawer(): JSX.Element | null {
           </Section>
 
           <Section icon={<MessageCircle size={15} />} title="同行人协作">
-            <div className="text-xs text-neutral-500">{im?.note || '微信和飞书尚未接入。可在行程卡中生成真实分享链接，由你发送给同行人。'}</div>
+            <div className="text-xs text-neutral-500">在行程卡中生成分享链接或二维码，发给同行人投票和留下意见。</div>
           </Section>
 
           <Section icon={<Bell size={15} />} title="主动提醒">

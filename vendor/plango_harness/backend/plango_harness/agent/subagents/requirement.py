@@ -477,24 +477,7 @@ def _semantic_patch(text: str, previous: TripSpec | None) -> dict[str, Any]:
     return values
 
 
-class RequirementAgent:
-    def __init__(self, model: ModelAdapter) -> None:
-        self.model = model
-
-    async def run(
-        self,
-        text: str,
-        memory_context: list[dict],
-        previous_spec: TripSpec | None = None,
-        messages: list[Any] | None = None,
-        *, reference_at: str | None = None,
-    ) -> RequirementOutput:
-        fallback = self._fallback(text, memory_context, previous_spec, reference_at=reference_at)
-        previous = previous_spec.model_dump_json() if previous_spec else "无"
-        conversation = [getattr(item, "content", str(item)) for item in (messages or [])[-6:]]
-        output = await self.model.structured(
-            RequirementOutput,
-            system=(
+REQUIREMENT_INSTRUCTIONS = (
                 "你是 PlanGo 的 Requirement Agent。把用户的本地生活目标转换为结构化约束。"
                 "只提取用户明确说过或记忆中有证据的约束；无法确定时标记 clarification_needed。"
                 "不要选择地点，不要调用写操作。若存在上一版需求，只返回需要新增或修改的字段，"
@@ -518,7 +501,27 @@ class RequirementAgent:
                 "含糊的预算口径、人数、日期或距离应保留原值并在clarification_fields列出待确认字段，"
                 "不要猜总额/人均或把否定和保留要求当成修改。只有用户明确撤销或改为未知时才设置clear_*或*_unknown，"
                 "也必须为该标志提供原文。明确的本轮修改可对照上一版需求执行，不重复追问已知信息。"
-            ),
+            )
+
+
+class RequirementAgent:
+    def __init__(self, model: ModelAdapter) -> None:
+        self.model = model
+
+    async def run(
+        self,
+        text: str,
+        memory_context: list[dict],
+        previous_spec: TripSpec | None = None,
+        messages: list[Any] | None = None,
+        *, reference_at: str | None = None,
+    ) -> RequirementOutput:
+        fallback = self._fallback(text, memory_context, previous_spec, reference_at=reference_at)
+        previous = previous_spec.model_dump_json() if previous_spec else "无"
+        conversation = [getattr(item, "content", str(item)) for item in (messages or [])[-6:]]
+        output = await self.model.structured(
+            RequirementOutput,
+            system=REQUIREMENT_INSTRUCTIONS,
             user=(
                 f"当前用户消息：{text}\n上一版 TripSpec：{previous}\n"
                 f"最近对话：{conversation}\n相关记忆：{memory_context}\n本轮消息时间：{reference_at or '未提供'}；默认时区Asia/Shanghai"
@@ -838,7 +841,8 @@ class RequirementAgent:
         return output.model_copy(update=updates)
 
     @staticmethod
-    def _grounded_patch(output: RequirementOutput, *, text: str, previous_spec: TripSpec | None) -> RequirementOutput:
+    def _grounded_patch(output: RequirementOutput, *, text: str, previous_spec: TripSpec | None,
+                        require_initial: bool = True) -> RequirementOutput:
         """Validate a model's sparse patch without reinterpreting language with fallback rules."""
         metadata = {"goal", "field_evidence", "clarification_needed", "clarification_fields", "clarification_question"}
         values: dict[str, Any] = {"goal": text if previous_spec is None else f"{previous_spec.goal}；用户补充：{text}",
@@ -898,7 +902,7 @@ class RequirementAgent:
                           clarification_question=output.clarification_question or "部分修改缺少明确依据或单位不一致，请确认要修改的条件；原有条件已保留。")
         elif values["clarification_needed"] and not values["clarification_question"]:
             values["clarification_question"] = "请确认尚未明确的条件；其他已确认条件保持。"
-        if previous_spec is None and not values["field_evidence"]:
+        if require_initial and previous_spec is None and not values["field_evidence"]:
             values.update(clarification_needed=True, clarification_fields=values["clarification_fields"] or ["context"],
                           clarification_question=values["clarification_question"] or "请提供本次活动的明确要求。")
         return RequirementOutput.model_validate(values)

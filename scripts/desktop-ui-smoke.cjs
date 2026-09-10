@@ -330,7 +330,7 @@ async function main() {
   await js("document.querySelector('[role=switch]').click()")
   await waitFor('skill restored', async () => (await js("document.querySelector('[role=switch]').getAttribute('aria-checked')")) === skillBefore.checked)
   writeFileSync(join(uiEvidence, '06-connection-skills.png'), (await window.webContents.capturePage()).toPNG())
-  for (const [tab, filename] of [['记忆','07-connection-memory.png'],['提醒','08-connection-reminders.png'],['微信/飞书','09-connection-social.png']]) {
+  for (const [tab, filename] of [['记忆','07-connection-memory.png'],['提醒','08-connection-reminders.png']]) {
     await js(`[...document.querySelectorAll('[role=tab]')].find(el=>el.innerText===${JSON.stringify(tab)}).click()`)
     await sleep(250)
     writeFileSync(join(uiEvidence, filename), (await window.webContents.capturePage()).toPNG())
@@ -400,7 +400,7 @@ async function main() {
   await waitFor('three people invalidate two-person package', () => js("document.querySelector('[aria-label=\"优惠：精选双人餐\"]')?.innerText.includes('当前条件不适用')"))
   assert.equal(offerEdits, 1)
   assert.equal(await js("document.querySelector('[aria-label=\"门店优惠比较\"]').innerText.includes('2026-09-12') && document.querySelector('[aria-label=\"门店优惠比较\"]').innerText.includes('总预算 ¥120')"), true)
-  assert.equal(await js("document.querySelector('[aria-label=\"优惠：精选双人餐\"]').innerText.includes('完整用餐费用待核对')"), true)
+  assert.equal(await js("document.querySelector('[aria-label=\"优惠：精选双人餐\"]').innerText.includes('完整消费费用待核对')"), true)
   await js("document.querySelector('[aria-label=\"优惠：精选双人餐\"]').scrollIntoView({block:'center'})")
   await sleep(200)
   writeFileSync(join(uiEvidence, '14-offer-three-people.png'), (await window.webContents.capturePage()).toPNG())

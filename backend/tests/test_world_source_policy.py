@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.browser import run_context
+from plango.outcomes import TaskIntent
 from plango.settings import DesktopSettings
 from plango.world import BrowserWorld, PageData
 from plango_harness.agent.contracts import Evidence, Location, PlaceCandidate, TripSpec
@@ -92,7 +93,7 @@ def test_selected_poi_center_template_never_geocodes_merchant_as_origin(tmp_path
     world.amap.geocode = AsyncMock(side_effect=AssertionError("Canonical selected POI must not become a global origin geocode."))
 
     async def confused_model(schema, *, fallback, **kwargs):
-        return RequirementOutput(location_name=place.name) if schema is RequirementOutput else fallback
+        return TaskIntent(kind="planning", requirements=RequirementOutput(location_name=place.name)) if schema is TaskIntent else fallback
 
     app.state.runtime.model.structured = confused_model
     text = "就以「寿司郎(大融城店)」（观音桥步行街8号大融城LG层055号）为中心，帮我排一套附近的周末方案"
