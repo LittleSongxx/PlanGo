@@ -4,10 +4,17 @@ import re
 from datetime import date
 from typing import Any, Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from .contracts import Activity, ContractModel, Location, PartyCounts, PartyMember, TripSpec
-from .requirements import preservation_instruction
+
+_CLEAR_FIELDS = (
+    ("budget", "clear_budget"), ("per_person_budget", "clear_per_person_budget"),
+    ("party_size", "party_size_unknown"), ("visit_date", "visit_date_unknown"),
+    ("time_window_start", "time_window_start_unknown"),
+    ("search_radius_km", "clear_search_radius"), ("route_distance_km", "clear_route_distance"),
+    ("max_queue_minutes", "clear_max_queue"),
+)
 
 
 class SupervisorDecision(ContractModel):
@@ -29,9 +36,11 @@ class SupervisorDecision(ContractModel):
 
 
 class RequirementOutput(ContractModel):
-    """A complete first-turn spec or a sparse patch for a later turn."""
+    """A typed sparse proposal; omitted fields preserve the accepted state."""
 
     goal: str | None = None
+    planning_source: Literal["browser", "amap"] | None = None
+    refresh_sources: bool = False
     party: list[PartyMember] | None = None
     hard_constraints: list[str] | None = None
     soft_preferences: list[str] | None = None
@@ -61,7 +70,7 @@ class RequirementOutput(ContractModel):
     clarification_needed: bool = False
     clarification_fields: list[str] = Field(default_factory=list)
     clarification_question: str = ""
-    field_evidence: dict[str, str] | None = Field(default=None, description="本轮修改字段到当前用户消息完整原文子句的映射；无修改返回空对象。未提及、沿用旧值的字段不得列入。明确清除/未知使用对应标志字段名。")
+    field_evidence: dict[str, str] | None = Field(default=None, description="可选的字段出处注记，仅用于审计；缺少引用不代表用户歧义，也不影响已知字段的稀疏合并。")
     indoor_required: bool | None = None
     outdoor_required: bool | None = None
     max_queue_minutes: int | None = Field(default=None, ge=0, le=1440, strict=True)
@@ -70,7 +79,23 @@ class RequirementOutput(ContractModel):
     route_distance_km: float | None = Field(default=None, ge=0.1, le=1000, allow_inf_nan=False, strict=True)
     clear_search_radius: bool = False
     clear_route_distance: bool = False
+    clear_max_queue: bool = False
     travel_mode: Literal["driving", "walking", "transit"] | None = None
+
+    @model_validator(mode="after")
+    def consistent_operations(self) -> RequirementOutput:
+        for field, flag in _CLEAR_FIELDS:
+            if getattr(self, flag) and getattr(self, field) is not None:
+                raise ValueError(f"{field} cannot be set and cleared in the same proposal")
+        for field, reference in (("location_name", "location_reference"),
+                                 ("search_location_name", "search_location_reference")):
+            if getattr(self, field) and getattr(self, reference):
+                raise ValueError(f"{field} and {reference} are mutually exclusive")
+        removed = set(self.remove_activities or [])
+        required, optional = set(self.required_activities or []), set(self.optional_activities or [])
+        if removed & (required | optional) or required & optional:
+            raise ValueError("each activity must have one operation in a proposal")
+        return self
 
     @field_validator("timezone")
     @classmethod
@@ -78,17 +103,26 @@ class RequirementOutput(ContractModel):
         return TripSpec.known_timezone(value) if value is not None else None
 
     def to_trip_spec(self, fallback_goal: str, base: TripSpec | None = None) -> TripSpec:
-        """Apply a validated requirement patch without dropping prior constraints."""
+        """Apply known fields; ambiguity affects only the named fields."""
+        if self.clarification_needed:
+            blocked = set(self.clarification_fields)
+            for field, flag in _CLEAR_FIELDS:
+                if field in blocked or flag in blocked:
+                    blocked.update((field, flag))
+            self = self.model_copy(update={
+                field: definition.get_default(call_default_factory=True)
+                for field, definition in type(self).model_fields.items() if field in blocked
+            })
         values: dict[str, Any] = base.model_dump(mode="python") if base else {
             "goal": fallback_goal,
             "party": [PartyMember(role="用户")],
-            "party_size": 1,
-            "party_counts": {"用户": 1},
+            "party_size": None,
+            "party_counts": {},
             "hard_constraints": [],
             "soft_preferences": [],
             "time_window_start": None,
             "duration_minutes": 360,
-            "budget": 400.0,
+            "budget": None,
             "location": Location(latitude=39.997, longitude=116.482),
             "weather_sensitive": True,
         }
@@ -178,16 +212,7 @@ class RequirementOutput(ContractModel):
             value = getattr(self, field)
             if value is not None:
                 values[field] = value
-        for field, labels in (("indoor_required", {"室内", "必须室内", "全程室内"}), ("outdoor_required", {"户外", "必须户外", "全程户外"})):
-            if getattr(self, field) is False:
-                values["hard_constraints"] = [item for item in values["hard_constraints"] if item not in labels]
-        if any("排队" in item for item in (self.remove_hard_constraints or [])):
-            values["max_queue_minutes"] = None
-        if "距离优先" in (self.remove_hard_constraints or []):
-            values["max_distance_km"] = None
-            if not self.clear_route_distance and self.route_distance_km is None:
-                values["search_radius_km"] = None
-        elif self.max_distance_km is not None:
+        if self.max_distance_km is not None:
             # Legacy input changed both limits; explicit new fields below override each independently.
             values["search_radius_km"] = min(self.max_distance_km, 50) if self.max_distance_km > 0 else None
         if self.search_radius_km is not None:
@@ -198,7 +223,8 @@ class RequirementOutput(ContractModel):
             values["search_radius_km"] = None
         if self.clear_route_distance:
             values["max_distance_km"] = None
-            values["hard_constraints"] = [item for item in values["hard_constraints"] if item != "距离优先"]
+        if self.clear_max_queue:
+            values["max_queue_minutes"] = None
         time_start = values.get("time_window_start")
         if time_start is not None and not re.fullmatch(r"(?:[01]?\d|2[0-3]):[0-5]\d", str(time_start)):
             time_start = None
@@ -211,7 +237,7 @@ class RequirementOutput(ContractModel):
         values["hard_constraints"] = [
             str(item).strip()
             for item in hard_values
-            if str(item).strip() not in {":00", "00", "None"} and not preservation_instruction(str(item))
+            if str(item).strip()
         ]
         values["soft_preferences"] = [
             str(item).strip() for item in soft_values if str(item).strip()

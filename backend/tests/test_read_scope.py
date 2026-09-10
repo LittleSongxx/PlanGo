@@ -1,17 +1,23 @@
-"""Offline field coverage regressions from the real merchant read; no business execution."""
+"""Offline field coverage regressions from the real merchant read; no business execution.
+
+The requested fields are stated by the caller. These tests cover what the observation is
+allowed to count as covering them: only current, unexpired, same-page evidence.
+"""
 
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from plango.outcomes import ReadGoal, read_outcome
+from plango.outcomes import read_outcome
 
 REQUEST = "读取当前页面示例餐厅的真实门店地址、菜单和套餐使用条件；遇到登录请暂停供我人工接管，不登录、不下单。"
+FULL_FIELDS = ["merchant", "address", "menu", "offers", "offer_conditions"]
 
 
-def state(data, request=REQUEST, *, kind="menu_read"):
+def state(data, request=REQUEST, *, kind="menu_read", fields=None):
     return {
-        "execution_goal": {"kind": kind, "request": request, "source": "browser"},
+        "execution_goal": {"kind": kind, "request": request, "source": "browser",
+                           "required_fields": FULL_FIELDS if fields is None else fields},
         "browser_observation": {"url": "https://fixture.invalid/shop/1", "snapshot_id": "read-1"},
         "browser_artifacts": [{"artifact_id": "page:read-1", "type": "browser_page", "source": "browser",
                                "url": "https://fixture.invalid/shop/1", "snapshot_id": "read-1", "title": "示例餐厅",
@@ -19,15 +25,15 @@ def state(data, request=REQUEST, *, kind="menu_read"):
     }
 
 
-def test_old_goal_requires_every_explicit_field_and_recommendations_are_partial():
+def test_recommendations_do_not_cover_the_requested_fields():
     data = {"text": "推荐菜\n清蒸鱼\n菜单(9)\n去App查看菜单详情", "menu": [{"name": "清蒸鱼", "price": None, "quote": "清蒸鱼"}]}
     outcome = read_outcome(state(data))
-    assert ReadGoal.model_validate(state(data)["execution_goal"]).required_fields == ["merchant", "address", "menu", "offers", "offer_conditions"]
     assert outcome.status == "needs_evidence"
     assert outcome.data["observed_fields"] == ["recommended_dishes"]
-    assert outcome.data["missing_fields"] == ["merchant", "address", "menu", "offers", "offer_conditions"]
+    assert outcome.data["missing_fields"] == FULL_FIELDS
     assert "推荐菜" in outcome.summary and outcome.data["business_completed"] is False
-    assert read_outcome(state(data, "读取网页推荐菜", kind="page_read")).status == "satisfied"
+    # Asking only for what the page shows is satisfied by the same observation.
+    assert read_outcome(state(data, "读取网页推荐菜", kind="page_read", fields=["recommended_dishes"])).status == "satisfied"
 
 
 def test_merchant_and_offer_previews_do_not_complete_hidden_menu_and_rules():
@@ -61,7 +67,7 @@ def test_merchant_and_offer_previews_do_not_complete_hidden_menu_and_rules():
 ])
 def test_menu_requires_actual_menu_context_or_explicit_price(text, price, expected):
     data = {"text": text, "menu": [{"name": "清蒸鱼", "price": price, "quote": text.split("\n")[1] if text.startswith(("菜单", "推荐菜")) else text}]}
-    assert read_outcome(state(data, "读取当前网页菜单")).status == expected
+    assert read_outcome(state(data, "读取当前网页菜单", fields=["menu"])).status == expected
 
 
 def test_forged_missing_and_stale_fields_do_not_fill_requested_scope():
@@ -76,29 +82,21 @@ def test_forged_missing_and_stale_fields_do_not_fill_requested_scope():
 
 
 def test_generic_page_read_keeps_its_existing_text_scope():
-    outcome = read_outcome(state({"text": "帮助中心：账号设置说明"}, "读取当前网页内容", kind="page_read"))
+    outcome = read_outcome(state({"text": "帮助中心：账号设置说明"}, "读取当前网页内容", kind="page_read", fields=[]))
     assert outcome.status == "satisfied" and outcome.data == {"scope": "read_only", "business_completed": False}
 
 
-@pytest.mark.parametrize("user_text", [
-    "读取当前网页内容，保留网页地址和来源地址。",
-    "读取当前页面的文字，保留页面地址、链接地址和URL地址。",
-    "读取当前网页的商家信息，保留来源地址。",
-])
-def test_source_url_is_not_a_merchant_street_address(user_text):
-    value = state({"text": "账号设置说明"}, user_text, kind="page_read")
-    goal = ReadGoal.model_validate(value["execution_goal"])
-    assert "address" not in goal.required_fields
-    if "商家信息" not in user_text:
-        assert read_outcome(value).status == "satisfied"
-    assert "address" in ReadGoal(kind="page_read", request="读取商家信息；同时查看地址").required_fields
-    assert "address" in ReadGoal(kind="page_read", request="读取这家餐厅的地址").required_fields
+def test_a_page_without_a_merchant_block_does_not_cover_an_address_request():
+    """A source URL is not a street address; only an observed place block covers it."""
+    value = state({"text": "账号设置说明"}, "读取当前网页的商家信息与地址", kind="page_read", fields=["merchant", "address"])
+    outcome = read_outcome(value)
+    assert outcome.status == "needs_evidence"
+    assert outcome.data["missing_fields"] == ["merchant", "address"]
 
 
 @pytest.mark.parametrize("changed", [{"url": "https://fixture.invalid/shop/2"}, {"snapshot_id": "previous-snapshot"}])
-@pytest.mark.parametrize("current_page", ["当前页面", "当前网页", "当前浏览器页面", "当前浏览器中的页面", "当前浏览器里的网页"])
-def test_current_page_cannot_borrow_fields_from_another_url_or_snapshot(changed, current_page):
-    value = state({"text": "菜单\n清蒸鱼", "menu": [{"name": "清蒸鱼", "quote": "清蒸鱼", "price": None}]}, REQUEST.replace("当前页面", current_page))
+def test_current_page_cannot_borrow_fields_from_another_url_or_snapshot(changed):
+    value = state({"text": "菜单\n清蒸鱼", "menu": [{"name": "清蒸鱼", "quote": "清蒸鱼", "price": None}]})
     other = deepcopy(value["browser_artifacts"][0])
     other.update(artifact_id="page:another", **changed)
     quote = "示例餐厅 地址：重庆市示例路1号\n双人套餐98元\n使用须知：周一至周日"

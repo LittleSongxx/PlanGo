@@ -4,6 +4,7 @@ import json
 from typing import Any
 
 from plango_harness.agent.contracts import (
+    DEFAULT_DWELL_MINUTES,
     Evidence,
     PlaceCandidate,
     PlanDraft,
@@ -143,7 +144,7 @@ class PlannerAgent:
             stops=[
                 PlanDraftStop(
                     place_id=place.place_id,
-                    duration_minutes=90 if place.category == "餐厅" else 80,
+                    duration_minutes=DEFAULT_DWELL_MINUTES,
                     reason="结合评分、距离和预算挑选已查到的地点",
                 )
                 for place in selected

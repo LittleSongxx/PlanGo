@@ -63,6 +63,7 @@ export function phaseLabel(run: HarnessSnapshot | null): string {
     if (result.scope === 'ready_to_review') return completed ? '准备就绪 · 待核对' : '准备事项待完善'
     if (result.scope === 'preparation_incomplete') return '准备事项待完善'
     if (result.scope === 'image_text') return completed ? '图片识别已完成' : '图片识别待补充'
+    if (result.scope === 'task_answer') return completed ? '答复已生成' : '任务部分完成'
     if (result.scope === 'read_only') return completed ? '资料读取已完成' : '资料读取待补充'
     if (result.scope === 'booking_parameters') return completed ? '参数预览已核对 · 未查询空位' : '参数预览待核对'
   }
@@ -153,6 +154,14 @@ export function projectHarness(run: HarnessSnapshot): { cards: OutcomeCard[]; me
   const readEvidenceIds = currentRead ? strings(readOutcome.evidence_ids) : []
   const cards: OutcomeCard[] = []
   const preview = row(readOutcome.data)
+  if (readOutcome.kind === 'task_answer' && preview.scope === 'task_answer' && str(readOutcome.summary)) {
+    cards.push({ kind: 'task_answer', text: str(readOutcome.summary), complete: run.phase === 'SUCCEEDED' && readOutcome.status === 'satisfied',
+      citations: rows(preview.citations).map(c => {
+        const artifact = rows(state.browser_artifacts).find(a => a.artifact_id === c.artifact_id) || {}
+        const evidence = rows(state.evidence).find(e => e.evidence_id === c.artifact_id) || {}
+        return { title: str(artifact.title) || str(evidence.claim) || '参考资料', url: str(artifact.url) || str(evidence.source_ref), quote: str(c.quote) }
+      }) })
+  }
   const bookingPreview = readOutcome.kind === 'page_read' && preview.scope === 'booking_parameters' && preview.business_completed === false && preview.availability_checked === false
   if (bookingPreview) {
     const requested = row(preview.requested), labels = row(preview.visible_labels)

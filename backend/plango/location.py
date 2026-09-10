@@ -35,10 +35,7 @@ def select_origin(state, extracted_name, previous_spec, context):
             "市"
         )
 
-    generic = {"附近", "周边", "当前城市", "当前位置", "本地", "这里"}
     explicit = str(extracted_name or "").strip()
-    if explicit in generic or explicit not in state["input_text"]:
-        explicit = ""
     previous_origin = state.get("location_origin") or {}
     if explicit:
         name = explicit

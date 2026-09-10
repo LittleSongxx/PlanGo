@@ -325,7 +325,7 @@ def check_wiring():
             result = run_edits(client, tasks[index], run_id, collect, timeout=20)
             (work / "offline-wiring.json").write_text(json.dumps({"scope": "offline fallback wiring; not quality evaluation", "result": result, "snapshots": snapshots}, ensure_ascii=False, indent=2))
             assert result["stop_reason"] in {"script_finished", "unscripted_clarification"}, result
-            assert {"RequirementOutput", "TaskIntent"} & set(fallback_calls), "Actual requirement workflow must run after the natural input"
+            assert {"RequirementOutput", "TaskIntent", "TaskDecision"} & set(fallback_calls), "Actual requirement workflow must run after the natural input"
             with sqlite3.connect(work / "runs.sqlite") as db:
                 state = json.loads(db.execute("SELECT state_json FROM agent_run WHERE run_id = ?", (run_id,)).fetchone()[0])
             spec = state.get("trip_spec")

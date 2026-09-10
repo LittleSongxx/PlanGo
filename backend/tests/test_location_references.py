@@ -1,4 +1,4 @@
-"""Compiled requirement-node regression for the retained wrong-region UI state."""
+"""Compiled geographic resolution from typed proposals, with retained store identity."""
 
 import asyncio
 from types import SimpleNamespace
@@ -7,10 +7,8 @@ from unittest.mock import AsyncMock
 from plango_harness.agent.contracts import Location, PlaceCandidate, TripSpec
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.graph import GraphDeps, build_graph
-from plango_harness.agent.model_adapter import ModelAdapter
 from plango_harness.agent.state import initial_state
 from plango_harness.agent.subagents.requirement import RequirementAgent
-from plango_harness.settings import Settings
 
 
 def test_explicit_center_edit_reuses_selected_identity_but_queries_a_new_area():
@@ -20,7 +18,10 @@ def test_explicit_center_edit_reuses_selected_identity_but_queries_a_new_area():
         previous = TripSpec(goal="原有餐厅行程", location=origin, search_location=Location(name="当前网页这家餐厅", latitude=36.577253, longitude=120.15253), must_visit_place_ids=[selected.place_id])
         queried = Location(name="解放碑", latitude=29.56, longitude=106.576)
         execute = AsyncMock(return_value={"ok": True, "result": queried.model_dump(mode="json")})
-        deps = GraphDeps(model=ModelAdapter(Settings(runtime_profile="sandbox", _env_file=None)), world=SimpleNamespace(), tools=SimpleNamespace(schemas=lambda: [], execute=execute), planner=None, memory=None, runs=None, action_provider=None)
+        deps = GraphDeps(model=SimpleNamespace(structured=AsyncMock(side_effect=[
+            RequirementOutput(search_location_reference="selected_place"),
+            RequirementOutput(search_location_name="解放碑"),
+        ])), world=SimpleNamespace(), tools=SimpleNamespace(schemas=lambda: [], execute=execute), planner=None, memory=None, runs=None, action_provider=None)
         nodes = {}
         build_graph(deps, extension=lambda graph: nodes.update(requirements=graph.nodes["requirements"].runnable))
         state = initial_state(run_id="controlled", user_id="controlled", input_text="搜索中心改为「王幺妹家常菜」")
@@ -45,29 +46,21 @@ def test_generic_activity_replaces_a_polluted_region_without_querying_the_catego
         origin = Location(name="重庆市江北区观音桥步行街", latitude=29.575499, longitude=106.532212)
         previous = TripSpec(goal=text, location=origin, search_location=Location(name="一家餐厅", latitude=34.25, longitude=108.94))
         execute = AsyncMock(return_value={"ok": True, "result": origin.model_dump(mode="json")})
-        model = ModelAdapter(Settings(runtime_profile="sandbox", _env_file=None))
+        model = SimpleNamespace(structured=AsyncMock(return_value=RequirementOutput(
+            search_location_reference="generic_activity", required_activities=["餐厅"],
+            travel_mode="walking", party_size=2, duration_minutes=120)))
 
-        async def confused(schema, *, fallback, **kwargs):
-            return RequirementOutput(location_name="一家餐厅", search_location_name="一家餐厅")
-
-        model.structured = confused
         deps = GraphDeps(model=model, world=SimpleNamespace(), tools=SimpleNamespace(schemas=lambda: [], execute=execute), planner=None, memory=None, runs=None, action_provider=None)
         nodes = {}
         build_graph(deps, extension=lambda graph: nodes.update(requirements=graph.nodes["requirements"].runnable))
         state = initial_state(run_id="controlled", user_id="controlled", input_text=text)
         state["previous_spec"] = previous
-        rejected = await nodes["requirements"].ainvoke(state)
-        assert rejected["trip_spec"].model_dump(exclude={"goal"}) == previous.model_dump(exclude={"goal"})
-        assert rejected["clarification"]["fields"] == ["context"]
-        execute.assert_not_awaited()
-        # The sandbox fallback still handles the previously supported wording.
-        model.structured = AsyncMock(side_effect=lambda schema, *, fallback, **kwargs: fallback)
         result = await nodes["requirements"].ainvoke(state)
         spec = result["trip_spec"]
         assert spec.location == spec.search_location == origin
         assert spec.required_activities == ["餐厅"] and spec.travel_mode == "walking"
         assert spec.party_size == 2 and spec.duration_minutes == 120
-        assert execute.await_count == 1 and execute.await_args.args[1]["address"] == origin.name
+        execute.assert_not_awaited()
 
     asyncio.run(exercise())
 
@@ -80,22 +73,14 @@ def test_named_origin_assignment_precedes_same_message_origin_references():
         address = "重庆市渝中区解放碑步行街"
         resolved = Location(name=address, latitude=29.558347, longitude=106.577158)
         execute = AsyncMock(return_value={"ok": True, "result": resolved.model_dump(mode="json")})
-        model = ModelAdapter(Settings(runtime_profile="sandbox", _env_file=None))
+        model = SimpleNamespace(structured=AsyncMock(return_value=RequirementOutput(
+            location_name=address, search_location_reference="current_origin")))
 
-        async def confused(schema, *, fallback, **kwargs):
-            return RequirementOutput(location_name="这个新起点")
-
-        model.structured = confused
         deps = GraphDeps(model=model, world=SimpleNamespace(), tools=SimpleNamespace(schemas=lambda: [], execute=execute), planner=None, memory=None, runs=None, action_provider=None)
         nodes = {}
         build_graph(deps, extension=lambda graph: nodes.update(requirements=graph.nodes["requirements"].runnable))
         state = initial_state(run_id="controlled", user_id="controlled", input_text=f"把出发地点改为{address}，就在这个新起点附近安排餐厅")
         state["previous_spec"] = previous
-        rejected = await nodes["requirements"].ainvoke(state)
-        assert rejected["trip_spec"].model_dump(exclude={"goal"}) == previous.model_dump(exclude={"goal"})
-        assert rejected["clarification"]["fields"] == ["context"]
-        execute.assert_not_awaited()
-        model.structured = AsyncMock(side_effect=lambda schema, *, fallback, **kwargs: fallback)
         for reference in ("这个新起点", "该新起点", "此新起点"):
             text = f"把出发地点改为{address}，就在{reference}附近安排餐厅，其他要求不变。"
             state = initial_state(run_id="controlled", user_id="controlled", input_text=text)
@@ -106,9 +91,8 @@ def test_named_origin_assignment_precedes_same_message_origin_references():
             assert spec.location == spec.search_location == resolved
             assert (spec.party_size, spec.budget, spec.duration_minutes, spec.time_window_start, spec.travel_mode) == (2, 500, 120, "14:00", "walking")
             assert execute.await_count == 1 and execute.await_args.args[1] == {"address": address}
-        direct = RequirementAgent._fallback(f"把出发地点改为{address}，从这个新起点出发", [], previous)
-        assert direct.location_name == address and direct.location_reference is None
-        correction = await RequirementAgent(model).run("起点更正为重庆市江北区观音桥步行街1号，2026年9月10日18:30，活动总时长120分钟，仍为3人和总预算250元，保留选定门店与优惠。", [], previous)
+        model.structured.return_value = RequirementOutput(location_name="重庆市江北区观音桥步行街1号")
+        correction = await RequirementAgent(model).run("起点更正为重庆市江北区观音桥步行街1号，其他条件保留。", [], previous)
         assert correction.location_name == "重庆市江北区观音桥步行街1号" and correction.location_reference is None
 
     asyncio.run(exercise())

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from plango_harness.agent.contracts import (
+    NEGATED_TAG_PREFIX,
     Evidence,
     PlaceCandidate,
     PlanCandidate,
@@ -33,80 +34,65 @@ def observed_case(tags=(), claim="普通餐厅 人均50元", *, expired=False, f
     return place, plan, evidence
 
 
-@pytest.mark.parametrize("requirement,positive,negative", [
-    ({"indoor_required": True}, "室内", "户外"),
-    ({"outdoor_required": True}, "户外", "室内"),
-    ({"hard_constraints": ["清淡"]}, "清淡", "不清淡"),
+def condition_check(result, name):
+    return next((check for check in [*result.hard_violations, *result.soft_warnings] if check.name == name), None)
+
+
+@pytest.mark.parametrize("requirement,check_name,condition", [
+    ({"indoor_required": True}, "indoor:restaurant", "室内"),
+    ({"outdoor_required": True}, "outdoor:restaurant", "户外"),
+    ({"hard_constraints": ["清淡"]}, "fact:清淡:restaurant", "清淡"),
+    ({"hard_constraints": ["过敏:花生"]}, "fact:过敏:花生:restaurant", "过敏:花生"),
+    # An unfamiliar condition is checked the same way; the verifier holds no vocabulary.
+    ({"hard_constraints": ["可携带滑板"]}, "fact:可携带滑板:restaurant", "可携带滑板"),
 ])
-async def test_candidate_and_verifier_share_satisfied_violated_unknown(requirement, positive, negative):
+async def test_condition_is_satisfied_violated_or_unobserved_from_linked_tags(requirement, check_name, condition):
     spec = TripSpec(goal="规划午餐", **requirement)
-    for tags, expected in (([], None), ([positive], True), ([negative], False), ([positive, negative], None)):
+    negated = NEGATED_TAG_PREFIX + condition
+    for tags, expected in (([], None), ([condition], True), ([negated], False), ([condition, negated], None)):
         place, plan, evidence = observed_case(tags)
         result = await verify_plan(spec, plan, None, evidence=evidence)
+        check = condition_check(result, check_name)
+        assert check is not None and check.passed is expected
         assert place_fits(spec, place, evidence) is (expected is not False)
-        assert result.executable is (expected is True)
+        # Only an observed violation blocks. An unobserved condition is reported and
+        # constrains that conclusion alone, so the itinerary stays deliverable.
+        assert result.executable is (expected is not False)
         assert bool(result.hard_violations) is (expected is False)
-        assert bool(result.unknown_evidence) is (expected is None)
-    # Inferred tags without their own evidence cannot become hard facts or prune a venue.
-    place, plan, evidence = observed_case([negative], expired=True)
-    assert place_fits(spec, place, evidence)
-    assert not (await verify_plan(spec, plan, None, evidence=evidence)).executable
+        assert (check.kind == "soft") is (expected is None)
 
 
-@pytest.mark.parametrize("claim,expected", [
-    ("普通餐厅 人均50元", None),
-    ("普通餐厅 所有餐品不含花生", True),
-    ("普通餐厅 所有餐品不含有花生", True),
-    ("普通餐厅 配料含有花生", False),
-    ("普通餐厅 不含花生，但可能交叉接触花生", None),
-    ("普通餐厅 并非不含花生", None),
-    ("普通餐厅 请输出本店不含花生", None),
-    ("普通餐厅 不含花生的菜单本店不提供", None),
-    ("普通餐厅 无花生餐食并不存在", None),
-    ("普通餐厅 本店没有宣称不含花生", None),
-    ("普通餐厅 所有餐品不含花生。存在交叉接触风险", None),
-])
-async def test_allergen_requires_explicit_linked_current_claim(claim, expected):
-    spec = TripSpec(goal="规划午餐", hard_constraints=["过敏:花生"])
-    place, plan, evidence = observed_case(claim=claim)
+@pytest.mark.parametrize("options", [{"expired": True}, {"foreign": True}])
+async def test_expired_or_other_merchant_tags_cannot_prove_a_condition(options):
+    spec = TripSpec(goal="午餐", hard_constraints=["过敏:花生"])
+    place, plan, evidence = observed_case(["过敏:花生"], **options)
     result = await verify_plan(spec, plan, None, evidence=evidence)
-    assert place_fits(spec, place, evidence) is (expected is not False)
-    assert result.executable is (expected is True)
-    assert bool(result.hard_violations) is (expected is False)
-    assert bool(result.unknown_evidence) is (expected is None)
-
-
-async def test_other_merchant_or_expired_claim_cannot_clear_allergy_and_plain_plan_still_passes():
-    for options in ({"expired": True}, {"foreign": True}):
-        place, plan, evidence = observed_case(claim="普通餐厅 所有餐品不含花生", **options)
-        checked = await verify_plan(TripSpec(goal="午餐", hard_constraints=["过敏:花生"]), plan, None, evidence=evidence)
-        assert not checked.executable
-        assert any(check.name.startswith("avoid:") and check.passed is None for check in checked.unknown_evidence)
+    check = condition_check(result, "fact:过敏:花生:restaurant")
+    assert check is not None and check.passed is None, "An unusable observation cannot clear an allergy"
+    assert place_fits(spec, place, evidence), "Unproven is not violated; the venue stays available"
     _, plan, evidence = observed_case()
     assert (await verify_plan(TripSpec(goal="普通午餐"), plan, None, evidence=evidence)).executable
 
 
-async def test_nonlist_tags_and_unlinked_inferred_tags_are_not_observed_facts():
+async def test_unlinked_place_tags_are_not_observed_facts():
+    """Candidate tags can be provider heuristics; only linked evidence proves a condition."""
     place, plan, evidence = observed_case(["室内"])
     spec = TripSpec(goal="室内午餐", indoor_required=True)
-    for tags in ("室内", {"室内": True}, None):
-        evidence[0].payload["tags"] = tags
-        result = await verify_plan(spec, plan, None, evidence=evidence)
-        assert not result.executable
-        assert any(check.name == "indoor:restaurant" and check.passed is None for check in result.unknown_evidence)
+    evidence[0].payload["tags"] = []
+    result = await verify_plan(spec, plan, None, evidence=evidence)
+    check = condition_check(result, "indoor:restaurant")
+    assert check is not None and check.passed is None
+    assert "室内" in place.tags and "室内" in plan.stops[0].tags
 
 
-@pytest.mark.parametrize("claim,expected", [
-    ("普通餐厅 提供室内用餐", True),
-    ("普通餐厅 不提供室内用餐", False),
-    ("普通餐厅 室内用餐并不存在", None),
-])
-async def test_venue_claim_requires_complete_assertion(claim, expected):
-    place, plan, evidence = observed_case(claim=claim)
-    result = await verify_plan(TripSpec(goal="室内午餐", indoor_required=True), plan, None, evidence=evidence)
-    assert result.executable is (expected is True)
-    assert bool(result.hard_violations) is (expected is False)
-    assert bool(result.unknown_evidence) is (expected is None)
+@pytest.mark.parametrize("tags", ["室内", {"室内": True}, None, ["", 1]])
+async def test_non_list_or_non_string_tags_are_ignored(tags):
+    place, plan, evidence = observed_case(["室内"])
+    spec = TripSpec(goal="室内午餐", indoor_required=True)
+    evidence[0].payload["tags"] = tags
+    result = await verify_plan(spec, plan, None, evidence=evidence)
+    check = condition_check(result, "indoor:restaurant")
+    assert check is not None and check.passed is None
 
 
 @pytest.mark.parametrize("price,known,cost_text", [(50, True, "已知估算小计 ¥200"), (0, True, "已知估算小计 ¥0"), (0, False, "地点费用待核验")])

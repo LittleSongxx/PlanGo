@@ -117,7 +117,8 @@ async def measure_scope(mode="fresh", *, scoped=True):
         if mode == "date":
             assert weather_dates == [fields["visit_date"]]
         elif mode == "fresh":
-            assert not refreshed and not weather_dates and decision["next_action"] == "advocate"
+            # One attending role needs one perspective, so synthesis follows directly.
+            assert not refreshed and not weather_dates and decision["next_action"] == "synthesize"
         return {"mode": mode, "scope_enabled": scoped, "frozen_candidates": 21, "current_candidates": len(state["place_candidates"]),
                 "current_evidence": len(state["evidence"]), "identity_refresh_attempts": len(refreshed), "weather_reads": len(weather_dates),
                 "advocate_input_chars": len(prompt), "route_reads": len(route_calls), "supply_reads": len(supply_calls),

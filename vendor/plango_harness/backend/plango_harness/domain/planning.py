@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import math
 import random
-import re
 import time
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, replace
@@ -12,6 +11,11 @@ from typing import Any, Literal, cast
 from zoneinfo import ZoneInfo
 
 from plango_harness.agent.contracts import (
+    DEFAULT_DWELL_MINUTES,
+    INDOOR_TAG,
+    LONG_QUEUE_MINUTES,
+    NEGATED_TAG_PREFIX,
+    OUTDOOR_TAG,
     ConstraintCheck,
     Evidence,
     Location,
@@ -77,79 +81,59 @@ def goal_errors(spec: TripSpec, stops: list[Any]) -> list[str]:
 
 
 def _place_facts(place: PlaceCandidate | PlanStop, evidence: list[Evidence] | None) -> tuple[list[Evidence], set[str]]:
+    """Collect the grounded, still-valid observations linked to this place and their tags.
+
+    Interpreting page prose into facts is the reading step's job: whoever observed the
+    page records `payload["tags"]`, and a `非<condition>` tag states an explicit
+    violation. This function only enforces provenance — linked id, matching place,
+    unexpired, sourced — so no untraceable claim can prove a constraint.
+    """
     rows = [item for raw in (evidence or []) for item in [Evidence.model_validate(raw)]
             if item.evidence_id in place.evidence_ids and item.payload.get("place_id") == place.place_id
             and not item.expired and item.confidence > 0 and item.source_ref and item.observed_at is not None
             and item.source in {"browser", "user", "dataset"}]
-    # Candidate tags can be provider heuristics; only explicit, linked observations prove constraints.
     tags: set[str] = set()
     for item in rows:
         raw_tags = item.payload.get("tags")
         if isinstance(raw_tags, list):
-            tags.update(tag for tag in raw_tags if isinstance(tag, str))
-    for item in rows:
-        for clause in re.split(r"[。；;\n]", item.claim):
-            declaration = re.sub(r"^\s*" + re.escape(place.name) + r"\s*[:：]?\s*", "", clause).strip()
-            prefix = r"(?:(?:本店|本餐厅|本场所)\s*)?"
-            for label, pattern in {
-                "室内": r"(?:提供|设有|均为|全部为|全程)?室内(?:用餐|座位|场地)?",
-                "户外": r"(?:仅有|仅限|均为|全部为|全程)?户外(?:用餐|座位|场地)?",
-                "非室内": r"不提供室内(?:用餐|座位|场地)",
-                "非户外": r"不提供户外(?:用餐|座位|场地)",
-                "清淡": r"提供清淡(?:菜品|餐食)|清淡饮食",
-                "不清淡": r"不提供清淡(?:菜品|餐食)",
-                "低卡": r"提供低卡(?:菜品|餐食)|低卡餐食",
-                "亲子": r"适合儿童|亲子友好|欢迎儿童",
-                "不适合儿童": r"不适合儿童|谢绝儿童|成人限定",
-            }.items():
-                if re.fullmatch(prefix + "(?:" + pattern + ")", declaration):
-                    tags.add(label)
+            tags.update(tag for tag in raw_tags if isinstance(tag, str) and tag)
     return rows, tags
 
 
-def place_fact_checks(spec: TripSpec, place: PlaceCandidate | PlanStop, evidence: list[Evidence] | None = None) -> list[ConstraintCheck]:
-    """One three-state decision for candidate pruning and final verification."""
-    constraints = [*spec.hard_constraints, *(c for member in spec.party for c in member.hard_constraints)]
-    rows, tags = _place_facts(place, evidence)
+def _condition_checks(conditions: list[tuple[str, str, str | None]], place: PlaceCandidate | PlanStop,
+                      tags: set[str]) -> list[ConstraintCheck]:
     checks: list[ConstraintCheck] = []
-
-    def add(name: str, positive: bool, negative: bool, detail: str) -> None:
-        passed = positive if positive != negative else None
-        checks.append(ConstraintCheck(name=f"{name}:{place.place_id}", kind="unknown" if passed is None else "hard", passed=passed, detail=detail))
-
-    if spec.indoor_required or any(c in {"室内", "必须室内", "全程室内"} for c in constraints):
-        add("indoor", "室内" in tags, bool(tags & {"户外", "非室内"}), f"{place.name} 的室内条件：缺失或冲突的观测需补证据")
-    if spec.outdoor_required or any(c in {"户外", "必须户外", "全程户外"} for c in constraints):
-        add("outdoor", "户外" in tags, bool(tags & {"室内", "非户外"}), f"{place.name} 的户外条件：缺失或冲突的观测需补证据")
-    if place.category == "餐厅" and any(c in {"清淡/减脂", "清淡", "减脂", "低卡"} for c in constraints):
-        add("diet", bool(tags & {"清淡", "减脂", "低卡"}), bool(tags & {"不清淡", "高热量", "高油脂"}), f"{place.name} 的饮食条件需要明确观测，缺标签不代表违反")
-    if place.category not in {"餐厅", "咖啡"}:
-        return checks
-    for constraint in constraints:
-        match = re.fullmatch(r"(?:忌口|过敏)[:：]\s*([^，,;；\s]+)", constraint)
-        if not match:
-            continue
-        term = re.escape(match[1])
-        absence, presence, uncertain = False, False, False
-        subject = r"(?:(?:本店(?:所有餐品|全部餐品)?|本餐厅|所有餐品|全部餐品|本菜品|该菜品|本餐品|该餐品|配料|原料|食材)(?:中|均|全部|都)?\s*)?"
-        # ponytail: accept only complete explicit ingredient declarations; richer merchant schemas can replace this bounded grammar.
-        positive = subject + r"(?:不含有?|不添加|未添加|不使用|未使用)\s*" + term + r"(?:成分)?[！!]?"
-        negative = subject + r"(?:含有?|包含|添加|使用)\s*" + term + r"(?:成分)?[！!]?"
-        for item in rows:
-            if re.search(r"交叉接触|交叉污染|痕量", item.claim):
-                uncertain = True
-            for clause in re.split(r"[。；;\n]", item.claim):
-                if not re.search(term, clause):
-                    continue
-                declaration = re.sub(r"^\s*" + re.escape(place.name) + r"\s*[:：]?\s*", "", clause).strip()
-                absent = bool(re.fullmatch(positive, declaration))
-                present = bool(re.fullmatch(negative, declaration))
-                absence |= absent
-                presence |= present
-                uncertain |= not (absent or present)
-        add("avoid:" + match[1], absence and not uncertain, presence and not uncertain,
-            f"{place.name} 的{constraint}需同商家、有效的明确成分声明；未提及或有风险提示时保持未知")
+    for name, condition, opposite in dict.fromkeys(conditions):
+        satisfied = condition in tags
+        violated = NEGATED_TAG_PREFIX + condition in tags or (opposite is not None and opposite in tags)
+        if satisfied == violated:
+            # No observation either way, or contradictory ones. Report it and let the
+            # user judge; an unobserved preference is not a violation.
+            checks.append(ConstraintCheck(
+                name=f"{name}:{place.place_id}", kind="soft", passed=None,
+                detail=f"{place.name} 是否满足「{condition}」没有可核验观测，需要你确认"))
+        else:
+            checks.append(ConstraintCheck(
+                name=f"{name}:{place.place_id}", kind="hard", passed=satisfied,
+                detail=f"{place.name} 的「{condition}」条件"
+                       + ("已有观测支持" if satisfied else "被观测明确排除")))
     return checks
+
+
+def place_fact_checks(spec: TripSpec, place: PlaceCandidate | PlanStop, evidence: list[Evidence] | None = None) -> list[ConstraintCheck]:
+    """One three-state decision per explicit condition, for pruning and final verification."""
+    _, tags = _place_facts(place, evidence)
+    conditions: list[tuple[str, str, str | None]] = [
+        (f"fact:{condition}", condition, None)
+        for condition in [*spec.hard_constraints,
+                          *(c for member in spec.party for c in member.hard_constraints)]
+        if condition
+    ]
+    # The two typed venue booleans name their tag and each other: they are mutually
+    # exclusive by definition, so an observed opposite is a violation, not a gap.
+    conditions += [("indoor", INDOOR_TAG, OUTDOOR_TAG)] if spec.indoor_required else []
+    conditions += [("outdoor", OUTDOOR_TAG, INDOOR_TAG)] if spec.outdoor_required else []
+    return _condition_checks(conditions, place, tags)
 
 
 def place_fits(spec: TripSpec, place: PlaceCandidate, evidence: list[Evidence] | None = None) -> bool:
@@ -188,65 +172,52 @@ class FallbackPlanBuilder:
             return []
         start = parse_minute(spec.time_window_start)
         party_size = spec.party_size or 1
-        goal = f"{spec.goal} {' '.join(spec.hard_constraints)} {' '.join(spec.soft_preferences)}"
-        wants_child = _contains(goal, ("孩子", "带娃", "亲子", "儿童"))
-        wants_indoor = _contains(goal, ("室内", "下雨", "避雨"))
-        wants_novelty = _contains(goal, ("看展", "展览", "新鲜", "citywalk", "逛"))
+        # Preference terms are the user's own words matched against observed place tags;
+        # this builder holds no vocabulary of its own and infers no intent from phrasing.
+        prefer = tuple(dict.fromkeys([*spec.soft_preferences, *spec.hard_constraints]))
 
-        def rank(place, *, category: str, prefer: tuple[str, ...] = ()) -> float:
+        def rank(place, *, category: str | None) -> float:
             score = place.rating - place.distance_km * 0.08
-            if place.category == category:
+            if category is not None and place.category == category:
                 score += 1.5
             text = " ".join([place.name, place.category, *place.tags]).lower()
-            score += sum(0.35 for item in prefer if item.lower() in text)
-            if wants_indoor and "室内" in text:
-                score += 0.8
-            if wants_child and any(x in text for x in ("亲子", "儿童")):
-                score += 0.8
-            return score
+            return score + sum(0.35 for item in prefer if item and item.lower() in text)
 
-        def choose(category: str, used: set[str], prefer: tuple[str, ...] = ()):
-            ordered = sorted(
-                places,
-                key=lambda p: rank(p, category=category, prefer=prefer),
-                reverse=True,
-            )
+        def choose(category: str | None, used: set[str]):
+            ordered = sorted(places, key=lambda p: rank(p, category=category), reverse=True)
             fresh = [p for p in ordered if p.place_id not in used]
             return (fresh or ordered)[0] if ordered else None
 
+        # Categories come from the typed requirement fields, in the requested order.
+        requested = [category for category in dict.fromkeys(
+            [*spec.activity_order, *spec.required_activities, *spec.optional_activities])
+            if category not in spec.excluded_activities]
+        observed_order = [category for category in dict.fromkeys(place.category for place in places)
+                          if category not in spec.excluded_activities]
+        wanted = requested or observed_order
         plans: list[PlanCandidate] = []
-        recipes = [
-            ("松弛", "公园" if not wants_indoor else "亲子", ("安静", "散步")),
-            ("探索", "展览" if wants_novelty or not wants_child else "亲子", ("室内", "新鲜")),
-            ("心意", "动物园" if wants_child else "电影", ("出片", "体验")),
-        ]
-        for index, (default_label, activity_category, activity_pref) in enumerate(recipes):
-            label = labels[index] if index < len(labels) else default_label
+        for index in range(len(labels)):
+            label = labels[index]
             used: set[str] = set()
-            activity = choose(activity_category, used, activity_pref)
-            if activity:
-                used.add(activity.place_id)
-            meal_pref = (
-                ["清淡", "减脂"]
-                if _contains(goal, ("清淡", "减脂", "低卡"))
-                else ["家庭", "能聊天"]
-            )
-            meal = choose("餐厅", used, tuple(meal_pref))
-            if meal:
-                used.add(meal.place_id)
-            extra = choose("咖啡" if not wants_child else "公园", used, ("歇脚", "亲子"))
-            selected = [item for item in (activity, meal, extra) if item]
+            selected = []
+            # Each variant starts from a different requested category so the candidates
+            # differ, without any recipe of hardcoded activity types.
+            rotation = wanted[index % len(wanted):] + wanted[:index % len(wanted)] if wanted else []
+            for category in (rotation or [None])[:3]:
+                pick = choose(category, used)
+                if pick is not None and pick.place_id not in used:
+                    used.add(pick.place_id)
+                    selected.append(pick)
             if len(selected) < 2:
                 continue
             blocks: list[PlanStop] = []
             cursor = start
             for place in selected:
-                duration = 90 if place is meal or place.category == "餐厅" else 80
-                cost = float(
-                    place.average_price * party_size
-                    if place.category == "餐厅"
-                    else 20 * party_size
-                )
+                # One dwell length for every category; an observed unit price is used when
+                # published, and a missing price stays unknown instead of being invented.
+                duration = DEFAULT_DWELL_MINUTES
+                known = bool(place.price_known) and place.average_price > 0
+                cost = float(place.average_price) * party_size if known else 0.0
                 if cursor >= 1440:
                     break
                 stop_start = min(cursor, 1439)
@@ -262,8 +233,9 @@ class FallbackPlanBuilder:
                         start_minute=stop_start,
                         end_minute=stop_end,
                         estimated_cost=round(cost, 2),
+                        unit_price=place.average_price if known else None,
                         distance_km=place.distance_km,
-                        tags=list(place.tags),
+                        tags=list(dict.fromkeys([*place.tags, *([] if known else ["price_unknown"])])),
                         evidence_ids=list(place.evidence_ids) + evidence_ids,
                     )
                 )
@@ -280,7 +252,7 @@ class FallbackPlanBuilder:
                     evidence_ids=sorted(
                         set(evidence_ids + [e for b in blocks for e in b.evidence_ids])
                     ),
-                    rationale=f"以{label}路线平衡{','.join(meal_pref)}与出行体验",
+                    rationale=_plan_rationale(blocks, spec.party_size),
                 )
             )
         return plans
@@ -802,22 +774,11 @@ async def verify_plan(
         for item in (evidence or [])
     ]
     evidence_by_id = {item.evidence_id: item for item in evidence_rows}
-    member_constraints = [
-        constraint
-        for member in spec.party
-        for constraint in member.hard_constraints
-    ]
-    all_constraints = [*spec.hard_constraints, *member_constraints]
-    # The goal is audit history, not the active constraint set: a later edit
-    # can explicitly remove a requirement mentioned in an earlier goal.
-    hard_text = " ".join(all_constraints).lower()
-    strict_queue = "不排队" in hard_text or spec.max_queue_minutes == 0
-    low_queue = "低排队" in hard_text or "少排队" in hard_text
+    # A queue limit lives in the typed field. Reading one out of free text would only
+    # recognise the phrasings it was written against; every explicit condition gets its
+    # own three-state check per stop from place_fact_checks.
+    strict_queue = spec.max_queue_minutes == 0
     distance_limit = spec.max_distance_km
-    if distance_limit is None and "距离优先" in hard_text:
-        # Explicit, visible product policy for the otherwise qualitative term.
-        distance_limit = 5.0
-        soft.append(ConstraintCheck(name="distance_policy", kind="soft", passed=True, detail="就近按每段路线不超过 5 公里的默认上限规划；可提供更小的距离上限"))
     cannot_queue = any(not member.can_queue for member in spec.party)
     per_person_budget = plan.total_cost / (spec.party_size or 1)
     if spec.party_size is None:
@@ -836,10 +797,8 @@ async def verify_plan(
         hard.append(ConstraintCheck(name=code, kind="hard", passed=False, detail=f"未满足必达活动或顺序：{code}"))
     window_start = parse_minute(spec.time_window_start)
     window_end = min(1440, window_start + spec.duration_minutes)
-    supported = {"亲子友好", "清淡/减脂", "清淡", "减脂", "低卡", "距离优先", "低排队", "少排队", "不排队", "室内", "必须室内", "全程室内", "户外", "必须户外", "全程户外"}
-    for constraint in all_constraints:
-        if constraint not in supported and not re.fullmatch(r"(?:忌口|过敏)[:：][^，,;；\s]+", constraint):
-            unknown.append(ConstraintCheck(name="unsupported_constraint", kind="unknown", passed=None, detail=f"尚不能核验的明确要求：{constraint}"))
+    # Every explicit condition already gets a three-state check per stop from
+    # place_fact_checks; an unobserved one is reported there, not counted as a defect.
     if plan.total_cost > spec.total_budget:
         hard.append(
             ConstraintCheck(
@@ -945,22 +904,21 @@ async def verify_plan(
         if stop.requested_dwell_min and stop.end_minute - stop.start_minute < stop.requested_dwell_min:
             soft.append(ConstraintCheck(name="dwell_adjusted", kind="soft", passed=False, detail=f"{stop.name} 停留调整为 {stop.end_minute - stop.start_minute} 分钟，已为出行和排队预留时间"))
         for check in place_fact_checks(spec, stop, evidence_rows):
-            if check.passed is None:
-                unknown.append(check)
-            elif check.passed is False:
-                hard.append(check)
+            # Satisfied and unobserved conditions are both recorded so the plan shows
+            # what was actually verified; only an observed violation is a hard failure.
+            (hard if check.passed is False else soft).append(check)
         if distance_limit is not None and stop.distance_km > distance_limit:
             distance_label = "直线距离下界" if stop.distance_kind == "straight_line_lower_bound" else "路线"
             hard.append(ConstraintCheck(name=f"distance:{stop.place_id}", kind="hard", passed=False, detail=f"{distance_label} {stop.distance_km:g} 公里超过 {distance_limit:g} 公里上限"))
         if stop.estimated_wait_min is None or "supply_unknown" in stop.tags:
             unknown.append(ConstraintCheck(name=f"supply:{stop.place_id}",kind="unknown",passed=None,detail=f"{stop.name} 的营业或排队信息尚未完整核实；当前时间安排为待核验草案"))
-        if stop.estimated_wait_min is not None and ((strict_queue and stop.estimated_wait_min > 0) or (spec.max_queue_minutes is not None and stop.estimated_wait_min > spec.max_queue_minutes) or (low_queue and spec.max_queue_minutes is None and stop.estimated_wait_min >= 30)):
+        if stop.estimated_wait_min is not None and ((strict_queue and stop.estimated_wait_min > 0) or (spec.max_queue_minutes is not None and stop.estimated_wait_min > spec.max_queue_minutes)):
             hard.append(
                 ConstraintCheck(
                     name=f"queue:{stop.place_id}",
                     kind="hard",
                     passed=False,
-                    detail=f"预计排队 {stop.estimated_wait_min} 分钟，超过用户约束（不排队为 0 分钟；低排队默认少于 30 分钟）",
+                    detail=f"预计排队 {stop.estimated_wait_min} 分钟，超过用户明确排队上限",
                 )
             )
         elif cannot_queue and stop.estimated_wait_min is not None and stop.estimated_wait_min > 0:
@@ -972,7 +930,9 @@ async def verify_plan(
                     detail=f"同行人不能排队，但预计排队 {stop.estimated_wait_min} 分钟",
                 )
             )
-        elif stop.estimated_wait_min is not None and stop.estimated_wait_min >= (30 if any(term in hard_text for term in ("少排队", "低排队", "排队少")) else 45):
+        elif stop.estimated_wait_min is not None and stop.estimated_wait_min >= LONG_QUEUE_MINUTES:
+            # One threshold for reporting a long wait. A tighter limit belongs in the
+            # typed max_queue_minutes above, which is checked as a hard constraint.
             soft.append(
                 ConstraintCheck(
                     name=f"queue:{stop.place_id}",
@@ -1008,13 +968,6 @@ async def verify_plan(
                     detail=f"{stop.name} 的路线或环境证据不可用",
                 )
             )
-    if _contains(hard_text, ("孩子", "亲子", "带娃")) and not any(
-        _place_facts(stop, evidence_rows)[1] & {"亲子", "儿童"} for stop in plan.stops
-    ):
-        explicitly_excluded = bool(plan.stops) and all(_place_facts(stop, evidence_rows)[1] & {"不适合儿童", "谢绝儿童", "成人限定"} for stop in plan.stops)
-        check = ConstraintCheck(name="child_friendly", kind="hard" if explicitly_excluded else "unknown",
-                                passed=False if explicitly_excluded else None, detail="计划中没有已确认的亲子友好地点，需要补证据")
-        (hard if explicitly_excluded else unknown).append(check)
     if not plan.stops:
         unknown.append(
             ConstraintCheck(name="places", kind="unknown", passed=None, detail="没有可验证的地点")
@@ -1023,7 +976,6 @@ async def verify_plan(
         plan_id=plan.plan_id,
         hard_constraints_pass=not hard,
         evidence_complete=not unknown,
-        executable=not hard and not unknown,
         hard_violations=hard,
         soft_warnings=soft,
         unknown_evidence=unknown,

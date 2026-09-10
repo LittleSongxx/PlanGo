@@ -1,6 +1,7 @@
 """Synthetic native-form facts exercise the same deterministic user-facing Outcome path."""
 
 import copy
+import json
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 from zoneinfo import ZoneInfo
@@ -8,9 +9,11 @@ from zoneinfo import ZoneInfo
 import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
-from plango.graph import BrowserDecision, artifact
+from plango.graph import artifact
 from plango.outcomes import ExecutionGoal, preparation_outcome
+from plango.task import TaskDecision
 from plango_harness.agent.contracts import PlaceCandidate, PlanCandidate, PlanStop, TripSpec
+from plango_harness.agent.decisions import RequirementOutput
 from test_browser_harness import TOKEN, settings, wait_for
 from test_browser_navigation import browser_driver
 
@@ -100,7 +103,10 @@ def test_read_goal_has_real_content_or_menu_postcondition(tmp_path, user_text, t
     app = create_app(settings(tmp_path), token=TOKEN)
 
     async def finish(schema, *, fallback, **kwargs):
-        return BrowserDecision(operation="finish") if schema is BrowserDecision else fallback
+        assert schema is TaskDecision
+        if not json.loads(kwargs["user"])["browser_steps"]:
+            return TaskDecision(operation="read")
+        return TaskDecision(operation="answer", answer=text, answer_status="complete" if expected == "SUCCEEDED" else "partial")
 
     app.state.runtime.model.structured = finish
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
@@ -137,6 +143,13 @@ def test_selected_poi_is_refreshed_by_id_and_saved_with_one_fixed_evidence(tmp_p
 def test_plan_approval_reaches_readonly_preparation_then_reenters_planning_on_edit(tmp_path):
     """Full API/graph path, using explicitly synthetic provider and DOM observations."""
     app = create_app(settings(tmp_path), token=TOKEN)
+    async def actor(schema, *, fallback, **kwargs):
+        if schema is not TaskDecision:
+            return fallback
+        context = json.loads(kwargs['user'])
+        return TaskDecision(operation='plan', requirements=RequirementOutput(party_size=4 if context['turn_id'] > 1 else 3,
+            budget=300, visit_date=datetime.fromisoformat(context['reference_at']).date(), time_window_start='18:30', required_activities=['餐厅']))
+    app.state.runtime.model.structured = actor
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         run_id = client.post("/api/v1/runs", json={
             "input_text": "今天18:30，3人吃饭，帮我规划一个餐厅行程，总预算300元",
@@ -171,7 +184,7 @@ def test_plan_approval_reaches_readonly_preparation_then_reenters_planning_on_ed
         assert completed["phase"] == "SUCCEEDED", completed
         assert completed["state"]["execution_outcome"]["data"]["scope"] == "ready_to_review"
         assert completed["state"]["action_results"] == []
-        assert any(item["type"] == "browser_preparation" for item in completed["state"]["browser_artifacts"])
+        assert completed["state"]["execution_outcome"]["evidence_ids"], "The canonical outcome retains its observation references"
         changed = client.post("/api/v1/runs/" + run_id + "/messages", json={"text": "改成4人，其他要求不变"})
         assert changed.status_code == 202, changed.text
         replanning = wait_for(client, run_id, lambda v: v["state"].get("turn_id", 0) > 1 and bool(v["state"].get("browser_wait")))

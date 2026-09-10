@@ -12,7 +12,7 @@ import { RequirementsCard } from './RequirementsCard'
 import { OfferComparisonCard } from './OfferComparisonCard'
 import { MapPin, Clock, Utensils, Ticket, CheckCircle2, XCircle, AlertTriangle, Send, ListChecks, Wallet, Globe, Navigation, Mic, MicOff, ArrowRight, Sparkles, FileText } from 'lucide-react'
 
-const cardPriority = (card: OutcomeCard): number => card.kind === 'confirm' || card.kind === 'draft_review' ? 2 : card.kind === 'booking_preview' || card.kind === 'preparation' && card.current ? 1 : 0
+const cardPriority = (card: OutcomeCard): number => card.kind === 'confirm' || card.kind === 'draft_review' ? 2 : card.kind === 'task_answer' || card.kind === 'booking_preview' || card.kind === 'preparation' && card.current ? 1 : 0
 
 export function OutcomeCanvas(): JSX.Element {
   const cards = useStore((s) => s.cards)
@@ -71,6 +71,18 @@ function CardView({ card }: { card: OutcomeCard }): JSX.Element {
   const decideDraft = useStore(state => state.decideDraft)
   const resumePreparation = useStore(state => state.resumePreparation)
   switch (card.kind) {
+    case 'task_answer':
+      return <Card accent>
+        <div className="plango-kicker">{card.complete ? '本次答复' : '已完成的部分'}</div>
+        <p className="mt-3 text-sm leading-7 whitespace-pre-wrap break-words">{card.text}</p>
+        {!!card.citations.length && <details className="mt-4 border-t border-[var(--line)] pt-3 text-sm">
+          <summary className="cursor-pointer text-[var(--muted)]">查看引用资料</summary>
+          {card.citations.map((citation, index) => <blockquote key={index} className="mt-3 border-l-2 border-brand/40 pl-3">
+            <p className="font-medium">{citation.title}</p><p className="mt-1 text-neutral-600 whitespace-pre-wrap break-words">{citation.quote}</p>
+            {citation.url && <button onClick={() => useStore.getState().navigateInApp(citation.url)} className="mt-2 text-brand-strong underline">打开来源页面</button>}
+          </blockquote>)}
+        </details>}
+      </Card>
     case 'booking_preview':
       return <Card accent>
         <div className="flex items-center justify-between gap-3"><div><div className="plango-kicker">预约条件预览</div><h3 className="mt-1 font-semibold text-lg">悦廊 · {card.complete ? '参数显示已核对' : '参数尚待核对'}</h3></div><SourceBadge source="browser" /></div>

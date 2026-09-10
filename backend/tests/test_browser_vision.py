@@ -15,6 +15,7 @@ from plango.app import create_app
 from plango.browser import BrowserScreenshot, run_context
 from plango.graph import BrowserDecision, VisualReading, vision_blocked, vision_reason_supported
 from plango.outcomes import current_visual_observation
+from plango.task import TaskDecision
 from test_browser_harness import TOKEN, fixture, settings, wait_for
 from test_browser_navigation import browser_driver
 
@@ -105,20 +106,34 @@ def test_graph_vision_is_opt_in_once_readonly_and_checks_durable_unknown(tmp_pat
     app = create_app(config, token=TOKEN)
     calls = []
 
+    repeated_turns = set()
+    unknown_recorded = False
+    vision_errors = []
+
     async def model(schema, *, fallback, **kwargs):
+        nonlocal unknown_recorded
         calls.append(schema)
-        if schema is BrowserDecision:
-            if unknown:
+        if schema is TaskDecision:
+            context = json.loads(kwargs["user"])
+            if context.get("browser_steps", 0) == 0:
+                return TaskDecision(operation="read")
+            errors = [item for item in context.get("tool_results", []) if item.get("tool") == "vision" and not item.get("ok")]
+            if errors:
+                vision_errors.extend(errors)
+                return TaskDecision(operation="answer", answer="已保留当前只读资料；无法继续截图的部分仍待确认。",
+                                    answer_status="partial" if not enabled or unknown else "complete")
+            if unknown and not unknown_recorded:
                 await app.state.runtime.ledger.reserve(
                     action_id="unknown-action", run_id=run_context.get()["run_id"], plan_id="fixture-plan", plan_version=1,
                     tool_name="click", idempotency_key="unknown-action", request_hash="f" * 64, arguments={}, status="UNKNOWN",
                 )
-            if reading_status == "repeat":
-                context = json.loads(kwargs["user"])
-                assert context["vision"]["used_this_turn"] is (VisualReading in calls)
-                assert context["vision"]["has_current_reading"] is (VisualReading in calls)
-                assert context["vision"]["remaining_captures"] == (0 if VisualReading in calls else 1)
-            return BrowserDecision(operation="finish", vision_reason="canvas" if reading_status == "repeat" else None)
+                unknown_recorded = True
+            if not context["vision_used_this_turn"]:
+                return TaskDecision(operation="read", browser=BrowserDecision(operation="snapshot", vision_reason="canvas"))
+            if reading_status == "repeat" and context["turn_id"] not in repeated_turns:
+                repeated_turns.add(context["turn_id"])
+                return TaskDecision(operation="read", browser=BrowserDecision(operation="snapshot", vision_reason="canvas"))
+            return TaskDecision(operation="answer", answer="已读取当前页面，图像内容保留为只读观察。")
         if schema is VisualReading:
             assert kwargs["image"].startswith("data:image/png;base64,")
             return VisualReading(status="observed" if reading_status == "repeat" else reading_status, text="测试截图上的图形菜单，业务状态未核验")
@@ -144,6 +159,8 @@ def test_graph_vision_is_opt_in_once_readonly_and_checks_durable_unknown(tmp_pat
         visuals = [a for a in done["state"].get("browser_artifacts", []) if a["type"] == "browser_visual"]
         assert len(visuals) == int(enabled and not unknown and reading_status in {"observed", "repeat"})
         assert calls.count(VisualReading) == int(enabled and not unknown)
+        if reading_status == "repeat":
+            assert vision_errors, "The same owner receives the spent-capture error before answering."
         with sqlite3.connect(tmp_path / "runs.sqlite") as database:
             rows = database.execute("SELECT payload FROM plango_browser_command WHERE run_id=?", (run_id,)).fetchall()
             assert sum(json.loads(row[0])["operation"] == "screenshot" for row in rows) == int(enabled and not unknown)
@@ -195,7 +212,11 @@ def test_rejected_browser_approval_does_not_enter_visual_fallback(tmp_path):
 
     async def model(schema, *, fallback, **kwargs):
         calls.append(schema)
-        return BrowserDecision(operation="click", idx=0) if schema is BrowserDecision else fallback
+        if schema is TaskDecision:
+            if not json.loads(kwargs["user"])["browser_steps"]:
+                return TaskDecision(operation="read")
+            return TaskDecision(operation="read", browser=BrowserDecision(operation="click", idx=0))
+        return fallback
 
     app.state.runtime.model.structured = model
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:

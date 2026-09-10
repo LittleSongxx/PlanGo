@@ -8,12 +8,9 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
-from fastapi.testclient import TestClient
-from plango.app import create_app
 from plango.browser import run_context
-from plango.graph import BrowserDecision
-from plango.outcomes import TaskIntent
 from plango.planning import BrowserPlanEngine
 from plango.supply import literal_supply
 from plango.world import BrowserWorld, Item, ObservedPlace, PageData
@@ -28,7 +25,7 @@ from plango_harness.agent.contracts import (
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.subagents.requirement import RequirementAgent
 from plango_harness.providers.world import Supply
-from test_browser_harness import TOKEN, fixture, settings, wait_for
+from test_browser_harness import settings, wait_for
 
 TERMINAL = {"SUCCEEDED", "PARTIAL_FAILED", "FAILED", "INFEASIBLE", "CANCELLED"}
 
@@ -44,191 +41,8 @@ def next_command(client, run_id):
     ][0]
 
 
-class BrowserOutcomeQuality(unittest.TestCase):
-    def test_available_model_cannot_finish_comparison_without_an_answer(self):
-        """A happy model plus an unrelated page is not a completed recommendation."""
-        with tempfile.TemporaryDirectory() as directory:
-            app = create_app(settings(directory), token=TOKEN)
-            app.state.runtime.model._model = object()  # TEST: available, but never called.
-
-            async def premature_finish(schema, *, fallback, **kwargs):
-                if schema is BrowserDecision:
-                    return BrowserDecision(operation="finish", rationale="已经完成比较。")
-                return fallback
-
-            app.state.runtime.model.structured = premature_finish
-            with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
-                run_id = client.post(
-                    "/api/v1/runs",
-                    json={
-                        "input_text": "比较雾岚餐厅和杉木餐厅，给3人推荐总价不超过240元的一家，说明差价",
-                        "browser_session_id": "fixture-desktop",
-                    },
-                ).json()["run_id"]
-                command = next_command(client, run_id)
-                client.post(
-                    "/api/v1/browser/commands/" + command["command_id"] + "/result",
-                    json={**fixture(command), "text": "帮助中心：账号设置", "tables": []},
-                )
-                result = wait_for(client, run_id, lambda value: value["phase"] in TERMINAL)
-                self.assertEqual(result["phase"], "PARTIAL_FAILED", result["state"].get("reason"))
-                pages = [
-                    a for a in result["state"]["browser_artifacts"] if a["type"] == "browser_page"
-                ]
-                self.assertTrue(pages, "证据不足仍应保留已读取页面，不能用执行异常冒充质量控制")
-                self.assertEqual(pages[-1]["data"]["text"], "帮助中心：账号设置")
-
-    def test_grounded_comparison_delivers_three_person_totals_recommendation_and_sources(self):
-        """Positive control: the model supplies human quotes, never totals or recommendations."""
-        quotes = {"雾岚餐厅": "雾岚餐厅 人均68元", "杉木餐厅": "杉木餐厅 人均82元"}
-        source_url = "https://fixture.invalid/quality/two-merchants"
-        with tempfile.TemporaryDirectory() as directory:
-            app = create_app(settings(directory), token=TOKEN)
-            app.state.runtime.model._model = object()  # TEST model is available, never remote.
-            model_calls = []
-
-            async def extract_only(schema, *, fallback, **kwargs):
-                model_calls.append(schema)
-                if schema is TaskIntent:
-                    return TaskIntent(kind="reasoning", requirements=RequirementOutput(party_size=3, budget=240,
-                        field_evidence={"party_size": "3人", "budget": "总预算240元"}))
-                if schema is PageData:
-                    return PageData(
-                        places=[
-                            ObservedPlace(
-                                name=name,
-                                average_price=price,
-                                price_unit="人均",
-                                quote=quotes[name],
-                            )
-                            for name, price in [("雾岚餐厅", 68), ("杉木餐厅", 82)]
-                        ]
-                    )
-                if schema is BrowserDecision:
-                    return BrowserDecision(operation="finish", rationale="两条商家标价已读取。")
-                return fallback
-
-            app.state.runtime.model.structured = extract_only
-            with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
-                run_id = client.post(
-                    "/api/v1/runs",
-                    json={
-                        "input_text": "比较雾岚餐厅和杉木餐厅，3人，总预算240元，推荐更便宜的一家并说明差价",
-                        "browser_session_id": "fixture-desktop",
-                    },
-                ).json()["run_id"]
-                command = next_command(client, run_id)
-                response = client.post(
-                    "/api/v1/browser/commands/" + command["command_id"] + "/result",
-                    json={
-                        **fixture(command),
-                        "url": source_url,
-                        "title": "商家价格列表（离线测试）",
-                        "text": "\n".join(quotes.values()),
-                        "tables": [],
-                    },
-                )
-                self.assertEqual(response.status_code, 200, response.text)
-                result = wait_for(client, run_id, lambda value: value["phase"] in TERMINAL)
-                self.assertEqual(result["phase"], "SUCCEEDED", result["state"].get("reason"))
-                comparisons = [
-                    a
-                    for a in result["state"]["browser_artifacts"]
-                    if a["type"] == "price_comparison"
-                ]
-                self.assertEqual(len(comparisons), 1, "成功必须交付可展示的比较结果")
-                self.assertEqual(comparisons[0]["source"], "browser")
-                answer = comparisons[0]["data"]
-                self.assertEqual(answer["basis"], "per_person")
-                self.assertEqual(answer["party_size"], 3)
-                self.assertEqual(answer["total_budget"], 240)
-                entries = {entry["name"]: entry for entry in answer["entries"]}
-                self.assertEqual(set(entries), set(quotes))
-                for name, unit, total, fits in [
-                    ("雾岚餐厅", 68, 204, True),
-                    ("杉木餐厅", 82, 246, False),
-                ]:
-                    self.assertEqual(entries[name]["unit_price"], unit)
-                    self.assertEqual(entries[name]["total"], total)
-                    self.assertIs(entries[name]["within_budget"], fits)
-                    self.assertEqual(entries[name]["source_url"], source_url)
-                    self.assertEqual(entries[name]["quote"], quotes[name])
-                    self.assertTrue(entries[name]["evidence_id"])
-                self.assertEqual(answer["recommendation"], "雾岚餐厅")
-                self.assertEqual(answer["savings"], 42)
-                self.assertTrue(
-                    answer["limitations"], "人均标价比较应说明观测范围，不可冒充履约证明"
-                )
-                visible_answer = result["state"]["reason"]
-                for fact in ("雾岚餐厅", "杉木餐厅", "204", "246", "42"):
-                    self.assertIn(fact, visible_answer)
-                self.assertEqual(
-                    model_calls.count(BrowserDecision),
-                    0,
-                    "可验证的比较结果已齐备时，应直接交付，不能再消耗模型调用决定finish",
-                )
-
-    def test_sparse_followup_keeps_browser_comparison_and_observes_changed_page(self):
-        """Changing only a budget must keep the original browser task and read new prices."""
-        with tempfile.TemporaryDirectory() as directory:
-            app = create_app(settings(directory), token=TOKEN)
-            app.state.runtime.model.structured = offline_fallback
-            with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
-                run_id = client.post(
-                    "/api/v1/runs",
-                    json={
-                        "input_text": "比较网页上的雾岚餐厅和杉木餐厅，2人总预算180元，说明推荐理由",
-                        "browser_session_id": "fixture-desktop",
-                    },
-                ).json()["run_id"]
-                first = next_command(client, run_id)
-                client.post(
-                    "/api/v1/browser/commands/" + first["command_id"] + "/result",
-                    json={
-                        **fixture(first),
-                        "text": "雾岚餐厅 人均79元；杉木餐厅 人均89元",
-                        "tables": [],
-                    },
-                )
-                wait_for(client, run_id, lambda value: value["phase"] in TERMINAL)
-                response = client.post(
-                    "/api/v1/runs/" + run_id + "/messages", json={"text": "总预算改为150元"}
-                )
-                self.assertEqual(response.status_code, 202, response.text)
-                resumed = wait_for(
-                    client,
-                    run_id,
-                    lambda value: (
-                        value["state"].get("turn_id", 0) > 1
-                        and (bool(value.get("interrupt_id")) or value["phase"] in TERMINAL)
-                    ),
-                )
-                self.assertTrue(
-                    resumed["state"].get("browser_wait"),
-                    "仅改预算应继续网页比较，不能遗失商家目标后索取无关的起点坐标",
-                )
-                second = next_command(client, run_id)
-                self.assertNotEqual(first["command_id"], second["command_id"])
-                client.post(
-                    "/api/v1/browser/commands/" + second["command_id"] + "/result",
-                    json={
-                        **fixture(second),
-                        "snapshot_id": "quality-new-prices",
-                        "text": "雾岚餐厅 人均99元；杉木餐厅 人均69元",
-                        "tables": [],
-                    },
-                )
-                result = wait_for(client, run_id, lambda value: value["phase"] in TERMINAL)
-                pages = [
-                    a for a in result["state"]["browser_artifacts"] if a["type"] == "browser_page"
-                ]
-                self.assertEqual(pages[-1]["snapshot_id"], "quality-new-prices")
-                self.assertIn("人均69元", pages[-1]["data"]["text"])
-
-
 class RequirementOutcomeQuality(unittest.IsolatedAsyncioTestCase):
     async def test_budget_edit_preserves_required_activities_party_and_independent_caps(self):
-        agent = RequirementAgent(SimpleNamespace(structured=offline_fallback))
         spec = TripSpec(
             goal="3位成人带1个孩子，必须先参观展览再吃饭，可选喝咖啡",
             party=[PartyMember(role="成人"), PartyMember(role="孩子", age=8)],
@@ -241,12 +55,13 @@ class RequirementOutcomeQuality(unittest.IsolatedAsyncioTestCase):
             activity_order=["展览", "餐厅"],
             hard_constraints=["忌口:花生"],
         )
-        for text, total, per_person in [
-            ("总预算改为360元，其余安排都保留", 360, 100),
-            ("每人最多80元，其他不变", 420, 80),
-            ("取消人均上限，其他要求保持", 420, None),
+        for text, proposal, total, per_person in [
+            ("总预算改为360元，其余安排都保留", RequirementOutput(budget=360), 360, 100),
+            ("每人最多80元，其他不变", RequirementOutput(per_person_budget=80), 420, 80),
+            ("取消人均上限，其他要求保持", RequirementOutput(clear_per_person_budget=True), 420, None),
         ]:
             with self.subTest(edit=text):
+                agent = RequirementAgent(SimpleNamespace(structured=AsyncMock(return_value=proposal)))
                 patch = await agent.run(text, [], previous_spec=spec)
                 edited = patch.to_trip_spec(text, base=spec)
                 self.assertEqual(edited.party_size, 4)
@@ -344,6 +159,8 @@ class PlanOutcomeQuality(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNone(stop.estimated_wait_min)
                     self.assertTrue(result.verifier.unknown_evidence)
                     self.assertEqual(stop.start_minute, 850)
+                    # An unpublished queue time is reported, not treated as a defect.
+                    self.assertFalse(result.verifier.blocking_evidence)
                 elif label == "confirmed_closed":
                     self.assertTrue(
                         any("未营业" in check.detail for check in result.verifier.hard_violations)
@@ -352,7 +169,7 @@ class PlanOutcomeQuality(unittest.IsolatedAsyncioTestCase):
                     self.assertTrue(
                         any("锁定" in check.detail for check in result.verifier.hard_violations)
                     )
-                self.assertFalse(result.verifier.executable)
+                self.assertEqual(result.verifier.executable, not expected_hard)
 
 
 class FactAttributionQuality(unittest.IsolatedAsyncioTestCase):

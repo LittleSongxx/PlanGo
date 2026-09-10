@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -28,6 +27,7 @@ from plango_harness.agent.contracts import (
     RunPhase,
     TripSpec,
     VerifierResult,
+    may_be_reservable,
 )
 from plango_harness.agent.decisions import RequirementOutput, SupervisorDecision
 from plango_harness.agent.model_adapter import ModelAdapter
@@ -41,7 +41,6 @@ from plango_harness.agent.subagents import (
     ReflectionAgent,
     RequirementAgent,
 )
-from plango_harness.agent.subagents.requirement import _bound_candidates
 from plango_harness.agent.subgraphs import (
     advocate_subgraph,
     critic_subgraph,
@@ -59,7 +58,7 @@ from plango_harness.memory.repository import MemoryRepository
 from plango_harness.persistence.actions import ActionLedger
 from plango_harness.persistence.runs import RunRepository
 from plango_harness.providers.actions import ActionProvider
-from plango_harness.providers.world import WorldProvider, _distance_km
+from plango_harness.providers.world import WorldProvider
 from plango_harness.tools.registry import ToolContext, ToolRegistry
 
 
@@ -241,7 +240,8 @@ def _weather_observed(evidence: list[Evidence]) -> bool:
 
 
 def _replacement_exclusions(plan: PlanCandidate, verifier: VerifierResult) -> set[str]:
-    issues = [*verifier.hard_violations, *verifier.unknown_evidence]
+    # Repair replaces stops we cannot stand behind; an unpublished fact is not a defect.
+    issues = verifier.hard_violations or verifier.blocking_evidence
     excluded = {stop.place_id for stop in plan.stops if any(
         check.name.endswith(":" + stop.place_id) and not check.name.startswith("distance:")
         for check in issues
@@ -255,24 +255,15 @@ def _replacement_exclusions(plan: PlanCandidate, verifier: VerifierResult) -> se
     return excluded
 
 
-def _can_repair_price_gap(state: PlanGoState, max_rounds: int) -> bool:
-    verifier = state.get("verifier")
-    if isinstance(verifier, dict):
-        verifier = VerifierResult.model_validate(verifier)
-    return bool(verifier and verifier.unknown_evidence
-                and all(check.name.startswith("price:") for check in verifier.unknown_evidence)
-                and not state.get("repair_applied") and state.get("repair_round", 0) < max_rounds)
-
-
 def _planning_spec(spec: TripSpec, weather: dict[str, Any] | None) -> TripSpec:
-    """Apply a conservative weather preference without rewriting user intent."""
-    if not weather or not weather.get("rain"):
+    """Rain is reported as an observation; it never edits what the user asked for.
+
+    The typed outdoor flag is the only place an outdoor requirement lives, so no
+    phrase scan is needed to avoid contradicting one.
+    """
+    if not weather or not weather.get("rain") or spec.outdoor_required:
         return spec
-    text = " ".join([spec.goal, *spec.hard_constraints, *spec.soft_preferences]).lower()
-    if any(word in text for word in ("户外", "露营", "公园", "公园优先")):
-        return spec
-    preferences = list(dict.fromkeys([*spec.soft_preferences, "室内优先"]))
-    return spec.model_copy(update={"soft_preferences": preferences})
+    return spec.model_copy(update={"weather_sensitive": True})
 
 
 _CHECKPOINT_TYPES = (
@@ -335,22 +326,22 @@ def _coordinator_decision(state: PlanGoState, deps: GraphDeps) -> SupervisorDeci
         return SupervisorDecision(next_action="requirements", reason="缺少结构化目标")
     if isinstance(spec, dict):
         spec = TripSpec.model_validate(spec)
-    if state.get("clarification"):
-        return SupervisorDecision(next_action="ask_user", reason="需求仍需用户澄清")
     if str(state.get("phase")) in {
         RunPhase.INFEASIBLE.value,
         RunPhase.FAILED.value,
         RunPhase.CANCELLED.value,
     }:
         return SupervisorDecision(next_action="finish", reason=state.get("reason") or "任务已结束")
+    if state.get("clarification"):
+        return SupervisorDecision(next_action="ask_user", reason="需求仍需用户澄清")
     if any((state.get("last_observation") or {}).get(key) for key in ("refresh_discovery", "refresh_context")):
         return SupervisorDecision(next_action="discover", reason="编辑影响供给事实，需要刷新搜索")
     if (state.get("last_observation") or {}).get("weather_changed") and not state.get("place_candidates"):
         return SupervisorDecision(next_action="discover", reason="天气观测变化，需要重新搜索")
     if not state.get("place_candidates"):
         return SupervisorDecision(next_action="discover", reason="需要获取候选地点和证据")
-    if deps.agent_mode == "multi" and (spec.party_size or 1) > 1 and not _current_advocate_reports(state):
-        return SupervisorDecision(next_action="advocate", reason="多人目标需要独立偏好评估")
+    if deps.agent_mode == "multi" and _advocate_roles(spec) and not _current_advocate_reports(state):
+        return SupervisorDecision(next_action="advocate", reason="同行角色不同，需要独立偏好评估")
     if not state.get("selected_plan"):
         return SupervisorDecision(next_action="synthesize", reason="需要汇总候选和角色报告")
     if not state.get("verifier"):
@@ -359,13 +350,6 @@ def _coordinator_decision(state: PlanGoState, deps: GraphDeps) -> SupervisorDeci
     if isinstance(verifier, dict):
         verifier = VerifierResult.model_validate(verifier)
     if verifier is not None and not verifier.executable:
-        # Freshness is the first safety gate.  A stale/unknown observation
-        # must ask for clarification before critic can label the plan
-        # infeasible because of a secondary hard-constraint check.
-        if not verifier.evidence_complete:
-            if _can_repair_price_gap(state, deps.max_repair_rounds):
-                return SupervisorDecision(next_action="critic", reason="先尝试省略缺价备选或选用已观测的替代地点")
-            return SupervisorDecision(next_action="ask_user", reason="证据未完整或已过期")
         if not verifier.hard_constraints_pass:
             critique = state.get("critique")
             critique_verdict = (
@@ -380,7 +364,9 @@ def _coordinator_decision(state: PlanGoState, deps: GraphDeps) -> SupervisorDeci
             if state.get("repair_round", 0) < deps.max_repair_rounds:
                 return SupervisorDecision(next_action="critic", reason="硬约束未通过，需要修复")
             return SupervisorDecision(next_action="finish", reason="达到修复上限，返回不可行原因")
-        return SupervisorDecision(next_action="ask_user", reason="仍有证据未确认")
+        if state.get("repair_round", 0) < deps.max_repair_rounds and not state.get("repair_applied"):
+            return SupervisorDecision(next_action="critic", reason="引用的证据缺失或已过期，先尝试替换为已观测的地点")
+        return SupervisorDecision(next_action="ask_user", reason="引用的证据缺失或已过期，需要重新确认")
     if not state.get("action_proposal"):
         return SupervisorDecision(
             next_action="propose_actions", reason="计划已验证，生成待确认动作"
@@ -406,18 +392,22 @@ def _semantic_cycle(trace: list[dict[str, Any]], *, width: int = 4) -> bool:
     return len(set(recent)) <= width - 2 and recent[0] != recent[-1]
 
 
+# Compilation failures only the user can resolve, mapped to the field to ask about.
+_USER_INPUT_ERRORS = {"party_size_unknown": "party_size"}
+
+
 def _advocate_roles(spec: TripSpec) -> list[str]:
-    """Start only the roles named by the request; keep one experience view."""
-    text = " ".join([*spec.hard_constraints, *spec.soft_preferences,
-                     *(member.role for member in spec.party),
-                     *(role for role, count in spec.party_counts.items() if count)]).lower()
-    roles = ["体验"]
-    if (spec.party_size or 1) > 1 and any(word in text for word in ("孩子", "儿童", "老人", "家庭", "亲子")):
-        roles.insert(0, "家庭")
-        roles.insert(1, "健康")
-    if spec.total_budget < 1_000 or any(word in text for word in ("预算", "便宜", "省钱", "花费")):
-        roles.insert(0, "预算")
-    return list(dict.fromkeys(roles))
+    """One advocate per role the party actually contains.
+
+    The roles come from the structured party, not from words in the request: a
+    keyword scan would both miss parties it has no vocabulary for and start
+    unrequested views whenever a phrase happened to match.
+    """
+    attending = [role for role, count in spec.party_counts.items() if count] or [
+        member.role for member in spec.party
+    ]
+    roles = [role for role in dict.fromkeys(attending) if role]
+    return roles[:4] if len(roles) > 1 else []
 
 
 def build_graph(
@@ -461,16 +451,16 @@ def build_graph(
         offer_selection = edit.get("offer_selection") if explicit is not None else None
         if explicit is not None:
             values = {key: value for key, value in explicit.items() if value is not None}
-            for key, flag in (("budget", "clear_budget"), ("per_person_budget", "clear_per_person_budget"), ("visit_date", "visit_date_unknown"), ("time_window_start", "time_window_start_unknown"), ("search_radius_km", "clear_search_radius"), ("route_distance_km", "clear_route_distance")):
+            for key, flag in (("budget", "clear_budget"), ("per_person_budget", "clear_per_person_budget"), ("visit_date", "visit_date_unknown"), ("time_window_start", "time_window_start_unknown"), ("search_radius_km", "clear_search_radius"), ("route_distance_km", "clear_route_distance"), ("max_distance_km", "clear_route_distance"), ("max_queue_minutes", "clear_max_queue")):
                 if key in explicit and explicit[key] is None:
                     values[flag] = True
-            if "max_distance_km" in explicit and explicit["max_distance_km"] is None:
-                values["remove_hard_constraints"] = ["距离优先"]
+                    values.pop(key, None)
             if offer_selection and previous_spec is None:
+                # A first-turn offer pick states nothing about the venue type; the
+                # selection carries the place identity and nothing is inferred from it.
                 values.update(party_size_unknown=explicit.get("party_size") is None,
                               clear_budget=explicit.get("budget") is None,
-                              clear_per_person_budget=explicit.get("per_person_budget") is None,
-                              required_activities=["餐厅"])
+                              clear_per_person_budget=explicit.get("per_person_budget") is None)
             output = RequirementOutput.model_validate(values)
         elif (proposal.get("turn_id") == state.get("turn_id", 1)
               and proposal.get("input_text") == state["input_text"] and proposal.get("output") is not None):
@@ -482,7 +472,9 @@ def build_graph(
                 state["input_text"], state.get("memory_context", []), previous_spec,
                 state.get("messages", []), reference_at=state.get("requirement_reference_at"),
             )
-        spec = output.to_trip_spec(state["input_text"], base=previous_spec)
+        accepted = state.get("trip_spec") or previous_spec
+        merge_base = TripSpec.model_validate(accepted) if accepted is not None else None
+        spec = output.to_trip_spec(state["input_text"], base=merge_base)
         for correction in corrections:
             # Apply every explicit answer slot with the normal sparse/null semantics.
             spec = correction.to_trip_spec(state["input_text"], base=spec)
@@ -491,30 +483,18 @@ def build_graph(
                 if getattr(correction, name) or getattr(correction, reference):
                     updates.update({name: getattr(correction, name), reference: getattr(correction, reference)})
             output = output.model_copy(update=updates)
-        if offer_selection and previous_spec is None:
-            missing = [key for key in ("party_size", "visit_date", "time_window_start") if getattr(spec, key) is None]
-            if missing:
-                names = {"party_size": "人数", "visit_date": "到店日期", "time_window_start": "到店时间"}
-                output = output.model_copy(update={"clarification_needed": True, "clarification_fields": missing,
-                    "clarification_question": "已保留所选门店与优惠，还需要确认" + "、".join(names[key] for key in missing) + "。优惠缺失规则仍需核对。"})
-        pending = []
-        for field in (state.get("clarification") or {}).get("fields", []):
-            if field not in {"budget", "per_person_budget", "duration_minutes", "max_queue_minutes", "max_distance_km"}:
-                continue
-            if field in {"max_queue_minutes", "max_distance_km"} and previous_spec and field not in _bound_candidates(previous_spec.goal):
-                continue  # An old parser's false bound (for example 步行街8号) is not a user requirement.
-            cleared = (field == "budget" and output.clear_budget
-                       or field == "per_person_budget" and output.clear_per_person_budget
-                       or field == "max_queue_minutes" and "低排队" in (output.remove_hard_constraints or [])
-                       or field == "max_distance_km" and "距离优先" in (output.remove_hard_constraints or []))
-            if getattr(output, field) is None and not cleared:
-                pending.append(field)
-        if pending:
-            output = output.model_copy(update={
-                "clarification_needed": True,
-                "clarification_fields": list(dict.fromkeys([*output.clarification_fields, *pending])),
-                "clarification_question": output.clarification_question or "先前的预算、时长或距离/排队上限仍待确认。",
-            })
+        # An unanswered field stays unset and is reported with the result. Re-asking it
+        # every turn is what turned answerable requests into clarification loops.
+        unresolved = set(output.clarification_fields) if output.clarification_needed else set()
+        origin_pending = bool(unresolved & {"location", "location_name", "location_reference"})
+        search_pending = bool(unresolved & {"search_location", "search_location_name", "search_location_reference"})
+        for field in ("location", "search_location"):
+            if unresolved & {field, field + "_name", field + "_reference"}:
+                output = output.model_copy(update={field + "_name": None, field + "_reference": None})
+        if origin_pending:
+            spec = spec.model_copy(update={"location": previous_spec.location if previous_spec else spec.location})
+        if search_pending:
+            spec = spec.model_copy(update={"search_location": previous_spec.search_location if previous_spec else None})
         if explicit is not None and ("party_size" in explicit or any(correction.party_size is not None for correction in corrections)):
             # A total edit does not invent the composition of a mixed party.
             spec = spec.model_copy(update={"party_counts": {spec.party[0].role: spec.party_size} if len(spec.party) == 1 and spec.party_size is not None else {}})
@@ -524,13 +504,15 @@ def build_graph(
         selected_raw = state.get("selected_poi") or {}
         selected_poi = PlaceCandidate.model_validate(selected_raw) if selected_raw else None
         selected_location = Location(name=selected_poi.name, latitude=selected_poi.latitude, longitude=selected_poi.longitude) if selected_poi else None
-        location_name: str | None = output.location_name or (previous_spec.location.name if previous_spec else "望京")
+        location_name: str | None = output.location_name or (previous_spec.location.name if previous_spec else None)
         resolved_location = None
         tool_call_count = int(state.get("tool_call_count", 0))
         geocode_response: dict[str, Any] | None = None
         ctx = deps.tool_context(state)
         location_origin = None
-        if hasattr(deps.world, "requirement_origin"):
+        if origin_pending:
+            resolved_location = previous_spec.location if previous_spec else None
+        elif hasattr(deps.world, "requirement_origin"):
             location_name, resolved_location, location_origin = await deps.world.requirement_origin(state, output.location_name, previous_spec)
             if offer_selection and previous_spec is None and resolved_location is None and not output.location_name and output.location_reference is None:
                 # A city configured for search does not establish this user's starting point.
@@ -542,7 +524,7 @@ def build_graph(
                 geocode_response = await deps.tools.execute("geocode", {"address": location_name}, ctx)
         elif previous_spec is not None and output.location_name is None:
             resolved_location = previous_spec.location
-        else:
+        elif location_name:
             geocode_response = await deps.tools.execute("geocode", {"address": location_name}, ctx)
         geocode_observation: dict[str, Any] | None = None
         if geocode_response is not None:
@@ -562,7 +544,9 @@ def build_graph(
                     "error": geocode_response.get("error", "tool_error"),
                 }
         tool_call_count = ctx.tool_call_count
-        if resolved_location is None and getattr(deps.world, "strict_location", False):
+        # A picked venue is a destination, not a starting point: adopting it would make
+        # every leg zero kilometres. Where the user departs from is theirs to state.
+        if resolved_location is None and getattr(deps.world, "strict_location", False) and not origin_pending:
             question = "当前起点有多个匹配，请补区县、街道或门牌号。" if (geocode_observation or {}).get("error") == "ambiguous_location" else f"未能取得{location_name or '当前城市'}的真实起点坐标，请提供定位，或配置高德 Key 并明确出发地点。"
             answer = interrupt({"type": "clarification", "id": f"clarification:{state['run_id']}:location:{state.get('turn_id',1)}", "question": question})
             text = str((answer or {}).get("text", "")) if isinstance(answer, dict) else str(answer or "")
@@ -571,11 +555,11 @@ def build_graph(
                 corrections = (*corrections, correction)
             command_id = answer.get("_command_id") if isinstance(answer, dict) else None
             message = HumanMessage(content=text, id=f"user:{state['run_id']}:{state.get('turn_id', 1)}:location:{command_id or len(corrections) + 1}")
-            accepted = {"input_text": state["input_text"] + "\n" + text,
-                        "messages": [*state.get("messages", []), message],
-                        "consumed_command_id": command_id, "interrupt_id": None}
-            recovered = await requirements(cast(PlanGoState, {**state, **accepted}), corrections)
-            return {**accepted, **recovered, "messages": [message, *recovered.get("messages", [])]}
+            resumed = {"input_text": state["input_text"] + "\n" + text,
+                       "messages": [*state.get("messages", []), message],
+                       "consumed_command_id": command_id, "interrupt_id": None}
+            recovered = await requirements(cast(PlanGoState, {**state, **resumed}), corrections)
+            return {**resumed, **recovered, "messages": [message, *recovered.get("messages", [])]}
         if resolved_location is not None:
             spec = spec.model_copy(update={"location": resolved_location})
         if (previous_spec is None or offer_selection) and selected_poi:
@@ -596,25 +580,20 @@ def build_graph(
             else:
                 spec = spec.model_copy(update={"search_location": None})
                 output = output.model_copy(update={"clarification_needed": True, "clarification_fields": ["search_location"], "clarification_question": "未能核实目标地区，请提供明确商圈或地址。"})
-        if output.search_location_name and spec.search_location and selected_poi and selected_poi.place_id in spec.must_visit_place_ids:
-            distance = _distance_km(spec.search_location, selected_poi.latitude, selected_poi.longitude)
-            if distance > (spec.max_distance_km or 5.0):
-                output = output.model_copy(update={"clarification_needed": True, "clarification_fields": ["selected_poi"], "clarification_question": f"新地区与所选 {selected_poi.name} 相距较远；所选目标仍保留，请确认保留目标还是重新选店。"})
         unknown = {field for field, flag in (("visit_date", output.visit_date_unknown), ("time_window_start", output.time_window_start_unknown)) if flag}
         if "search_location" in output.clarification_fields:
             unknown.add("search_location")
         patch, refresh = requirement_delta(previous_spec, spec, explicit_unknown=unknown)
         if explicit is not None:
             patch = [{**item, "source": "user_structured"} for item in patch]
-        if re.search(r"重新(?:搜索|观测|查询|核验|核实)|刷新(?:商家|地点|候选)|世界状态|改用高德|(?:不用|不要|无需)网页", state["input_text"]):
+        if output.refresh_sources or (output.planning_source is not None and output.planning_source != (state.get("browser_task_context") or {}).get("planning_source")):
             refresh = dict(discovery=True, weather=True, supply=True, routes=True)
-        elif re.search(r"天气(?:变|更新)|下雨|刷新天气", state["input_text"]):
-            refresh["weather"] = True
         result: dict[str, Any] = {
             "messages": [],  # Only an accepted clarification emits new messages from this subgraph.
             "trip_spec": spec,
             "requirement_patch": patch,
             "requirement_refresh": refresh,
+            **({"browser_task_context": {**(state.get("browser_task_context") or {}), "planning_source": output.planning_source}} if output.planning_source else {}),
             "place_candidates": [] if refresh["discovery"] else state.get("place_candidates", []),
             "evidence": retain_evidence(state.get("evidence", []), refresh),
             "weather": None if refresh["weather"] else state.get("weather"),
@@ -720,6 +699,10 @@ def build_graph(
             places, evidence = _place_candidates(state["place_candidates"]), _dedupe_evidence(state.get("evidence", []))
         else:
             places, evidence = await discovery_agent.run(spec, search=search)
+            # A fresh provider search renews provider observations only. What the user
+            # declared stays theirs to withdraw, so it is not re-asked after a refresh.
+            evidence = [*(item for raw in state.get("evidence", [])
+                          for item in [Evidence.model_validate(raw)] if item.source == "user"), *evidence]
         selected_raw = state.get("selected_poi") or {}
         if selected_raw and selected_raw.get("place_id") in spec.must_visit_place_ids:
             selected = PlaceCandidate.model_validate(selected_raw)
@@ -848,9 +831,9 @@ def build_graph(
     def advocate_fanout(state: PlanGoState) -> list[Send]:
         spec = state.get("trip_spec")
         assert spec is not None
-        if deps.agent_mode == "single" or (spec.party_size or 1) <= 1:
+        roles = [] if deps.agent_mode == "single" else _advocate_roles(spec)
+        if not roles:
             return [Send("synthesis", {})]
-        roles = _advocate_roles(spec)
         places = _place_candidates(state.get("place_candidates"))
         already = {report.role for report in _current_advocate_reports(state)}
         turn_id = int(state.get("turn_id", 1))
@@ -957,7 +940,6 @@ def build_graph(
             and previous.location == spec.location
             and previous.soft_preferences == spec.soft_preferences
             and not goal_errors(spec, retained)
-            and all(c.kind == "soft" or c.passed is True for c in prior.checks)
         )
         # Preserve verified venue choices across edits; compilation and fresh
         # verification still enforce every new goal, cost and supply constraint.
@@ -986,26 +968,34 @@ def build_graph(
                 version=plan_version,
             )
             if selected is None:
-                if spec.must_visit_place_ids or (prior and any(stop.locked for stop in prior.stops)):
-                    return {"phase": RunPhase.REQUIREMENTS_READY, "selected_plan": None, "clarification": {"fields": ["locked_stops"], "question": "所选或锁定目标未能纳入满足新要求的方案；请确认目标或调整约束，原目标未自动删除。"}, "reason": "固定目标与新方案尚未兼容"}
+                missing = [item for item in draft_errors if item["code"] in _USER_INPUT_ERRORS]
+                if missing:
+                    # Only the user can supply these. Asking is a resolvable step; ending
+                    # the run would discard an otherwise workable request.
+                    return {
+                        "phase": RunPhase.REQUIREMENTS_READY,
+                        "selected_plan": None,
+                        "verifier": None,
+                        "clarification": {"question": "；".join(item["detail"] for item in missing),
+                                          "fields": [_USER_INPUT_ERRORS[item["code"]] for item in missing]},
+                        "plan_draft": draft,
+                        "draft_errors": draft_errors,
+                    }
                 return {
-                    "phase": RunPhase.INFEASIBLE,
-                    "reason": (
-                        "Planner Draft 无法编译且没有 fallback 计划"
-                        + (
-                            f"（{draft_errors[0].get('code')}）"
-                            if draft_errors and draft_errors[0].get("code")
-                            else ""
-                        )
-                    ),
+                    "phase": RunPhase.FAILED,
+                    "selected_plan": None,
+                    "verifier": None,
+                    "clarification": None,
+                    "reason": "本轮未能生成符合已确认要求的方案；原要求与所选目标已保留。",
+                    "plan_draft": draft,
                     "draft_errors": draft_errors,
                 }
         if hasattr(deps.planner, "preserve_locks"):
             selected = deps.planner.preserve_locks(selected, prior)
             if selected is None:
-                return {"phase": RunPhase.REQUIREMENTS_READY, "selected_plan": None,
-                        "clarification": {"fields": ["locked_stops"], "question": "新方案未能保留已锁定的地点，请确认调整需求还是解锁该节点。"},
-                        "reason": "锁定节点与新方案冲突，未自动丢弃锁定"}
+                return {"phase": RunPhase.FAILED, "selected_plan": None, "verifier": None,
+                        "clarification": None, "plan_draft": draft, "draft_errors": draft_errors,
+                        "reason": "本轮生成的方案未保留锁定地点；原锁定与要求已保留。"}
         artifacts = [
             AgentArtifact(
                 artifact_id=f"synthesis:{state['run_id']}:{selected.version}",
@@ -1052,6 +1042,10 @@ def build_graph(
     async def verify(state: PlanGoState) -> dict[str, Any]:
         selected = state.get("selected_plan")
         spec = state.get("trip_spec")
+        if not selected and state.get("clarification"):
+            # Synthesis is waiting on an input only the user has; let the coordinator
+            # ask instead of reporting the request itself as infeasible.
+            return {}
         if not selected or not spec:
             return {"phase": RunPhase.INFEASIBLE, "reason": "缺少待验证计划"}
         ctx = deps.tool_context(state)
@@ -1107,7 +1101,8 @@ def build_graph(
         spec = state.get("trip_spec")
         assert spec is not None
         report = await critic_agent.run(spec, selected, verifier)
-        if _can_repair_price_gap(state, deps.max_repair_rounds):
+        if (not verifier.executable and not state.get("repair_applied")
+                and state.get("repair_round", 0) < deps.max_repair_rounds):
             report = report.model_copy(update={"verdict": "repair"})
         repair_round = state.get("repair_round", 0) + (1 if report.verdict == "repair" else 0)
         update: dict[str, Any] = {
@@ -1137,7 +1132,7 @@ def build_graph(
             async def evaluate_repair(candidate, observations):
                 # Cached reads cost no calls. Reserve actual write boundaries,
                 # instead of rejecting a repair based on hypothetical cache misses.
-                ctx.max_tool_calls = deps.tool_limit(state) - 2 - sum(stop.category == "餐厅" for stop in candidate.stops)
+                ctx.max_tool_calls = deps.tool_limit(state) - 2 - sum(may_be_reservable(stop) for stop in candidate.stops)
                 try:
                     return await deps.planner.evaluate(spec, candidate, evidence=observations, weather=state.get("weather"), on_tool_call=ctx.consume)
                 finally:
@@ -1155,10 +1150,7 @@ def build_graph(
                 issue_text = " ".join(
                     [
                         f"{item.name} {item.detail}"
-                        for item in [
-                            *working_verifier.hard_violations,
-                            *working_verifier.unknown_evidence,
-                        ]
+                        for item in (working_verifier.hard_violations or working_verifier.blocking_evidence)
                     ]
                 )
                 ordered_indices = list(range(len(working_plan.stops) - 1, -1, -1))
@@ -1184,7 +1176,7 @@ def build_graph(
                     if goal_errors(spec, trimmed_stops):
                         continue
                     # Reserve the mandatory verification and proposal/write calls.
-                    if ctx.tool_call_count > deps.tool_limit(state) - 2 - sum(s.category == "餐厅" for s in trimmed_stops):
+                    if ctx.tool_call_count > deps.tool_limit(state) - 2 - sum(may_be_reservable(s) for s in trimmed_stops):
                         break
                     trimmed = working_plan.model_copy(
                         update={
@@ -1214,7 +1206,7 @@ def build_graph(
                     repair_evidence = _dedupe_evidence(
                         [*repair_evidence, *deps.planner.last_evidence]
                     )
-                    if checked.verifier.executable:
+                    if checked.verifier.hard_constraints_pass and (not verifier.hard_constraints_pass or checked.verifier.executable):
                         replacement = checked.plan.model_copy(update={"version": plan_version})
                         break
                     if next_plan is None:
@@ -1240,7 +1232,7 @@ def build_graph(
                     if candidate is None or any(stop.locked and stop not in candidate.stops for stop in selected.stops):
                         continue
                     key = tuple(stop.place_id for stop in candidate.stops)
-                    if key in tried or ctx.tool_call_count > deps.tool_limit(state) - 2 - sum(s.category == "餐厅" for s in candidate.stops):
+                    if key in tried or ctx.tool_call_count > deps.tool_limit(state) - 2 - sum(may_be_reservable(s) for s in candidate.stops):
                         continue
                     tried.add(key)
                     try:
@@ -1249,7 +1241,7 @@ def build_graph(
                         update.update(phase=RunPhase.FAILED, reason="剩余工具预算不足以完成修复及审批后动作", tool_call_count=ctx.tool_call_count, evidence=_dedupe_evidence([*repair_evidence, *deps.planner.last_evidence]))
                         return update
                     repair_evidence = _dedupe_evidence([*repair_evidence, *deps.planner.last_evidence])
-                    if checked.verifier.executable:
+                    if checked.verifier.hard_constraints_pass and (not verifier.hard_constraints_pass or checked.verifier.executable):
                         replacement = checked.plan
                         break
                     newly_broken = _replacement_exclusions(candidate, checked.verifier) - broken_ids
@@ -1275,12 +1267,12 @@ def build_graph(
             else:
                 update.update(
                     {
-                        "phase": RunPhase.INFEASIBLE if verifier.evidence_complete else RunPhase.REQUIREMENTS_READY,
-                        "reason": "在本次候选与调用预算内未找到合规替代；未满足：" + "、".join(check.name for check in [*working_verifier.hard_violations, *working_verifier.unknown_evidence]),
+                        "phase": RunPhase.INFEASIBLE if not working_verifier.hard_constraints_pass else RunPhase.REQUIREMENTS_READY,
+                        "reason": "在本次候选与调用预算内未找到合规替代；未满足：" + "、".join(check.name for check in [*working_verifier.hard_violations, *working_verifier.blocking_evidence]),
                         "repair_applied": True,
                     }
                 )
-                if working_plan is not selected and verifier.evidence_complete:
+                if working_plan is not selected and not verifier.blocking_evidence:
                     await deps.runs.save_plan(state["run_id"], working_plan, working_verifier)
                     update.update(
                         {
@@ -1474,17 +1466,11 @@ def build_graph(
 
     async def prepare_ask_user(state: PlanGoState) -> dict[str, Any]:
         verifier = state.get("verifier")
-        question = (state.get("clarification") or {}).get("question") or ("；".join(check.detail for check in verifier.unknown_evidence) if verifier and verifier.unknown_evidence else "还需要补充哪些约束？")
+        blocking = verifier.blocking_evidence if verifier else []
+        question = (state.get("clarification") or {}).get("question") or ("；".join(check.detail for check in blocking) if blocking else "还需要补充哪些约束？")
         clarification = {**(state.get("clarification") or {}), "question": question}
-        if verifier and verifier.unknown_evidence:
+        if blocking:
             clarification.setdefault("fields", ["evidence"])
-            clarification["reasons"] = [
-                {"code": "unknown_price", "place_id": check.name.removeprefix("price:"),
-                 "evidence_ids": [item.evidence_id for item in state.get("evidence", [])
-                                  if item.payload.get("place_id") == check.name.removeprefix("price:")
-                                  and item.payload.get("price_known") is False]}
-                for check in verifier.unknown_evidence if check.name.startswith("price:")
-            ]
         interrupt_id = f"clarification:{state['run_id']}:{state.get('turn_id', 1)}"
         return {
             "clarification": clarification,
@@ -1595,172 +1581,14 @@ def build_graph(
                 "turn_count": turn,
             }
         decision = _coordinator_decision(state, deps)
-        verifier = state.get("verifier")
-        allowed = {
-            "requirements",
-            "discover",
-            "advocate",
-            "synthesize",
-            "critic",
-            "verify",
-            "propose_actions",
-            "ask_user",
-            "finish",
-        }
-        requested_action = decision.next_action
-        action: str = requested_action if requested_action in allowed else "finish"
-        overrides: list[str] = []
-
-        def force(target: str, reason: str) -> None:
-            nonlocal action
-            if action != target:
-                overrides.append(reason)
-                action = target
-
-        # Recheck prerequisites at the workflow boundary, including states
-        # restored from older checkpoints.
+        # A single deterministic coordinator owns phase ordering. Node contracts
+        # enforce data/approval prerequisites; do not reinterpret the route here.
+        action = decision.next_action
+        requested_action = action
         verifier = state.get("verifier")
         if isinstance(verifier, dict):
             verifier = VerifierResult.model_validate(verifier)
-        terminal_phase = str(state.get("phase")) in {
-            RunPhase.INFEASIBLE.value,
-            RunPhase.FAILED.value,
-            RunPhase.CANCELLED.value,
-        }
-        if not terminal_phase and _semantic_cycle(state.get("trace", [])):
-            if state.get("selected_plan") and verifier is None:
-                force("verify", "检测到阶段语义循环，直接重新验证")
-            elif state.get("selected_plan") and verifier is not None and verifier.executable:
-                force("propose_actions", "检测到阶段语义循环，进入动作确认")
-            elif state.get("place_candidates") and not state.get("selected_plan"):
-                force("synthesize", "检测到阶段语义循环，结束重复检索")
-            else:
-                force("finish", "检测到阶段语义循环，安全收敛")
-            overrides.append("semantic_loop_blocked")
-        if terminal_phase:
-            force("finish", "当前运行已进入终态")
-        # An incomplete checkpoint cannot skip a required artifact (for
-        # example synthesize with zero candidates).
-        if not terminal_phase and not state.get("place_candidates") and action not in {
-            "requirements",
-            "discover",
-            "ask_user",
-        }:
-            force(
-                "finish"
-                if state.get("phase") in {RunPhase.INFEASIBLE, RunPhase.FAILED, RunPhase.CANCELLED}
-                else "discover",
-                "Discovery 没有可用地点"
-                if state.get("phase") in {RunPhase.INFEASIBLE, RunPhase.FAILED, RunPhase.CANCELLED}
-                else "缺少候选地点",
-            )
-        if (
-            not terminal_phase
-            and action == "ask_user"
-            and state.get("trip_spec")
-            and not state.get("clarification")
-            and not state.get("selected_plan")
-            and verifier is None
-        ):
-            # An actionable requirement/edit has no clarification artifact;
-            # keep the model from pausing before the required read/planning step.
-            force(
-                "discover" if not state.get("place_candidates") else "synthesize",
-                "没有澄清请求，继续当前规划回合",
-            )
-        if (
-            not terminal_phase
-            and state.get("place_candidates")
-            and not state.get("selected_plan")
-            and action == "discover"
-            and any(item.get("event") == "discovery_complete" for item in state.get("trace", [])[-3:])
-        ):
-            # Reusing a completed read must not create a discovery cycle.
-            force("synthesize", "本轮已完成 Discovery，避免重复检索循环")
-        if not terminal_phase and (
-            state.get("place_candidates")
-            and not state.get("selected_plan")
-            and action in {"critic", "verify", "propose_actions", "finish"}
-        ):
-            force("synthesize", "缺少已选计划")
-        spec = state.get("trip_spec")
-        if isinstance(spec, dict):
-            spec = TripSpec.model_validate(spec)
-        if (
-            not terminal_phase
-            and spec is not None
-            and deps.agent_mode == "multi"
-            and (spec.party_size or 1) > 1
-            and state.get("place_candidates")
-            and not _current_advocate_reports(state)
-            and action not in {"advocate", "ask_user"}
-        ):
-            # Multi-party fan-out is a required artifact under this policy.
-            force("advocate", "多人需求缺少 Advocate 报告")
-        if not terminal_phase and state.get("selected_plan") and verifier is None:
-            repair_pending = any(
-                isinstance(item, dict) and item.get("event") == "plan_repair_selected"
-                for item in (state.get("trace") or [])
-            )
-            if (
-                repair_pending
-                or (
-                    not state.get("clarification")
-                    and (
-                        state.get("repair_applied")
-                        or str(state.get("phase")) == RunPhase.REPLANNING.value
-                    )
-                )
-            ):
-                # A repaired plan must be re-verified before any pause or
-                # write proposal can be considered.
-                force("verify", "修复后的计划尚未重新验证")
-            elif action not in {"verify", "discover", "requirements", "ask_user"}:
-                force("verify", "计划尚未经过 Verifier")
-        if not terminal_phase and verifier is not None and not verifier.executable:
-            if not verifier.evidence_complete:
-                # Missing or stale evidence must be clarified before Critic
-                # repair; otherwise a safe freshness failure can be reported
-                # as an unrelated hard-constraint infeasibility.
-                if _can_repair_price_gap(state, deps.max_repair_rounds):
-                    force("critic", "先尝试省略缺价备选或选用已观测的替代地点")
-                else:
-                    force("ask_user", "证据未完整或已过期")
-            elif not verifier.hard_constraints_pass:
-                critique = state.get("critique")
-                critique_verdict = (
-                    critique.get("verdict")
-                    if isinstance(critique, dict)
-                    else getattr(critique, "verdict", "")
-                )
-                if critique_verdict == "ask_user":
-                    force("ask_user", "Critic 请求用户补充")
-                elif state.get("repair_applied") or state.get("repair_round", 0) >= deps.max_repair_rounds:
-                    force("finish", "硬约束修复未能达到可执行状态")
-                else:
-                    force("critic", "硬约束未通过")
-            else:
-                force("ask_user", "证据仍未完整确认")
-        if not terminal_phase and verifier is not None and verifier.executable and not state.get("action_proposal"):
-            force("propose_actions", "可执行计划必须先生成 ActionProposal")
-        if not terminal_phase and action == "propose_actions" and (verifier is None or not verifier.executable):
-            force("verify" if state.get("selected_plan") else "synthesize", "写动作前缺少可执行校验")
-        if (
-            not terminal_phase
-            and action == "finish"
-            and state.get("selected_plan") is None
-            and state.get("place_candidates")
-        ):
-            force("synthesize", "结束前仍有未综合候选")
-        if (
-            not terminal_phase
-            and spec is not None
-            and not state.get("clarification")
-            and any((state.get("last_observation") or {}).get(key) for key in ("refresh_discovery", "refresh_context"))
-        ):
-            # New goals need fresh candidates before advocacy/synthesis. Old
-            # trace entries and cached places cannot satisfy this prerequisite.
-            force("discover", "当前需求需要刷新 Discovery")
+        terminal_phase = str(state.get("phase")) in {RunPhase.INFEASIBLE.value, RunPhase.FAILED.value, RunPhase.CANCELLED.value}
         result: dict[str, Any] = {
             "next_action": action,
             "next_arguments": decision.arguments,
@@ -1777,7 +1605,7 @@ def build_graph(
                 "supervisor_decision",
                 requested_action=requested_action,
                 effective_action=action,
-                override_reason="；".join(overrides),
+                override_reason="",
                 coordinator_reason=_short_reason(decision.reason),
                 routing="deterministic_coordinator",
                 component_kind="coordinator",

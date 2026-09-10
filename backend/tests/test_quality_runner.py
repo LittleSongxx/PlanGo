@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 from plango import browser, offers
-from plango.outcomes import SourceAnalysis, SourceCharge, SourceOption
+from plango.task import TaskDecision
 from plango_harness.agent.contracts import Evidence
 from plango_harness.persistence.database import utc_now
 
@@ -64,7 +64,7 @@ def test_private_analysis_diagnostic_keeps_proposal_without_raw_transport(tmp_pa
         return await awaitable
 
     async def response():
-        return {"parsed": SourceAnalysis(options=[SourceOption(record=0, quote="136元/份", charges=[SourceCharge(value=136, quote="136元/份", currency="CNY", unit="package")])]),
+        return {"parsed": TaskDecision(operation="answer", answer="原文136元/份"),
                 "raw": SimpleNamespace(usage_metadata={"total_tokens": 7}), "headers": {"authorization": "must-not-be-logged"}}
 
     runtime = SimpleNamespace(model=SimpleNamespace(_invoke=invoke))
@@ -73,7 +73,7 @@ def test_private_analysis_diagnostic_keeps_proposal_without_raw_transport(tmp_pa
     runner.install_budget(runtime, "DEV-04", control, runner.digest(runner.manifest(["DEV-04"])), ["DEV-04"], log)
     asyncio.run(runtime.model._invoke(response(), timeout=None))
     saved = json.loads(log.read_text())
-    assert saved["unverified_analysis"]["options"][0]["charges"][0]["quote"] == "136元/份"
+    assert saved["unverified_analysis"]["answer"] == "原文136元/份"
     assert "must-not-be-logged" not in log.read_text() and "headers" not in saved
     assert saved["usage"]["total_tokens"] == 7
 

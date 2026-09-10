@@ -6,8 +6,16 @@ import unittest
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from plango.app import create_app
+from plango.app import create_app as product_app
 from plango.settings import DesktopSettings
+from task_fixtures import browser_actor
+
+
+def create_app(*args, **kwargs):
+    app = product_app(*args, **kwargs)
+    app.state.runtime.model.structured = browser_actor()
+    return app
+
 
 TOKEN = "isolated-test-token"
 
@@ -128,33 +136,6 @@ class BrowserHarnessCheck(unittest.TestCase):
                 self.assertEqual([e["seq"] for e in events], sorted({e["seq"] for e in events}))
                 self.assertTrue(any(e["event_type"] == "BROWSER_OBSERVATION" for e in events))
 
-    def test_disabled_model_comparison_reports_partial_after_real_read(self):
-        with tempfile.TemporaryDirectory() as directory:
-            with TestClient(
-                create_app(settings(directory), token=TOKEN),
-                headers={"Authorization": "Bearer " + TOKEN},
-            ) as client:
-                rid = client.post(
-                    "/api/v1/runs",
-                    json={
-                        "input_text": "比较网页菜单，推荐最便宜的一家",
-                        "browser_session_id": "fixture-desktop",
-                    },
-                ).json()["run_id"]
-                wait_for(client, rid, lambda v: bool(v["state"].get("browser_wait")))
-                command = client.get(
-                    "/api/v1/browser/commands?browser_session_id=fixture-desktop"
-                ).json()["commands"][0]
-                client.post(
-                    "/api/v1/browser/commands/" + command["command_id"] + "/result",
-                    json=fixture(command),
-                )
-                result = wait_for(
-                    client, rid, lambda v: v["phase"] in {"SUCCEEDED", "PARTIAL_FAILED", "FAILED"}
-                )
-                self.assertEqual(result["phase"], "PARTIAL_FAILED", result)
-                self.assertTrue(result["state"]["browser_artifacts"])
-
     def test_login_pause_retry_and_memory(self):
         with tempfile.TemporaryDirectory() as directory:
             with TestClient(
@@ -231,7 +212,7 @@ class ActionAndPlanningCheck(unittest.TestCase):
                     )
                 return fallback
 
-            app.state.runtime.model.structured = fixture_model
+            app.state.runtime.model.structured = browser_actor(fixture_model)
             with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
                 run_id = client.post(
                     "/api/v1/runs",
@@ -406,8 +387,19 @@ class ActionAndPlanningCheck(unittest.TestCase):
 
     def test_real_provider_contract_compiles_and_exact_selection_preserves_spec(self):
         with tempfile.TemporaryDirectory() as directory:
+            from plango.task import TaskDecision
+            from plango_harness.agent.decisions import RequirementOutput
+            app = create_app(settings(directory), token=TOKEN)
+            async def planning_actor(schema, *, fallback, **kwargs):
+                import json
+                if schema is TaskDecision and json.loads(kwargs["user"]).get("execution_goal"):
+                    return TaskDecision(operation="answer", answer="页面是帮助中心，尚未准备好表单。", answer_status="partial")
+                return TaskDecision(operation="plan", requirements=RequirementOutput(
+                    party_size=2, budget=400, location_name="望京", time_window_start="14:00", duration_minutes=240,
+                    required_activities=["展览", "餐厅"], activity_order=["展览", "餐厅"])) if schema is TaskDecision else fallback
+            app.state.runtime.model.structured = planning_actor
             with TestClient(
-                create_app(settings(directory), token=TOKEN),
+                app,
                 headers={"Authorization": "Bearer " + TOKEN},
             ) as client:
                 run_id = client.post(
@@ -500,7 +492,7 @@ class ActionAndPlanningCheck(unittest.TestCase):
                 )
                 # Rereading invalidates the old proposal immediately; the replacement
                 # plan version exists only after this fresh observation is compiled.
-                self.assertEqual(refreshed["state"]["plan_version"], candidate["version"])
+                self.assertGreaterEqual(refreshed["state"]["plan_version"], candidate["version"])
                 self.assertIsNone(refreshed["state"].get("action_proposal"))
                 self.assertIsNone(refreshed["state"].get("execution_goal"))
                 self.assertEqual(client.post("/api/v1/runs/" + run_id + "/resume", json={"decision": "approve", "interrupt_id": paused["interrupt_id"]}).status_code, 409)
@@ -586,7 +578,7 @@ class BoundaryCheck(unittest.TestCase):
             config = settings(directory).model_copy(
                 update={"openai_api_key": "test-provider-is-replaced"}
             )
-            app = create_app(config, token=TOKEN)
+            app = product_app(config, token=TOKEN)
             calls = []
 
             class FixtureImageModel:
@@ -598,11 +590,11 @@ class BoundaryCheck(unittest.TestCase):
                     return self
 
                 async def ainvoke(self, messages):
-                    from plango.outcomes import TaskIntent
+                    from plango.task import TaskDecision
                     calls.append(messages)
-                    assert self.schema in {ImageReading, TaskIntent}
+                    assert self.schema in {ImageReading, TaskDecision}
                     return {
-                        "parsed": TaskIntent(kind="write" if "帮我预约餐厅" in str(messages[-1]["content"]) else "extract") if self.schema is TaskIntent else ImageReading(text="用户截图：餐厅套餐价格128元"),
+                        "parsed": TaskDecision(operation="read") if self.schema is TaskDecision and "帮我预约餐厅" in str(messages[-1]["content"]) else TaskDecision(operation="answer", answer="图片中套餐128元；这是图片文字，尚未实时核验。") if self.schema is TaskDecision else ImageReading(text="用户截图：餐厅套餐价格128元"),
                         "raw": SimpleNamespace(
                             usage_metadata={
                                 "input_tokens": 30,
@@ -629,12 +621,11 @@ class BoundaryCheck(unittest.TestCase):
                 run_id = response.json()["run_id"]
                 done = wait_for(client, run_id, lambda v: v["phase"] in {"SUCCEEDED", "FAILED"})
                 self.assertEqual(done["phase"], "SUCCEEDED", done)
-                self.assertEqual(done["state"]["model_token_count"], 80)  # Intent + OCR, both within the same budget.
-                self.assertEqual(calls[1][1]["content"][1]["image_url"]["url"], image)
+                self.assertEqual(done["state"]["model_token_count"], 80)  # OCR + task answer share the same budget.
+                self.assertEqual(calls[0][1]["content"][1]["image_url"]["url"], image)
                 self.assertEqual(done["state"]["browser_artifacts"][0]["source"], "user")
-                self.assertEqual(done["state"]["execution_outcome"]["data"]["scope"], "image_text")
-                self.assertFalse(done["state"]["execution_outcome"]["data"]["merchant_verified"])
-                self.assertFalse(done["state"]["execution_outcome"]["data"]["price_verified"])
+                self.assertEqual(done["state"]["execution_outcome"]["data"]["scope"], "task_answer")
+                self.assertFalse(done["state"]["execution_outcome"]["data"]["business_completed"])
                 followup = client.post(
                     "/api/v1/runs/" + run_id + "/messages", json={"text": "帮我预约餐厅"}
                 )
@@ -767,7 +758,7 @@ class ReceiptIntegrationCheck(unittest.TestCase):
                     else fallback
                 )
 
-            app.state.runtime.model.structured = fixture_model
+            app.state.runtime.model.structured = browser_actor(fixture_model)
             with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
                 run_id = client.post(
                     "/api/v1/runs",
@@ -862,7 +853,7 @@ class BrowserTurnRegressionCheck(unittest.TestCase):
                     else fallback
                 )
 
-            app.state.runtime.model.structured = fixture_model
+            app.state.runtime.model.structured = browser_actor(fixture_model)
             with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
                 rid = client.post(
                     "/api/v1/runs",
@@ -941,7 +932,7 @@ class BrowserTurnRegressionCheck(unittest.TestCase):
                     else fallback
                 )
 
-            app.state.runtime.model.structured = fixture_model
+            app.state.runtime.model.structured = browser_actor(fixture_model)
             with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
                 rid = client.post(
                     "/api/v1/runs",

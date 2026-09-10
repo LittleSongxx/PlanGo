@@ -132,14 +132,20 @@ class LiveSupplyContractCheck(unittest.IsolatedAsyncioTestCase):
             self.assertIsNone(unknown.estimated_wait_min)
             self.assertIsNone(unknown.reservable)
             self.assertIsNone(unknown.seats_left)
-            # Place hours remain observed; absence of queue data makes execution incomplete, not venue closed.
+            # Place hours remain observed. A page that does not publish queue data leaves
+            # that fact pending; it neither closes the venue nor withholds the itinerary.
             evaluation = await BrowserPlanEngine(world).evaluate(spec, plan, evidence=evidence)
             self.assertNotIn("closed", evaluation.plan.stops[0].tags)
             self.assertIsNone(evaluation.plan.stops[0].estimated_wait_min)
-            self.assertFalse(evaluation.verifier.executable)
             self.assertTrue(evaluation.verifier.hard_constraints_pass)
+            self.assertTrue(evaluation.verifier.executable, evaluation.verifier)
+            self.assertFalse(evaluation.verifier.evidence_complete)
             self.assertTrue(
                 any(c.name.startswith("supply:") for c in evaluation.verifier.unknown_evidence)
+            )
+            self.assertFalse(
+                evaluation.verifier.blocking_evidence,
+                "An unpublished queue time is not an evidence-integrity failure",
             )
             absent = literal_supply("暂无信息", "星河餐厅", "门店列表")
             self.assertTrue(

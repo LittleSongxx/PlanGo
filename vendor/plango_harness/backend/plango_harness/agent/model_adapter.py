@@ -104,7 +104,7 @@ class ModelAdapter:
             if "dashscope" in settings.openai_base_url
             else "openai-compatible",
             model=settings.openai_model,
-            prompt_version="plango-structured-v3-shared-turn",
+            prompt_version="plango-structured-v4-task-owner",
             thinking_mode="disabled" if "dashscope" in settings.openai_base_url else "provider_default",
         )
         self.call_count = 0

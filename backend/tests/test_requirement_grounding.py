@@ -1,16 +1,18 @@
-"""Controlled model-output regressions, not a language-quality evaluation."""
+"""Typed model proposals and sparse-state contracts; no natural-language parsing oracle."""
 
 from datetime import date
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
-from plango_harness.agent.contracts import Location, TripSpec
+from plango_harness.agent.contracts import Location, OfferReference, TripSpec
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.graph import GraphDeps, build_graph
+from plango_harness.agent.model_adapter import ModelAdapter, ModelProviderUnavailable
 from plango_harness.agent.requirements import requirement_delta
 from plango_harness.agent.state import initial_state
 from plango_harness.agent.subagents.requirement import RequirementAgent
+from plango_harness.settings import Settings
 from pydantic import ValidationError
 
 
@@ -18,16 +20,16 @@ def original():
     return TripSpec(goal="原已确认行程", party_size=2, budget=280, per_person_budget=140,
                     duration_minutes=120, visit_date=date(2026, 9, 11), time_window_start="18:30",
                     location=Location(name="原起点", latitude=29.5, longitude=106.5),
-                    search_radius_km=.5, max_distance_km=2, must_visit_place_ids=["controlled:chosen"])
+                    search_radius_km=.5, max_distance_km=2, must_visit_place_ids=["controlled:chosen"],
+                    selected_offer=OfferReference(command_id="controlled-command", artifact_id="controlled-page",
+                                                  offer_index=0, offer_hash="a" * 64, place_id="controlled:chosen"))
 
 
-async def test_model_patch_survives_absent_fallback_fields_and_keeps_other_state():
+async def test_model_patch_keeps_other_state_without_second_semantic_interpretation():
     previous = original()
     text = "这回凑齐四位；我们周六见；其余不变"
     proposal = RequirementOutput(party_size=4, visit_date=date(2026, 9, 12),
                                 field_evidence={"party_size": "这回凑齐四位", "visit_date": "我们周六见"})
-    fallback = RequirementAgent._fallback(text, [], previous, reference_at="2026-09-09T12:00:00+08:00")
-    assert fallback.party_size is None and fallback.visit_date is None
     model = SimpleNamespace(structured=AsyncMock(return_value=proposal))
     patch = await RequirementAgent(model).run(text, [], previous, reference_at="2026-09-09T12:00:00+08:00")
     edited = patch.to_trip_spec(text, previous)
@@ -37,16 +39,26 @@ async def test_model_patch_survives_absent_fallback_fields_and_keeps_other_state
     assert edited.must_visit_place_ids == previous.must_visit_place_ids and edited.location == previous.location
 
 
-@pytest.mark.parametrize("proposal", [RequirementOutput(party_size=4), RequirementOutput(party_size=4, field_evidence={}),
-                                     RequirementOutput(), RequirementOutput(field_evidence={})])
-async def test_missing_model_provenance_never_uses_rules_or_creates_an_initial_success(proposal):
+@pytest.mark.parametrize("evidence", [None, {}, {"party_size": "4"}])
+async def test_optional_evidence_metadata_does_not_turn_a_valid_edit_into_user_ambiguity(evidence):
     previous = original()
-    text = "人数改成4人，预算改成300元"
+    proposal = RequirementOutput(party_size=4, field_evidence=evidence)
     agent = RequirementAgent(SimpleNamespace(structured=AsyncMock(return_value=proposal)))
-    patch = await agent.run(text, [], previous)
-    assert patch.to_trip_spec(text, previous).model_dump(exclude={"goal"}) == previous.model_dump(exclude={"goal"})
-    initial = await agent.run(text, [])
-    assert initial.clarification_needed
+    patch = await agent.run("这回凑齐四位，其余不变", [], previous)
+    edited = patch.to_trip_spec("本轮修改", previous)
+    assert edited.party_size == 4 and not patch.clarification_needed
+    assert {item["field"] for item in requirement_delta(previous, edited)[0]} == {"party_size"}
+
+
+async def test_no_change_and_repeated_known_values_do_not_require_new_citations():
+    initial = RequirementOutput().to_trip_spec("先讨论可行方案")
+    assert initial.party_size is None and initial.party_counts == {} and initial.budget is None
+    previous = original()
+    for proposal in (RequirementOutput(), RequirementOutput(party_size=2, budget=280)):
+        agent = RequirementAgent(SimpleNamespace(structured=AsyncMock(return_value=proposal)))
+        patch = await agent.run("其余不变", [], previous)
+        assert not patch.clarification_needed
+        assert patch.to_trip_spec("其余不变", previous) == previous
 
 
 @pytest.mark.parametrize(("text", "fields"), [
@@ -57,10 +69,10 @@ async def test_missing_model_provenance_never_uses_rules_or_creates_an_initial_s
     ("到店实际走的路别多于1500米", {"route_distance_km": 1.5}),
     ("每个人花费至多一百元", {"per_person_budget": 100}),
 ])
-def test_units_use_field_local_evidence(text, fields):
+async def test_model_normalized_units_reach_the_typed_contract(text, fields):
     previous = original()
     proposal = RequirementOutput(**fields, field_evidence={field: text for field in fields})
-    patch = RequirementAgent._stabilize_explicit_fields(proposal, RequirementOutput(), text=text, previous_spec=previous)
+    patch = await RequirementAgent(SimpleNamespace(structured=AsyncMock(return_value=proposal))).run(text, [], previous)
     assert not patch.clarification_needed
     edited = patch.to_trip_spec(text, previous)
     target = "max_distance_km" if "route_distance_km" in fields else next(iter(fields))
@@ -68,41 +80,36 @@ def test_units_use_field_local_evidence(text, fields):
     assert edited.budget == previous.budget and edited.party_size == previous.party_size
 
 
-def test_unmentioned_negated_and_ambiguous_fields_cannot_become_updates():
+async def test_real_ambiguity_blocks_only_the_named_fields():
     previous = original()
-    for text, proposal in [
-        ("不要把人均预算改成120元，其他不变", RequirementOutput(field_evidence={})),
-        ("预算先记300元，究竟是总额还是每人还没定", RequirementOutput(
-            budget=300, clarification_needed=True, clarification_fields=["budget", "per_person_budget"],
-            clarification_question="300元是总额还是每人？", field_evidence={"budget": "预算先记300元"})),
-        ("其他不变", RequirementOutput(budget=120, party_size=1, field_evidence={"budget": "其他不变"})),
-        ("不要把人数改成4人", RequirementOutput(party_size=4, field_evidence={"party_size": "人数改成4人"})),
-        ("全程留2小时", RequirementOutput(duration_minutes=60, field_evidence={"duration_minutes": "全程留2小时"})),
-    ]:
-        fallback = RequirementAgent._fallback(text, [], previous)
-        patch = RequirementAgent._stabilize_explicit_fields(proposal, fallback, text=text, previous_spec=previous)
-        assert patch.to_trip_spec(text, previous).model_dump(exclude={"goal"}) == previous.model_dump(exclude={"goal"})
-    assert patch.clarification_needed
+    proposal = RequirementOutput(
+        party_size=4, budget=300, clarification_needed=True,
+        clarification_fields=["budget", "per_person_budget"],
+        clarification_question="300元是总额还是每人？")
+    agent = RequirementAgent(SimpleNamespace(structured=AsyncMock(return_value=proposal)))
+    patch = await agent.run("这次四位，预算300但口径还没定", [], previous)
+    edited = patch.to_trip_spec("本轮修改", previous)
+    assert edited.party_size == 4
+    assert edited.budget == previous.budget and edited.per_person_budget == previous.per_person_budget
+    assert {item["field"] for item in requirement_delta(previous, edited)[0]} == {"party_size"}
 
 
-def test_clear_is_explicit_separate_and_persists_across_roundtrip():
+async def test_clear_is_explicit_separate_and_persists_across_roundtrip():
     previous = original()
     text = "取消实际路程上限；总预算也不限制了；其余不变"
     proposal = RequirementOutput(clear_route_distance=True, clear_budget=True,
                                 field_evidence={"clear_route_distance": "取消实际路程上限", "clear_budget": "总预算也不限制了"})
-    patch = RequirementAgent._stabilize_explicit_fields(proposal, RequirementOutput(), text=text, previous_spec=previous)
+    patch = await RequirementAgent(SimpleNamespace(structured=AsyncMock(return_value=proposal))).run(text, [], previous)
     restored = TripSpec.model_validate_json(patch.to_trip_spec(text, previous).model_dump_json())
     assert restored.max_distance_km is None and restored.budget is None
     assert restored.search_radius_km == previous.search_radius_km and restored.per_person_budget == previous.per_person_budget
     followup = "总共留180分钟；其他不变"
     output = RequirementOutput(duration_minutes=180, field_evidence={"duration_minutes": "总共留180分钟"})
-    final = RequirementAgent._stabilize_explicit_fields(output, RequirementOutput(), text=followup, previous_spec=restored).to_trip_spec(followup, restored)
+    patch = await RequirementAgent(SimpleNamespace(structured=AsyncMock(return_value=output))).run(followup, [], restored)
+    final = patch.to_trip_spec(followup, restored)
     assert final.duration_minutes == 180 and final.budget is None and final.max_distance_km is None
     assert final.location == previous.location and final.must_visit_place_ids == previous.must_visit_place_ids
-    ambiguous = RequirementOutput(budget=300, clear_budget=True,
-                                 field_evidence={"budget": "总额300元", "clear_budget": "总额300元"})
-    checked = RequirementAgent._stabilize_explicit_fields(ambiguous, RequirementOutput(), text="总额300元", previous_spec=previous)
-    assert checked.clarification_needed and checked.to_trip_spec("总额300元", previous).budget == previous.budget
+    assert final.selected_offer == previous.selected_offer
 
 
 async def test_compiled_node_retains_spec_while_clarifying_one_field():
@@ -136,12 +143,28 @@ def test_requirement_numeric_boundaries_reject_invalid_values(values):
         RequirementOutput(**values)
 
 
-@pytest.mark.parametrize("clock", ["3点99分", "25:00", "25点", "-3点", "下午-3点", "3点-1分", "18:99"])
-async def test_invalid_fallback_clock_clarifies_without_overwriting_previous_time(clock):
+@pytest.mark.parametrize("values", [
+    {"budget": 300, "clear_budget": True},
+    {"party_size": 4, "party_size_unknown": True},
+    {"time_window_start": "18:30", "time_window_start_unknown": True},
+    {"search_radius_km": .5, "clear_search_radius": True},
+    {"route_distance_km": 2, "clear_route_distance": True},
+    {"location_name": "新起点", "location_reference": "current_origin"},
+    {"required_activities": ["餐厅"], "remove_activities": ["餐厅"]},
+])
+def test_conflicting_structured_operations_are_model_errors(values):
+    with pytest.raises(ValidationError):
+        RequirementOutput(**values)
+
+
+async def test_unavailable_model_preserves_state_and_does_not_invent_a_user_question():
     previous = original()
-    text = f"开始改为{clock}，其余不变"
-    agent = RequirementAgent(SimpleNamespace(structured=AsyncMock(side_effect=lambda schema, *, fallback, **kwargs: fallback)))
-    patch = await agent.run(text, [], previous)
-    assert patch.time_window_start is None and not patch.time_window_start_unknown
-    assert patch.clarification_needed and "time_window_start" in patch.clarification_fields
-    assert patch.to_trip_spec(text, previous).model_dump(exclude={"goal"}) == previous.model_dump(exclude={"goal"})
+    serialized = previous.model_dump_json()
+    model = ModelAdapter(Settings(runtime_profile="sandbox", _env_file=None))
+    try:
+        with pytest.raises(ModelProviderUnavailable):
+            await RequirementAgent(model).run("人数改为4人，开始改为25点", [], previous)
+        assert previous.model_dump_json() == serialized
+        assert model.call_count == 0
+    finally:
+        await model.close()

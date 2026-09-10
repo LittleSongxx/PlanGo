@@ -1,5 +1,6 @@
 """Separate search and road-distance limits; controlled contracts only."""
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 from plango.browser import run_context
@@ -7,7 +8,6 @@ from plango.settings import DesktopSettings
 from plango.world import BrowserWorld
 from plango_harness.agent.contracts import PlanCandidate, PlanStop, TripSpec
 from plango_harness.agent.decisions import RequirementOutput
-from plango_harness.agent.model_adapter import ModelAdapter
 from plango_harness.agent.requirements import requirement_delta
 from plango_harness.agent.subagents.requirement import RequirementAgent
 from plango_harness.domain.planning import verify_plan
@@ -50,17 +50,18 @@ async def test_separate_limits_reach_search_and_actual_route_verification():
         await world.close()
 
 
-async def test_explicit_text_scopes_use_existing_sparse_requirement_parser():
-    model = ModelAdapter(DesktopSettings(openai_api_key=""))
+async def test_explicit_model_scopes_use_existing_sparse_contract():
+    model = SimpleNamespace(structured=AsyncMock(side_effect=[
+        RequirementOutput(search_radius_km=3, route_distance_km=5),
+        RequirementOutput(clear_route_distance=True),
+    ]))
     agent = RequirementAgent(model)
     base = TripSpec(goal="受控已确认需求", time_window_start="18:30", max_distance_km=2)
-    try:
-        edit = await agent.run("搜索半径三公里，单段路程上限五公里，其他不变", [], base)
-        spec = edit.to_trip_spec("受控修改", base)
-        assert spec.search_radius_km == 3 and spec.max_distance_km == 5
-        edit = await agent.run("取消单段路程上限，其他不变", [], spec)
-        changed = edit.to_trip_spec("受控取消", spec)
-        assert changed.search_radius_km == 3 and changed.max_distance_km is None
-        assert model.call_count == 0
-    finally:
-        await model.close()
+    edit = await agent.run("搜索半径三公里，单段路程上限五公里，其他不变", [], base)
+    spec = edit.to_trip_spec("受控修改", base)
+    assert spec.search_radius_km == 3 and spec.max_distance_km == 5
+    edit = await agent.run("取消单段路程上限，其他不变", [], spec)
+    changed = edit.to_trip_spec("受控取消", spec)
+    assert changed.search_radius_km == 3 and changed.max_distance_km is None
+    assert changed.time_window_start == base.time_window_start
+    assert model.structured.await_count == 2

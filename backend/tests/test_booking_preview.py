@@ -9,7 +9,8 @@ URL = "https://www.szuo.com/en/niccolo-chongqing-tealounge/reserve/landing?pax=2
 
 
 def controlled_state():
-    return {"execution_goal": {"kind": "page_read", "request": f"只读取并核对网页参数：{URL}；不查询空位或提交预约。"},
+    return {"selected_poi": {"name": "The Tea Lounge"},
+            "execution_goal": {"kind": "page_read", "request": f"只读取并核对网页参数：{URL}；不查询空位或提交预约。"},
             "browser_observation": {"command_id": "controlled-read", "ok": True, "outcome": "observed",
                                     "snapshot_id": "controlled-snapshot", "page_version": "controlled-page", "tab_id": "controlled-tab",
                                     "url": URL, "observed_at": datetime.now(timezone.utc).isoformat(),
@@ -32,15 +33,37 @@ def test_controlled_preview_satisfied_is_never_availability_or_business_completi
 
 
 def test_unrelated_or_ambiguous_requests_do_not_activate_preview():
-    for url in [URL + "&pax=2", URL + "&utm_source=unknown", URL + "#other", URL.replace("pax=2", "pax=0"),
+    for url in [URL + "&pax=2", URL + "#other", URL.replace("pax=2", "pax=0"),
                 URL.replace("2026-09-11", "2026-02-30"), URL.replace("15%3A00", "25%3A00"),
-                URL.replace("niccolo-chongqing", "niccolo-suzhou"), URL + " " + URL.replace("pax=2", "pax=3")]:
+                URL + " " + URL.replace("pax=2", "pax=3")]:
         state = controlled_state()
         state["execution_goal"]["request"] = url
-        assert booking_preview_outcome(state) is None
+        assert booking_preview_outcome(state) is None, url
     state = controlled_state()
     state["execution_goal"]["kind"] = "itinerary_preparation"
     assert booking_preview_outcome(state) is None
+
+
+def test_another_site_is_compared_the_same_way_rather_than_ignored():
+    """The check is a parameter comparison, so a second venue needs no new adapter."""
+    other = URL.replace("www.szuo.com", "book.example.invalid").replace("niccolo-chongqing-tealounge", "another-venue")
+    state = controlled_state()
+    state["selected_poi"] = {"name": "Another Venue"}
+    state["execution_goal"]["request"] = f"只读取并核对网页参数：{other}；不查询空位或提交预约。"
+    state["browser_observation"]["url"] = other
+    preview = state["browser_observation"]["fields"]["booking_preview"]
+    preview.update(adapter="another_venue_v1", merchant_label="Another Venue")
+    result = booking_preview_outcome(state)
+    assert result and result.status == "satisfied", result
+    assert result.data["requested"] == {"party_size": 2, "date": "2026-09-11", "time": "15:00"}
+    assert result.data["business_completed"] is False and result.data["availability_checked"] is False
+
+
+def test_a_different_requested_url_than_the_one_observed_needs_evidence():
+    state = controlled_state()
+    state["execution_goal"]["request"] = URL.replace("niccolo-chongqing", "niccolo-suzhou")
+    result = booking_preview_outcome(state)
+    assert result and result.status == "needs_evidence" and "request_url" in result.data["missing_evidence"]
 
 
 def test_controlled_missing_or_stale_snapshot_needs_evidence():
@@ -54,13 +77,23 @@ def test_controlled_missing_or_stale_snapshot_needs_evidence():
 
 
 def test_controlled_capture_requires_protection_and_all_visible_labels():
-    for key, value in [("protected", False), ("protected", "true"), ("adapter", "other"), ("merchant_label", "Another venue"),
-                       ("party_label", "3 Guests"), ("date_label", "Thu Sep 11"), ("date_label", "Fri Sep 12"),
-                       ("time_label", "3:00 am"), ("time_label", "")]:
+    for key, value in [("protected", False), ("protected", "true"), ("adapter", ""),
+                       ("merchant_label", "Another venue"), ("party_label", "3 Guests"),
+                       ("date_label", "Fri Sep 12"), ("time_label", "3:00 am"), ("time_label", "")]:
         state = controlled_state()
         state["browser_observation"]["fields"]["booking_preview"][key] = value
         result = booking_preview_outcome(state)
-        assert result and result.status == "needs_evidence"
+        assert result and result.status == "needs_evidence", (key, value)
+
+
+def test_an_uncomparable_merchant_label_is_reported_not_treated_as_a_mismatch():
+    """Page identity is anchored by the URL, so a label with nothing to compare against
+    is reported as unverified rather than withholding the parameter check."""
+    state = controlled_state()
+    state.pop("selected_poi")
+    result = booking_preview_outcome(state)
+    assert result and result.status == "satisfied"
+    assert result.data["merchant_verified"] is False
 
 
 def test_controlled_old_parameters_or_wrong_merchant_cannot_satisfy_current_request():
@@ -93,9 +126,16 @@ def test_controlled_pending_action_and_manual_gate_cannot_be_hidden_by_preview()
 def test_controlled_notice_restart_resumes_original_request_without_cart_or_new_budget(tmp_path):
     from fastapi.testclient import TestClient
     from plango.app import create_app
+    from plango.task import BrowserDecision, TaskDecision
     from test_browser_harness import TOKEN, settings, wait_for
-
     config = settings(tmp_path)
+    def application():
+        app = create_app(config, token=TOKEN)
+        async def actor(schema, **kwargs):
+            assert schema is TaskDecision
+            return TaskDecision(operation="read", browser=BrowserDecision(operation="navigate", url=URL))
+        app.state.runtime.model.structured = actor
+        return app
     headers = {"Authorization": "Bearer " + TOKEN}
     notice_url = URL.replace("/landing?", "/message?")
 
@@ -110,7 +150,7 @@ def test_controlled_notice_restart_resumes_original_request_without_cart_or_new_
                           observed_at=datetime.now(timezone.utc).isoformat(), fields={"dom": {"forms": []}})
         assert client.post(f"/api/v1/browser/commands/{command['command_id']}/result", json=result).status_code == 200
 
-    with TestClient(create_app(config, token=TOKEN), headers=headers) as client:
+    with TestClient(application(), headers=headers) as client:
         rid = client.post("/api/v1/runs", json={"input_text": f"只读取并核对网页预填参数：{URL}；不查询空位或提交预约。",
                                                "browser_session_id": "fixture-desktop"}).json()["run_id"]
         wait_for(client, rid, lambda value: bool(value["state"].get("browser_wait")))
@@ -124,7 +164,7 @@ def test_controlled_notice_restart_resumes_original_request_without_cart_or_new_
         paused = wait_for(client, rid, lambda value: (value["state"].get("browser_wait") or {}).get("error_kind") == "booking_notice")
         original_budget = paused["state"]["turn_budget"]
 
-    with TestClient(create_app(config, token=TOKEN), headers=headers) as client:
+    with TestClient(application(), headers=headers) as client:
         assert not client.get("/api/v1/browser/commands?browser_session_id=fixture-desktop").json()["commands"]
         result = client.post(f"/api/v1/runs/{rid}/interrupts/{paused['interrupt_id']}/resume", json={"decision": "resume"})
         assert result.status_code == 202, result.text

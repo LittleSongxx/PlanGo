@@ -1,4 +1,4 @@
-"""Synthetic regression checks for temporal provenance and real subgraph boundaries."""
+"""Structured sparse edits, temporal provenance, and real subgraph boundaries."""
 
 import asyncio
 from datetime import date, datetime, timedelta, timezone
@@ -8,18 +8,14 @@ from plango_harness.agent.contracts import Evidence, Location, PartyMember, Plac
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.graph import GraphDeps, build_graph
 from plango_harness.agent.model_adapter import ModelAdapter
-from plango_harness.agent.requirements import requirement_delta, temporal_patch
+from plango_harness.agent.requirements import requirement_delta
 from plango_harness.agent.state import initial_state, planning_reset
-from plango_harness.agent.subagents.requirement import RequirementAgent, _bound_candidates
 from plango_harness.domain.planning import visit_payload
 from plango_harness.settings import Settings
 
 
 def test_sparse_edits_keep_date_origin_and_locked_provenance_until_diff():
-    anchor = "2026-09-09T16:30:00+00:00"  # Already September 10 in Chongqing.
-    temporal = temporal_patch("明天，时间待定", None, anchor)
-    assert temporal["visit_date"] == date(2026, 9, 11)
-    spec = RequirementOutput(**temporal).to_trip_spec("明天去吃饭")
+    spec = RequirementOutput(visit_date=date(2026, 9, 11), time_window_start_unknown=True).to_trip_spec("明天去吃饭")
     edited = RequirementOutput(budget=500).to_trip_spec("预算改为500元", spec)
     patch, refresh = requirement_delta(spec, edited)
     assert edited.visit_date == spec.visit_date and edited.time_window_start is None
@@ -39,82 +35,62 @@ def test_sparse_edits_keep_date_origin_and_locked_provenance_until_diff():
     assert visit_payload(scoped, edited, today_source) == scoped
 
 
-def test_walking_is_a_route_requirement_but_pedestrian_street_is_only_an_address():
-    street = "我们2个人，今天下午14点从重庆市江北区观音桥步行街出发，玩3小时，总预算300元，只安排附近吃饭，不需要预约或取号。"
-    fallback = RequirementAgent._fallback(street, [])
-    assert fallback.travel_mode is None and fallback.budget == 300 and fallback.duration_minutes == 180
-    assert not _bound_candidates("观音桥步行街8号大融城LG层055号")
-    original = fallback.to_trip_spec(street)
-    walk = RequirementAgent._fallback("改成步行2公里内", [], original)
-    assert walk.travel_mode == "walking" and walk.max_distance_km == 2 and walk.search_location_name is None
-    edited = walk.to_trip_spec("改成步行2公里内", original)
-    _, changed = requirement_delta(original, edited)
+def test_route_edit_preserves_search_radius_and_origin():
+    origin = Location(name="观音桥步行街8号大融城LG层055号", latitude=29.57, longitude=106.57)
+    previous = TripSpec(goal="已确认草案", location=origin, search_radius_km=.5)
+    output = RequirementOutput(travel_mode="walking", route_distance_km=2)
+    edited = output.to_trip_spec("改用步行，路程不超过2公里", previous)
+    assert edited.location == previous.location and edited.search_radius_km == .5
+    assert edited.travel_mode == "walking" and edited.max_distance_km == 2
+    _, changed = requirement_delta(previous, edited)
     assert changed["routes"] and changed["supply"]
     assert TripSpec(goal="旧checkpoint").travel_mode == "driving"
 
 
-def test_group_counts_no_budget_and_selected_venue_references_are_sparse():
-    for text, expected in (("3位成人一起吃晚餐", 3), ("我和3个朋友一起吃晚餐", 4)):
-        spec = RequirementAgent._fallback(text, []).to_trip_spec(text)
-        assert spec.party_size == sum(spec.party_counts.values()) == expected
-    previous = TripSpec(goal="3位成人一起吃晚餐", party_size=4, party_counts={"用户": 1, "成人": 3}, party=[PartyMember(role="用户"), PartyMember(role="成人")], budget=400, per_person_budget=100)
-    text = "只去当前网页这家餐厅，没有第二个地点。总共3人包含我，不设预算。"
-    output = RequirementAgent._fallback(text, [], previous)
-    spec = output.to_trip_spec(text, previous)
+def test_partial_role_changes_preserve_other_roles_and_member_details():
+    previous = TripSpec(goal="原有同行人", party_size=4, party_counts={"用户": 1, "成人": 2, "孩子": 1},
+                        party=[PartyMember(role="用户"), PartyMember(role="成人"), PartyMember(role="孩子", age=8)],
+                        budget=400, per_person_budget=100)
+    output = RequirementOutput(party_size=3, party_counts={"成人": 1}, clear_budget=True,
+                               clear_per_person_budget=True, search_location_reference="selected_place")
+    spec = output.to_trip_spec("本轮明确提案", previous)
     assert spec.party_size == sum(spec.party_counts.values()) == 3
+    assert spec.party_counts == {"用户": 1, "成人": 1, "孩子": 1}
+    assert next(member for member in spec.party if member.role == "孩子").age == 8
     assert spec.budget is None and spec.per_person_budget is None
     assert output.search_location_name is None and not output.clarification_needed
-    assert RequirementAgent._fallback("改到解放碑", [], spec).search_location_name == "解放碑"
+    exited = RequirementOutput(party_size=2, party_counts={"孩子": 0}).to_trip_spec("孩子退出", spec)
+    assert exited.party_counts["孩子"] == 0 and all(member.role != "孩子" for member in exited.party)
 
 
-def test_explicit_total_headcount_survives_model_stabilization_and_sparse_merge():
+def test_explicit_total_headcount_does_not_change_independent_fields():
     previous = TripSpec(goal="原用餐草案", party_size=2, budget=250, per_person_budget=125,
                         visit_date=date(2026, 9, 11), must_visit_place_ids=["chosen"])
-    for text in ("把人数改成3人，同时取消总预算和人均预算限制。日期、时间、已选门店、优惠和其他条件都保持。",
-                 "人数改为3人，其他不变", "请将人数调整到三人，其他不变", "人数：3"):
-        fallback = RequirementAgent._fallback(text, [], previous)
-        for model_size in (None, 3, 9):
-            output = RequirementAgent._stabilize_explicit_fields(
-                RequirementOutput(party_size=model_size), fallback, text=text, previous_spec=previous)
-            edited = output.to_trip_spec(text, previous)
-            assert edited.party_size == 3 and not output.clarification_needed
-            assert edited.visit_date == previous.visit_date and edited.location == previous.location
-            assert edited.must_visit_place_ids == previous.must_visit_place_ids
-            expected = None if "取消" in text else previous.budget
-            assert edited.budget == expected
-            assert edited.per_person_budget == (None if "取消" in text else previous.per_person_budget)
-    for text in ("人数改为0人", "人数改为13人", "人数改为1.5人", "人数待定"):
-        output = RequirementAgent._fallback(text, [], previous)
-        assert output.party_size is None and output.party_size_unknown and output.clarification_needed
-    for text in ("不要把人数改成3人", "不需要把人数改成3人", "不把人数改成3人", "不要把 人数改成3人"):
-        assert RequirementAgent._fallback(text, [], previous).party_size is None
-    group = previous.model_copy(update={"goal": "我和1个孩子一起出行", "party_counts": {"用户": 1, "孩子": 1},
-                                        "party": [PartyMember(role="用户"), PartyMember(role="孩子")]})
-    for text in ("孩子人数改为3人", "孩子 人数改为3人"):
-        role = RequirementAgent._fallback(text, [], group)
-        assert role.party_counts["孩子"] == 3 and role.party_size == 4 and not role.clarification_needed
+    for output in (RequirementOutput(party_size=3),
+                   RequirementOutput(party_size=3, clear_budget=True, clear_per_person_budget=True)):
+        edited = output.to_trip_spec("本轮明确提案", previous)
+        assert edited.party_size == 3 and not output.clarification_needed
+        assert edited.visit_date == previous.visit_date and edited.location == previous.location
+        assert edited.must_visit_place_ids == previous.must_visit_place_ids
+        assert edited.budget == (None if output.clear_budget else previous.budget)
+        assert edited.per_person_budget == (None if output.clear_per_person_budget else previous.per_person_budget)
+    unknown = RequirementOutput(party_size_unknown=True).to_trip_spec("人数改为待定", previous)
+    assert unknown.party_size is None and unknown.budget == previous.budget
 
 
-def test_date_edits_do_not_become_geographic_searches():
+def test_date_edit_and_explicit_order_clear_are_independent():
     previous = TripSpec(goal="原用餐草案", party_size=2, budget=250, visit_date=date(2026, 9, 11),
-                        search_radius_km=0.5, max_distance_km=2,
+                        required_activities=["展览", "餐厅"], activity_order=["展览", "餐厅"],
+                        search_radius_km=.5, max_distance_km=2,
                         location=Location(name="观音桥步行街", latitude=29.57, longitude=106.57))
-    for text in ("再把日期改成2026年9月12日，取消单段路程上限；搜索半径仍是0.5公里。",
-                 "改成2026年9月12日", "日期改为下周日"):
-        fallback = RequirementAgent._fallback(text, [], previous, reference_at="2026-09-09T12:00:00+08:00")
-        output = RequirementAgent._stabilize_explicit_fields(
-            RequirementOutput(location_name="模型猜测的地区", search_location_name="2026年9月12日"),
-            fallback, text=text, previous_spec=previous)
-        assert output.location_name is None and output.search_location_name is None
-        assert output.to_trip_spec(text, previous).location == previous.location
-    text = "再把日期改成2026年9月12日，取消单段路程上限；搜索半径仍是0.5公里。"
-    fallback = RequirementAgent._fallback(text, [], previous)
-    edited = RequirementAgent._stabilize_explicit_fields(RequirementOutput(), fallback, text=text, previous_spec=previous).to_trip_spec(text, previous)
-    assert edited.visit_date == date(2026, 9, 12) and edited.max_distance_km is None and edited.search_radius_km == 0.5
-    assert RequirementAgent._fallback("起点改为重庆观音桥步行街，日期保持", [], previous).location_name == "重庆观音桥步行街"
-    for text in ("日期不变但起点改为观音桥", "日期保持且起点改为观音桥"):
-        assert RequirementAgent._fallback(text, [], previous).location_name == "观音桥"
-    assert RequirementAgent._fallback("改到九月艺术中心", [], previous).search_location_name == "九月艺术中心"
+    dated = RequirementOutput(visit_date=date(2026, 9, 12), clear_route_distance=True).to_trip_spec("明确日期和距离修改", previous)
+    assert dated.visit_date == date(2026, 9, 12) and dated.max_distance_km is None
+    assert dated.location == previous.location and dated.search_radius_km == .5
+    assert dated.activity_order == previous.activity_order
+    unordered = RequirementOutput(activity_order=[]).to_trip_spec("取消活动顺序", dated)
+    assert unordered.activity_order == [] and unordered.required_activities == dated.required_activities
+    restored = TripSpec.model_validate_json(unordered.model_dump_json())
+    assert RequirementOutput().to_trip_spec("保留当前安排", restored) == restored
 
 
 def test_discovery_reuses_candidates_and_advocate_receives_original_evidence():

@@ -5,7 +5,14 @@ from enum import StrEnum
 from typing import Annotated, Any, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 
 class ContractModel(BaseModel):
@@ -52,13 +59,43 @@ PartyCounts = dict[str, Annotated[int, Field(ge=0, le=12, strict=True)]]
 
 
 class Location(ContractModel):
-    name: str = "望京"
-    latitude: float = Field(39.997, ge=-90, le=90)
-    longitude: float = Field(116.482, ge=-180, le=180)
+    # No default place: an origin is either resolved from the user or stays unresolved.
+    name: str = ""
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
     city_code: str | None = None
 
 
-Activity = Literal["展览", "餐厅", "咖啡", "公园", "citywalk", "电影", "亲子", "动物园"]
+# An open category label. A closed enum would cap the tasks the product can express at
+# all; bounds stay on length so an activity name cannot smuggle a payload.
+Activity = Annotated[str, StringConstraints(min_length=1, max_length=40, strip_whitespace=True)]
+
+# An observation tags what a place satisfies. The same tag under this prefix states an
+# explicit violation, so "unobserved" and "observed to fail" stay distinguishable.
+NEGATED_TAG_PREFIX = "非"
+
+# Tag names for the two typed venue booleans on TripSpec.
+INDOOR_TAG = "室内"
+OUTDOOR_TAG = "户外"
+
+# One dwell length for every category, adjusted afterwards by observed hours and travel.
+DEFAULT_DWELL_MINUTES = 90
+
+# Above this an observed wait is worth reporting as a soft warning.
+LONG_QUEUE_MINUTES = 45
+
+
+def may_be_reservable(stop: Any) -> bool:
+    """Whether a stop might take a reservation, from what was observed about it.
+
+    A venue category is an open label, so asking whether it equals one particular word
+    both misses every other kind of bookable venue and hides that the answer really
+    comes from the observation.
+    """
+    tags = set(getattr(stop, "tags", ()) or ())
+    if "not_reservable" in tags or "reservation_unknown" in tags:
+        return False
+    return "reservable" in tags or str(getattr(stop, "supply_source", "unknown")) not in {"unknown", ""}
 
 
 class OfferReference(ContractModel):
@@ -263,6 +300,20 @@ class PlanDraft(ContractModel):
     rationale: str = ""
 
 
+BLOCKING_UNKNOWN_PREFIXES = ("evidence:", "evidence_missing:", "evidence_stale:", "evidence_irrelevant:", "places")
+
+
+def blocks_delivery(check: ConstraintCheck) -> bool:
+    """An unknown blocks only when the plan cites evidence we cannot stand behind.
+
+    Facts a provider or page does not publish (queue length, unlisted price, transport
+    fare, an unmodelled preference) are real states of the world. They are reported with
+    the plan and constrain the conclusions that depend on them; they do not make an
+    otherwise consistent itinerary undeliverable.
+    """
+    return check.name.startswith(BLOCKING_UNKNOWN_PREFIXES)
+
+
 class VerifierResult(ContractModel):
     plan_id: str
     hard_constraints_pass: bool = True
@@ -271,6 +322,7 @@ class VerifierResult(ContractModel):
     hard_violations: list[ConstraintCheck] = Field(default_factory=list)
     soft_warnings: list[ConstraintCheck] = Field(default_factory=list)
     unknown_evidence: list[ConstraintCheck] = Field(default_factory=list)
+    blocking_evidence: list[ConstraintCheck] = Field(default_factory=list)
     checked_at: datetime | None = None
 
     @model_validator(mode="before")
@@ -286,11 +338,22 @@ class VerifierResult(ContractModel):
         return value
 
     @model_validator(mode="after")
-    def derive_executable(self) -> "VerifierResult":
-        expected = self.hard_constraints_pass and self.evidence_complete
+    def derive_delivery_gate(self) -> "VerifierResult":
+        # Derived from unknown_evidence so a directly built result and one restored from
+        # an older checkpoint classify the same way.
+        blocking = [check for check in self.unknown_evidence if blocks_delivery(check)]
+        if [check.name for check in self.blocking_evidence] != [check.name for check in blocking]:
+            self.blocking_evidence = blocking
+        expected = self.hard_constraints_pass and not self.blocking_evidence
         if self.executable is None or self.executable != expected:
             self.executable = expected
         return self
+
+    @property
+    def pending_evidence(self) -> list[ConstraintCheck]:
+        """Unknown facts that are recorded with the plan instead of blocking it."""
+        blocking = {check.name for check in self.blocking_evidence}
+        return [check for check in self.unknown_evidence if check.name not in blocking]
 
     @property
     def hard_pass(self) -> bool:

@@ -1,14 +1,34 @@
 """Offline context isolation tests; only a replaced geocoder supplies fixture coordinates."""
 
+import json
 import tempfile
 import time
 import unittest
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from plango.app import create_app
+from plango.app import create_app as product_app
 from plango.settings import DesktopSettings
+from plango.task import TaskDecision
 from plango_harness.agent.contracts import Location
+from plango_harness.agent.decisions import RequirementOutput
+
+
+def create_app(*args, **kwargs):
+    app = product_app(*args, **kwargs)
+    outputs = {
+        '我们2人，预算400元，安排半天看展再吃饭': RequirementOutput(party_size=2, budget=400, required_activities=['展览', '餐厅']),
+        '我们2人，安排半天看展再吃饭': RequirementOutput(party_size=2, required_activities=['展览', '餐厅']),
+        '我们2人，按当前网页内容，在北京先看展再吃饭，预算400元，行程4小时': RequirementOutput(party_size=2, budget=400, planning_source='browser', location_name='北京', duration_minutes=240, required_activities=['展览', '餐厅']),
+        '预算改为500元': RequirementOutput(budget=500),
+    }
+    async def actor(schema, *, fallback, **kwargs):
+        if schema is not TaskDecision:
+            return fallback
+        text = json.loads(kwargs['user'])['current_request']
+        return TaskDecision(operation='read') if text == '读取菜单' else TaskDecision(operation='plan', requirements=outputs[text])
+    app.state.runtime.model.structured = actor
+    return app
 
 
 def settings(directory):

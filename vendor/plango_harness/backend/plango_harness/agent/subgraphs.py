@@ -59,6 +59,7 @@ class RequirementState(TypedDict, total=False):
 
 
 class RequirementInput(TypedDict, total=False):
+    trip_spec: TripSpec | None
     requirement_proposal: dict[str, Any] | None
     structured_requirement_edit: dict[str, Any] | None
     turn_budget: dict[str, Any]
@@ -85,6 +86,7 @@ class RequirementInput(TypedDict, total=False):
 
 
 class RequirementOutput(TypedDict, total=False):
+    browser_task_context: dict[str, Any]
     input_text: str
     messages: list[AnyMessage]
     consumed_command_id: str | None

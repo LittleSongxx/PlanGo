@@ -56,11 +56,27 @@ def test_real_preview_shape_preserves_sale_face_value_and_unknown_rules():
     assert all("完整使用规则尚未取得" in entry["missing_rules"] for entry in changed)
 
 
-@pytest.mark.parametrize("omit", ["完整使用规则：", "有效期2026-09-01至2026-09-30", "周一至周日可用", "法定节假日通用", "不可与其他优惠同用", "无额外费用", "无需预约"])
-def test_each_missing_rule_prevents_final_eligibility(omit):
+@pytest.mark.parametrize("omit", ["有效期2026-09-01至2026-09-30", "周一至周日可用", "法定节假日通用", "不可与其他优惠同用", "无额外费用", "无需预约"])
+def test_an_unpublished_rule_category_is_reported_without_withholding_the_verdict(omit):
+    """A merchant who never published a category has not made the offer unusable.
+
+    The gap is named, and the full cost stays unclaimed, but the applicability answer
+    the user asked for is still delivered.
+    """
     quote = "精选双人餐\n售价98元\n" + RULES.replace(omit, "")
     entry = compare_offers(page(quote=quote), CONSTRAINTS, now=NOW)["entries"][0]
-    assert entry["status"] == "unknown" and entry["missing_rules"]
+    assert entry["status"] == "eligible"
+    assert entry["missing_rules"], "The unpublished category must still be reported"
+    assert entry["known_cost"] == 98
+    # Only the fee clause bears on the full cost; the others do not suppress it.
+    assert entry["total_cost"] == (None if omit == "无额外费用" else 98)
+
+
+def test_absent_rules_section_withholds_any_applicability_claim():
+    quote = "精选双人餐\n售价98元\n" + RULES.replace("完整使用规则：", "")
+    entry = compare_offers(page(quote=quote), CONSTRAINTS, now=NOW)["entries"][0]
+    assert entry["status"] == "unknown", "With no terms located there is no basis to claim it applies"
+    assert "完整使用规则尚未取得" in entry["missing_rules"]
 
 
 @pytest.mark.parametrize("rule", ["另收服务费10元", "会员专享", "周三不可用", "节假日通用除春节外", "无额外费用但需付茶位费", "每桌限用一份，超过人数另外计费"])
@@ -129,8 +145,11 @@ def test_sale_face_value_and_original_price_are_distinct(quote, price, original,
 
 def test_single_item_and_voucher_never_become_complete_meal_cost():
     for name in ["冷面鸡单品优惠", "50元代金券"]:
-        entry = compare_offers(page(name=name, quote=name + "\n售价47元\n" + RULES, price=47), CONSTRAINTS, now=NOW)["entries"][0]
-        assert entry["status"] == "unknown" and entry["known_cost"] == 47 and entry["total_cost"] is None
+        observed = page(name=name, quote=name + "\n售价47元\n" + RULES, price=47)
+        observed["data"]["offers"][0]["people"] = None
+        entry = compare_offers(observed, CONSTRAINTS, now=NOW)["entries"][0]
+        assert entry["known_cost"] == 47 and entry["total_cost"] is None
+        assert any("不能替代完整消费清单" in item for item in entry["missing_rules"])
 
 
 def test_per_person_quote_is_not_mislabelled_as_package_total():

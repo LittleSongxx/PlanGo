@@ -28,12 +28,15 @@ def test_user_edits_do_not_reuse_historical_cycles_or_role_requests():
 
     spec = TripSpec.model_validate(state["trip_spec"])
     assert spec.budget is None and spec.per_person_budget is None
-    assert "预算" in spec.goal and _advocate_roles(spec) == ["体验"]
-    assert _advocate_roles(spec.model_copy(update={"budget": 250})) == ["预算", "体验"]
-    assert _advocate_roles(spec.model_copy(update={"per_person_budget": 100})) == ["预算", "体验"]
-    assert _advocate_roles(spec.model_copy(update={"soft_preferences": ["便宜优先"]})) == ["预算", "体验"]
-    assert _advocate_roles(spec.model_copy(update={"party_counts": {"成人": 2, "儿童": 1}})) == ["家庭", "健康", "体验"]
-    assert _advocate_roles(spec.model_copy(update={"party_counts": {"成人": 2, "儿童": 0}})) == ["体验"]
+    # The goal says 不设预算; a phrase scan used to read that as a budget concern and
+    # start an advocate for it. Roles now come from who is actually attending.
+    assert "预算" in spec.goal and _advocate_roles(spec) == []
+    assert _advocate_roles(spec.model_copy(update={"budget": 250})) == []
+    assert _advocate_roles(spec.model_copy(update={"soft_preferences": ["便宜优先"]})) == []
+    assert _advocate_roles(spec.model_copy(update={"party_counts": {"成人": 2, "儿童": 1}})) == ["成人", "儿童"]
+    assert _advocate_roles(spec.model_copy(update={"party_counts": {"成人": 2, "儿童": 0}})) == []
+    # An unfamiliar role is represented like any other, with no vocabulary to match.
+    assert _advocate_roles(spec.model_copy(update={"party_counts": {"同事": 2, "宠物": 1}})) == ["同事", "宠物"]
 
     inspect = runpy.run_path(str(root / "scripts/inspect_trace.py"))
     summary = inspect["summarize"](snapshot)

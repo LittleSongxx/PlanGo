@@ -172,9 +172,8 @@ def business_clock(runtime, case, observed_at=None):
     import plango.offers
     import plango.outcomes
     import plango_harness.agent.contracts
-    import plango_harness.agent.requirements
     with ExitStack() as stack:
-        for module in (plango.booking_preview, plango.offers, plango.outcomes, plango_harness.agent.requirements):
+        for module in (plango.booking_preview, plango.offers, plango.outcomes):
             stack.enter_context(patch.object(module, "datetime", ReferenceDateTime))
         stack.enter_context(patch.object(runtime, "_requirement_reference", reference))
         # Evidence.expired imports datetime inside its getter; module patching
@@ -218,7 +217,7 @@ def install_budget(runtime, case_id, control, expected_sha, case_ids, log, *, ma
         try:
             result = await original(awaitable, timeout=timeout)
             parsed = result.get("parsed") if isinstance(result, dict) else None
-            if type(parsed).__name__ == "SourceAnalysis":
+            if type(parsed).__name__ in {"SourceAnalysis", "TaskDecision"}:
                 # Private dev diagnostics only; never supplied to the judge as
                 # source evidence, and never persisted as product facts.
                 row["unverified_analysis"] = parsed.model_dump(mode="json")

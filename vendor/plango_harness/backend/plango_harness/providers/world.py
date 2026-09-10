@@ -269,6 +269,7 @@ class SandboxWorldProvider:
                     "category": place.category,
                     "average_price": place.average_price,
                     "price_known": place.price_known,
+                    "tags": list(place.tags),
                 },
                 observed_at=observed_at,
                 expires_at=expires_at,

@@ -266,16 +266,8 @@ class BrowserWorld:
         task = state.get("browser_task_context") or {}
         spec_raw = state.get("trip_spec") or state.get("previous_spec")
         spec = TripSpec.model_validate(spec_raw) if spec_raw else None
-        # Derive the choice from the persisted task, keeping it in this run's
-        # context rather than a mutable provider-wide switch.
-        texts = [task.get("request") or (spec.goal if spec else ""), *task.get("edits", []), state.get("input_text", "")]
-        source = "amap" if self.settings.amap_webservice_key else "browser"
-        for text in texts:
-            text = str(text)
-            if re.search(r"(?:不(?:要|用|再)|无需|别).{0,4}(?:网页|页面|浏览器)|(?:改用|使用|通过|按|用)高德", text):
-                source = "amap" if self.settings.amap_webservice_key else "browser"
-            elif re.search(r"(?:当前|这个|该|打开的)(?:网页|页面|浏览器)|(?:根据|按照?|参考|用|从).{0,8}(?:网页|页面|菜单)", text):
-                source = "browser"
+        # The task owner selects the provider once; raw language is not a second router.
+        source = task.get("planning_source") or ("amap" if self.settings.amap_webservice_key else "browser")
         context["world_source"] = source
         if spec and getattr(spec, "selected_offer", None):
             context["world_source"] = "amap"

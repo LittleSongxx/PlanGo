@@ -1,6 +1,7 @@
 """Synthetic model usage and real compiled checkpoints verify user-turn budget boundaries."""
 
 import asyncio
+import json
 import time
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -10,8 +11,8 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 from plango.app import create_app
 from plango.graph import BrowserDecision
-from plango.outcomes import TaskIntent
 from plango.settings import DesktopSettings
+from plango.task import TaskDecision
 from plango_harness.agent.contracts import Location, RunPhase
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.model_adapter import ModelAdapter
@@ -53,10 +54,12 @@ def test_new_user_edits_receive_budget_without_resetting_cumulative_usage(tmp_pa
     world.amap._get = AsyncMock(side_effect=AssertionError("No real network in budget fixtures."))
 
     async def model(schema, *, fallback, **kwargs):
-        if schema in {RequirementOutput, TaskIntent}:
+        if schema is TaskDecision:
             assert adapter.token_limit - adapter.total_tokens >= 1500
             adapter.total_tokens += 1500  # Explicit synthetic provider usage.
             adapter.call_count += 1
+            return TaskDecision(operation="plan", requirements=RequirementOutput(location_name=["北京", "上海", "深圳"][json.loads(kwargs["user"])["turn_id"] - 1],
+                clarification_needed=True, clarification_fields=["visit_date"], clarification_question="请确认日期"))
         return fallback
 
     adapter.structured = model

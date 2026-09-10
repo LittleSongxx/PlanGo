@@ -2,7 +2,8 @@
 
 from fastapi.testclient import TestClient
 from plango.app import create_app
-from plango.outcomes import TaskIntent, read_outcome
+from plango.outcomes import read_outcome
+from plango.task import BrowserDecision, TaskDecision
 from test_browser_harness import TOKEN, fixture, settings, wait_for
 
 
@@ -13,15 +14,15 @@ def test_qr_login_pauses_before_page_models_and_resumes_original_run_after_resta
     calls = []
     async def classify_only(schema, **kwargs):
         calls.append(schema)
-        assert schema is TaskIntent, "A login page must not reach extraction, BrowserDecision or Vision"
-        return TaskIntent(kind="extract")
+        assert schema is TaskDecision, "A login page must not reach extraction or Vision"
+        return TaskDecision(operation="read", browser=BrowserDecision(operation="extract"))
 
     app.state.runtime.model.structured = classify_only
     headers = {"Authorization": "Bearer " + TOKEN}
     with TestClient(app, headers=headers) as client:
         rid = client.post("/api/v1/runs", json={"input_text": "读取当前网页菜单", "browser_session_id": "fixture-desktop"}).json()["run_id"]
         wait_for(client, rid, lambda v: bool(v["state"].get("browser_wait")))
-        assert calls == [TaskIntent], "Only the user's text is classified before page observation"
+        assert calls == [TaskDecision], "Only the user's text is classified before page observation"
         old = client.get("/api/v1/browser/commands?browser_session_id=fixture-desktop").json()["commands"][0]
         login = {**fixture(old), "url": "https://account.dianping.com/pclogin", "title": "大众点评网", "text": "扫描二维码登录",
                  "tables": [], "fields": {"dom": {"manual_gate": "login", "forms": []}}}
@@ -32,13 +33,12 @@ def test_qr_login_pauses_before_page_models_and_resumes_original_run_after_resta
         assert paused["state"].get("browser_steps", 0) == 0
         assert not paused["state"].get("action_results")
         assert client.get("/api/v1/browser/commands?browser_session_id=fixture-desktop").json()["commands"] == []
-        assert calls == [TaskIntent], "Login observation must pause without further model calls"
+        assert calls == [TaskDecision], "Login observation must pause without further model calls"
 
     restored_app = create_app(config, token=TOKEN)
-    original_structured = restored_app.state.runtime.model.structured
     async def resumed_model(schema, **kwargs):
-        assert schema is not TaskIntent, "Resume must preserve the already classified user turn"
-        return await original_structured(schema, **kwargs)
+        assert schema is TaskDecision, "Resume must preserve the already classified user turn"
+        return TaskDecision(operation="answer", answer="已读取当前页面，登录状态与菜单内容待人工确认。")
     restored_app.state.runtime.model.structured = resumed_model
     with TestClient(restored_app, headers=headers) as client:
         resumed = client.post(f"/api/v1/runs/{rid}/resume", json={"decision": "resume", "interrupt_id": paused["interrupt_id"]})

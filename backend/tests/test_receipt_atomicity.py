@@ -6,12 +6,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
-from plango.app import create_app
 from plango.browser import BrowserScreenshot, commands
 from plango.graph import BrowserDecision, VisualReading
 from plango_harness.persistence.database import run_event
 from sqlalchemy import insert, select
-from test_browser_harness import TOKEN, fixture, settings, wait_for
+from task_fixtures import browser_actor
+from test_browser_harness import TOKEN, create_app, fixture, settings, wait_for
 from test_browser_navigation import browser_driver
 from test_browser_vision import binding, capture_metadata
 
@@ -87,9 +87,9 @@ def test_late_first_capture_is_acknowledged_but_graph_does_not_use_or_recapture_
 
     async def model(schema, *, fallback, **kwargs):
         called.append(schema)
-        return BrowserDecision(operation="finish", vision_reason="canvas") if schema is BrowserDecision else fallback
+        return BrowserDecision(operation="snapshot", vision_reason="canvas") if schema is BrowserDecision else fallback
 
-    app.state.runtime.model.structured = model
+    app.state.runtime.model.structured = browser_actor(model)
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         run_id = client.post("/api/v1/runs", json={"input_text": "读取当前网页内容", "browser_session_id": "fixture-desktop"}).json()["run_id"]
         command, respond, _ = browser_driver(client, run_id)

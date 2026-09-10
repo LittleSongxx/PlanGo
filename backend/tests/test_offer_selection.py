@@ -8,8 +8,8 @@ from fastapi.testclient import TestClient
 from plango.browser import commands
 from plango.graph import artifact
 from plango.offers import offer_hash
-from plango.outcomes import update_task_context
 from plango_harness.agent.contracts import Evidence, Location, TripSpec
+from plango_harness.agent.decisions import RequirementOutput
 from sqlalchemy import update
 from test_browser_harness import TOKEN
 from test_dianping_preview import observation as preview_observation
@@ -114,7 +114,16 @@ def test_explicit_new_read_updates_comparison_without_silently_replacing_selecte
             row = await runtime.runs.get(rid)
             state = {**row["state_json"], "turn_id": 2, "input_text": "重新读取当前页面门店与优惠", "previous_spec": TripSpec(goal="原选用仍保留", selected_offer=chosen).model_dump(mode="json")}
             state["browser_task_context"]["offer_source"] = old_source
-            state["browser_task_context"] = update_task_context(state)
+            state["browser_task_context"] = {
+                **state["browser_task_context"],
+                "mode": "browser",
+                "kind": "extract",
+                "operation": "read",
+                "request": state["input_text"],
+                "latest": state["input_text"],
+                "turn_id": 2,
+            }
+            state["browser_task_context"].pop("offer_source", None)
             assert "offer_source" not in state["browser_task_context"]
             async with runtime.database.session() as session:
                 async with session.begin():
@@ -162,6 +171,14 @@ def test_first_offer_origin_answer_merges_all_explicit_slots_and_survives_restar
     runtime.world_service.provider.amap.get_place = AsyncMock(return_value=place)
     origin = Location(name="重庆观音桥地铁站", latitude=place.latitude, longitude=place.longitude)
     runtime.world_service.provider.geocode = AsyncMock(return_value=origin)
+    proposal = RequirementOutput(location_name=origin.name)
+    if expected[2]:
+        proposal = RequirementOutput(location_name=origin.name, party_size=3, budget=250,
+            visit_date=datetime(2026, 9, 10).date(), time_window_start='18:30', duration_minutes=120)
+    elif expected[1] is None:
+        proposal = RequirementOutput(location_name=origin.name, clear_budget=True, clear_per_person_budget=True,
+            visit_date_unknown=True, time_window_start_unknown=True)
+    runtime.model.structured = AsyncMock(side_effect=lambda schema, *, fallback, **kwargs: proposal if schema is RequirementOutput else fallback)
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         rid, source, items, _ = seed_page(client)
         client.portal.call(runtime.bridge.update_location, rid, {"city": "重庆", "source": "config"})
@@ -194,7 +211,10 @@ def test_first_offer_origin_answer_merges_all_explicit_slots_and_survives_restar
         if expected[2]:
             assert restored.get("draft_review") and not (state.get("clarification") or {}).get("fields"), restored
         else:
-            assert state["clarification"]["fields"] == (["visit_date"] if expected[1] is None else []) + ["time_window_start"]
+            # Explicitly undecided date and time stay unset and are reported with the
+            # draft; they are not re-asked every turn.
+            assert not (state.get("clarification") or {}).get("fields")
+            assert state["trip_spec"]["visit_date"] == expected[1] and state["trip_spec"]["time_window_start"] == expected[2]
         row = client.portal.call(runtime.runs.get, rid)
         assert client.post(f"/api/v1/runs/{rid}/messages", json=body).status_code == 202
         assert client.portal.call(runtime.runs.get, rid) == row

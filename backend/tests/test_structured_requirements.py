@@ -3,6 +3,7 @@
 import asyncio
 import sqlite3
 import time
+from datetime import date
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -15,6 +16,7 @@ from langgraph.types import Command
 from plango.app import create_app
 from plango.browser import run_context
 from plango.requirements import RequirementEdit
+from plango.task import TaskDecision
 from plango.world import BrowserWorld
 from plango_harness.agent.contracts import Location, TripSpec
 from plango_harness.agent.decisions import RequirementOutput
@@ -101,6 +103,9 @@ def test_same_run_explicit_edits_and_lock_preserve_history_and_invalidate_approv
     requirement_calls = []
 
     async def choose(schema, *, fallback, **kwargs):
+        if schema is TaskDecision:
+            return TaskDecision(operation="plan", requirements=RequirementOutput(party_size=3, budget=300,
+                visit_date=date(2026, 9, 10), time_window_start="18:30", required_activities=["餐厅"]))
         if schema.__name__ == "RequirementOutput":
             requirement_calls.append(schema.__name__)
         return fallback

@@ -1,126 +1,96 @@
-"""Two independently reproduced completion bypasses; offline TEST fixtures only."""
+"""Controlled actors test the full task loop; they do not measure language ability."""
 
-import tempfile
-import unittest
+import json
 
+import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
-from plango.graph import BrowserDecision, ImageReading
-from plango.outcomes import TaskIntent
-from plango.world import ObservedPlace, PageData
+from plango.graph import ImageReading
+from plango.task import Calculation, Citation, TaskDecision
 from plango_harness.agent.decisions import RequirementOutput
 from test_browser_harness import TOKEN, fixture, settings, wait_for
-from test_task_quality import TERMINAL
 
-PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j/a0AAAAASUVORK5CYII="
-QUOTES = "雾岚餐厅 人均68元\n杉木餐厅 人均82元"
-
-
-async def literal_facts_only(schema, *, fallback, **kwargs):
-    if schema is ImageReading:
-        return ImageReading(text=QUOTES)
-    if schema is PageData:
-        return PageData(
-            places=[
-                ObservedPlace(
-                    name=name, average_price=price, price_unit="人均", quote=f"{name} 人均{price}元"
-                )
-                for name, price in [("雾岚餐厅", 68), ("杉木餐厅", 82)]
-            ]
-        )
-    if schema is BrowserDecision:
-        return BrowserDecision(operation="finish")
-    return fallback
+IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j/a0AAAAASUVORK5CYII='
+TERMINAL = {'SUCCEEDED', 'PARTIAL_FAILED', 'FAILED', 'CANCELLED'}
 
 
-class OutcomeEntrypointQuality(unittest.TestCase):
-    def check_requested_arithmetic(self, goal, *, image=False):
-        with tempfile.TemporaryDirectory() as directory:
-            config = settings(directory).model_copy(
-                update={"openai_api_key": "offline-fixture-replaced"}
-            )
-            app = create_app(config, token=TOKEN)
-            async def accepted_goal_and_literals(schema, **kwargs):
-                if schema is TaskIntent:
-                    fields = {"party_size": 3, **({"budget": 240} if image else {})}
-                    return TaskIntent(kind="reasoning", analysis_goals=["cost", "comparison"], requirements=RequirementOutput(
-                        **fields, field_evidence={field: goal for field in fields}))
-                return await literal_facts_only(schema, **kwargs)
-            app.state.runtime.model.structured = accepted_goal_and_literals
-            app.state.runtime.model._model = object()  # TEST only; every call is replaced above.
-            with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
-                payload = {"input_text": goal, "browser_session_id": "fixture-desktop"}
-                if image:
-                    payload["image"] = PNG
-                response = client.post("/api/v1/runs", json=payload)
-                self.assertEqual(response.status_code, 202, response.text)
-                run_id = response.json()["run_id"]
-                result = wait_for(
-                    client,
-                    run_id,
-                    lambda value: value["phase"] in TERMINAL or value["state"].get("browser_wait"),
-                )
-                if result["state"].get("browser_wait"):
-                    command = client.get(
-                        "/api/v1/browser/commands?browser_session_id=fixture-desktop"
-                    ).json()["commands"][0]
-                    client.post(
-                        "/api/v1/browser/commands/" + command["command_id"] + "/result",
-                        json={**fixture(command), "text": QUOTES, "tables": []},
-                    )
-                    result = wait_for(client, run_id, lambda value: value["phase"] in TERMINAL)
-                self.assertEqual(
-                    result["phase"],
-                    "PARTIAL_FAILED" if image else "SUCCEEDED",
-                    "截图只完成OCR应保持未完成；网页算价必须实际交付结果",
-                )
-                if not image:
-                    for amount in ("204", "246", "42"):
-                        self.assertIn(
-                            amount,
-                            result["state"]["reason"],
-                            "读取/OCR成功不能冒充已回答总价和差额",
-                        )
-                    self.assertTrue(
-                        any(
-                            a["type"] not in {"image", "browser_page"}
-                            for a in result["state"]["browser_artifacts"]
-                        ),
-                        "完成计算必须交付实际答案",
-                    )
-                else:
-                    self.assertTrue(
-                        any(
-                            a["type"] == "image" and a["source"] == "user"
-                            for a in result["state"]["browser_artifacts"]
-                        ),
-                        "未完成比较仍应保留来源为用户的截图观测",
-                    )
+@pytest.mark.parametrize('image', [False, True])
+def test_sources_calculation_answer_and_sparse_followup_share_one_task(tmp_path, image):
+    config = settings(tmp_path).model_copy(update={"openai_api_key": "test-only-no-network"})
+    app = create_app(config, token=TOKEN)
+    contexts = []
+    text = '材料费每人28.5元；配送费用尚未给出。'
+    original = '我们3人，预算100，算已知材料费；配送未知不影响小计。'
 
-    def test_image_planning_request_enters_planning_after_ocr(self):
-        with tempfile.TemporaryDirectory() as directory:
-            app = create_app(settings(directory).model_copy(update={"openai_api_key": "offline-fixture-replaced"}), token=TOKEN)
-            app.state.runtime.model.structured = literal_facts_only
-            with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
-                run_id = client.post("/api/v1/runs", json={
-                    "input_text": "我上传了一张攻略截图，请提取里面的地点、菜品和约束，结合真实信息帮我规划。",
-                    "browser_session_id": "fixture-desktop", "image": PNG,
-                }).json()["run_id"]
-                result = wait_for(client, run_id, lambda v: v["phase"] in TERMINAL or v["state"].get("browser_wait") or v["state"].get("clarification"))
-                self.assertEqual(result["state"]["browser_task_context"]["mode"], "planning")
-                self.assertEqual(result["state"]["browser_task_context"]["kind"], "planning")
-                self.assertNotEqual(result["phase"], "SUCCEEDED", "OCR不能冒充完整规划")
-                self.assertTrue(any(a["type"] == "image" for a in result["state"]["browser_artifacts"]))
+    async def actor(schema, **kwargs):
+        if schema is ImageReading:
+            return ImageReading(text=text)
+        assert schema is TaskDecision, 'No second intent classifier or restaurant extractor'
+        context = json.loads(kwargs['user'])
+        contexts.append(context)
+        if not context['sources']:
+            return TaskDecision(operation='read')
+        source = context['sources'][0]
+        citation = Citation(artifact_id=source['artifact_id'], quote=text)
+        if not context['tool_results']:
+            return TaskDecision(operation='calculate', requirements=RequirementOutput(party_size=3, budget=100),
+                calculations=[Calculation(id='subtotal', operation='multiply', operands=['28.5', '3'], citations=[citation])])
+        assert context['tool_results'][0]['value'] == '85.5'
+        assert context['original_request'] == original
+        return TaskDecision(operation='answer', answer='3人的已知材料费为85.5元；配送费未知，因此不是最终总价。', citations=[citation])
 
-    def test_image_comparison_requires_more_than_ocr(self):
-        self.check_requested_arithmetic(
-            "比较截图里的雾岚餐厅和杉木餐厅，3人，总预算240元，推荐便宜的一家并说明差价",
-            image=True,
-        )
+    app.state.runtime.model.structured = actor
+    with TestClient(app, headers={'Authorization': 'Bearer ' + TOKEN}) as client:
+        response = client.post('/api/v1/runs', json={'input_text': original, 'browser_session_id': 'fixture-desktop', **({'image': IMAGE} if image else {})})
+        rid = response.json()['run_id']
+        wait_for(client, rid, lambda v: v['phase'] in TERMINAL or v['state'].get('browser_wait'))
+        if not image:
+            command = client.get('/api/v1/browser/commands?browser_session_id=fixture-desktop').json()['commands'][0]
+            client.post('/api/v1/browser/commands/' + command['command_id'] + '/result', json={**fixture(command), 'text': text, 'tables': []})
+        done = wait_for(client, rid, lambda v: v['phase'] in TERMINAL)
+        assert done['phase'] == 'SUCCEEDED', done
+        outcome = done['state']['execution_outcome']
+        assert outcome['summary'].startswith('3人的已知材料费为85.5元')
+        assert outcome['data']['scope'] == 'task_answer' and outcome['data']['business_completed'] is False
+        assert outcome['data']['calculations'][0]['ok']
+        assert not done['state'].get('trip_spec'), 'Reading must not create an itinerary with default coordinates'
+        assert len(contexts) == (2 if image else 3)
+        original_artifacts = done['state']['browser_artifacts']
 
-    def test_calculation_request_requires_more_than_page_read(self):
-        self.check_requested_arithmetic("算一下网页上雾岚餐厅和杉木餐厅3人各自的总价，给出差额")
+    # Restart and edit only a decided field. An ambiguous field retains its accepted value.
+    restored = create_app(config, token=TOKEN)
+    async def edit_actor(schema, **kwargs):
+        assert schema is TaskDecision
+        context = json.loads(kwargs['user'])
+        assert context['original_request'] == original and context['trip_spec'] is None
+        assert context['sources'] and context['tool_results'] == []
+        if context['turn_id'] == 3:
+            assert context['question_being_answered'] == '180是总预算还是每人预算？'
+            assert context['current_request'] == '总预算'
+            return TaskDecision(operation='answer', answer='已按4人、总预算180元继续。')
+        return TaskDecision(operation='ask', question='180是总预算还是每人预算？', requirements=RequirementOutput(
+            party_size=4, clarification_needed=True, clarification_fields=['budget', 'per_person_budget'],
+            clarification_question='180是总预算还是每人预算？'))
+    restored.state.runtime.model.structured = edit_actor
+    with TestClient(restored, headers={'Authorization': 'Bearer ' + TOKEN}) as client:
+        response = client.post(f'/api/v1/runs/{rid}/messages', json={'text': '改4人，预算180，其余不变'})
+        assert response.status_code == 202
+        edited = wait_for(client, rid, lambda v: v['state'].get('turn_id', 1) == 2 and (v.get('interrupt_id') or v['phase'] in TERMINAL))
+        assert not edited['state'].get('trip_spec')
+        assert edited['state']['browser_task_context']['original_request'] == original
+        assert edited['state']['browser_artifacts'] == original_artifacts
+        assert edited['state']['clarification']['question'] == '180是总预算还是每人预算？'
+        assert not edited['state'].get('action_results')
+        response = client.post(f'/api/v1/runs/{rid}/messages', json={'text': '总预算'})
+        assert response.status_code == 202
+        resumed = wait_for(client, rid, lambda v: v['state'].get('turn_id') == 3 and v['phase'] in TERMINAL)
+        assert resumed['phase'] == 'SUCCEEDED' and '180' in resumed['state']['reason']
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_missing_model_is_failure_instead_of_a_fake_question_or_success(tmp_path):
+    app = create_app(settings(tmp_path), token=TOKEN)
+    with TestClient(app, headers={'Authorization': 'Bearer ' + TOKEN}) as client:
+        rid = client.post('/api/v1/runs', json={'input_text': '分析已给资料', 'browser_session_id': 'fixture-desktop'}).json()['run_id']
+        done = wait_for(client, rid, lambda v: v['phase'] in TERMINAL)
+        assert done['phase'] == 'FAILED'
+        assert not done['state'].get('clarification') and not done['state'].get('action_results')

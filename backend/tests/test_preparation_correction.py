@@ -2,13 +2,16 @@
 
 import copy
 import json
+from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
-from plango.graph import BrowserDecision, artifact
+from plango.graph import artifact
 from plango.outcomes import browser_context, preparation_correction
 from plango.runtime import preparation_resume_contract
+from plango.task import TaskDecision
+from plango_harness.agent.decisions import RequirementOutput
 from test_browser_harness import TOKEN, settings, wait_for
 from test_browser_navigation import browser_driver
 from test_preparation_outcome import prepared_state
@@ -30,10 +33,14 @@ def test_same_goal_continues_after_partial_and_unique_time_change_requires_exact
     decisions = []
 
     async def model(schema, *, fallback, **kwargs):
-        if schema is BrowserDecision:
-            decisions.append(kwargs["user"])
-            return BrowserDecision(operation="finish")
-        return fallback
+        if schema is not TaskDecision:
+            return fallback
+        context = json.loads(kwargs['user'])
+        if context.get('execution_goal'):
+            decisions.append(kwargs['user'])
+            return TaskDecision(operation='answer', answer='表单尚有多项不同，待核对。', answer_status='partial')
+        return TaskDecision(operation='plan', requirements=RequirementOutput(party_size=3, budget=300,
+            visit_date=datetime.fromisoformat(context['reference_at']).date(), time_window_start='18:30', required_activities=['餐厅']))
 
     app.state.runtime.model.structured = model
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:

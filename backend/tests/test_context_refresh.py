@@ -11,6 +11,7 @@ from plango.browser import run_context
 from plango.settings import DesktopSettings
 from plango.world import BrowserWorld
 from plango_harness.agent.contracts import Evidence, Location, PlaceCandidate, TripSpec
+from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.graph import GraphDeps, build_graph
 from plango_harness.agent.model_adapter import ModelAdapter
 from plango_harness.agent.state import initial_state
@@ -39,6 +40,7 @@ async def test_date_edit_refreshes_identity_and_forecast_before_advocacy_without
 
     settings = DesktopSettings(amap_webservice_key="mock-transport-only")
     model = ModelAdapter(settings)
+    model.structured = AsyncMock(return_value=RequirementOutput(visit_date=tomorrow, time_window_start="14:00"))
     world = BrowserWorld(settings, SimpleNamespace(binding=AsyncMock(return_value={"location_context": {"city": "重庆", "source": "manual", "latitude": 29.56, "longitude": 106.57}})), model)
     await world.amap.client.aclose()
     world.amap.client = httpx.AsyncClient(transport=httpx.MockTransport(respond))
@@ -70,7 +72,8 @@ async def test_date_edit_refreshes_identity_and_forecast_before_advocacy_without
         else:
             assert not candidate.price_known and candidate.evidence_ids == []
         assert (await world.get_place(candidate.place_id)).evidence_ids == candidate.evidence_ids
-        assert (await nodes["supervisor"].ainvoke(state))["next_action"] == "advocate", "A completed refresh attempt must not loop."
+        # Two attendees sharing one role need one perspective, not invented ones.
+        assert (await nodes["supervisor"].ainvoke(state))["next_action"] == "synthesize", "A completed refresh attempt must not loop."
     finally:
         run_context.reset(token)
         await world.close()

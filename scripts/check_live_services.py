@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "backend"), str(ROOT / "vendor/plango_harness/backend")]
 
 from dotenv import dotenv_values  # noqa: E402
+from plango.settings import DesktopSettings  # noqa: E402
 from plango_harness.agent.model_adapter import (  # noqa: E402
     ACCOUNT_ERRORS,
     ModelAdapter,
@@ -33,7 +34,6 @@ from plango_harness.agent.model_adapter import (  # noqa: E402
 )
 from plango_harness.providers.world import AmapWorldProvider  # noqa: E402
 from pydantic import BaseModel, ConfigDict, Field  # noqa: E402
-from plango.settings import DesktopSettings  # noqa: E402
 
 
 class MenuItem(BaseModel):

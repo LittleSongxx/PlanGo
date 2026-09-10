@@ -7,6 +7,7 @@ from plango_harness.agent.contracts import (
     PlanDraft,
     PlanDraftStop,
     VerifierResult,
+    may_be_reservable,
 )
 from plango_harness.domain.planning import (
     PlanEngine,
@@ -81,7 +82,7 @@ async def variants(state, deps):
     ctx = deps.tool_context(state)
     # Actual provider reads consume this budget; leave room for the next approval/execution stage.
     ctx.max_tool_calls = max(
-        0, deps.tool_limit(state) - max(6, 2 + sum(s.category == "餐厅" for s in selected.stops))
+        0, deps.tool_limit(state) - max(6, 2 + sum(may_be_reservable(s) for s in selected.stops))
     )
     evidence = {
         e.evidence_id: e
@@ -169,13 +170,17 @@ async def variants(state, deps):
                 if not evaluated.verifier.hard_constraints_pass:
                     continue
                 # Verified execution outranks a cheap but incomplete proposal; remaining ordering uses actual cost/distance, not a made-up score.
+                # Pending facts no longer withhold a plan, so they rank it instead: a
+                # fully observed alternative still beats a cheaper one with open items.
                 if (
                     not evaluated.verifier.hard_constraints_pass,
                     not evaluated.verifier.executable,
+                    not evaluated.verifier.evidence_complete,
                     objective(evaluated.plan),
                 ) < (
                     not best.verifier.hard_constraints_pass,
                     not best.verifier.executable,
+                    not best.verifier.evidence_complete,
                     objective(best.plan),
                 ):
                     best = evaluated

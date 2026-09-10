@@ -51,10 +51,18 @@ def _face_value(quote):
     return _amount(float(next(iter(values)))) if len(values) == 1 else None
 
 
-def _rules(quote, offer_name, merchant, visit, today, reasons, missing):
-    # ponytail: bounded literal clauses; extend only against verified merchant wording, unfamiliar clauses remain unknown.
+def _rules(quote, offer_name, merchant, visit, today, reasons, missing, unstated):
+    """Compare the clauses the page states; record the rest without judging the offer.
+
+    ``reasons`` collects deterministic failures against the user's date and branch.
+    ``missing`` collects clauses that are printed but not interpreted here, so an
+    eligibility claim is withheld while they stand. ``unstated`` collects categories the
+    merchant never published: those are reported with the answer instead of replacing it.
+    """
     header = re.search(r"(?:完整)?(?:使用规则|购买须知|使用须知)\s*[:：]\s*", quote)
     if not header or re.search(r"未|无|缺|不", quote[max(0, header.start() - 4):header.start()]):
+        # No terms were located at all, which is not the same as a published set that
+        # omits one category. Without them there is no basis for an applicability claim.
         missing.append("完整使用规则尚未取得")
     rule_text = quote[:header.start()] + "\n" + quote[header.end():] if header else quote
     clauses = [part.strip(" ：:") for part in re.split(r"[\n。；;]", rule_text) if part.strip(" ：:")]
@@ -109,7 +117,9 @@ def _rules(quote, offer_name, merchant, visit, today, reasons, missing):
             missing.append("尚未核对的条款：" + clause[:100])
     for key, label in [("validity", "使用有效期"), ("weekdays", "可用星期"), ("holidays", "节假日规则"), ("stacking", "优惠叠加规则"), ("fees", "额外收费规则"), ("reservation", "预约要求")]:
         if key not in known:
-            missing.append(label + "未明确")
+            # Reported so the user knows what the page left out. A merchant who does not
+            # publish a category has not made the offer unusable.
+            unstated.append(label + "未明确")
     if len(set(ranges)) > 1:
         missing.append("使用有效期存在多个不同范围")
     elif ranges:
@@ -195,11 +205,16 @@ def compare_offers(artifact, constraints, *, now=None):
         if re.search(r"[$€£]|\b(?:USD|EUR|GBP)\b", quote):
             price = original = face = None
             missing.append("币种未确认为人民币")
-        kind = "voucher" if re.search(r"代金券|抵用券|现金券", offer_name) else "package" if re.search(r"套餐|[单双一二两三四五六七八九十\d]人餐", offer_name) else "single_item" if re.search(r"单品|单份", offer_name + str(raw.get("unit") or "")) else "unknown"
+        # The observed listing already carries a stated coverage; a name scan would both
+        # miss unfamiliar wording and mislabel offers whose names merely resemble it.
+        stated_people = raw.get("people")
+        stated_people = stated_people if type(stated_people) is int and 1 <= stated_people <= 100 else None
+        kind = "package" if stated_people else "voucher" if face is not None else "unknown"
         per_person = price is not None and _grounded_price(float(price), quote, per_person=True)
         price_basis = "per_person" if per_person else "per_package" if kind == "package" else kind
         counts = [count for count in range(1, 101) if grounded and _grounded_people(count, quote)]
-        people = counts[0] if len(counts) == 1 else None
+        people = counts[0] if len(counts) == 1 else stated_people
+        unstated: list[str] = []
         if party is None:
             missing.append("同行人数尚未确认")
         if visit is None:
@@ -209,17 +224,17 @@ def compare_offers(artifact, constraints, *, now=None):
         if zone is None:
             missing.append("行程时区未能核对")
         if price is None:
-            missing.append("当前售价缺少明确依据")
+            unstated.append("当前售价缺少明确依据")
         if kind == "package":
             if people is None:
-                missing.append("套餐适用人数未明确或存在冲突")
+                unstated.append("套餐适用人数未明确或存在冲突")
             elif party is not None and party > people:
                 reasons.append(f"套餐仅明确覆盖{people}人，不能认定足够{party}人；加人收费及额外点单未核验")
             elif party is not None and party < people:
-                missing.append("实际人数少于套餐标注人数，使用人数下限尚未核验")
+                unstated.append("实际人数少于套餐标注人数，使用人数下限尚未核验")
         else:
-            missing.append("代金券或单项优惠不能替代完整消费清单，尚不明确全部费用")
-        no_fees = _rules(quote, offer_name, name, visit, today, reasons, missing) if grounded else False
+            unstated.append("代金券或单项优惠不能替代完整消费清单，尚不明确全部费用")
+        no_fees = _rules(quote, offer_name, name, visit, today, reasons, missing, unstated) if grounded else False
         coverage = kind == "package" and party is not None and people == party
         known_cost = price * party if per_person and price is not None and party else price
         total = known_cost if coverage and no_fees and not source_missing and grounded and not missing else None
@@ -231,7 +246,10 @@ def compare_offers(artifact, constraints, *, now=None):
         within = False if False in checks else True if checks and all(value is True for value in checks) else None
         if within is False:
             reasons.append("已知费用已超出确认的预算")
+        # Provenance decides whether we may speak at all; a deterministic comparison
+        # decides ineligible; anything the page simply left out is reported, not a verdict.
         status = "unknown" if source_missing or not grounded else "ineligible" if reasons else "unknown" if missing else "eligible"
+        missing = [*missing, *dict.fromkeys(unstated)]
         reference = {"command_id": command_id, "offer_index": index, "offer_hash": offer_hash(raw)}
         entries.append({"offer_index": index, "offer_hash": reference["offer_hash"], "source_ref": reference, "grounded": grounded and not source_missing,
                         "name": offer_name, "kind": kind, "price_basis": price_basis, "status": status, "price": float(price) if price is not None else None,

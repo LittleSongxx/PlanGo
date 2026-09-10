@@ -57,7 +57,7 @@ def browser_memory_proposal(row):
     outcome = state.get("execution_outcome") or {}
     scope = (outcome.get("data") or {}).get("scope")
     summary = outcome.get("summary")
-    if outcome.get("status") != "satisfied" or scope not in {"read_only", "image_text", "ready_to_review"}:
+    if outcome.get("status") != "satisfied" or scope not in {"read_only", "image_text", "ready_to_review", "task_answer"}:
         if outcome:
             return None
         comparison = next((item for item in state.get("browser_artifacts", []) if item.get("type") == "price_comparison" and item.get("complete") is True), None)
@@ -69,6 +69,8 @@ def browser_memory_proposal(row):
         return None
     times = []
     for item in state.get("browser_artifacts", []):
+        if scope == "task_answer" and item.get("artifact_id") not in outcome.get("evidence_ids", []):
+            continue
         if item.get("type") not in {"browser_page", "browser_visual", "image"} or not item.get("observed_at"):
             continue
         try:
@@ -85,7 +87,7 @@ def browser_memory_proposal(row):
     return MemoryProposal(kind="episode", key="browser_outcome", source_event_id=f"system:browser-outcome:{row['run_id']}:{turn}",
                           confidence=1, valid_until=expiry, rationale="由已持久化的只读结果范围投影，不推断偏好或履约",
                           value={"summary": summary, "run_id": row["run_id"], "turn_id": turn, "scope": scope,
-                                 "business_completed": False, "observed_at": observed.isoformat(), "evidence_ids": outcome.get("evidence_ids", []),
+                                 "business_completed": False, "generated_answer": scope == "task_answer", "observed_at": observed.isoformat(), "evidence_ids": outcome.get("evidence_ids", []),
                                  "plan_verification": outcome.get("data", {}).get("plan_verification"),
                                  "pending_checks": outcome.get("data", {}).get("pending_checks", [])})
 

@@ -10,7 +10,6 @@ from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
-from plango.app import create_app
 from plango.graph import BrowserDecision
 from plango.runtime import browser_memory_proposal
 from plango_harness.agent.contracts import (
@@ -27,7 +26,8 @@ from plango_harness.agent.state import initial_state
 from plango_harness.memory.repository import MemoryRepository
 from plango_harness.persistence.database import Database, procedural_rule
 from sqlalchemy import select
-from test_browser_harness import TOKEN, settings, wait_for
+from task_fixtures import browser_actor
+from test_browser_harness import TOKEN, create_app, settings, wait_for
 from test_browser_navigation import browser_driver
 
 
@@ -61,7 +61,7 @@ def test_feedback_preferences_replay_delete_and_restart_use_server_memory(tmp_pa
             return BrowserDecision(operation="finish")
         return fallback
 
-    app.state.runtime.model.structured = model
+    app.state.runtime.model.structured = browser_actor(model)
     auth = {"Authorization": "Bearer " + TOKEN}
     with TestClient(app, headers=auth) as client:
         assert client.post("/api/v1/memory/preferences", json={"user_id": "alice", "text": "香菜", "polarity": "dislike"}).status_code == 200
@@ -69,7 +69,7 @@ def test_feedback_preferences_replay_delete_and_restart_use_server_memory(tmp_pa
         run_id = read_page(client)
         assert any(item.get("value", {}).get("text") == "香菜" for item in seen[-1])
         assert all(item.get("value", {}).get("text") != "甜食" for item in seen[-1])
-        profile = wait_profile(client, "alice", lambda value: any(item.get("scope") == "read_only" for item in value["summaries"]))
+        profile = wait_profile(client, "alice", lambda value: any(item.get("scope") == "task_answer" for item in value["summaries"]))
         assert len(profile["preferences"]) == 1
         assert profile["preferences"][0]["explicit"] is True and profile["preferences"][0]["source"].startswith("user:")
         original_source = profile["preferences"][0]["source"]

@@ -1,6 +1,8 @@
 """Synthetic protocol fixtures verify draft delivery and bounded preparation, never merchant success."""
 
 import copy
+import json
+from datetime import date
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -9,7 +11,9 @@ from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.graph import BrowserDecision
 from plango.outcomes import draft_review
+from plango.task import TaskDecision
 from plango_harness.agent.contracts import ConstraintCheck, Evidence, VerifierResult
+from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.graph import GraphDeps
 from plango_harness.agent.model_adapter import ModelAdapter
 from test_browser_harness import TOKEN, settings, wait_for
@@ -22,9 +26,15 @@ def test_unknown_supply_has_explicit_draft_decision_and_preparation_scope(tmp_pa
     app = create_app(settings(tmp_path), token=TOKEN)
 
     async def choose(schema, *, fallback, **kwargs):
-        if schema is BrowserDecision and decision == "tab_closed":
-            return BrowserDecision(operation="snapshot")
-        return BrowserDecision(operation="click", idx=3) if schema is BrowserDecision and decision == "blocked_click" else fallback
+        if schema is not TaskDecision:
+            return fallback
+        context = json.loads(kwargs['user'])
+        if context.get('execution_goal'):
+            step = BrowserDecision(operation='snapshot') if decision == 'tab_closed' else BrowserDecision(operation='click', idx=3)
+            return TaskDecision(operation='read', browser=step)
+        return TaskDecision(operation='plan', requirements=RequirementOutput(
+            party_size=4 if context['turn_id'] > 1 else 3, budget=300, time_window_start='18:30',
+            visit_date=date.fromisoformat(context['reference_at'][:10]), required_activities=['餐厅']))
 
     app.state.runtime.model.structured = choose
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:

@@ -1,13 +1,16 @@
 """Synthetic provider replies test revalidation within one durable run and preserve source times."""
 
 import copy
+import json
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
+from plango.task import TaskDecision
 from plango_harness.agent.contracts import Evidence, PlaceCandidate, TripSpec
+from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.graph import GraphDeps
 from test_browser_harness import TOKEN, settings, wait_for
 from test_browser_navigation import browser_driver
@@ -20,6 +23,17 @@ def canonical_place():
 
 def test_explicit_revalidation_continues_the_same_paused_run_and_keeps_original_event(tmp_path):
     app = create_app(settings(tmp_path), token=TOKEN)
+    async def actor(schema, *, fallback, **kwargs):
+        if schema is not TaskDecision:
+            return fallback
+        context = json.loads(kwargs['user'])
+        if context['turn_id'] > 1:
+            if not context['tool_results']:
+                return TaskDecision(operation='refresh_place')
+            return TaskDecision(operation='plan', requirements=RequirementOutput(refresh_sources=True))
+        return TaskDecision(operation='plan', requirements=RequirementOutput(party_size=3, budget=300,
+            visit_date=datetime.fromisoformat(context['reference_at']).date(), time_window_start='18:30', required_activities=['餐厅']))
+    app.state.runtime.model.structured = actor
     lookup = AsyncMock(return_value=canonical_place())
     app.state.runtime.world_service.provider.amap.get_place = lookup
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
@@ -51,11 +65,12 @@ def test_explicit_revalidation_continues_the_same_paused_run_and_keeps_original_
         assert len(refreshes) == 1 and refreshes[0]["payload"]["selected_poi"]["evidence"] == fresh["evidence"]
 
 
-@pytest.mark.parametrize("case", ["expired", "fresh", "date_change", "unavailable", "wrong_id", "budget"])
+@pytest.mark.parametrize("case", ["expired", "fresh", "explicit_refresh", "unavailable", "wrong_id", "budget"])
 async def test_graph_entry_refresh_is_once_budgeted_and_never_renews_old_fact(tmp_path, monkeypatch, case):
     import plango.graph as module
 
     runtime = create_app(settings(tmp_path), token=TOKEN).state.runtime
+    runtime.model.structured = AsyncMock(return_value=TaskDecision(operation="refresh_place"))
     lookup = AsyncMock(return_value=None if case == "unavailable" else canonical_place().model_copy(update={"place_id": "amap:wrong"}) if case == "wrong_id" else canonical_place())
     runtime.world_service.provider.amap.get_place = lookup
     deps = GraphDeps(model=runtime.model, tools=runtime.tools, world=runtime.world_service.provider, planner=None, memory=None, runs=None, action_provider=None)
@@ -65,7 +80,7 @@ async def test_graph_entry_refresh_is_once_budgeted_and_never_renews_old_fact(tm
     def build(deps, *, extension, **kwargs):
         def capture(graph):
             extension(graph)
-            nodes["context"] = graph.nodes["task_context"].runnable
+            nodes["context"] = graph.nodes["browser_decide" if case == "explicit_refresh" else "task_prepare_plan"].runnable
         return actual(deps, extension=capture, **kwargs)
 
     monkeypatch.setattr(module, "build_graph", build)
@@ -73,12 +88,13 @@ async def test_graph_entry_refresh_is_once_budgeted_and_never_renews_old_fact(tm
     state, _ = prepared_state()
     previous = TripSpec.model_validate(state["execution_goal"]["requirements"])
     now = datetime.now(timezone.utc)
-    fact = Evidence(evidence_id="old-source", source="amap", source_ref="https://fixture.invalid/poi", observed_at=now - timedelta(minutes=20), expires_at=now + timedelta(minutes=5) if case in {"fresh", "date_change"} else now - timedelta(minutes=10), payload=canonical_place().model_dump(mode="json"))
+    fact = Evidence(evidence_id="old-source", source="amap", source_ref="https://fixture.invalid/poi", observed_at=now - timedelta(minutes=20), expires_at=now + timedelta(minutes=5) if case in {"fresh", "explicit_refresh"} else now - timedelta(minutes=10), payload=canonical_place().model_dump(mode="json"))
     selected = {**canonical_place().model_dump(mode="json"), "evidence_ids": [fact.evidence_id], "evidence": fact.model_dump(mode="json")}
     state["selected_plan"].stops[0].locked = True
-    state.update(user_id="fixture", turn_id=2, input_text="改成后天，其他要求不变" if case == "date_change" else "预算改为300元", selected_poi=selected,
+    state.update(user_id="fixture", turn_id=2, input_text="改成后天，其他要求不变" if case == "explicit_refresh" else "预算改为300元", selected_poi=selected,
                  previous_spec=previous, evidence=[fact], tool_call_count=deps.max_tool_calls if case == "budget" else 3,
                  browser_task_context={"mode": "planning", "kind": "planning", "turn_id": 1}, requirement_reference_at=now.isoformat())
+    state["execution_goal"] = None
     old = copy.deepcopy(state)
     if case == "budget":
         with pytest.raises(ValueError, match="selected_poi_refresh_tool_budget_exhausted"):

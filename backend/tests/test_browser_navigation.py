@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.graph import BrowserDecision
+from task_fixtures import browser_actor
 from test_browser_harness import TOKEN, fixture, settings, wait_for
 
 TARGET = "https://fixture.invalid/reservation-form"
@@ -41,9 +42,9 @@ def test_native_anchor_then_input_continues_and_keeps_both_durable_actions(tmp_p
     decisions = iter([BrowserDecision(operation="click", idx=0), BrowserDecision(operation="type", idx=0, text="3"), BrowserDecision(operation="finish")])
 
     async def next_decision(schema, *, fallback, **kwargs):
-        return next(decisions) if schema is BrowserDecision else fallback
+        return next(decisions)
 
-    app.state.runtime.model.structured = next_decision
+    app.state.runtime.model.structured = browser_actor(next_decision)
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         run_id = client.post("/api/v1/runs", json={"input_text": "打开网页菜单，填入人数3并读取报价", "browser_session_id": "fixture-desktop"}).json()["run_id"]
         command, respond, approve = browser_driver(client, run_id)
@@ -72,9 +73,9 @@ def test_unverified_or_unknown_click_cannot_gain_navigation_privileges(tmp_path,
     app = create_app(settings(tmp_path), token=TOKEN)
 
     async def click_once(schema, *, fallback, **kwargs):
-        return BrowserDecision(operation="click", idx=0) if schema is BrowserDecision else fallback
+        return BrowserDecision(operation="click", idx=0)
 
-    app.state.runtime.model.structured = click_once
+    app.state.runtime.model.structured = browser_actor(click_once)
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         run_id = client.post("/api/v1/runs", json={"input_text": "打开网页入口并读取", "browser_session_id": "fixture-desktop"}).json()["run_id"]
         command, respond, approve = browser_driver(client, run_id)

@@ -14,7 +14,7 @@ class CriticAgent:
     ) -> CritiqueReport:
         fallback = CritiqueReport(
             verdict="pass" if verifier.executable else "repair",
-            issues=verifier.hard_violations + verifier.unknown_evidence,
+            issues=verifier.hard_violations + verifier.blocking_evidence,
             repair_actions=[item.detail for item in verifier.hard_violations],
             rationale="确定性 Verifier 结果已作为审查依据",
         )
@@ -40,7 +40,7 @@ class CriticAgent:
             output = output.model_copy(update={"verdict": "repair"})
         return CritiqueReport(
             verdict=output.verdict,
-            issues=verifier.hard_violations + verifier.unknown_evidence,
+            issues=verifier.hard_violations + verifier.blocking_evidence,
             repair_actions=output.issues
             or ([output.repair_request] if output.repair_request else []),
             rationale=output.rationale,

@@ -15,6 +15,7 @@ from plango_harness.agent.contracts import (
     Location,
     PlanCandidate,
     TripSpec,
+    may_be_reservable,
 )
 from plango_harness.domain.planning import PlanEngine, ToolBudgetExceeded, parse_minute
 from plango_harness.memory.repository import MemoryRepository
@@ -255,7 +256,7 @@ class ToolRegistry:
         for index, stop in enumerate(plan.stops):
             tool_name = (
                 "reserve_place"
-                if stop.category == "餐厅" and "not_reservable" not in stop.tags and "reservation_unknown" not in stop.tags
+                if may_be_reservable(stop)
                 else "visit_place"
             )
             idem = hashlib.sha256(
