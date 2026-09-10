@@ -422,3 +422,109 @@ def test_conditional_exemption_cannot_be_cropped_into_unconditional_waiver(condi
     assert result.data["total_cost"] is None and result.status == "needs_evidence"
     assert result.data["entries"][0]["known_subtotal"] == 100
     assert condition in result.summary and "该项无需另满足条件" not in result.summary
+
+
+def test_short_price_block_keeps_parent_identity_shared_rules_and_per_person_subtotal():
+    text = "雾岚餐厅，双享套餐售价136元/套。周二17:00至21:00可用。服务费和预约规则未提供。"
+    state = state_for(text, party_size=3)
+    state["browser_artifacts"][0]["data"]["places"] = [{"name": "雾岚餐厅"}]
+    option = SourceOption(record=0, entity="雾岚餐厅", quote="双享套餐售价136元/套",
+        charges=[SourceCharge(value=136, quote="售价136元/套", unit="group", currency="CNY")],
+        quantity=CitedNumber(value=1, quote="只买一份"),
+        windows=[SourceWindow(quote="周二17:00至21:00可用", times=["17:00", "21:00"], weekdays=[1])],
+        conditions=[SourceCondition(quote="服务费和预约规则未提供")])
+    result = source_analysis(state, analysis(state, options=[option], requested=["cost", "applicability"]))
+    assert result.data["answered"] and result.status == "needs_evidence"
+    assert result.data["total_cost"] == 136 and result.data["entries"][0]["per_person_subtotal"] == pytest.approx(136 / 3)
+    assert "条件相符" in result.summary and "每人45.33元" in result.summary
+    assert "均摊不证明套餐足够覆盖3人" in result.summary and "服务费和预约规则未提供" in result.summary
+    option.entity = "双享套餐"
+    option.quote = "雾岚餐厅，双享套餐售价136元/套"
+    assert source_analysis(state, analysis(state, options=[option])).data["total_cost"] == 136
+    option.quantity = None
+    result = source_analysis(state, analysis(state, options=[option]))
+    assert result.data["total_cost"] is None and not result.data["answered"]
+    assert result.data["entries"][0]["known_prices"][0]["amount"] == 136
+    assert "原文费用：双享套餐售价136元/套" in result.summary
+
+
+def test_record_rule_scope_does_not_let_another_option_supply_price_or_window():
+    text = "甲方案每人60元。周二17:00至20:00可用。乙方案每人90元。周三18:00至22:00可用。"
+    state = state_for(text)
+    options = [SourceOption(record=0, entity=name, quote=f"{name}每人{amount}元",
+        charges=[SourceCharge(value=amount, quote=f"每人{amount}元", unit="person", currency="CNY")])
+        for name, amount in [("甲方案", 60), ("乙方案", 90)]]
+    options[0].windows = [SourceWindow(quote="周三18:00至22:00可用", times=["18:00", "22:00"], weekdays=[2])]
+    options[0].charges[0] = options[1].charges[0]
+    result = source_analysis(state, analysis(state, options=options, requested=["cost", "applicability", "comparison"]))
+    assert not result.data["answered"] and result.status == "needs_evidence"
+    assert "相差" not in result.summary and "不在原文允许使用范围" not in result.summary
+    assert "日期时段缺少原文依据" in result.summary
+
+
+def test_another_options_unconditional_rule_cannot_enable_a_discount():
+    text = "甲方案餐费100元，券抵扣20元。乙方案餐费80元。无需预约。"
+    state = state_for(text)
+    options = [SourceOption(record=0, entity="甲方案", quote="甲方案餐费100元，券抵扣20元",
+        charges=[SourceCharge(value=100, quote="餐费100元", unit="group", currency="CNY"),
+                 SourceCharge(value=20, quote="券抵扣20元", unit="group", currency="CNY", operation="deduct", applies_to=[0])],
+        conditions=[SourceCondition(quote="无需预约", assessment="no_condition")]),
+        SourceOption(record=0, entity="乙方案", quote="乙方案餐费80元",
+            charges=[SourceCharge(value=80, quote="餐费80元", unit="group", currency="CNY")])]
+    result = source_analysis(state, analysis(state, options=options))
+    assert result.data["entries"][0]["known_subtotal"] == 100
+    assert result.data["entries"][0]["conditional_subtotal"] == 80
+    assert "未作为已享优惠扣减" in result.summary
+
+
+def test_route_comparison_preserves_known_subtotal_without_zeroing_unknown_wait():
+    text = "步行1.2公里需15分钟。公交行车9分钟，等待时间未知。"
+    state = state_for(text, time_window_start="18:20", total_budget=None)
+    walk = SourceOption(record=0, entity="步行", quote="步行1.2公里需15分钟", legs=[SourceLeg(
+        distance_m=CitedNumber(value=1200, quote="1.2公里"), duration_seconds=CitedNumber(value=900, quote="15分钟"))])
+    bus = SourceOption(record=0, entity="公交", quote="公交行车9分钟，等待时间未知", legs=[
+        SourceLeg(duration_seconds=CitedNumber(value=540, quote="9分钟")), SourceLeg(kind="wait")])
+    extracted = analysis(state, options=[walk, bus], requested=["duration", "arrival", "comparison"])
+    result = source_analysis(state, extracted)
+    assert not result.data["answered"] and result.status == "needs_evidence"
+    assert result.data["entries"][0]["arrival_time"] == "18:35:00"
+    assert result.data["entries"][1]["arrival_time"] is None
+    assert result.data["entries"][1]["route"]["duration_seconds"] is None
+    assert result.data["entries"][1]["known_route_subtotal"]["duration_seconds"] == 540
+    assert "用时小计540秒" in result.summary and "不能据已知小计" in result.summary
+    assert "未知等候不按零" in result.summary and "公交用时最短" not in result.summary
+    # Once both alternatives have complete durations, compare that dimension.
+    for item in [state["browser_observation"], state["browser_artifacts"][0]["data"]]:
+        item["text"] = item["text"].replace("等待时间未知", "等待4分钟")
+    bus.quote = "公交行车9分钟，等待4分钟"
+    bus.legs[1].duration_seconds = CitedNumber(value=240, quote="4分钟")
+    result = source_analysis(state, extracted)
+    assert result.data["answered"] and "公交用时最短，与最长项相差120秒" in result.summary
+    assert "公交到达最早" in result.summary
+
+
+def test_distance_comparison_is_independent_of_missing_duration():
+    text = "甲路线长800米。乙路线长1.1公里。"
+    state = state_for(text)
+    options = [SourceOption(record=0, entity=name, quote=quote,
+        legs=[SourceLeg(distance_m=CitedNumber(value=value, quote=quote))])
+        for name, quote, value in [("甲路线", "甲路线长800米", 800), ("乙路线", "乙路线长1.1公里", 1100)]]
+    result = source_analysis(state, analysis(state, options=options, requested=["distance", "comparison"]))
+    assert result.data["answered"] and "甲路线路程最短，与最长项相差300米" in result.summary
+    assert all(entry["route"]["duration_seconds"] is None for entry in result.data["entries"])
+
+
+def test_price_comparison_does_not_complete_an_inferred_route_comparison_with_unknown_wait():
+    text = "甲接驳收费20元，行车15分钟。乙接驳收费30元，行车9分钟，等待时间未知。"
+    state = state_for(text)
+    options = [SourceOption(record=0, entity=name, quote=quote,
+        charges=[SourceCharge(value=amount, quote=f"收费{amount}元", unit="group", currency="CNY")],
+        legs=[SourceLeg(duration_seconds=CitedNumber(value=duration * 60, quote=f"{duration}分钟"))])
+        for name, quote, amount, duration in [("甲接驳", "甲接驳收费20元，行车15分钟", 20, 15),
+                                             ("乙接驳", "乙接驳收费30元，行车9分钟，等待时间未知", 30, 9)]]
+    options[1].legs.append(SourceLeg(kind="wait"))
+    result = source_analysis(state, analysis(state, options=options, requested=["comparison"]))
+    assert [entry["known_subtotal"] for entry in result.data["entries"]] == [20, 30]
+    assert "已知项目小计最低" in result.summary and "不能据已知小计" in result.summary
+    assert not result.data["answered"] and "comparison" not in result.data["delivered"]
+    assert all("unit" not in price for entry in result.data["entries"] for price in entry["known_prices"])

@@ -857,6 +857,8 @@ class RequirementAgent:
         for field, value in output.model_dump(exclude_none=True).items():
             if field in metadata or value is False and (field.startswith("clear_") or field.endswith("_unknown")):
                 continue
+            if isinstance(value, (dict, list)) and not value and field not in output.field_evidence:
+                continue  # Empty schema defaults are omissions, not ungrounded edits.
             if value == [] and field != "activity_order":
                 continue
             quote = (output.field_evidence or {}).get(field, "").strip()

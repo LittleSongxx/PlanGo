@@ -768,7 +768,7 @@ class CitedNumber(BaseModel):
 
 class SourceCharge(CitedNumber):
     """A literal charge; only its unit is normalized by the model."""
-    unit: Literal["group", "person", "package"]
+    unit: Literal["group", "person", "package"] = Field(description="按原文计价单位：每份/套/张为package，每人/位为person，已明确整组总额为group；购买一份仍为package。")
     currency: Literal["CNY", "USD", "EUR", "GBP", "unknown"] = "unknown"
     operation: Literal["add", "deduct"] = "add"
     threshold: CitedNumber | None = None
@@ -785,14 +785,14 @@ class SourceCondition(BaseModel):
 class SourceLeg(BaseModel):
     model_config = ConfigDict(extra="forbid")
     kind: Literal["travel", "wait"] = "travel"
-    distance_m: CitedNumber | None = None
-    duration_seconds: CitedNumber | None = None
+    distance_m: CitedNumber | None = Field(default=None, description="原文已知距离必须填{value:换算后米数,quote:原文距离及单位}；未知留null，等待段无移动距离。")
+    duration_seconds: CitedNumber | None = Field(default=None, description="原文已知用时必须填{value:换算后秒数,quote:原文用时及单位}；未知等待另列kind=wait且本字段null，不能按0或省略。")
 
 
 class SourceWindow(BaseModel):
     model_config = ConfigDict(extra="forbid")
     quote: str = Field(min_length=1, max_length=1000)
-    dates: list[str] = Field(default_factory=list, max_length=2)
+    dates: list[str] = Field(default_factory=list, max_length=2, description="仅原文明示完整年月日；只写星期时dates留空，不把本次日期当来源日期。")
     times: list[str] = Field(default_factory=list, max_length=2)
     excluded: bool = False
     boundary: Literal["range", "latest", "earliest"] = "range"
@@ -803,7 +803,7 @@ class SourceOption(BaseModel):
     model_config = ConfigDict(extra="forbid")
     record: int = Field(ge=0, strict=True)
     entity: str = Field(default="", max_length=200)
-    quote: str = Field(default="", max_length=7500)
+    quote: str = Field(default="", max_length=7500, description="各选项数字所属的连续原文块；同记录唯一选项可留空。共用营业时段或未知条件可在同record其他段逐项引用。")
     charges: list[SourceCharge] = Field(default_factory=list, max_length=8)
     quantity: CitedNumber | None = None
     covered_people: CitedNumber | None = None
@@ -951,8 +951,12 @@ def source_analysis(state, extracted: SourceAnalysis):
         same_record = [other for other in extracted.options if other.record == option.record]
         block = _source_quote(text, option.quote) if option.quote else text if len(same_record) == 1 else None
         peers = [other.entity for other in extracted.options if other.record == option.record and other.entity and other.entity != option.entity]
-        peers += [str(place.get("name") or "") for place in page["data"].get("places") or [] if place.get("name") != option.entity]
-        if (not block or _source_instruction(block) or option.entity and option.entity not in block
+        places = {str(place["name"]) for place in page["data"].get("places") or [] if place.get("name")}
+        # A sole captured venue is the parent of its packages, not a rival option.
+        if len(places) > 1:
+            peers += [name for name in places if name != option.entity]
+        identity_bound = not option.entity or bool(block and option.entity in block) or len(same_record) == 1 and option.entity in text
+        if (not block or _source_instruction(block) or not identity_bound
                 or any(peer and peer in block for peer in peers)):
             missing.append(f"{label}的实体与原文范围无法唯一对应")
             continue
@@ -961,9 +965,17 @@ def source_analysis(state, extracted: SourceAnalysis):
             continue
         notes, gaps, violations, quotes = [], [], [], {"source": block}
         option_delivered = set()
+        other_blocks = [_source_quote(text, other.quote) for other in same_record if other is not option and other.quote]
+        def belongs_to_peer(raw_quote, quote):
+            preceding = [(match.start(), name) for name in [option.entity, *peers] if name
+                         for match in re.finditer(re.escape(name), text[:text.index(raw_quote)])]
+            return (any(peer in quote for peer in peers) or any(other and raw_quote in other for other in other_blocks)
+                    or bool(preceding and max(preceding)[1] in peers and (not option.entity or option.entity not in quote)))
         conditions_known = True
         for condition in option.conditions:
-            quote = _source_quote(block, condition.quote)
+            # Non-numeric record context may be separate from the price/route
+            # block. Its quotation alone never proves eligibility.
+            quote = _source_quote(text, condition.quote)
             user_quote = _source_quote(str(state.get("input_text") or ""), condition.request_quote) if condition.request_quote else None
             if not quote or _source_instruction(quote):
                 gaps.append("部分使用条件未能对应原文")
@@ -973,7 +985,7 @@ def source_analysis(state, extracted: SourceAnalysis):
             assessment = condition.assessment
             # A model's interpretation can be shown with citations, but cannot
             # prove a reservation/eligibility or re-authorize an old user statement.
-            if assessment != "no_condition" or not _source_no_requirement(quote):
+            if assessment != "no_condition" or not _source_no_requirement(quote) or belongs_to_peer(condition.quote, quote):
                 assessment = "unknown"
             if user_quote:
                 quotes[f"request:{len(quotes)}"] = user_quote
@@ -990,6 +1002,7 @@ def source_analysis(state, extracted: SourceAnalysis):
         used_quotes = set()
         package_count = None
         expense_values = {}
+        known_prices = []
         for charge_index, charge in enumerate(option.charges):
             checked = _source_number(charge, block, money_units)
             if (not checked or charge.currency != "CNY"
@@ -1007,14 +1020,17 @@ def source_analysis(state, extracted: SourceAnalysis):
             used_quotes.add(token_id)
             person_unit = bool(re.search(r"[/／]\s*(?:人|位)|每(?:人|位)|人均", quote))
             package_unit = bool(re.search(r"[/／]\s*(?:份|套餐|套|张)|每(?:份|套|张)|一份|这份", quote))
+            unit = "package" if charge.unit == "group" and package_unit and not person_unit else charge.unit
+            if charge.operation == "add":
+                known_prices.append({"amount": float(amount), "quote": quote})
             multiplier = None
             if re.search(r"[/／]\s*\d", quote):
                 gaps.append("计价分母无法对应，未自动换算")
-            elif charge.unit == "person" and person_unit and not package_unit:
+            elif unit == "person" and person_unit and not package_unit:
                 multiplier = Decimal(party) if isinstance(party, int) and not isinstance(party, bool) else None
                 if multiplier is None:
                     gaps.append("同行人数待确认")
-            elif charge.unit == "package" and package_unit and not person_unit:
+            elif unit == "package" and package_unit and not person_unit:
                 quantity = option.quantity
                 quantity_quote = _source_quote(request, quantity.quote) if quantity else None
                 proposed = Decimal(str(quantity.value)) if quantity else None
@@ -1027,7 +1043,7 @@ def source_analysis(state, extracted: SourceAnalysis):
                     quotes["quantity"] = quantity_quote
                 else:
                     gaps.append("购买份数尚未明确，未自动加购")
-            elif charge.unit == "group" and not person_unit and not package_unit:
+            elif unit == "group" and not person_unit and not package_unit:
                 multiplier = Decimal(1)
             else:
                 gaps.append("每人、每份和整组计价单位不一致")
@@ -1054,7 +1070,7 @@ def source_analysis(state, extracted: SourceAnalysis):
                 calculated += 1
                 subtotal += amount * multiplier
                 expense_values[charge_index] = amount * multiplier
-                notes.append(f"该项{display(amount)}元" + (f"×{display(multiplier)}={display(amount * multiplier)}元" if charge.unit != "group" else "计入已知费用"))
+                notes.append(f"该项{display(amount)}元" + (f"×{display(multiplier)}={display(amount * multiplier)}元" if unit != "group" else "计入已知费用"))
         coverage = _source_number(option.covered_people, block, people_units)
         if option.covered_people and coverage is None:
             gaps.append("套餐覆盖人数无法按原文核对，成人与儿童不得混合计算资格")
@@ -1079,6 +1095,7 @@ def source_analysis(state, extracted: SourceAnalysis):
                 if not isinstance(party, int) or eligible_count != party:
                     gaps.append("尚未从本次已确认人数资料核对年龄资格")
         totals = {"distance_m": Decimal(0), "duration_seconds": Decimal(0)}
+        known_route = {key: False for key in totals}
         complete_route = {key: bool(option.legs) for key in totals}
         legs = option.legs
         route_quotes = set()
@@ -1091,6 +1108,7 @@ def source_analysis(state, extracted: SourceAnalysis):
                 if checked:
                     route_quotes.add((option.record, field, checked[2]))
                     totals[field] += checked[0]
+                    known_route[field] = True
                     quotes[f"{field}:{leg_index}"] = checked[1]
                 elif fact:
                     gaps.append("部分路线数值或单位无法核对")
@@ -1105,6 +1123,8 @@ def source_analysis(state, extracted: SourceAnalysis):
         arrival_date = context.get("visit_date")
         for field, total in totals.items():
             if not complete_route[field]:
+                if known_route[field]:
+                    notes.append(f"资料已知路段{'距离小计' if field == 'distance_m' else '用时小计'}{display(total)}{'米' if field == 'distance_m' else '秒'}；其余{'路段距离' if field == 'distance_m' else '路段或等待用时'}未知，不能作为完整{'距离' if field == 'distance_m' else '用时'}。")
                 continue
             option_delivered.add("distance" if field == "distance_m" else "duration")
             notes.append(f"资料给定{'各段距离合计' if field == 'distance_m' else '各段用时合计'}{display(total)}{'米' if field == 'distance_m' else '秒'}。")
@@ -1125,8 +1145,8 @@ def source_analysis(state, extracted: SourceAnalysis):
                 gaps.append("出发时刻未明确，尚不能计算到达时间")
         window_groups: dict[tuple, list[bool]] = {}
         for window in option.windows:
-            quote = _source_quote(block, window.quote)
-            if not quote or _source_instruction(quote):
+            quote = _source_quote(text, window.quote)
+            if not quote or _source_instruction(quote) or belongs_to_peer(window.quote, quote):
                 gaps.append("日期时段缺少原文依据")
                 continue
             date_values = [f"{int(y):04d}-{int(m):02d}-{int(d):02d}" for y, m, d in re.findall(r"(\d{4})[-年](\d{1,2})[-月](\d{1,2})日?", quote)]
@@ -1217,12 +1237,15 @@ def source_analysis(state, extracted: SourceAnalysis):
                 notes.append(f"按原文扣减{display(deduction)}元，已知项目小计为{display(subtotal)}元；依据：{quote}")
         if calculated and (cost_complete or conditional_cost is not None):
             option_delivered.add("cost")
-        if not option_delivered:
+        if not option_delivered and not known_prices and not any(known_route.values()):
             missing.extend(f"{label}：{gap}" for gap in gaps)
             continue
         cost = float(subtotal) if calculated else None
         entry: dict[str, Any] = {"entity": label, "record": option.record, "known_subtotal": cost, "calculation_complete": cost_complete, "conditional_subtotal": float(conditional_cost) if conditional_cost is not None else None,
+                 "known_prices": known_prices,
+                 "per_person_subtotal": float(subtotal / party) if cost is not None and isinstance(party, int) and not isinstance(party, bool) and party > 0 else None,
                  "missing_rules": list(dict.fromkeys(gaps)), "conflicts": list(dict.fromkeys(violations)), "quotes": quotes,
+                 "known_route_subtotal": {key: float(value) if known_route[key] else None for key, value in totals.items()},
                  "route": {key: float(value) if complete_route[key] else None for key, value in totals.items()}, "arrival_time": arrival, "delivered": sorted(option_delivered)}
         entries.append(entry)
         delivered.update(option_delivered)
@@ -1232,6 +1255,8 @@ def source_analysis(state, extracted: SourceAnalysis):
             lines.append(f"上述已知项目小计{display(subtotal)}元" + (f"，{'未超出' if subtotal <= budget else '超出'}{display(budget)}元预算。" if budget is not None else "。"))
             if budget is not None:
                 lines.append(f"按已知项目扣除后预算剩余{display(budget - subtotal)}元。")
+            if entry["per_person_subtotal"] is not None:
+                lines.append(f"按本次{party}人均摊已知小计：{display(subtotal)}÷{party}=每人{display((subtotal / party).quantize(Decimal('0.01')))}元；均摊不证明套餐足够覆盖{party}人，也不包含未明确费用。")
         if "applicability" in requested and "applicability" in option_delivered:
             lines.append("按已列出的原文依据，本次存在明确不适用条件。" if violations else "部分适用条件仍未知，当前不能确认完整适用。" if gaps else "按所给资料与本次要求，已列出的条件相符；这只是资料条件判断，实时供给仍未核实。")
         missing.extend(f"{label}：{gap}" for gap in entry["missing_rules"])
@@ -1245,7 +1270,35 @@ def source_analysis(state, extracted: SourceAnalysis):
         ranked = sorted(entries, key=lambda entry: entry["known_subtotal"])
         difference = Decimal(str(ranked[-1]["known_subtotal"])) - Decimal(str(ranked[0]["known_subtotal"]))
         lines.append(f"按各选项已明确的计价范围，{ranked[0]['entity']}的已知项目小计最低，与最高项相差{display(difference)}元；各自覆盖范围和使用条件仍须分别核对。")
-        delivered.add("comparison")
+        if not set(requested).intersection({"distance", "duration", "arrival"}):
+            delivered.add("comparison")
+    if "comparison" in requested and len(entries) == len(extracted.options) and len(entries) > 1:
+        criteria = set(requested).intersection({"distance", "duration", "arrival"})
+        if not criteria:
+            criteria = {goal for goal, field in (("distance", "distance_m"), ("duration", "duration_seconds"))
+                        if any(entry["known_route_subtotal"][field] is not None for entry in entries)}
+        if criteria:
+            delivered.discard("comparison")
+        compared = set()
+        for goal in sorted(criteria):
+            field = "distance_m" if goal == "distance" else "duration_seconds"
+            name, metric_unit = ("路程", "米") if goal == "distance" else ("用时", "秒")
+            if all(goal in entry["delivered"] for entry in entries):
+                ranked = sorted(entries, key=lambda entry: entry["route"][field])
+                difference = Decimal(str(ranked[-1]["route"][field])) - Decimal(str(ranked[0]["route"][field]))
+                if goal == "arrival":
+                    lines.append(f"按相同出发时刻及资料给定的完整用时，{ranked[0]['entity']}到达最早，与最晚项相差{display(difference)}秒。")
+                else:
+                    lines.append(f"按资料给定的完整{name}，{ranked[0]['entity']}{name}最短，与最长项相差{display(difference)}{metric_unit}。")
+                compared.add(goal)
+            else:
+                details = []
+                for entry in entries:
+                    value = entry["known_route_subtotal"][field]
+                    details.append(f"{entry['entity']}已知{name}{display(Decimal(str(value)))}{metric_unit}" if value is not None else f"{entry['entity']}{name}未知")
+                lines.append("；".join(details) + f"。部分选项缺少完整{'到达时刻依据' if goal == 'arrival' else name}，当前不能据已知小计判断哪项{'到达更早' if goal == 'arrival' else name + '更短'}；未知等候不按零计算。")
+        if criteria and compared == criteria and ("cost" not in requested or all(entry["known_subtotal"] is not None and entry["calculation_complete"] for entry in entries)):
+            delivered.add("comparison")
     unanswered = sorted(set(requested) - delivered)
     missing.extend("尚未完成" + {"cost": "费用核算", "comparison": "选项比较", "applicability": "条件判断", "distance": "路程核算", "duration": "用时核算", "arrival": "到达时间核算"}[goal] for goal in unanswered)
     lines.extend(conflicts)

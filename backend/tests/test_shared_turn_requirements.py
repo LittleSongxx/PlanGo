@@ -11,7 +11,7 @@ from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.graph import GraphDeps, build_graph
 from plango_harness.agent.model_adapter import ModelAdapter
 from plango_harness.agent.state import initial_state
-from plango_harness.agent.subagents.requirement import REQUIREMENT_INSTRUCTIONS
+from plango_harness.agent.subagents.requirement import REQUIREMENT_INSTRUCTIONS, RequirementAgent
 
 
 @pytest.mark.parametrize(("text", "fields", "count", "budget"), [
@@ -102,3 +102,19 @@ async def test_combined_schema_admission_keeps_reported_usage_and_run_limit():
     blocked = TaskIntent()
     assert await adapter.structured(TaskIntent, system=REQUIREMENT_INSTRUCTIONS, user="未裁剪资料" * 3000, fallback=blocked) is blocked
     assert invoke.await_count == 1 and adapter.total_tokens == 731
+
+
+def test_empty_model_defaults_are_omissions_but_cited_order_clear_still_applies():
+    previous = TripSpec(goal="原安排", party_size=2, party_counts={"用户": 2}, activity_order=["餐厅"], duration_minutes=120)
+    text = "开始时间改为19:20；时长仍为120分钟"
+    raw = RequirementOutput(time_window_start="19:20", duration_minutes=120, party_counts={}, activity_order=[],
+        field_evidence={"time_window_start": "开始时间改为19:20", "duration_minutes": "时长仍为120分钟"})
+    accepted = RequirementAgent._grounded_patch(raw, text=text, previous_spec=previous)
+    after = accepted.to_trip_spec(text, previous)
+    assert not accepted.clarification_needed
+    assert after.party_counts == previous.party_counts and after.activity_order == previous.activity_order
+    assert after.time_window_start == "19:20" and after.duration_minutes == 120
+    clear = "取消活动先后顺序"
+    accepted = RequirementAgent._grounded_patch(RequirementOutput(activity_order=[], field_evidence={"activity_order": clear}),
+                                               text=clear, previous_spec=after)
+    assert not accepted.clarification_needed and accepted.to_trip_spec(clear, after).activity_order == []
