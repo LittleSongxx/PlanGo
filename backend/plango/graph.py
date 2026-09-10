@@ -45,6 +45,22 @@ from .task import BrowserDecision, TaskDecision, calculate, decide_task
 from .world import dianping_preview_data, table_data
 
 
+def _kept(state, results) -> str:
+    """Name only what this turn actually obtained.
+
+    A failure notice that claims retained sources and calculations when the turn read
+    nothing and computed nothing is a false statement about our own state, and it hides
+    the real defect from whoever reads the reply.
+    """
+    rows = [row for row in (results or []) if isinstance(row, dict)]
+    kept = []
+    if state.get("browser_artifacts"):
+        kept.append("读到的资料")
+    if any(row.get("scope") == "arithmetic_only" and row.get("ok") for row in rows):
+        kept.append("计算结果")
+    return "，已保留" + "和".join(kept) if kept else "，本轮没有读到资料也没有完成计算"
+
+
 def artifact(observation, data=None):
     if data is None:
         data = (dianping_preview_data(observation) or table_data(observation)).model_dump(mode="json")
@@ -624,7 +640,8 @@ def build_desktop_graph(runtime, deps, checkpointer):
                         "browser_wait": None, "interrupt_id": None, "browser_observation": {}, "browser_before_action": {}}
         if context.get("decision_count", 0) >= deps.max_tool_calls:
             return {"phase": RunPhase.PARTIAL_FAILED, "outcome": "PARTIAL_FAILED",
-                    "browser_next": BrowserDecision().model_dump(), "reason": "本轮处理预算已用尽，已保留资料和计算结果。"}
+                    "browser_next": BrowserDecision().model_dump(),
+                    "reason": "本轮处理预算已用尽" + _kept(state, context.get("tool_results", [])) + "。"}
         correction = preparation_correction(state, evaluated) if preparing else None
         update: dict[str, Any] = {}
         if correction:
@@ -639,12 +656,12 @@ def build_desktop_graph(runtime, deps, checkpointer):
                 except ValueError as error:
                     if attempt:
                         # The model answered but never produced a usable decision. Report
-                        # that, keeping the sources and calculations already obtained,
-                        # instead of ending the run as a provider or configuration fault.
+                        # that, naming only what was actually obtained, instead of ending
+                        # the run as a provider or configuration fault.
                         context["tool_results"] = [*results, {"tool": "decision_validation", "ok": False, "error": str(error)}]
                         return {"browser_task_context": context, "browser_next": BrowserDecision().model_dump(),
                                 "phase": RunPhase.PARTIAL_FAILED, "outcome": "PARTIAL_FAILED",
-                                "reason": "本轮未能形成可用的下一步，已保留读到的资料和计算结果；请补充或换个说法再试。",
+                                "reason": "本轮未能形成可用的下一步" + _kept(state, results) + "；请补充或换个说法再试。",
                                 "trace": [{"event": "task_decision_unusable", "phase": "RESEARCHING", "agent_id": "task",
                                            "payload": {"error": str(error), "turn_id": state.get("turn_id", 1)}}]}
                     results.append({"tool": "decision_validation", "ok": False, "error": str(error)})
@@ -696,6 +713,17 @@ def build_desktop_graph(runtime, deps, checkpointer):
         decision = task.browser or BrowserDecision(operation="extract")
         if decision.operation == "finish":
             raise ValueError("browser_finish_requires_task_answer")
+        if (decision.operation in {"navigate", "open_tab"} and not observation.get("snapshot_id")
+                and str(decision.url or "") not in task_text(state)):
+            # Leaving for an address the user never gave, before having looked at the page
+            # at all, discards whatever they already had open for this and costs a load.
+            # Read the current page once; the next decision can still navigate from there.
+            context["tool_results"] = [*context.get("tool_results", []),
+                                       {"tool": "observe_current_page", "ok": True,
+                                        "note": "已先读取当前页面，未离开；如仍需其他地址可在下一步导航",
+                                        "requested_url": decision.url}]
+            decision = BrowserDecision(operation="extract", rationale=decision.rationale)
+            update["browser_task_context"] = context
         if decision.vision_reason:
             blocked = vision_blocked(state)
             if blocked or not runtime.settings.browser_vision_enabled or state.get("browser_vision_turn") == state.get("turn_id", 1):
