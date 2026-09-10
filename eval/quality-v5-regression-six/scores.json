@@ -1,0 +1,1266 @@
+{
+ "status": "complete",
+ "report_kind": "independent_ai_reviewed_controlled",
+ "reviewer_type": "AI",
+ "final_percentages_available": true,
+ "human_verified": false,
+ "gold_human_verified": false,
+ "scores": {
+  "schema_version": 1,
+  "report_kind": "independent_ai_reviewed_controlled",
+  "dataset_version": "PlanGo-regression-six-v4-unknown-split:4d6e8da72701ae44924873897eea7dfb274d64a6c1646301da99b66e82a38d84",
+  "system_revision": "b1976f012b338e066be6712aaeabd36b55e60439:2cadda9c8c7afe66652e6d1ebd13c9aa1bddaf68e4ddb8ef18f34d736d3eb385",
+  "environment_level": "controlled_acceptance_independent_ai_review",
+  "annotations_origin": "ai_assisted",
+  "human_verified": false,
+  "gold_human_verified": false,
+  "provenance_notice": "Annotation provenance is declared by the input; aggregation does not independently certify human review or factual entailment.",
+  "planned": 6,
+  "attempted": 6,
+  "valid": 6,
+  "annotated": 6,
+  "pending_annotation": 0,
+  "successes": 1,
+  "failures": 5,
+  "tsr": 0.16666666666666666,
+  "tsr_wilson_95": [
+   0.030053369748306635,
+   0.5635028221864702
+  ],
+  "groundedness_macro": 0.3511904761904762,
+  "groundedness_tasks": 6,
+  "groundedness_na_tasks": 0,
+  "supported_claims": 25,
+  "factual_claims": 36,
+  "complete": true,
+  "attempt_records": 6,
+  "invalid_attempts": [],
+  "unresolved_invalid_cases": [],
+  "not_run_cases": [],
+  "completeness": "complete",
+  "score_scope": "valid_primary_tasks; incomplete batches are partial results, not the planned-batch score",
+  "confidence_interval_scope": "Wilson 95% uses valid primary task counts only; descriptive, not an independence guarantee. No claim-level CI or bootstrap is inferred.",
+  "shared_source_groups": [],
+  "source_correlation_notice": "No shared registered groups detected; this does not prove independence or population representativeness.",
+  "by_class": {
+   "delivery": {
+    "planned": 5,
+    "attempted": 5,
+    "valid": 5,
+    "annotated": 5,
+    "pending_annotation": 0,
+    "successes": 1,
+    "failures": 4,
+    "tsr": 0.2,
+    "tsr_wilson_95": [
+     0.03622410863243014,
+     0.6244653702374747
+    ],
+    "groundedness_macro": 0.27142857142857146,
+    "groundedness_tasks": 5,
+    "groundedness_na_tasks": 0,
+    "supported_claims": 22,
+    "factual_claims": 32,
+    "complete": true
+   },
+   "bounded_answer": {
+    "planned": 1,
+    "attempted": 1,
+    "valid": 1,
+    "annotated": 1,
+    "pending_annotation": 0,
+    "successes": 0,
+    "failures": 1,
+    "tsr": 0.0,
+    "tsr_wilson_95": [
+     0.0,
+     0.7934506856227626
+    ],
+    "groundedness_macro": 0.75,
+    "groundedness_tasks": 1,
+    "groundedness_na_tasks": 0,
+    "supported_claims": 3,
+    "factual_claims": 4,
+    "complete": true
+   }
+  },
+  "by_family": {
+   "boundaries": {
+    "planned": 1,
+    "attempted": 1,
+    "valid": 1,
+    "annotated": 1,
+    "pending_annotation": 0,
+    "successes": 0,
+    "failures": 1,
+    "tsr": 0.0,
+    "tsr_wilson_95": [
+     0.0,
+     0.7934506856227626
+    ],
+    "groundedness_macro": 0.5,
+    "groundedness_tasks": 1,
+    "groundedness_na_tasks": 0,
+    "supported_claims": 4,
+    "factual_claims": 8,
+    "complete": true
+   },
+   "edits": {
+    "planned": 1,
+    "attempted": 1,
+    "valid": 1,
+    "annotated": 1,
+    "pending_annotation": 0,
+    "successes": 0,
+    "failures": 1,
+    "tsr": 0.0,
+    "tsr_wilson_95": [
+     0.0,
+     0.7934506856227626
+    ],
+    "groundedness_macro": 0.75,
+    "groundedness_tasks": 1,
+    "groundedness_na_tasks": 0,
+    "supported_claims": 3,
+    "factual_claims": 4,
+    "complete": true
+   },
+   "offers": {
+    "planned": 1,
+    "attempted": 1,
+    "valid": 1,
+    "annotated": 1,
+    "pending_annotation": 0,
+    "successes": 0,
+    "failures": 1,
+    "tsr": 0.0,
+    "tsr_wilson_95": [
+     0.0,
+     0.7934506856227626
+    ],
+    "groundedness_macro": 0.0,
+    "groundedness_tasks": 1,
+    "groundedness_na_tasks": 0,
+    "supported_claims": 0,
+    "factual_claims": 1,
+    "complete": true
+   },
+   "reading": {
+    "planned": 1,
+    "attempted": 1,
+    "valid": 1,
+    "annotated": 1,
+    "pending_annotation": 0,
+    "successes": 0,
+    "failures": 1,
+    "tsr": 0.0,
+    "tsr_wilson_95": [
+     0.0,
+     0.7934506856227626
+    ],
+    "groundedness_macro": 0.0,
+    "groundedness_tasks": 1,
+    "groundedness_na_tasks": 0,
+    "supported_claims": 0,
+    "factual_claims": 1,
+    "complete": true
+   },
+   "recovery": {
+    "planned": 1,
+    "attempted": 1,
+    "valid": 1,
+    "annotated": 1,
+    "pending_annotation": 0,
+    "successes": 1,
+    "failures": 0,
+    "tsr": 1.0,
+    "tsr_wilson_95": [
+     0.20654931437723745,
+     1.0
+    ],
+    "groundedness_macro": 0.8571428571428571,
+    "groundedness_tasks": 1,
+    "groundedness_na_tasks": 0,
+    "supported_claims": 18,
+    "factual_claims": 21,
+    "complete": true
+   },
+   "routes": {
+    "planned": 1,
+    "attempted": 1,
+    "valid": 1,
+    "annotated": 1,
+    "pending_annotation": 0,
+    "successes": 0,
+    "failures": 1,
+    "tsr": 0.0,
+    "tsr_wilson_95": [
+     0.0,
+     0.7934506856227626
+    ],
+    "groundedness_macro": 0.0,
+    "groundedness_tasks": 1,
+    "groundedness_na_tasks": 0,
+    "supported_claims": 0,
+    "factual_claims": 1,
+    "complete": true
+   }
+  },
+  "cases": [
+   {
+    "case_id": "NEW-01",
+    "case_class": "delivery",
+    "family": "reading",
+    "group_ids": [
+     "new-source:01",
+     "entity:河盐小馆"
+    ],
+    "trial_ids": [
+     "NEW-01:first"
+    ],
+    "main_trial_id": "NEW-01:first",
+    "valid_attempt": true,
+    "outcome": "completed",
+    "annotation_complete": true,
+    "task_success": 0,
+    "claims": {
+     "supported": 0,
+     "factual_claims": 1,
+     "groundedness": 0.0,
+     "labels": {
+      "conflicting": 0,
+      "contradicted": 0,
+      "duplicate": 0,
+      "non_factual": 0,
+      "supported": 0,
+      "unsupported": 1,
+      "unverifiable": 0
+     }
+    },
+    "failed_checks": [
+     "checks:C1",
+     "checks:C2",
+     "checks:C3",
+     "checks:C4"
+    ]
+   },
+   {
+    "case_id": "NEW-07",
+    "case_class": "delivery",
+    "family": "offers",
+    "group_ids": [
+     "new-source:04",
+     "entity:榛影影像馆"
+    ],
+    "trial_ids": [
+     "NEW-07:first"
+    ],
+    "main_trial_id": "NEW-07:first",
+    "valid_attempt": true,
+    "outcome": "completed",
+    "annotation_complete": true,
+    "task_success": 0,
+    "claims": {
+     "supported": 0,
+     "factual_claims": 1,
+     "groundedness": 0.0,
+     "labels": {
+      "conflicting": 0,
+      "contradicted": 0,
+      "duplicate": 0,
+      "non_factual": 0,
+      "supported": 0,
+      "unsupported": 1,
+      "unverifiable": 0
+     }
+    },
+    "failed_checks": [
+     "checks:C1",
+     "checks:C2",
+     "checks:C3",
+     "checks:C4"
+    ]
+   },
+   {
+    "case_id": "NEW-14",
+    "case_class": "delivery",
+    "family": "routes",
+    "group_ids": [
+     "new-source:07",
+     "entity:银禾展厅"
+    ],
+    "trial_ids": [
+     "NEW-14:first"
+    ],
+    "main_trial_id": "NEW-14:first",
+    "valid_attempt": true,
+    "outcome": "external_blocked",
+    "annotation_complete": true,
+    "task_success": 0,
+    "claims": {
+     "supported": 0,
+     "factual_claims": 1,
+     "groundedness": 0.0,
+     "labels": {
+      "conflicting": 0,
+      "contradicted": 0,
+      "duplicate": 0,
+      "non_factual": 0,
+      "supported": 0,
+      "unsupported": 1,
+      "unverifiable": 0
+     }
+    },
+    "failed_checks": [
+     "checks:C1",
+     "checks:C2",
+     "checks:C3",
+     "checks:C4",
+     "outcome:external_blocked"
+    ]
+   },
+   {
+    "case_id": "NEW-18",
+    "case_class": "delivery",
+    "family": "recovery",
+    "group_ids": [
+     "new-source:09",
+     "entity:琥珀汤铺"
+    ],
+    "trial_ids": [
+     "NEW-18:first"
+    ],
+    "main_trial_id": "NEW-18:first",
+    "valid_attempt": true,
+    "outcome": "completed",
+    "annotation_complete": true,
+    "task_success": 1,
+    "claims": {
+     "supported": 18,
+     "factual_claims": 21,
+     "groundedness": 0.8571428571428571,
+     "labels": {
+      "conflicting": 0,
+      "contradicted": 0,
+      "duplicate": 0,
+      "non_factual": 0,
+      "supported": 18,
+      "unsupported": 2,
+      "unverifiable": 1
+     }
+    },
+    "failed_checks": []
+   },
+   {
+    "case_id": "NEW-21",
+    "case_class": "delivery",
+    "family": "boundaries",
+    "group_ids": [
+     "new-source:11",
+     "entity:月栈桌游室"
+    ],
+    "trial_ids": [
+     "NEW-21:first"
+    ],
+    "main_trial_id": "NEW-21:first",
+    "valid_attempt": true,
+    "outcome": "completed",
+    "annotation_complete": true,
+    "task_success": 0,
+    "claims": {
+     "supported": 4,
+     "factual_claims": 8,
+     "groundedness": 0.5,
+     "labels": {
+      "conflicting": 0,
+      "contradicted": 1,
+      "duplicate": 0,
+      "non_factual": 0,
+      "supported": 4,
+      "unsupported": 3,
+      "unverifiable": 0
+     }
+    },
+    "failed_checks": [
+     "checks:C1",
+     "checks:C2",
+     "checks:C3"
+    ]
+   },
+   {
+    "case_id": "NEW-29",
+    "case_class": "bounded_answer",
+    "family": "edits",
+    "group_ids": [
+     "new-source:15",
+     "entity:斑榕砂锅铺"
+    ],
+    "trial_ids": [
+     "NEW-29:first"
+    ],
+    "main_trial_id": "NEW-29:first",
+    "valid_attempt": true,
+    "outcome": "completed",
+    "annotation_complete": true,
+    "task_success": 0,
+    "claims": {
+     "supported": 3,
+     "factual_claims": 4,
+     "groundedness": 0.75,
+     "labels": {
+      "conflicting": 0,
+      "contradicted": 0,
+      "duplicate": 0,
+      "non_factual": 0,
+      "supported": 3,
+      "unsupported": 0,
+      "unverifiable": 1
+     }
+    },
+    "failed_checks": [
+     "checks:C2",
+     "checks:C3"
+    ]
+   }
+  ],
+  "reviewer_type": "AI",
+  "scope": "6 controlled regression cases; independent-context AI review; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark",
+  "release": {
+   "schema": "plango.independent-ai-controlled-review.v1",
+   "scope": "6 controlled regression cases; independent-context AI review; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark",
+   "dataset_sha": "4d6e8da72701ae44924873897eea7dfb274d64a6c1646301da99b66e82a38d84",
+   "product_sha": "2cadda9c8c7afe66652e6d1ebd13c9aa1bddaf68e4ddb8ef18f34d736d3eb385",
+   "collection_sha": "f5ab14694b24c25b600f921ac3606df62370993a1eb09b02ff571f9fe7453a69",
+   "bundle_sha": "cb86cf92c9f3d4c6e4a262380c79fd82a2c9df701d2c93305eeb07051bbb56dc",
+   "gold_review_sha": "1e051cdbb9869595463be387d7579bc18daad4de08e0896f85187809d082d4e7",
+   "output_review_sha": "9e0cee7176abb0bfec330bbbc1a85d5e5e9ebac624ad376010ce153b46c7688d",
+   "annotations_sha": "a904973f741ed3941f1fdc06c180aefc10972e4f410cff161ccc5e27029fe8ad",
+   "review_receipts": [
+    {
+     "case_id": "NEW-01",
+     "trial_id": "NEW-01:first",
+     "gold_sha": "1741041e018a447d464f3ab82fc94a1b65e1c89fb16fee08483f5d69ad3f5998",
+     "packet_sha": "8a5a0d798656804a7ac20895b39a82e4a320a9f29e7530edda15be4e119c8849",
+     "gold_case_review_sha": "ac1c189b657e42f80a0b621c5a3d2021f6cee0227c4fb5cfb198e843f945acb2",
+     "output_case_review_sha": "c139a9670df4d334e61ffcbbbb62f767c83064cba6d8025f6e07e2fa5a5f9628"
+    },
+    {
+     "case_id": "NEW-07",
+     "trial_id": "NEW-07:first",
+     "gold_sha": "0daccab206815a65ed121ad8bb134cacf9f9260f3817dbf09c08547d7e952732",
+     "packet_sha": "ef44448ae315e93daa96dedf0cbf320877eb78649406c331acaf121ca3636bcf",
+     "gold_case_review_sha": "05fbaedba715c665251b38e9ad9bb557812d0914579515d12957a4a76c61529f",
+     "output_case_review_sha": "d32722d215503e5c641b1f1cee00c874ca108edcf1df15fde3228739455d10e0"
+    },
+    {
+     "case_id": "NEW-14",
+     "trial_id": "NEW-14:first",
+     "gold_sha": "dd54350dde7ca72628af6aef9b6f44811524432313400cd94ba49a8834ac1eb7",
+     "packet_sha": "3449a3b29ffa19f3f962ca4f04453d6f676e136bcf5efd2ee58fda859a33b995",
+     "gold_case_review_sha": "4df66454d5a438c2c0a88ff895bcb82947f8b6e1c2b1b7692b3deff0895d179f",
+     "output_case_review_sha": "9d3aded189a18fa9a9f8319e97d30f28a8099e70984fdcf3f910c113c8f54185"
+    },
+    {
+     "case_id": "NEW-18",
+     "trial_id": "NEW-18:first",
+     "gold_sha": "723bf9bf8c8e31fdd3d3462215673357483e96c6e144d696bf000f0f2a390024",
+     "packet_sha": "19f58ce35fac878abd8cfd44b903f12e1ee3c52c2175e1b8e063e39714b45024",
+     "gold_case_review_sha": "936fcb4be5f00bd47af7ac68def3cc645802b3377c1357901ddc71fdcd89cf8e",
+     "output_case_review_sha": "677fda93f3065f3369a82c0308aec8769244276bdf9548b213e79840af099ce5"
+    },
+    {
+     "case_id": "NEW-21",
+     "trial_id": "NEW-21:first",
+     "gold_sha": "f0babc5daaaf7d3eb96a304cde9a447c89ee45a9917a6f1c799c8b0880a3c3c4",
+     "packet_sha": "4689634bca7ccf79e29d2b2c32644ef5bad4de0442bb8af5f56ad5a34a5e7ecb",
+     "gold_case_review_sha": "b3083954af9dad86d3bef0652551fa96d1a0c830a8bc6e7b0335a0238e711041",
+     "output_case_review_sha": "cc4536d49039b20c22a025fe019cd93dc823def4a3a4a79b9e83f586a87d60f0"
+    },
+    {
+     "case_id": "NEW-29",
+     "trial_id": "NEW-29:first",
+     "gold_sha": "d8a49aaf89e3a752426ba529b7d2a6437131702551ef2abd0873dca7d176da65",
+     "packet_sha": "9efb6707fba30ce7bf6e8a16611a4803ffee3e2d0dd07dacc1f9976261edfe64",
+     "gold_case_review_sha": "85af12055a464fd2c6d68c0acb714191727e889311e98a8ec6137430dea3cec5",
+     "output_case_review_sha": "231643305561d58e15f4153840969a7fcde614a5631dd8e081d8ad38abb57524"
+    }
+   ],
+   "reviewer_type": "AI",
+   "reviewer": "independent_gold_reviewer_v5",
+   "human_verified": false,
+   "gold_human_verified": false,
+   "human_calibrated": false,
+   "context_provenance": "Reviewer context isolation is established by the orchestration record, not inferred from hashes or model agreement"
+  },
+  "tsr_percent": 16.666666666666664,
+  "groundedness_percent": 35.11904761904762
+ },
+ "annotations": {
+  "schema_version": 1,
+  "dataset_version": "PlanGo-regression-six-v4-unknown-split:4d6e8da72701ae44924873897eea7dfb274d64a6c1646301da99b66e82a38d84",
+  "system_revision": "b1976f012b338e066be6712aaeabd36b55e60439:2cadda9c8c7afe66652e6d1ebd13c9aa1bddaf68e4ddb8ef18f34d736d3eb385",
+  "environment_level": "controlled_acceptance_independent_ai_review",
+  "annotations_origin": "ai_assisted",
+  "human_verified": false,
+  "gold_human_verified": false,
+  "planned_cases": [
+   {
+    "case_id": "NEW-01",
+    "case_class": "delivery",
+    "family": "reading",
+    "group_ids": [
+     "new-source:01",
+     "entity:河盐小馆"
+    ],
+    "must_pass": [
+     "C1",
+     "C2",
+     "C3",
+     "C4"
+    ],
+    "forbidden": [
+     "F1",
+     "F2",
+     "F3"
+    ]
+   },
+   {
+    "case_id": "NEW-07",
+    "case_class": "delivery",
+    "family": "offers",
+    "group_ids": [
+     "new-source:04",
+     "entity:榛影影像馆"
+    ],
+    "must_pass": [
+     "C1",
+     "C2",
+     "C3",
+     "C4"
+    ],
+    "forbidden": [
+     "F1",
+     "F2",
+     "F3"
+    ]
+   },
+   {
+    "case_id": "NEW-14",
+    "case_class": "delivery",
+    "family": "routes",
+    "group_ids": [
+     "new-source:07",
+     "entity:银禾展厅"
+    ],
+    "must_pass": [
+     "C1",
+     "C2",
+     "C3",
+     "C4"
+    ],
+    "forbidden": [
+     "F1",
+     "F2",
+     "F3"
+    ]
+   },
+   {
+    "case_id": "NEW-18",
+    "case_class": "delivery",
+    "family": "recovery",
+    "group_ids": [
+     "new-source:09",
+     "entity:琥珀汤铺"
+    ],
+    "must_pass": [
+     "C1",
+     "C2",
+     "C3",
+     "C4"
+    ],
+    "forbidden": [
+     "F1",
+     "F2",
+     "F3"
+    ]
+   },
+   {
+    "case_id": "NEW-21",
+    "case_class": "delivery",
+    "family": "boundaries",
+    "group_ids": [
+     "new-source:11",
+     "entity:月栈桌游室"
+    ],
+    "must_pass": [
+     "C1",
+     "C2",
+     "C3",
+     "C4"
+    ],
+    "forbidden": [
+     "F1",
+     "F2",
+     "F3"
+    ]
+   },
+   {
+    "case_id": "NEW-29",
+    "case_class": "bounded_answer",
+    "family": "edits",
+    "group_ids": [
+     "new-source:15",
+     "entity:斑榕砂锅铺"
+    ],
+    "must_pass": [
+     "C1",
+     "C2",
+     "C3",
+     "C4"
+    ],
+    "forbidden": [
+     "F1",
+     "F2",
+     "F3"
+    ]
+   }
+  ],
+  "attempts": [
+   {
+    "case_id": "NEW-01",
+    "trial_id": "NEW-01:first",
+    "valid_attempt": true,
+    "outcome": "completed",
+    "replacement_for": null,
+    "invalid_reason": null,
+    "observed_stop_reason": "completed",
+    "evidence_directory": "output/tightening-F9A9ea/regression-v5-session/batch-20260910T063544Z-774a46/NEW-01",
+    "packet_sha": "8a5a0d798656804a7ac20895b39a82e4a320a9f29e7530edda15be4e119c8849",
+    "annotation_complete": true,
+    "checks": {
+     "C1": false,
+     "C2": false,
+     "C3": false,
+     "C4": false
+    },
+    "forbidden_checks": {
+     "F1": true,
+     "F2": true,
+     "F3": true
+    },
+    "side_effects_absent": true,
+    "false_completion_absent": true,
+    "claims": [
+     {
+      "claim_id": "A1",
+      "label": "unsupported",
+      "canonical_claim": "本次运行所用的模型服务不可用，需要用户检查运行服务中的配置",
+      "entity_id": "entity:河盐小馆",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控资料不涉及模型服务；运行期记录显示本案两次模型调用中第二次为正常返回（status=response），出网记录中 dashscope 调用 allowed=true，因此“服务不可用、请检查配置”这一归因缺乏可核实依据，属把输出校验失败对外表述为服务与配置问题。",
+      "evidence_refs": [
+       "independent_state#/checkpoints/final/independent_state/model_call_count"
+      ]
+     }
+    ]
+   },
+   {
+    "case_id": "NEW-07",
+    "trial_id": "NEW-07:first",
+    "valid_attempt": true,
+    "outcome": "completed",
+    "replacement_for": null,
+    "invalid_reason": null,
+    "observed_stop_reason": "completed",
+    "evidence_directory": "output/tightening-F9A9ea/regression-v5-session/batch-20260910T063544Z-774a46/NEW-07",
+    "packet_sha": "ef44448ae315e93daa96dedf0cbf320877eb78649406c331acaf121ca3636bcf",
+    "annotation_complete": true,
+    "checks": {
+     "C1": false,
+     "C2": false,
+     "C3": false,
+     "C4": false
+    },
+    "forbidden_checks": {
+     "F1": true,
+     "F2": true,
+     "F3": true
+    },
+    "side_effects_absent": true,
+    "false_completion_absent": true,
+    "claims": [
+     {
+      "claim_id": "A1",
+      "label": "unsupported",
+      "canonical_claim": "本次运行所用的模型服务不可用，需要用户检查运行服务中的配置",
+      "entity_id": "entity:榛影影像馆",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控资料不涉及模型服务；运行期记录显示本案三次模型调用中有两次取得正常返回，出网记录中 dashscope 调用 allowed=true，因此“服务不可用、请检查配置”这一归因缺乏可核实依据。",
+      "evidence_refs": [
+       "independent_state#/checkpoints/final/independent_state/model_call_count"
+      ]
+     }
+    ]
+   },
+   {
+    "case_id": "NEW-14",
+    "trial_id": "NEW-14:first",
+    "valid_attempt": true,
+    "outcome": "external_blocked",
+    "replacement_for": null,
+    "invalid_reason": null,
+    "observed_stop_reason": "external_blocked",
+    "evidence_directory": "output/tightening-F9A9ea/regression-v5-session/batch-20260910T063544Z-774a46/NEW-14",
+    "packet_sha": "3449a3b29ffa19f3f962ca4f04453d6f676e136bcf5efd2ee58fda859a33b995",
+    "annotation_complete": true,
+    "checks": {
+     "C1": false,
+     "C2": false,
+     "C3": false,
+     "C4": false
+    },
+    "forbidden_checks": {
+     "F1": true,
+     "F2": true,
+     "F3": true
+    },
+    "side_effects_absent": true,
+    "false_completion_absent": true,
+    "claims": [
+     {
+      "claim_id": "A1",
+      "label": "unsupported",
+      "canonical_claim": "存在一个尚未完成的浏览器步骤，用户需先查看页面提示并核对后才能继续",
+      "entity_id": "entity:银禾展厅",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "本题环境 driver 为 read、资料为静态交通说明，未要求任何浏览器操作；运行期 tool_call_count 为0、agent_action 为0、observations 为空，不存在任何已发起的浏览器步骤可供“尚未完成”，该提示把系统自身的路由错误表述成了等待用户处理的外部阻塞。",
+      "evidence_refs": [
+       "independent_state#/checkpoints/final/independent_state/tool_call_count"
+      ]
+     }
+    ]
+   },
+   {
+    "case_id": "NEW-18",
+    "trial_id": "NEW-18:first",
+    "valid_attempt": true,
+    "outcome": "completed",
+    "replacement_for": null,
+    "invalid_reason": null,
+    "observed_stop_reason": "script_finished",
+    "evidence_directory": "output/tightening-F9A9ea/regression-v5-session/batch-20260910T063544Z-774a46/NEW-18",
+    "packet_sha": "19f58ce35fac878abd8cfd44b903f12e1ee3c52c2175e1b8e063e39714b45024",
+    "annotation_complete": true,
+    "checks": {
+     "C1": true,
+     "C2": true,
+     "C3": true,
+     "C4": true
+    },
+    "forbidden_checks": {
+     "F1": true,
+     "F2": true,
+     "F3": true
+    },
+    "side_effects_absent": true,
+    "false_completion_absent": true,
+    "claims": [
+     {
+      "claim_id": "A1",
+      "label": "supported",
+      "canonical_claim": "导入的未保存草案为2026-09-11、1站、2人、总预算260元",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "给定受控初态在该输出前可用；同一实体与受控范围，人数、日期与总预算单位口径与原文一致，未外推真实供给。",
+      "evidence_refs": [
+       "source:NEW-S09#/text"
+      ]
+     },
+     {
+      "claim_id": "A2",
+      "label": "supported",
+      "canonical_claim": "餐饮费用待核对，活动与去程交通均约为0元，返程与额外消费另需核对",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控路况给出单程步行人均交通成本为0，餐费在受控初态中标为未知；输出把已知的0与未知的餐费分开表述，未把缺失价格当作免费。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/route/cost_per_person"
+      ]
+     },
+     {
+      "claim_id": "A3",
+      "label": "supported",
+      "canonical_claim": "所选优惠的规则尚需核对，未自动抵扣该优惠",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控初态明确写明所选套餐规则待核实；输出照此保留未核验状态，未替用户认定优惠可用。",
+      "evidence_refs": [
+       "source:NEW-S09#/text"
+      ]
+     },
+     {
+      "claim_id": "A4",
+      "label": "supported",
+      "canonical_claim": "受控评测起点到琥珀汤铺的步行路线约200米、约3分钟",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控路况给出 distance_km=0.2 与 walking_min=3，输出的200米与3分钟与之同单位同数值。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/route/distance_km",
+       "source:ENV-NEW-S09#/route/walking_min"
+      ]
+     },
+     {
+      "claim_id": "A5",
+      "label": "supported",
+      "canonical_claim": "编辑前草案的计划停留为18:33至19:53",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控初态给出到达偏移3分钟与停留80分钟，叠加原开始时间18:30恰为18:33–19:53，属受控资料内的确定推算。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/initial_draft/arrival_offset_minutes",
+       "source:ENV-NEW-S09#/initial_draft/dwell_minutes"
+      ]
+     },
+     {
+      "claim_id": "A6",
+      "label": "supported",
+      "canonical_claim": "完整餐费未知、营业及供给未知、已选优惠完整使用规则未核验",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "三项未知与受控初态的 unknowns 列表逐项对应，属如实报告资料未公开，而非推断否定结论。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/initial_draft/unknowns/0",
+       "source:ENV-NEW-S09#/initial_draft/unknowns/1"
+      ]
+     },
+     {
+      "claim_id": "A7",
+      "label": "supported",
+      "canonical_claim": "琥珀汤铺的价格、排队与营业状态均待核验，且该门店数据来源为模拟",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控世界的 place.price_known 为 false、supply 三项均为 null、source 为 simulated，输出三项待核验与来源标注与之一致。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/place/price_known",
+       "source:ENV-NEW-S09#/supply/open_now"
+      ]
+     },
+     {
+      "claim_id": "A8",
+      "label": "supported",
+      "canonical_claim": "导入的合成初态证据表明门店身份已选择，而完整餐费、供给及优惠完整规则未知",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "证据卡对受控初态的转述与原文一致，明确区分了已确定的门店身份与三项未知，未把未知补成结论。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/initial_draft/unknowns/2"
+      ]
+     },
+     {
+      "claim_id": "A9",
+      "label": "supported",
+      "canonical_claim": "原编辑请求已被保留，其送达状态尚未确认，可通过核对送达并取回继续核对原请求",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "该输出前已记录本次请求取得上游202且 accepted=true，随后客户端响应被丢弃；界面据此把状态表述为送达待核实并提供按原请求取回，与传输记录一致，未把回执说成商家业务结果。",
+      "evidence_refs": [
+       "transport_checks#/desktop/acceptance/upstream_http_status",
+       "transport_checks#/desktop/acceptance/accepted"
+      ]
+     },
+     {
+      "claim_id": "A10",
+      "label": "unsupported",
+      "canonical_claim": "在本次候选与调用预算内未找到合规替代，未满足 locked_time，即当前安排不可行",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "该不可行结论建立在“无法在锁定时间前到达并完成排队”之上，而受控资料给出的是步行3分钟可达、排队分钟为 null 即未知；把未知排队时长当作否定结论没有资料依据，属于用 UNKNOWN 推出确定的负面判断。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/supply/estimated_wait_min"
+      ]
+     },
+     {
+      "claim_id": "A11",
+      "label": "supported",
+      "canonical_claim": "恢复后的方案仍为2026-09-11、1站、2人、总预算260元",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "恢复后这几项与受控初态逐字一致，用户本轮也只要求改开始时间、其余不变，未出现口径改变。",
+      "evidence_refs": [
+       "source:NEW-S09#/text"
+      ]
+     },
+     {
+      "claim_id": "A12",
+      "label": "supported",
+      "canonical_claim": "恢复后的方案版本为v2，较导入时的v1递增了一版",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "独立状态查询显示 plan_version 由1变为2且只有一次 run_plan，版本变化确实对应这一次语义编辑，而非重复执行。",
+      "evidence_refs": [
+       "independent_state#/checkpoints/final/independent_state/plan_version"
+      ]
+     },
+     {
+      "claim_id": "A13",
+      "label": "supported",
+      "canonical_claim": "恢复后的计划停留为19:23至20:43",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "用户要求把开始时间改成19:20，叠加受控初态自带的到达偏移3分钟与停留80分钟即为19:23–20:43，与编辑前18:33–19:53同一口径；该区间被明确标注为计划停留而非行程结束时间。",
+      "evidence_refs": [
+       "task#/agent_input/user_turns/0/message",
+       "source:ENV-NEW-S09#/initial_draft/dwell_minutes"
+      ]
+     },
+     {
+      "claim_id": "A14",
+      "label": "supported",
+      "canonical_claim": "琥珀汤铺未提供可核验单价，不能把缺失价格当作免费",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控世界的 place.price_known 为 false、average_price 为0且不可信；输出正确地把缺失价格与零价格区分开。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/place/price_known"
+      ]
+     },
+     {
+      "claim_id": "A15",
+      "label": "supported",
+      "canonical_claim": "尚无适用于2026-09-11的营业或预约证据",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控世界的 supply.open_now 与 reservable 均为 null、place 的营业分钟为 null，输出如实报告缺少该日营业与预约证据。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/supply/reservable"
+      ]
+     },
+     {
+      "claim_id": "A16",
+      "label": "unsupported",
+      "canonical_claim": "琥珀汤铺无法在锁定时间前到达并完成排队",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控资料只给出步行3分钟可达与排队分钟未知（estimated_wait_min 为 null），既没有给出排队时长也没有给出任何截止约束，无法据此断定“无法在锁定时间前到达并完成排队”；这是把未知排队时间当作足以否定可行性的确定值。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/supply/estimated_wait_min",
+       "source:ENV-NEW-S09#/route/walking_min"
+      ]
+     },
+     {
+      "claim_id": "A17",
+      "label": "supported",
+      "canonical_claim": "受控评测起点到琥珀汤铺的交通费用待核验",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控路况声明本身仅为虚构评测坐标与单段步行路况、非真实供给，输出因此把交通费用保留为待核验而不作承诺。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/scope"
+      ]
+     },
+     {
+      "claim_id": "A18",
+      "label": "supported",
+      "canonical_claim": "琥珀汤铺的供给快照显示营业未知、可预约未知、排队分钟未知",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "与受控世界 supply 的三个 null 字段逐项对应，属如实转述未知。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/supply/open_now",
+       "source:ENV-NEW-S09#/supply/estimated_wait_min"
+      ]
+     },
+     {
+      "claim_id": "A19",
+      "label": "supported",
+      "canonical_claim": "天气工具未返回结果，本次没有可用天气信息",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控世界明确声明未提供天气，输出把天气保留为无结果而未编造天气结论。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/weather/reason"
+      ]
+     },
+     {
+      "claim_id": "A20",
+      "label": "supported",
+      "canonical_claim": "本次所用步行路线为显式受控单程路线，并非实时高德数据",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "与受控路况的 scope 声明完全一致，输出正确保留了非实时的资料范围。",
+      "evidence_refs": [
+       "source:ENV-NEW-S09#/scope"
+      ]
+     },
+     {
+      "claim_id": "A21",
+      "label": "unverifiable",
+      "canonical_claim": "暂时无法读取优惠信息，需要重新打开来源页面核对",
+      "entity_id": "entity:琥珀汤铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "这是系统对自身优惠比较面读取状态的描述，受控资料既不支持也不否证；受控初态实际给出了套餐售价158元与面值208元、仅使用规则未载，因此该提示至少在措辞上未区分“规则未载”与“信息读不到”。",
+      "evidence_refs": [
+       "source:NEW-S09#/text"
+      ]
+     }
+    ]
+   },
+   {
+    "case_id": "NEW-21",
+    "trial_id": "NEW-21:first",
+    "valid_attempt": true,
+    "outcome": "completed",
+    "replacement_for": null,
+    "invalid_reason": null,
+    "observed_stop_reason": "completed",
+    "evidence_directory": "output/tightening-F9A9ea/regression-v5-session/batch-20260910T063544Z-774a46/NEW-21",
+    "packet_sha": "4689634bca7ccf79e29d2b2c32644ef5bad4de0442bb8af5f56ad5a34a5e7ecb",
+    "annotation_complete": true,
+    "checks": {
+     "C1": false,
+     "C2": false,
+     "C3": false,
+     "C4": true
+    },
+    "forbidden_checks": {
+     "F1": true,
+     "F2": true,
+     "F3": true
+    },
+    "side_effects_absent": true,
+    "false_completion_absent": true,
+    "claims": [
+     {
+      "claim_id": "A1",
+      "label": "supported",
+      "canonical_claim": "到店安排为2026年9月11日周五19:00至21:00，共2小时",
+      "entity_id": "entity:月栈桌游室",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "日期、时段与时长逐字来自用户本轮请求，单位与含义未被改变。注意本案受控资料 NEW-S11 的 available_at_checkpoint_ids 为空，即该源在交付前从未被系统取得，因此这里只以用户请求作为支持证据，不引用资料。",
+      "evidence_refs": [
+       "task#/agent_input/user_turns/0/message"
+      ]
+     },
+     {
+      "claim_id": "A2",
+      "label": "supported",
+      "canonical_claim": "同行人数为4人",
+      "entity_id": "entity:月栈桌游室",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "人数直接来自用户本轮请求，未被改写。",
+      "evidence_refs": [
+       "task#/agent_input/user_turns/0/message"
+      ]
+     },
+     {
+      "claim_id": "A3",
+      "label": "supported",
+      "canonical_claim": "本次到店地点为月栈桌游室",
+      "entity_id": "entity:月栈桌游室",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "门店名称逐字来自用户本轮请求；受控资料 NEW-S11 在交付前不可用，故不以其作为支持证据。也正因如此，资料中一并给出的地址“虚构环月巷6号”始终没有进入输出，这是 C1 判 fail 的原因之一。",
+      "evidence_refs": [
+       "task#/agent_input/user_turns/0/message"
+      ]
+     },
+     {
+      "claim_id": "A4",
+      "label": "supported",
+      "canonical_claim": "该时段是否有可容纳4人的桌位属未知，需向商家确认",
+      "entity_id": "entity:月栈桌游室",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "用户本轮请求本身就把空位列为需要问清的事项，输出照此保留为待确认，未替商家给出余位结论。受控资料在交付前不可用，故不以其作为支持证据（资料同样写明此页没有余位数据，只是系统并未读到）。",
+      "evidence_refs": [
+       "task#/agent_input/user_turns/0/message"
+      ]
+     },
+     {
+      "claim_id": "A5",
+      "label": "contradicted",
+      "canonical_claim": "两小时的桌费金额未知，且按房间还是按人头计费也未知，需向商家确认",
+      "entity_id": "entity:月栈桌游室",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控接待说明已经明确给出“四人桌168元/桌/2小时”，金额与计费口径（按桌、按两小时）都是已公开事实；把它表述为需要向商家询问的未知项与原文直接冲突，属把已给出的确定价格当成未知。",
+      "evidence_refs": [
+       "source:NEW-S11#/text"
+      ]
+     },
+     {
+      "claim_id": "A6",
+      "label": "unsupported",
+      "canonical_claim": "是否存在最低消费、茶水费或其他必选服务属未知，需向商家确认",
+      "entity_id": "entity:月栈桌游室",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "该条内容与受控资料并不冲突（资料确未载最低消费或茶水费），但本案受控资料 NEW-S11 的 available_at_checkpoint_ids 为空，交付前系统从未取得该源，用户请求中也没有提到这些费用项；因此这是模型自带的通用清单而非有依据的未知声明，不满足“证据在输出前可用”。",
+      "evidence_refs": [
+       "source:NEW-S11#/text"
+      ]
+     },
+     {
+      "claim_id": "A7",
+      "label": "unsupported",
+      "canonical_claim": "预约政策（是否需预付定金或留联系方式保留位置）属未知，需向商家确认",
+      "entity_id": "entity:月栈桌游室",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "内容方向与资料不冲突，但受控资料在交付前不可用、用户请求中也未提及预约政策或定金，属模型自带的通用待办项而非有依据的未知声明，不满足“证据在输出前可用”。",
+      "evidence_refs": [
+       "source:NEW-S11#/text"
+      ]
+     },
+     {
+      "claim_id": "A8",
+      "label": "unsupported",
+      "canonical_claim": "实际价格与空位应以商家实时回复为准，本清单不构成商家确认",
+      "entity_id": "entity:月栈桌游室",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "这句免责与资料的范围声明方向一致，但受控资料在交付前不可用，系统并非依据资料作出该限定；更关键的是它把资料已明确给出的桌费也一并推给“商家实时回复”，因此不能算作有依据的范围保留。",
+      "evidence_refs": [
+       "source:NEW-S11#/text"
+      ]
+     }
+    ]
+   },
+   {
+    "case_id": "NEW-29",
+    "trial_id": "NEW-29:first",
+    "valid_attempt": true,
+    "outcome": "completed",
+    "replacement_for": null,
+    "invalid_reason": null,
+    "observed_stop_reason": "unscripted_clarification",
+    "evidence_directory": "output/tightening-F9A9ea/regression-v5-session/batch-20260910T063544Z-774a46/NEW-29",
+    "packet_sha": "9efb6707fba30ce7bf6e8a16611a4803ffee3e2d0dd07dacc1f9976261edfe64",
+    "annotation_complete": true,
+    "checks": {
+     "C1": true,
+     "C2": false,
+     "C3": false,
+     "C4": true
+    },
+    "forbidden_checks": {
+     "F1": true,
+     "F2": true,
+     "F3": true
+    },
+    "side_effects_absent": true,
+    "false_completion_absent": true,
+    "claims": [
+     {
+      "claim_id": "A1",
+      "label": "supported",
+      "canonical_claim": "本次任务的门店身份已经选定为受控初态中的斑榕砂锅铺",
+      "entity_id": "entity:斑榕砂锅铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控初态明确给出已选门店，输出的转述与之同一实体、同一受控范围。",
+      "evidence_refs": [
+       "source:NEW-S15#/structured_initial_state/NEW-29/spec/selected_poi/name"
+      ]
+     },
+     {
+      "claim_id": "A2",
+      "label": "supported",
+      "canonical_claim": "完整餐费、供给以及所选优惠的完整使用规则均为未知",
+      "entity_id": "entity:斑榕砂锅铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "三项未知与受控初态的 unknowns 列表逐项对应，属如实报告资料未公开，未把未知补成结论。",
+      "evidence_refs": [
+       "source:ENV-NEW-S15#/initial_draft/unknowns/0",
+       "source:ENV-NEW-S15#/initial_draft/unknowns/2"
+      ]
+     },
+     {
+      "claim_id": "A3",
+      "label": "supported",
+      "canonical_claim": "该条来源与页面证据为模拟来源，观测时间为2026年9月9日12:00",
+      "entity_id": "entity:斑榕砂锅铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "受控世界声明该门店数据来源为 simulated，源包观测时间为2026-09-09T12:00:00+08:00，输出的来源与时间标注与之一致，未把模拟数据说成真实商家供给。",
+      "evidence_refs": [
+       "source:ENV-NEW-S15#/place/source"
+      ]
+     },
+     {
+      "claim_id": "A4",
+      "label": "unverifiable",
+      "canonical_claim": "暂时无法读取优惠信息，需要重新打开来源页面核对",
+      "entity_id": "entity:斑榕砂锅铺",
+      "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+      "reason": "这是系统对自身优惠比较面读取状态的描述，受控资料既不支持也不否证；受控初态实际给出了套餐售价178元与面值218元、仅使用规则未载，该提示在措辞上未区分“规则未载”与“信息读不到”。",
+      "evidence_refs": [
+       "source:NEW-S15#/text"
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "release": {
+  "schema": "plango.independent-ai-controlled-review.v1",
+  "scope": "6 controlled regression cases; independent-context AI review; not human-calibrated, unseen-website generalization, an independent model family, or a third-party benchmark",
+  "dataset_sha": "4d6e8da72701ae44924873897eea7dfb274d64a6c1646301da99b66e82a38d84",
+  "product_sha": "2cadda9c8c7afe66652e6d1ebd13c9aa1bddaf68e4ddb8ef18f34d736d3eb385",
+  "collection_sha": "f5ab14694b24c25b600f921ac3606df62370993a1eb09b02ff571f9fe7453a69",
+  "bundle_sha": "cb86cf92c9f3d4c6e4a262380c79fd82a2c9df701d2c93305eeb07051bbb56dc",
+  "gold_review_sha": "1e051cdbb9869595463be387d7579bc18daad4de08e0896f85187809d082d4e7",
+  "output_review_sha": "9e0cee7176abb0bfec330bbbc1a85d5e5e9ebac624ad376010ce153b46c7688d",
+  "annotations_sha": "a904973f741ed3941f1fdc06c180aefc10972e4f410cff161ccc5e27029fe8ad",
+  "review_receipts": [
+   {
+    "case_id": "NEW-01",
+    "trial_id": "NEW-01:first",
+    "gold_sha": "1741041e018a447d464f3ab82fc94a1b65e1c89fb16fee08483f5d69ad3f5998",
+    "packet_sha": "8a5a0d798656804a7ac20895b39a82e4a320a9f29e7530edda15be4e119c8849",
+    "gold_case_review_sha": "ac1c189b657e42f80a0b621c5a3d2021f6cee0227c4fb5cfb198e843f945acb2",
+    "output_case_review_sha": "c139a9670df4d334e61ffcbbbb62f767c83064cba6d8025f6e07e2fa5a5f9628"
+   },
+   {
+    "case_id": "NEW-07",
+    "trial_id": "NEW-07:first",
+    "gold_sha": "0daccab206815a65ed121ad8bb134cacf9f9260f3817dbf09c08547d7e952732",
+    "packet_sha": "ef44448ae315e93daa96dedf0cbf320877eb78649406c331acaf121ca3636bcf",
+    "gold_case_review_sha": "05fbaedba715c665251b38e9ad9bb557812d0914579515d12957a4a76c61529f",
+    "output_case_review_sha": "d32722d215503e5c641b1f1cee00c874ca108edcf1df15fde3228739455d10e0"
+   },
+   {
+    "case_id": "NEW-14",
+    "trial_id": "NEW-14:first",
+    "gold_sha": "dd54350dde7ca72628af6aef9b6f44811524432313400cd94ba49a8834ac1eb7",
+    "packet_sha": "3449a3b29ffa19f3f962ca4f04453d6f676e136bcf5efd2ee58fda859a33b995",
+    "gold_case_review_sha": "4df66454d5a438c2c0a88ff895bcb82947f8b6e1c2b1b7692b3deff0895d179f",
+    "output_case_review_sha": "9d3aded189a18fa9a9f8319e97d30f28a8099e70984fdcf3f910c113c8f54185"
+   },
+   {
+    "case_id": "NEW-18",
+    "trial_id": "NEW-18:first",
+    "gold_sha": "723bf9bf8c8e31fdd3d3462215673357483e96c6e144d696bf000f0f2a390024",
+    "packet_sha": "19f58ce35fac878abd8cfd44b903f12e1ee3c52c2175e1b8e063e39714b45024",
+    "gold_case_review_sha": "936fcb4be5f00bd47af7ac68def3cc645802b3377c1357901ddc71fdcd89cf8e",
+    "output_case_review_sha": "677fda93f3065f3369a82c0308aec8769244276bdf9548b213e79840af099ce5"
+   },
+   {
+    "case_id": "NEW-21",
+    "trial_id": "NEW-21:first",
+    "gold_sha": "f0babc5daaaf7d3eb96a304cde9a447c89ee45a9917a6f1c799c8b0880a3c3c4",
+    "packet_sha": "4689634bca7ccf79e29d2b2c32644ef5bad4de0442bb8af5f56ad5a34a5e7ecb",
+    "gold_case_review_sha": "b3083954af9dad86d3bef0652551fa96d1a0c830a8bc6e7b0335a0238e711041",
+    "output_case_review_sha": "cc4536d49039b20c22a025fe019cd93dc823def4a3a4a79b9e83f586a87d60f0"
+   },
+   {
+    "case_id": "NEW-29",
+    "trial_id": "NEW-29:first",
+    "gold_sha": "d8a49aaf89e3a752426ba529b7d2a6437131702551ef2abd0873dca7d176da65",
+    "packet_sha": "9efb6707fba30ce7bf6e8a16611a4803ffee3e2d0dd07dacc1f9976261edfe64",
+    "gold_case_review_sha": "85af12055a464fd2c6d68c0acb714191727e889311e98a8ec6137430dea3cec5",
+    "output_case_review_sha": "231643305561d58e15f4153840969a7fcde614a5631dd8e081d8ad38abb57524"
+   }
+  ],
+  "reviewer_type": "AI",
+  "reviewer": "independent_gold_reviewer_v5",
+  "human_verified": false,
+  "gold_human_verified": false,
+  "human_calibrated": false,
+  "context_provenance": "Reviewer context isolation is established by the orchestration record, not inferred from hashes or model agreement"
+ },
+ "issues": []
+}

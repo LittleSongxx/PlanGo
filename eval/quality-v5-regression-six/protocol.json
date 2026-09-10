@@ -1,0 +1,27 @@
+{
+ "version": "plango.controlled-bounded.v1",
+ "name": "PlanGo-regression-six-v4-unknown-split",
+ "evaluation_kind": "regression",
+ "planned_case_ids": [
+  "NEW-01",
+  "NEW-07",
+  "NEW-14",
+  "NEW-18",
+  "NEW-21",
+  "NEW-29"
+ ],
+ "primary_source_groups": 6,
+ "case_authoring": "已揭示quality-v2-30原案例与gold原样子集，每家族1例；tasks/gold/sources/runtime-fixtures 与 quality-v4-regression-six-r2 逐字节一致，未因本轮实现改动任何一题或判据。不能声称未见泛化。",
+ "execution_scope": "4 raw-observation reads, 1 real Electron edit, 1 real Electron accepted-response-loss recovery; controlled sources only",
+ "limits": {
+  "calls": 80,
+  "case_calls": 12,
+  "reported_tokens_stop": 120000
+ },
+ "budget_ledger": "output/tightening-F9A9ea/model-budget.jsonl",
+ "prior_attempts": {
+  "quality-v4-regression-six": "system 28c1278, TSR 1/6, Groundedness 89.38%",
+  "quality-v4-regression-six-r2": "system 8dcf2d3, TSR 1/6, Groundedness 86.68%"
+ },
+ "comparison_note": "同一六题、同一gold、同一预算账本下的第三次回归。旧两轮结果与原件保留不改；本轮只用于对照本次 unknown 语义拆分与语义规则清理的影响，不作为泛化证据。"
+}

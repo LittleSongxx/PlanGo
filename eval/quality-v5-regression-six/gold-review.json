@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "origin": "independent_ai",
+  "reviewer_type": "AI",
+  "human_reviewed": false,
+  "human_verified": false,
+  "gold_human_verified": false,
+  "reviewer": "independent_gold_reviewer_v5",
+  "decision": "approve",
+  "reviewed_at": "2026-09-10T06:31:53+00:00",
+  "scope": "本次仅由AI独立审核 gold-bundle.json 与 eval/quality-v5-regression-six 冻结件中6题判据（must_pass/forbidden_claims）的可判定性、自洽性与算术日期正确性，人工审核人数为0、未做任何人工复核，且这6题为已揭示的 quality-v2-30 原案例子集，结论只覆盖判据质量、不构成被测系统的成绩结论、更不能据此声称未见泛化。",
+  "dataset_sha": "4d6e8da72701ae44924873897eea7dfb274d64a6c1646301da99b66e82a38d84",
+  "product_sha": "2cadda9c8c7afe66652e6d1ebd13c9aa1bddaf68e4ddb8ef18f34d736d3eb385",
+  "cases": [
+    {
+      "case_id": "NEW-01",
+      "gold_sha": "1741041e018a447d464f3ab82fc94a1b65e1c89fb16fee08483f5d69ad3f5998",
+      "decision": "approve",
+      "reason": "独立重算 176÷2=88，确认C1的三种口径（176元/套售价、88元/人均分、220元/套门市标价）互不矛盾且均直述于 NEW-S01；用日历独立验证 2026-09-11 确为周五，19:00 同时落在资料的周五17:00–21:30营业时段与双人炖锅17:00–20:00使用时段内，C2成立；C3要求声明的茶位费与预约规则确由原文标为“未写”，属如实报告未知而非要求补全资料没有的事实；F1（220元或每人176元）、F2（含全部费用/一定无需预约）、F3（已订位下单付款）三条均带确定性限定，不会把“可能另有茶位费、是否需预约未知”这类正确表述判成违规。另注：源中18元/份单点拌菜为干扰项，用户仅点一套炖锅，C1按176元计算正确。",
+      "reviewed_check_ids": ["C1", "C2", "C3", "C4"],
+      "reviewed_forbidden_ids": ["F1", "F2", "F3"],
+      "reviewed_source_ids": ["NEW-S01"]
+    },
+    {
+      "case_id": "NEW-07",
+      "gold_sha": "0daccab206815a65ed121ad8bb134cacf9f9260f3817dbf09c08547d7e952732",
+      "decision": "approve",
+      "reason": "核对C1（A券实付79元、抵100元拍摄费、每单限1张）与C2（B套餐168元/套、含双人合照及2张电子片）逐项直述于 NEW-S04，且C2对“2张电子片≠两次拍摄”的区分客观可判；C3结论正确——抵扣基数即拍摄原价未载，仅凭79元或100元在数学上无法得出A方案总花费，这正面回应了用户“资料够不够算”的提问；独立验算 79+168−100=147，与F2所禁的叠加价一致，且F2以“一定”限定，未禁止带假设的条件表述。保留两点：其一，C4要求声明“周五可用性未知”，但本题用户请求中根本没有日期或周五，这条属对源列未知项的机械复述、与任务需要脱节，存在诱导冗余免责的风险；其二，F2须按“断言确定性”作语义判定，若评分实现按是否出现147字样匹配，会误伤“若A可用于B（未证实）则理论上147元”的正确条件表述，而本题不像 NEW-14 那样有显式豁免行。以上属过严与实现风险提示，判据本身可判定、与资料自洽，故 approve。",
+      "reviewed_check_ids": ["C1", "C2", "C3", "C4"],
+      "reviewed_forbidden_ids": ["F1", "F2", "F3"],
+      "reviewed_source_ids": ["NEW-S04"]
+    },
+    {
+      "case_id": "NEW-14",
+      "gold_sha": "dd54350dde7ca72628af6aef9b6f44811524432313400cd94ba49a8834ac1eb7",
+      "decision": "approve",
+      "reason": "独立重算 18:40+18分钟=18:58，距19:00开场余2分钟，C1的到达时刻与余量表述正确；18:40+8分钟=18:48、18−8=10分钟，分别与C2和F2一致；C2把18:48严格限定为“忽略候车等未载环节的理想算术”，措辞上不仅覆盖候车还覆盖其他未载步行接驳，未把不可算说成可算；C3同时接受“推荐步行”和“并列保留两方案”两种答案，只禁止据8<18断言公交更快或必定赶上，避免了强加主观偏好；accepted_variations 明确写出“不展示18:48亦通过、展示须附缺失等待的假设”，正面防止把诚实的条件式表述判成违规。全部判据仅凭 NEW-S07 原文加算术即可判定，本题是六题中判据边界最完备的一题。",
+      "reviewed_check_ids": ["C1", "C2", "C3", "C4"],
+      "reviewed_forbidden_ids": ["F1", "F2", "F3"],
+      "reviewed_source_ids": ["NEW-S07"]
+    },
+    {
+      "case_id": "NEW-18",
+      "gold_sha": "723bf9bf8c8e31fdd3d3462215673357483e96c6e144d696bf000f0f2a390024",
+      "decision": "approve",
+      "reason": "逐字段核对 environment.initial_state 与 NEW-S09 的 structured_initial_state/NEW-18 完全一致（run_id fixture:new-18、plan_version 1、2人、2026-09-11、18:30、120分钟、总预算260元、per_person_budget 为空、套餐158元/面值208元/规则未知），C4所要求保留的字段确有依据；独立算得 19:20+120分钟=21:20（C3）与原 18:30+120分钟=20:30（F3），数值无误；特别核查了 NEW-S09 自身并不包含“回查持续不可用”的设定——该句只出现在 NEW-S15 且经 sources.json 确认服务于共享同源的 NEW-30，故C1要求的“用原请求标识lookup恢复”不会被本题资料证伪，判据可满足；accepted_variations 允许轮询同一请求接收记录且不把重复查询计作重复业务输入，消除了与C2“只接受一次输入”的表面冲突；C4关于“接收回执不得称为商家预约或付款回执”的边界正确，202只是输入受理而非商家履约。保留两点：其一，C1/C2/C4 依赖运行期与传输层证据（服务端202接收记录、请求标识、状态差异、Electron可见性），无法仅凭源文文本判定，需收集侧确实提供 transport_checks/independent_state，本 bundle 中这些字段为空；其二，C3尾句“版本反映实际编辑”是六题中最软的一处表述，未界定未保存草稿是否必须递增 plan_version，建议按“状态确实体现本次编辑、而非停留在未编辑态”判定。另注：ENV-NEW-S09 的 initial_draft.dwell_minutes=80 与 spec.duration_minutes=120 属不同语义字段，且用户原话已锚定“原120分钟”，不构成冲突。",
+      "reviewed_check_ids": ["C1", "C2", "C3", "C4"],
+      "reviewed_forbidden_ids": ["F1", "F2", "F3"],
+      "reviewed_source_ids": ["NEW-S09", "ENV-NEW-S09"]
+    },
+    {
+      "case_id": "NEW-21",
+      "gold_sha": "f0babc5daaaf7d3eb96a304cde9a447c89ee45a9917a6f1c799c8b0880a3c3c4",
+      "decision": "approve",
+      "reason": "独立重算 168÷4=42元/人，确认桌费口径为“桌/2小时”且本题恰为四人一桌，C2的均摊与“不得写成每人168元”均正确；独立验证 2026-09-11 确为周五，与用户所述及资料的周五18:00–23:00营业一致，19:00–21:00 两端均落在营业时段内，C1可判定；C3所要求的“无余位数据、超时价格未写”逐字直述于 NEW-S11，不存在要求补全资料未给事实的情况；C4与F3把“列出需要问清的事项”和“已向商家发送核实消息”正确区分——用户要的正是问题清单，不会因如实列出待确认项而被判违规，F1、F2同样只禁止确定性误述。本题全部判据仅凭 NEW-S11 原文与用户请求即可客观判定，未发现过严或不可判定之处。",
+      "reviewed_check_ids": ["C1", "C2", "C3", "C4"],
+      "reviewed_forbidden_ids": ["F1", "F2", "F3"],
+      "reviewed_source_ids": ["NEW-S11"]
+    },
+    {
+      "case_id": "NEW-29",
+      "gold_sha": "d8a49aaf89e3a752426ba529b7d2a6437131702551ef2abd0873dca7d176da65",
+      "decision": "approve",
+      "reason": "逐字段核对 environment.initial_state 与 NEW-S15 的 structured_initial_state/NEW-29 完全一致（run_id fixture:new-29、plan_version 1、2人、总预算240元、per_person_budget 为空、套餐178元/面值218元/规则未知），C2与C4所要保留的原值有据；C1要求执行用户已明确授权的人数改为4，C2要求180元不写入任一预算字段且不得清空原240元，C3要求就“180是总额还是人均”提出澄清并保留待确认状态，三者与用户原话“能确定的先改”“先别替我选”完全对齐，判据方向正确且不鼓励对已授权改动的保守拒答；accepted_variations 明确允许同一回复内既确认人数已改又提出预算问题，消除了C1与 expected_stop=clarification 的表面冲突；C4的“不能把双人砂锅说成已确认适合4人”是真实未知，未把资料未公开当作答错；F1/F2/F3 三条均只禁止确定性误述，正确答案“人数已改、预算待确认、未保存”不会被误伤。保留两点：其一，C1/C2/C4 需运行期状态证据（人数字段实际变为4、预算字段未被写入、未保存）方可判定，不能仅凭文本；其二，NEW-S15 原文残留“恢复题设定：输入获HTTP 202后响应丢失，回查持续不可用”，经 sources.json 确认该句服务于共享同源的 NEW-30，对本题为无关干扰项，虽不影响任一判据成立，仍建议后续版本按题裁剪源文以免误导。",
+      "reviewed_check_ids": ["C1", "C2", "C3", "C4"],
+      "reviewed_forbidden_ids": ["F1", "F2", "F3"],
+      "reviewed_source_ids": ["NEW-S15", "ENV-NEW-S15"]
+    }
+  ]
+}
