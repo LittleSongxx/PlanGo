@@ -398,7 +398,10 @@ export async function executeBrowserOperation(contents: WebContents, raw: Browse
       snapshots.set(contents, snapshot)
       // ponytail: retain 64 tab snapshots; an evicted tab must be read again before action.
       if (snapshots.size > 64) snapshots.delete(snapshots.keys().next().value!)
-      return { ...base, ok: true, outcome: 'observed', snapshot_id: snapshot.id, page_version: pageVersion(snapshot), fields: { dom: { canvas_count: canvasCount, manual_gate: snapshot.manualGate, forms }, ...(bookingPreview ? { booking_preview: bookingPreview } : {}) }, elements, text: texts.join('\n\n').slice(0,9000), ...(['extract', 'extract_tables'].includes(command.operation) ? { tables: tables.slice(0,6) } : {}) }
+      // Snapshot already walks the same tables as extract. Dropping them here made
+      // the first look unusable for listings: artifact()/table_data never saw the DOM
+      // and the comparison card stayed empty even though the page text was in hand.
+      return { ...base, ok: true, outcome: 'observed', snapshot_id: snapshot.id, page_version: pageVersion(snapshot), fields: { dom: { canvas_count: canvasCount, manual_gate: snapshot.manualGate, forms }, ...(bookingPreview ? { booking_preview: bookingPreview } : {}) }, elements, text: texts.join('\n\n').slice(0,9000), ...(['snapshot', 'read_page', 'extract', 'extract_tables'].includes(command.operation) ? { tables: tables.slice(0,6) } : {}) }
     }
     const snapshot = snapshots.get(contents)
     if (command.operation === 'scroll') {

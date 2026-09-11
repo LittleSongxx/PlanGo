@@ -95,6 +95,7 @@ async function main() {
   const page = await execute(command('snapshot'))
   assert(page.ok && page.tab_id === a.id && page.snapshot_id && page.elements.length === 2, 'snapshot creates stable refs: ' + JSON.stringify(page))
   assert(page.text.includes('128 元'), 'real page text extracted')
+  assert(page.tables?.[0]?.rows?.[0]?.[1] === '128 元', 'snapshot keeps DOM tables for listing assembly')
   const pin = { tab_id: page.tab_id, expected_snapshot_id: page.snapshot_id }
   const unapproved = await execute(command('click', { idx: 0 }, pin))
   assert(unapproved.error_kind === 'approval_required' && !(await a.page('window.submits')), 'missing hint cannot bypass approval')

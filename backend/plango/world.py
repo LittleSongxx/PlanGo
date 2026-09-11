@@ -23,7 +23,7 @@ from sqlalchemy import update
 from .browser import commands, run_context
 from .location import LocationContext, select_origin
 from .outcomes import browser_manual_error
-from .supply import _RELATED, entity_spans, literal_supply
+from .supply import _INSTRUCTION, _RELATED, entity_spans, literal_supply
 
 
 class Item(BaseModel):
@@ -127,6 +127,49 @@ def _grounded_price(price, quote, *, original=False, per_person=False):
     return len(supported) == 1 and abs(next(iter(supported)) - price) < 0.001
 
 
+def _people_cell(value):
+    match = re.fullmatch(r"(\d{1,2})\s*人", str(value).strip())
+    count = int(match[1]) if match else None
+    return count if count is not None and 1 <= count <= 100 else None
+
+
+def _unique_page_place(observation):
+    """A unique shop name plus one labeled street address on the same look."""
+    text = str(observation.get("text") or "")
+    title = str(observation.get("title") or "").strip()
+    lines = [match.group().strip() for match in re.finditer(r"[^\r\n]+", text[:10000]) if match.group().strip()]
+    labeled = []
+    for line in lines:
+        stripped = re.sub(r"^地址\s*[:：]\s*", "", line).strip()
+        if stripped != line.strip() and 3 <= len(stripped) <= 100 and re.search(r"(?:街|路).*\d+号", stripped):
+            labeled.append(stripped)
+    if not labeled:
+        labeled = [match.group(1).strip() for match in re.finditer(r"地址\s*[:：]\s*([^\n。；;]{3,100})", text[:10000])
+                   if re.search(r"(?:街|路).*\d+号", match.group(1))]
+    addresses = list(dict.fromkeys(labeled))
+    if len(addresses) != 1:
+        return []
+    address = addresses[0]
+    names = []
+    for part in re.split(r"\s*[·|｜]\s*", title):
+        part = part.strip()
+        if 2 <= len(part) <= 80 and part in text and part != address:
+            names.append(part)
+    if 2 <= len(title) <= 80 and title in text and title != address:
+        names.append(title)
+    names = list(dict.fromkeys(names))
+    if len(names) != 1:
+        return []
+    name = names[0]
+    start, end = text.find(name), text.find(address)
+    if start < 0 or end < 0 or end < start:
+        return []
+    quote = text[start:end + len(address)].strip()
+    if name not in quote or address not in quote or _RELATED.search(quote) or _INSTRUCTION.search(quote):
+        return []
+    return [ObservedPlace(name=name, address=address, quote=quote)]
+
+
 def table_data(observation):
     """Prices in explicitly labelled DOM columns are evidence; other numbers are not prices."""
     menu: list[Item] = []
@@ -160,6 +203,7 @@ def table_data(observation):
             None,
         )
         oi = next((i for i, h in enumerate(headers) if re.search(_ORIGINAL, h)), None)
+        qi = next((i for i, h in enumerate(headers) if any(t in h for t in ("人数", "people"))), None)
         if ni is None or pi is None:
             continue
         for row in table.get("rows", [])[:50]:
@@ -169,10 +213,11 @@ def table_data(observation):
                 name=str(row[ni]),
                 price=price_cell(row[pi]),
                 original_price=price_cell(row[oi]) if oi is not None and oi < len(row) else None,
+                people=_people_cell(row[qi]) if qi is not None and qi < len(row) else None,
                 quote=" | ".join(map(str, row)),
             )
             (offers if any("套餐" in h or "团购" in h for h in headers) else menu).append(item)
-    return PageData(menu=menu[:50], offers=offers[:30])
+    return PageData(menu=menu[:50], offers=offers[:30], places=_unique_page_place(observation))
 
 
 def dianping_preview_data(observation):

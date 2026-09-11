@@ -110,6 +110,12 @@ async def test_one_semantic_call_preserves_request_sources_and_real_tool_results
     )
     validate_citations(decision, context["sources"])
     assert [item.quote for item in decision.citations] == [source_text]
+    compacted = TaskDecision(
+        operation="answer", answer="草案已按已读资料整理。",
+        citations=[Citation(artifact_id="page:previous", quote=source_text)],
+    )
+    validate_citations(compacted, [{"artifact_id": "page:previous", "type": "browser_page", "current": False}])
+    assert compacted.citations == [] and compacted.answer.startswith("草案已按")
     assert BrowserDecision(operation="type", idx=1, text="3").arguments() == {"idx": 1, "text": "3"}
     assert task_context(state)["tool_results"] == []
 
