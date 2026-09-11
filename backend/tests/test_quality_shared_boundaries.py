@@ -11,9 +11,10 @@ def test_replanning_keeps_accepted_input_but_revokes_previous_decisions():
     spec = TripSpec(goal='原计划', party_size=3, budget=280, must_visit_place_ids=['selected'])
     context = {'party_size': 3, 'visit_date': '2026-09-12', 'total_budget': 120,
                'offer_source': {'command_id': 'page-1'}}
+    artifacts = [{'artifact_id': 'page:1', 'type': 'browser_page', 'data': {'text': '套餐 98 元'}}]
     state = {'trip_spec': spec, 'selected_plan': {'plan_id': 'old', 'version': 2},
              'approval_decision': 'approve', 'execution_goal': {'plan_id': 'old'},
-             'browser_task_context': context,
+             'browser_task_context': context, 'browser_artifacts': artifacts,
              'browser_wait': {'command_id': 'old-extract'}, 'browser_action': {'operation': 'extract'}}
     reset = planning_reset(state)
     assert reset['trip_spec'] == reset['previous_spec'] == spec
@@ -21,6 +22,7 @@ def test_replanning_keeps_accepted_input_but_revokes_previous_decisions():
     assert reset['execution_goal'] is None
     assert reset['browser_wait'] is None and reset['browser_action'] is None
     assert reset['browser_task_context'] == context
+    assert reset['browser_artifacts'] == artifacts
     assert planning_reset(reset)['trip_spec'] == spec
     assert planning_reset(reset)['browser_task_context']['party_size'] == 3
 

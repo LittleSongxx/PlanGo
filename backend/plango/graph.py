@@ -54,7 +54,12 @@ def _current_page_artifact(state):
 
 
 def _unread_tab(state) -> bool:
-    """True when nothing from the current tab or image has been read yet."""
+    """True when nothing from the current tab or image has been read yet.
+
+    A later turn clears the live observation. Sources already in hand are still
+    a read page: forcing extract there pauses on tab_required after a restart
+    that has no tabs left. A first look with no artifacts still extracts.
+    """
     if _current_page_artifact(state) or state.get("browser_image_turn_id"):
         return False
     return not any(
@@ -458,6 +463,22 @@ def build_desktop_graph(runtime, deps, checkpointer):
 
     async def first(state):
         # Approved plan preparation begins with a new read of the visible page.
+        if (state.get("execution_goal") or {}).get("kind") != "itinerary_preparation":
+            # Draft review falling through here used to extract, then pause on
+            # tab_required after a desktop restart that had no tabs left.
+            if state.get("selected_plan") and state.get("verifier") and state.get("trip_spec"):
+                try:
+                    review = draft_review(state)
+                    delivered = draft_outcome(state)
+                    return {"phase": RunPhase.PLAN_DRAFTED, "outcome": None, "clarification": review,
+                            "interrupt_id": review["interrupt_id"],
+                            "execution_outcome": delivered.model_dump(mode="json"),
+                            "reason": delivered.summary, "browser_next": BrowserDecision().model_dump()}
+                except (ValueError, TypeError, KeyError):
+                    pass
+            return {"phase": RunPhase.PARTIAL_FAILED, "outcome": "PARTIAL_FAILED",
+                    "browser_next": BrowserDecision().model_dump(),
+                    "reason": "当前不是表单准备，且没有可交付的核验草案；未读取页面。"}
         return {"browser_next": BrowserDecision(operation="extract").model_dump(),
                 "browser_steps": 0, "phase": RunPhase.RESEARCHING,
                 "action_proposal": None, "approval_decision": None, "browser_action": None,
@@ -1019,7 +1040,15 @@ def build_desktop_graph(runtime, deps, checkpointer):
         graph.add_node("browser_variants", make_variants)
         graph.add_conditional_edges("browser_variants", lambda s: "browser_draft_review" if (s.get("clarification") or {}).get("kind") == "draft_review" else "supervisor")
         graph.add_node("browser_draft_review", review_draft)
-        graph.add_conditional_edges("browser_draft_review", lambda s: END if s.get("outcome") else "replan" if s.get("approval_decision") == "edit" else "browser_first")
+        graph.add_conditional_edges(
+            "browser_draft_review",
+            lambda s: (
+                END if s.get("outcome")
+                else "replan" if s.get("approval_decision") == "edit"
+                else "browser_first" if (s.get("execution_goal") or {}).get("kind") == "itinerary_preparation"
+                else END
+            ),
+        )
         graph.add_node("browser_first", first)
         graph.add_node("browser_operate", operate)
         graph.add_node("browser_check_receipt", check_receipt)
@@ -1031,7 +1060,14 @@ def build_desktop_graph(runtime, deps, checkpointer):
         graph.add_node("browser_decide", decide)
         graph.add_node("browser_approve", approve)
         graph.add_edge("image_entry", "browser_decide")
-        graph.add_edge("browser_first", "browser_operate")
+        graph.add_conditional_edges(
+            "browser_first",
+            lambda s: (
+                END
+                if s.get("outcome") or (s.get("clarification") or {}).get("kind") == "draft_review"
+                else "browser_operate"
+            ),
+        )
         graph.add_conditional_edges(
             "browser_operate",
             lambda s: (

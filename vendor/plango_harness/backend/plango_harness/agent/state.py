@@ -254,6 +254,7 @@ def planning_reset(state: dict[str, Any]) -> dict[str, Any]:
         # revoked decision. Graph re-entry builds a fresh dict from this reset,
         # so dropping the context here makes the next plan treat 3人 as unknown.
         "browser_task_context": state.get("browser_task_context") or {},
+        "browser_artifacts": state.get("browser_artifacts") or [],
         "requirement_patch": [], "requirement_refresh": {},
         "structured_requirement_edit": None,
         "last_observation": None,
