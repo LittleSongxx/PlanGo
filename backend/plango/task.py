@@ -506,9 +506,15 @@ def _citation_locates(citation: Citation, sources: dict[str, dict[str, Any]]) ->
     source = sources.get(citation.artifact_id)
     if source is None:
         return False
+    records = source.get("records")
+    if not isinstance(records, list):
+        return False
     ref = citation.record_ref or None
-    return any(citation.quote in record["text"] for record in source["records"]
-               if ref is None or ref == record["ref"])
+    return any(
+        citation.quote in str(record.get("text") or "")
+        for record in records
+        if isinstance(record, dict) and (ref is None or ref == record.get("ref"))
+    )
 
 
 def validate_citations(decision: TaskDecision, sources: list[dict[str, Any]]) -> None:

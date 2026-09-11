@@ -1,7 +1,7 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
-// 聊天气泡里的 markdown 渲染：表格/加粗/列表/分割线都排整齐，解决"文字格式看起来有点乱"。
+// User-facing model answers (chat and the outcome canvas). Source quotes stay plain text.
 export function Markdown({ children }: { children: string }): JSX.Element {
   return (
     <div className="md-body text-[13px] leading-[1.75] break-words">

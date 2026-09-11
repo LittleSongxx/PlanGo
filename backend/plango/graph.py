@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
@@ -72,6 +72,62 @@ def _working_from_draft(state) -> bool:
     if not isinstance(spec, dict):
         spec = spec.model_dump() if hasattr(spec, "model_dump") else {}
     return bool(spec.get("selected_offer") or spec.get("must_visit_place_ids"))
+
+
+def _iso_date(value):
+    if type(value) is date:
+        return value
+    try:
+        return date.fromisoformat(str(value)[:10])
+    except ValueError:
+        return None
+
+
+def _confirmed_constraints(state) -> dict[str, Any]:
+    """Numbers the user already saved on the comparison card, not a model guess."""
+    context = state.get("browser_task_context") or {}
+    confirmed: dict[str, Any] = {}
+    party = context.get("party_size")
+    if isinstance(party, int) and 1 <= party <= 12 and not context.get("party_ambiguous"):
+        confirmed["party_size"] = party
+    visit = _iso_date(context.get("visit_date"))
+    if visit is not None:
+        confirmed["visit_date"] = visit
+    if context.get("total_budget") is not None and not context.get("budget_ambiguous"):
+        confirmed["budget"] = context["total_budget"]
+    if context.get("per_person_budget") is not None and not context.get("budget_ambiguous"):
+        confirmed["per_person_budget"] = context["per_person_budget"]
+    return confirmed
+
+
+def _with_confirmed_requirements(task, state):
+    """Keep confirmed comparison constraints when planning starts from a later message."""
+    confirmed = _confirmed_constraints(state)
+    if not confirmed or task.requirements is None:
+        return task
+    req = task.requirements
+    updates: dict[str, Any] = {}
+    if "party_size" in confirmed and req.party_size is None:
+        updates["party_size"] = confirmed["party_size"]
+        updates["party_size_unknown"] = False
+    if "visit_date" in confirmed and req.visit_date is None:
+        updates["visit_date"] = confirmed["visit_date"]
+        updates["visit_date_unknown"] = False
+    if "budget" in confirmed and req.budget is None and not req.clear_budget:
+        updates["budget"] = confirmed["budget"]
+        updates["clear_budget"] = False
+    if "per_person_budget" in confirmed and req.per_person_budget is None and not req.clear_per_person_budget:
+        updates["per_person_budget"] = confirmed["per_person_budget"]
+        updates["clear_per_person_budget"] = False
+    if not updates:
+        return task
+    taken = {key for key in updates if key in confirmed}
+    fields = [field for field in req.clarification_fields if field not in taken]
+    updates["clarification_fields"] = fields
+    if req.clarification_needed and not fields:
+        updates["clarification_needed"] = False
+        updates["clarification_question"] = ""
+    return task.model_copy(update={"requirements": req.model_copy(update=updates)})
 
 
 def _kept(state, results) -> str:
@@ -727,6 +783,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
                                            "payload": {"error": str(error), "turn_id": state.get("turn_id", 1)}}]}
                     results.append({"tool": "decision_validation", "ok": False, "error": str(error)})
         assert task is not None
+        task = _with_confirmed_requirements(task, state)
         context["decision_count"] = context.get("decision_count", 0) + 1
         context["operation"] = task.operation
         update.update(browser_task_context=context, clarification=None,
@@ -735,6 +792,8 @@ def build_desktop_graph(runtime, deps, checkpointer):
         if task.requirements is not None:
             update["requirement_proposal"] = {"turn_id": state.get("turn_id", 1), "input_text": state.get("input_text"),
                                               "output": task.requirements.model_dump(mode="json")}
+            # First-plan materialization stays in the requirements node so an
+            # unresolved origin is not written as a trip before it can clarify.
             if task.operation != "plan":
                 raw = state.get("trip_spec") or state.get("previous_spec")
                 if raw is not None:
@@ -759,19 +818,19 @@ def build_desktop_graph(runtime, deps, checkpointer):
                 *calculate(task.calculations, context.get("tool_results")),
             ]
             return {**update, "tool_call_count": state.get("tool_call_count", 0) + 1}
+        if task.operation in {"ask", "answer"} and _unread_tab(state) and not _working_from_draft(state):
+            # Same class as an invented navigate: do not ask, and do not answer
+            # from memory or the user message, before the open tab has been read.
+            # Routing keys off context.operation; leaving it as ask would skip
+            # extract and fall through to a blank clarification.
+            context["operation"] = "read"
+            context["tool_results"] = [*context.get("tool_results", []),
+                                       {"tool": "observe_current_page", "ok": True,
+                                        "note": "尚未读取当前页，先看当前页再决定下一步"}]
+            update["browser_task_context"] = context
+            update["browser_next"] = BrowserDecision(operation="extract").model_dump()
+            return update
         if task.operation == "ask":
-            if _unread_tab(state) and not _working_from_draft(state):
-                # Same class as an invented navigate: do not ask the user to
-                # paste a page that the current tab has not been read yet.
-                # Routing keys off context.operation; leaving it as ask would
-                # skip extract and fall through to a blank clarification.
-                context["operation"] = "read"
-                context["tool_results"] = [*context.get("tool_results", []),
-                                           {"tool": "observe_current_page", "ok": True,
-                                            "note": "尚未读取当前页，先看当前页再决定是否向用户追问"}]
-                update["browser_task_context"] = context
-                update["browser_next"] = BrowserDecision(operation="extract").model_dump()
-                return update
             context["question"] = task.question
             return {**update, "clarification": {"question": task.question}, "phase": RunPhase.REQUIREMENTS_READY}
         if task.operation == "answer":

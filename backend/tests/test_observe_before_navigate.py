@@ -6,7 +6,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 from plango.app import create_app
-from plango.graph import BrowserDecision, TaskDecision, _kept, _page_assembly_results
+from plango.graph import BrowserDecision, TaskDecision, _kept, _page_assembly_results, artifact
+from plango.task import RequirementOutput
 from plango_harness.agent.contracts import TripSpec
 from plango_harness.agent.graph import GraphDeps
 from test_browser_harness import TOKEN, settings
@@ -69,6 +70,49 @@ async def test_asking_before_any_page_is_read_looks_at_the_current_tab(tmp_path,
     assert note["tool"] == "observe_current_page" and note["ok"] is True
 
 
+async def test_answering_before_any_page_is_read_looks_at_the_current_tab(tmp_path, monkeypatch):
+    """A finished-looking answer is the other way to skip the open tab."""
+    node = decide_node(tmp_path, monkeypatch, TaskDecision(
+        operation="answer", answer="精选双人餐售价98元，适用2人。"))
+    update = await node.ainvoke(read_state())
+    assert update.get("outcome") is None
+    assert update.get("execution_outcome") is None
+    assert update["browser_next"]["operation"] == "extract"
+    assert update["browser_task_context"]["operation"] == "read"
+    note = update["browser_task_context"]["tool_results"][-1]
+    assert note["tool"] == "observe_current_page" and note["ok"] is True
+
+
+async def test_confirmed_comparison_constraints_are_kept_when_planning(tmp_path, monkeypatch):
+    """A later plan must not treat the already-saved comparison numbers as unknown."""
+    observed = page()
+    node = decide_node(tmp_path, monkeypatch, TaskDecision(
+        operation="plan",
+        requirements=RequirementOutput(
+            goal="整理行程草案", party_size_unknown=True, visit_date_unknown=True,
+            clarification_needed=True, clarification_fields=["party_size", "visit_date"],
+            clarification_question="人数未确认，不能核算或生成执行计划",
+        ),
+    ))
+    context = read_state()["browser_task_context"]
+    update = await node.ainvoke(read_state(
+        input_text="整理这份行程草案，保留来源和待核验事项。",
+        browser_observation={"ok": True, "outcome": "observed", "snapshot_id": "seen",
+                             "url": observed["url"], "command_id": "fixture-command"},
+        browser_artifacts=[observed],
+        browser_task_context={**context, "request": "整理这份行程草案，保留来源和待核验事项。",
+                              "party_size": 3, "visit_date": "2026-09-12", "total_budget": 120,
+                              "party_ambiguous": False, "budget_ambiguous": False},
+    ))
+    output = update["requirement_proposal"]["output"]
+    assert output["party_size"] == 3 and output["party_size_unknown"] is False
+    assert output["visit_date"] == "2026-09-12" and output["visit_date_unknown"] is False
+    assert output["budget"] == 120
+    assert "party_size" not in output["clarification_fields"]
+    assert "trip_spec" not in update
+    assert update["browser_task_context"]["operation"] == "plan"
+
+
 async def test_a_draft_edit_may_still_ask_the_user(tmp_path, monkeypatch):
     """A selected place is already the task; looking at a blank tab does not help."""
     node = decide_node(tmp_path, monkeypatch, TaskDecision(
@@ -118,6 +162,49 @@ def test_a_failure_notice_names_only_what_the_turn_obtained(state, results, expe
     """Claiming retained sources and calculations after reading and computing nothing is
     a false statement about our own state, and it hides the real defect from the user."""
     assert _kept(state, results) == expected
+
+
+def test_dom_tables_from_a_snapshot_look_still_assemble_listings():
+    """A first look that only snapshotted still has the DOM table it already walked."""
+    observation = {
+        "ok": True, "command_id": "snapshot-command", "url": "http://127.0.0.1:8765/offer-sample.html",
+        "title": "顺风123(观音桥大融城店) · PlanGo 本地测试页面",
+        "text": "顺风123(观音桥大融城店)\n地址：观音桥步行街8号附5号大融城6楼6-010\n团购套餐",
+        "tables": [{
+            "headers": ["团购套餐", "售价", "面值", "适用人数", "使用说明"],
+            "rows": [
+                ["50元代金券", "¥47", "¥50", "未标注", "随时退；过期自动退。"],
+                ["精选双人餐", "¥98", "", "2人", "周一至周日；随时退。"],
+                ["招牌冷面鸡", "¥19.9", "", "单品", "周一至周日；随时退。"],
+            ],
+        }],
+    }
+    observed = artifact(observation)
+    assert [item["name"] for item in observed["data"]["offers"]] == ["50元代金券", "精选双人餐", "招牌冷面鸡"]
+    assert [item.get("people") for item in observed["data"]["offers"]] == [None, 2, None]
+    assert observed["data"]["places"][0]["name"] == "顺风123(观音桥大融城店)"
+    assert observed["data"]["places"][0]["address"] == "观音桥步行街8号附5号大融城6楼6-010"
+    rows = _page_assembly_results({
+        "browser_observation": observation,
+        "browser_artifacts": [observed],
+        "browser_task_context": {"tool_results": []},
+        "trip_spec": TripSpec(goal="核对当前页套餐", party_size=3, visit_date=date(2026, 9, 12), budget=120),
+    })
+    assert rows[0]["tool"] == "compare_offers" and rows[0]["ok"] is True
+    assert [entry["name"] for entry in rows[0]["result"]["entries"]] == ["50元代金券", "精选双人餐", "招牌冷面鸡"]
+    package = rows[0]["result"]["entries"][1]
+    assert package["status"] == "ineligible" and any("不能认定" in reason for reason in package["reasons"])
+    assert rows[0]["result"]["merchant"]["name"] == "顺风123(观音桥大融城店)"
+
+
+def test_two_labeled_addresses_do_not_invent_a_shop():
+    observation = {
+        "ok": True, "command_id": "two-addresses", "url": "https://merchant.invalid/list",
+        "title": "青竹餐厅(江北店) · 目录",
+        "text": "青竹餐厅(江北店)\n地址：江畔路8号\n白鹭餐厅\n地址：长江路10号",
+        "tables": [],
+    }
+    assert artifact(observation)["data"]["places"] == []
 
 
 def test_current_page_offers_are_assembled_for_the_next_decision():

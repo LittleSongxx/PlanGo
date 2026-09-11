@@ -10,6 +10,7 @@ import { ResultFeedback } from './ResultFeedback'
 import { DraftReviewCard } from './DraftReviewCard'
 import { RequirementsCard } from './RequirementsCard'
 import { OfferComparisonCard } from './OfferComparisonCard'
+import { Markdown } from './Markdown'
 import { MapPin, Clock, Utensils, Ticket, CheckCircle2, XCircle, AlertTriangle, Send, ListChecks, Wallet, Globe, Navigation, Mic, MicOff, ArrowRight, Sparkles, FileText } from 'lucide-react'
 
 const cardPriority = (card: OutcomeCard): number => card.kind === 'confirm' || card.kind === 'draft_review' ? 2 : card.kind === 'task_answer' || card.kind === 'booking_preview' || card.kind === 'preparation' && card.current ? 1 : 0
@@ -74,7 +75,7 @@ function CardView({ card }: { card: OutcomeCard }): JSX.Element {
     case 'task_answer':
       return <Card accent>
         <div className="plango-kicker">{card.complete ? '本次答复' : '已完成的部分'}</div>
-        <p className="mt-3 text-sm leading-7 whitespace-pre-wrap break-words">{card.text}</p>
+        <div className="mt-3"><Markdown>{publicStatus(card.text)}</Markdown></div>
         {!!card.citations.length && <details className="mt-4 border-t border-[var(--line)] pt-3 text-sm">
           <summary className="cursor-pointer text-[var(--muted)]">查看引用资料</summary>
           {card.citations.map((citation, index) => <blockquote key={index} className="mt-3 border-l-2 border-brand/40 pl-3">
