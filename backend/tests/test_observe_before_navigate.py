@@ -15,10 +15,15 @@ from test_offer_applicability import page
 
 
 def decide_node(tmp_path, monkeypatch, decision):
+    return graph_nodes(tmp_path, monkeypatch, decision)["decide"]
+
+
+def graph_nodes(tmp_path, monkeypatch, decision=None):
     import plango.graph as module
 
     runtime = create_app(settings(tmp_path), token=TOKEN).state.runtime
-    runtime.model.structured = decision if callable(decision) else AsyncMock(return_value=decision)
+    if decision is not None:
+        runtime.model.structured = decision if callable(decision) else AsyncMock(return_value=decision)
     deps = GraphDeps(model=runtime.model, tools=runtime.tools, world=runtime.world_service.provider,
                      planner=None, memory=None, runs=None, action_provider=None)
     actual, nodes = module.build_graph, {}
@@ -27,11 +32,13 @@ def decide_node(tmp_path, monkeypatch, decision):
         def capture(graph):
             extension(graph)
             nodes["decide"] = graph.nodes["browser_decide"].runnable
+            nodes["first"] = graph.nodes["browser_first"].runnable
         return actual(deps, extension=capture, **kwargs)
 
     monkeypatch.setattr(module, "build_graph", build)
     module.build_desktop_graph(runtime, deps, None)
-    return nodes["decide"]
+    nodes["decide"].structured = runtime.model.structured
+    return nodes
 
 
 def read_state(**extra):
@@ -113,6 +120,18 @@ async def test_confirmed_comparison_constraints_are_kept_when_planning(tmp_path,
     assert update["browser_task_context"]["operation"] == "plan"
 
 
+async def test_ask_with_kept_sources_does_not_require_a_live_tab(tmp_path, monkeypatch):
+    """A new turn clears the observation. Kept sources are enough to ask."""
+    node = decide_node(tmp_path, monkeypatch, TaskDecision(
+        operation="ask", question="180是总预算还是每人预算？"))
+    update = await node.ainvoke(read_state(
+        turn_id=2, browser_observation={},
+        browser_artifacts=[{"artifact_id": "page:old", "type": "browser_page",
+                            "data": {"text": "材料费每人28.5元"}}]))
+    assert update["clarification"]["question"] == "180是总预算还是每人预算？"
+    assert update.get("browser_next") is None
+
+
 async def test_a_draft_edit_may_still_ask_the_user(tmp_path, monkeypatch):
     """A selected place is already the task; looking at a blank tab does not help."""
     node = decide_node(tmp_path, monkeypatch, TaskDecision(
@@ -140,7 +159,9 @@ async def test_an_address_the_user_did_not_write_is_not_opened_after_a_page_is_o
     node = decide_node(tmp_path, monkeypatch, TaskDecision(
         operation="read", browser=BrowserDecision(operation="navigate", url="https://other.invalid/next")))
     state = read_state(browser_observation={"ok": True, "outcome": "observed", "snapshot_id": "seen",
-                                            "url": "https://merchant.invalid/shop/1", "command_id": "c1"})
+                                            "url": "https://merchant.invalid/shop/1", "command_id": "c1"},
+                       browser_artifacts=[{"artifact_id": "page:c1", "type": "browser_page",
+                                           "data": {"text": "套餐 98 元"}}])
     update = await node.ainvoke(state)
     assert update["browser_next"]["operation"] == "extract"
     assert update["browser_next"]["url"] is None
@@ -240,3 +261,30 @@ async def test_assembled_offers_reach_the_decision_prompt(tmp_path, monkeypatch)
     assert update.get("outcome") == "SUCCEEDED"
     assert captured[0]["tool_results"][0]["tool"] == "compare_offers"
     assert captured[0]["tool_results"][0]["result"]["entries"][0]["listed_price"] == 98
+
+
+async def test_page_read_entry_without_preparation_delivers_the_draft(tmp_path, monkeypatch):
+    from plango_harness.agent.contracts import ConstraintCheck, VerifierResult
+    from test_preparation_outcome import prepared_state
+
+    nodes = graph_nodes(tmp_path, monkeypatch)
+    state, _ = prepared_state()
+    plan = state["selected_plan"]
+    state["trip_spec"] = state["execution_goal"]["requirements"]
+    state["verifier"] = VerifierResult(
+        plan_id=plan.plan_id, hard_constraints_pass=True, evidence_complete=False,
+        unknown_evidence=[ConstraintCheck(name="queue", kind="unknown", passed=None)])
+    state.pop("execution_goal")
+    update = await nodes["first"].ainvoke(state)
+    assert update["browser_next"]["operation"] == "finish"
+    assert update["clarification"]["kind"] == "draft_review"
+    assert update["execution_outcome"]["data"]["business_completed"] is False
+    assert update.get("outcome") is None
+
+
+async def test_approved_preparation_still_reads_the_visible_page(tmp_path, monkeypatch):
+    from test_preparation_outcome import prepared_state
+
+    nodes = graph_nodes(tmp_path, monkeypatch)
+    update = await nodes["first"].ainvoke(prepared_state()[0])
+    assert update["browser_next"]["operation"] == "extract"
