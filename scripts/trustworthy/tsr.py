@@ -88,10 +88,33 @@ def _substance_min(attempt: dict[str, Any], check: dict[str, Any]) -> bool:
     return delivery_substance(attempt) >= need
 
 
+def _structure_declared(attempt: dict[str, Any], check: dict[str, Any]) -> bool:
+    """The delivery declared its gap structurally, not by wording.
+
+    Reads delivery.uncertainty (populated since scorer-side support v1.5):
+    kind must match when the check names one, and records must reach
+    min_records when the check demands sources for a conflict.
+    """
+    uncertainty = (attempt.get("delivery") or {}).get("uncertainty")
+    if not isinstance(uncertainty, dict) or not uncertainty.get("kind"):
+        return False
+    expected_kind = check.get("kind")
+    if expected_kind is not None and uncertainty.get("kind") != expected_kind:
+        return False
+    min_records = check.get("min_records")
+    if min_records is not None:
+        records = [row for row in (uncertainty.get("records") or []) if str(row).strip()]
+        if len(records) < int(min_records):
+            return False
+    return True
+
+
 def evaluate_check(attempt: dict[str, Any], check: dict[str, Any]) -> bool:
     kind = check["type"]
     if kind == "substance_min":
         return _substance_min(attempt, check)
+    if kind == "structure_declared":
+        return _structure_declared(attempt, check)
     if kind == "number_equals":
         try:
             return _number_equals(attempt, check)

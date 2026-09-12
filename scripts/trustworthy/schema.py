@@ -17,6 +17,7 @@ CHECK_TYPES = frozenset(
         "marker_absent",
         "forbidden_absent",
         "substance_min",
+        "structure_declared",
     }
 )
 
@@ -213,6 +214,18 @@ def _validate_check_shape(task_id: str, check: dict[str, Any]) -> None:
     if kind == "substance_min":
         chars = check.get("chars")
         require(isinstance(chars, int) and not isinstance(chars, bool) and chars > 0, f"{prefix}: chars must be a positive integer")
+        return
+    if kind == "structure_declared":
+        kind_value = check.get("kind")
+        require(
+            kind_value in (None, "missing_value", "conflicting_records"),
+            f"{prefix}: kind must be missing_value or conflicting_records",
+        )
+        min_records = check.get("min_records")
+        require(
+            min_records is None or (isinstance(min_records, int) and not isinstance(min_records, bool) and min_records >= 0),
+            f"{prefix}: min_records must be a non-negative integer",
+        )
         return
     needles = check.get("needles")
     require(isinstance(needles, list) and needles, f"{prefix}: needles required")

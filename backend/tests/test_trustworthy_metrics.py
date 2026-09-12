@@ -36,7 +36,7 @@ from scripts.trustworthy.report import (  # noqa: E402
     wilson_interval,
 )
 from scripts.trustworthy.schema import load_attempts, load_dataset, validate_dataset  # noqa: E402
-from scripts.trustworthy.tsr import delivery_substance, score_attempt  # noqa: E402
+from scripts.trustworthy.tsr import delivery_substance, evaluate_check, score_attempt  # noqa: E402
 
 DATASET = ROOT / "eval" / "trustworthy-v1"
 ATTEMPTS = DATASET / "fixtures" / "attempts.json"
@@ -313,7 +313,7 @@ def test_cli_validate_and_score(tmp_path, capsys):
     assert report["tsr"]["wilson_95"]["low"] < report["tsr"]["point"] < report["tsr"]["wilson_95"]["high"]
     assert "not a holdout official score" in report["disclaimer"]
     assert report["faithfulness"]["bootstrap_95"]["draws"] == 2000
-    assert report["scorer_version"] == "trustworthy.v1.7-rules"
+    assert report["scorer_version"] == "trustworthy.v1.8-rules"
     coverage = report["coverage"]
     assert coverage["faithfulness_lower_bound"] is not None
     assert coverage["faithfulness_scored"] == len([row for row in report["cases"] if row["faithfulness"] is not None])
@@ -691,3 +691,33 @@ def test_user_stated_operands_reach_the_judge_not_the_gate():
     assert all(row["by"] != "contract" for row in scored["claims"])
     payload = "".join(str(m.get("content") or "") for m in seen[0])
     assert "用户本轮原话" in payload and "本跑计算器验算" in payload
+
+
+def test_structure_declared_reads_the_delivery_uncertainty():
+    attempt = {"delivery": {"text": "当前值未知，两份记录冲突。", "uncertainty": {"kind": "conflicting_records", "subject": "余票", "records": ["柜台 6 张", "门口 24 张"]}}}
+    assert evaluate_check(attempt, {"type": "structure_declared", "kind": "conflicting_records", "min_records": 2, "id": "c1"})
+    assert not evaluate_check(attempt, {"type": "structure_declared", "kind": "missing_value", "id": "c2"})
+    assert not evaluate_check(attempt, {"type": "structure_declared", "kind": "conflicting_records", "min_records": 3, "id": "c3"})
+    bare = {"delivery": {"text": "当前值未知。"}}
+    assert not evaluate_check(bare, {"type": "structure_declared", "id": "c4"})
+
+
+def test_non_completed_outcomes_leave_the_faithfulness_denominator(tmp_path):
+    """F judges delivered answers; a failure turn's fallback text is process."""
+    from scripts.trustworthy.cli import _score_rows
+
+    for name in ("protocol.json", "tasks.json", "worlds.json", "oracles.json"):
+        (tmp_path / name).write_bytes((DATASET / name).read_bytes())
+    dataset = load_dataset(tmp_path)
+    attempts = [dict(row) for row in load_attempts(ROOT / "eval/trustworthy-v1/fixtures/attempts.json")]
+    scored = [row for row in attempts if row.get("valid_attempt")]
+    assert scored
+    scored[0]["outcome"] = "infeasible"
+    rows = _score_rows(dataset, attempts, judge="rules")
+    outcome_by_trial = {row["trial_id"]: row.get("outcome") for row in attempts}
+    for row in rows:
+        if outcome_by_trial.get(row["trial_id"]) != "completed":
+            assert row["faithfulness"] is None and row["faithfulness_applicable"] is False
+    doctored = next(row["trial_id"] for row in attempts if row.get("valid_attempt"))
+    row = next(row for row in rows if row["trial_id"] == doctored)
+    assert row["faithfulness"] is None

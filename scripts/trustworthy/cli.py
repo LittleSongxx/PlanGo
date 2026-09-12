@@ -48,7 +48,14 @@ def _score_rows(
         pack = with_calculator_evidence(pack, attempt)
         pack = with_user_turns(pack, task)
         tsr = score_attempt(attempt, oracle)
-        faith = score_delivery(attempt.get("delivery"), pack, judge=judge, complete=complete)
+        # Faithfulness judges delivered answers. A run whose outcome is not
+        # completed never delivered one — its fallback text is process, not
+        # claims, and TSR already carries the failure. Those tasks leave the
+        # F denominator and show up in the coverage block instead.
+        if str(attempt.get("outcome") or "") == "completed":
+            faith = score_delivery(attempt.get("delivery"), pack, judge=judge, complete=complete)
+        else:
+            faith = {"applicable": False, "faithfulness": None, "claims": [], "factual_claims": 0, "supported": 0, "judge": judge}
         text = delivery_text(attempt)
         rows.append(
             {

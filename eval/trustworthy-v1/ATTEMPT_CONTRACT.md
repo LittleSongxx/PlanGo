@@ -23,7 +23,7 @@
   "task_id": "string",
   "valid_attempt": true,
   "outcome": "completed",
-  "delivery": {"text": "", "answer_number": null},
+  "delivery": {"text": "", "answer_number": null, "uncertainty": null},
   "end_state": {
     "trip_spec": {},
     "previous_spec": {},
@@ -38,6 +38,7 @@
 | --- | --- | --- |
 | `delivery.text` | `state.execution_outcome.summary`，否则 `state.reason` | 用户可见答复。空文本则 Faithfulness 不适用，不得记 1.0 |
 | `delivery.answer_number` | `execution_outcome.data.calculations` 中最后一条 `ok` 的 `value`；否则不填 | 仅计算层 oracle 使用 `number_equals` |
+| `delivery.uncertainty` | `execution_outcome.data.uncertainty`（v1.5 起）；未声明则不填 | 缺口的结构化声明 `{kind, subject, records}`，供 `structure_declared` 检查与 F 的结构判据使用 |
 | `end_state.trip_spec` | `snapshot.state.trip_spec` | 本跑结束后的需求快照 |
 | `end_state.previous_spec` | `snapshot.state.previous_spec` | 本轮补丁前的快照；稀疏修改用 `equals_path` 对照未点名字段 |
 | `end_state.prior_trip_spec` | 重启前一次 snapshot 的 `trip_spec` | 仅 persist：runner 在重启前拷贝，重启后再取 `trip_spec` |
@@ -48,9 +49,10 @@
 
 ## 允许的 oracle 路径
 
-只许五种通用 check。值路径只许：
+只许七种通用 check（2026-09-13 修订：v1.3 增 `substance_min`，v1.8 增 `structure_declared`——替代单字类型针，考核缺口的结构化声明而非措辞）。值路径只许：
 
 - `delivery.answer_number`
+- `delivery.uncertainty.kind` / `delivery.uncertainty.records`（仅 `structure_declared`）
 - `end_state.trip_spec.<清单字段>`
 - `end_state.previous_spec.<清单字段>`
 - `end_state.prior_trip_spec.<清单字段>`
@@ -68,4 +70,5 @@
 ## 报告
 
 - 开发集：`report_kind=provisional_dev`，不得自称未见正式分。
+- Faithfulness 只评 `outcome=completed` 的交付（2026-09-13 修订，v1.8 起）：失败轮的兜底文案是过程陈述不是事实断言，TSR 已承载该失败；这些题离开 F 分母、计入 coverage 块。
 - 本 holdout 在独立审金标完成前：`evaluation_kind=holdout_unreviewed`，不得报 official holdout 分。
