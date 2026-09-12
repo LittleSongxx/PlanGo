@@ -4,13 +4,13 @@ PlanGo 是可恢复的本地生活规划 Agent：基于门店资料比较优惠�
 
 运行和构建只使用本仓库源码、配置及依赖锁，不需要外部 Planora 仓库或服务。宿主机与容器内的 Python 均使用名为 `plango` 的 conda 环境；原 `planora` 环境保留，不作更名或修改。
 
-进度看 `git log`，评测结果看 `eval/` 下各批次的原件；本文只描述当前如何安装、运行和验证。历史评测保留原名与原结论。
+进度看 `git log`，评测结果看 `output/trustworthy-v1/` 下各批次报告原件；本文只描述当前如何安装、运行和验证。
 
 默认窗口为1800×1120，并限制在屏幕工作区内；门店资料按已读/待核对范围分层展示，原始网页与证据可展开查看。
 
-功能暂不可用时，界面会说明当前情况和下一步，不直接展示内部异常。优惠读取失败可重新打开来源页核对；消息显示“送达待核实”或“已接收待取回”时，使用“核对送达并取回”继续原请求。不要用新建任务代替核对。当前修复及桌面截图见[提示说明](eval/plango-friendly-errors/README.md)。
+功能暂不可用时，界面会说明当前情况和下一步，不直接展示内部异常。优惠读取失败可重新打开来源页核对；消息显示“送达待核实”或“已接收待取回”时，使用“核对送达并取回”继续原请求。不要用新建任务代替核对。
 
-质量评测方法见[评测协议](docs/质量评测协议.md)；**每批的实际分数只写在该批目录里**，因为它们会随实现变化而立刻过期。批次按时间在 `eval/` 下：`quality-v2-30`（30例基线）、`quality-v4-regression-six*` 与 `quality-v5-regression-six*`（同六题回归）、`quality-v6-independent-six`（冻结后独立编题）。TSR 与 Groundedness 必须一起看，Token 另记；全部为独立上下文 AI 审核、人工审核 0，不表示真实预约成功率或全网泛化能力。
+质量评测体系是 `eval/trustworthy-v1/`（协议、数据集、评分器说明）加 `scripts/trustworthy/`（CLI、执行器、TSR/Faithfulness 评分器）：TSR 为纯程序化 0/1，Faithfulness 主分为 LLM-as-Judge，两者定义见 `eval/trustworthy-v1/ATTEMPT_CONTRACT.md`。**每批实际分数只写在该批报告文件里**，全部为 provisional_holdout（金标未经独立会话评审前不得称 official）。旧 `quality-v*` 体系已于 2026-09-12 从工作树清理，历史在 git 中。
 
 真实门店已有局部开发验收；独立使用验收仍未完成。
 
@@ -58,8 +58,6 @@ AMAP_JS_SECURITY=填写高德JavaScript安全码
 
 「附近发现」统一请求本项目后端高德服务。明确地址/设备坐标使用 `/v5/place/around` 和 5 公里半径；城市、区级或 IP 参考位置使用 `/v5/place/text` 并标为同城发现。界面显示来源时间，缓存保留原时间，刷新明确绕过缓存。选店时后端按 POI ID 重新核对详情，保留用户起点。这不依赖 JS Key，也不证明实时库存、排队或可预约。
 
-真实界面验收证据在 `eval/plango-live-ui/`；旧 `discovery_source_check.json` 仅保留当时版本的来源证据。
-
 然后启动服务与桌面：
 
 ```bash
@@ -83,13 +81,13 @@ npm run dev
 
 聊天按接受顺序保留每轮输入和已记录的回复，关闭再打开也能回看；旧任务仅恢复真实保存过的澄清内容，不补写缺失回答。主界面采用明黄色、暖白底和深色文字，向上阅读时保持滚动位置。
 
-进入行程后，在需求卡修改条件会重新规划，保存后可从历史继续同一任务。搜索半径围绕搜索中心，单段路程上限核对实际路线，两者独立。公交仅覆盖能核实两端城市并完整解析的同城公交/步行组合；缺线路时路线未知，缺票价时费用未知。预算显示餐饮、活动和去程交通的已知估算小计；返程、额外消费、驾驶油费和停车费等仍需核对。操作截图、真实只读结果与尚未覆盖范围见 [产品接续证据](eval/plango-product-next/README.md)。
+进入行程后，在需求卡修改条件会重新规划，保存后可从历史继续同一任务。搜索半径围绕搜索中心，单段路程上限核对实际路线，两者独立。公交仅覆盖能核实两端城市并完整解析的同城公交/步行组合；缺线路时路线未知，缺票价时费用未知。预算显示餐饮、活动和去程交通的已知估算小计；返程、额外消费、驾驶油费和停车费等仍需核对。
 
 也可以直接发送“人数改为3人，其他不变”或“日期改成2026年9月12日，取消单段路程上限”。修改保留同一任务和未提及条件；角色人数与总人数分开，日期不会作为目标地区查询。
 
-打开包含明确报价、规则或路线的资料页后，可以发送“只按这份条款判断适用性并给出总价”或“根据给定路线核对费用、路程和到达时间”。当前代码按来源记录区分选项，核对计价单位、抵扣门槛、分段路线和日期时段；每项结果保留原文和缺失条件。明确收费才计入已知小计，未确认优惠仅显示条件计算，缺票价、资格或使用规则仍为未知。费用、比较、适用性、距离、用时和到达时间分别检查是否回答；这些实现尚不证明新资料下可靠交付，也不自动购买或预约。旧实现与失败保留在[评测驱动修复](eval/plango-quality-fixes/README.md)。
+打开包含明确报价、规则或路线的资料页后，可以发送“只按这份条款判断适用性并给出总价”或“根据给定路线核对费用、路程和到达时间”。当前代码按来源记录区分选项，核对计价单位、抵扣门槛、分段路线和日期时段；每项结果保留原文和缺失条件。明确收费才计入已知小计，未确认优惠仅显示条件计算，缺票价、资格或使用规则仍为未知。费用、比较、适用性、距离、用时和到达时间分别检查是否回答；这些实现尚不证明新资料下可靠交付，也不自动购买或预约。
 
-悦廊的网页预约条件可通过官方预填链接核对，当前仅支持参数预览：购物车、空位查询与预约接口保持阻断，不能据此判断有位。结果会保留实际网页标签和核对时间，关闭后可继续原任务；见[本次验证](eval/plango-booking-preview/README.md)。
+悦廊的网页预约条件可通过官方预填链接核对，当前仅支持参数预览：购物车、空位查询与预约接口保持阻断，不能据此判断有位。结果会保留实际网页标签和核对时间，关闭后可继续原任务。
 
 ## 配置与运行方式
 
@@ -139,7 +137,7 @@ Cookie 留在 Electron 持久会话分区，不直接发送给模型或后端。
 
 旧报告保留原结论与失败分母，不作为现行版本的通过凭据。
 
-接续的结构化卡、真实扫码暂停及安装验证见 [N1→N4 记录](eval/plango-next/README.md)；小型归档回归使用 `python scripts/inspect_trace.py --check`，不会自动联网或写库。
+进入行程后支持接续的结构化卡与真实扫码暂停；相关回归由 `backend/tests` 覆盖，不会自动联网或写库。
 
 ```bash
 npm run setup:backend -- --dev
@@ -161,12 +159,11 @@ env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:map-title
 env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop-storage-browser
 ```
 
-浏览器已采用主进程 WebContentsView、经实测的 Playwright/CDP 与原生截图。renderer 只发送固定用户意图与布局，不持有任意脚本或 CDP 能力。用户、模型与执行器操作同一浏览会话；原生弹窗也保持该会话。兼容性边界和失败记录在 `eval/plango-p1/`。截图理解每轮最多一次，须显式启用 `PLANGO_BROWSER_VISION_ENABLED`，目前仅用于只读理解/核验，不能代替提交审批或证明业务完成。
+浏览器已采用主进程 WebContentsView、经实测的 Playwright/CDP 与原生截图。renderer 只发送固定用户意图与布局，不持有任意脚本或 CDP 能力。用户、模型与执行器操作同一浏览会话；原生弹窗也保持该会话。截图理解每轮最多一次，须显式启用 `PLANGO_BROWSER_VISION_ENABLED`，目前仅用于只读理解/核验，不能代替提交审批或证明业务完成。
 
 部署 API 与实际模型检查须在本项目无进行中操作时运行：
 
 ```bash
-conda run --no-capture-output -n plango python scripts/check_deployment.py
 conda run --no-capture-output -n plango python scripts/check_service_recovery.py
 PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plango-e2e env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed
 PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plango-e2e env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed -- --vision
@@ -174,7 +171,7 @@ PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plang
 
 `check_service_recovery.py` 自动创建并清理专属 `plango-e2e-*` Compose项目，使用无模型、无真实浏览器的受控传输样本检查PostgreSQL/Redis/API/worker队列与恢复；CI沿用此门禁，报告保存在 `output/service-recovery-*/report.json`。它不读取用户模型凭据，不属于质量评测。
 
-`test:deployed` 必须连接独立 `plango-e2e` 服务（先用 `PLANGO_SERVICE_PORT=18011 docker compose -p plango-e2e up --build -d --wait` 启动），脚本核对容器归属和端口，拒绝主用户服务。它调用真实模型并仅重启测试 API/worker，页面分别为受控菜单和 Canvas，保留任务与恢复证据；不进行真实商家交易。`scripts/check_vision_capability.py` 是单独的有界真实图像能力检查，输入为仓库中的受控浏览器截图。各阶段已审查证据保存在 `eval/plango-r0/`、`eval/plango-p0/`、`eval/plango-p1/` 和 `eval/plango-live-*/`；今后的完整链路脚本默认写入带时间目录的 `output/full-stack-smoke/`，不覆盖历史。
+`test:deployed` 必须连接独立 `plango-e2e` 服务（先用 `PLANGO_SERVICE_PORT=18011 docker compose -p plango-e2e up --build -d --wait` 启动），脚本核对容器归属和端口，拒绝主用户服务。它调用真实模型并仅重启测试 API/worker，页面分别为受控菜单和 Canvas，保留任务与恢复证据；不进行真实商家交易。完整链路脚本默认写入带时间目录的 `output/full-stack-smoke/`，不覆盖历史。
 
 测试中的 `--no-sandbox` 仅用于隔离 Linux 测试；正常应用保留浏览器沙箱。真实商家履约、任意网站表单和支付均不能由这些受控检查推断。
 
@@ -193,7 +190,7 @@ npm run services:down
 
 当前实现见 [设计文档](docs/设计文档_PlanGo.md)、[架构图](figures/plango-agent-architecture.md) 与 [任务闭环图](figures/plango-task-lifecycle.md)。外层是集中式 Plan-and-Execute 工作流，页面内是受控 ReAct 循环；确定性协调器、LLM专业节点和领域服务职责分开。single/multi 表示是否启用额外视角，并非两套运行架构。产品当前不集成 MCP，Skills 不授予工具权限。
 
-自然语言轮次先加载记忆，再用同一结构化调用产生目标和稀疏需求补丁；规划复用同轮已核验补丁，结构化需求卡沿原入口提交。浏览器大结果在回执确认落盘后释放，命令身份继续防重放。现有 `inspect_trace.py` 可关联run/turn、schema、Token、调用延迟和阶段时间偏移；未配置外部追踪平台，也未证明长期稳定或成本优势。
+自然语言轮次先加载记忆，再用同一结构化调用产生目标和稀疏需求补丁；规划复用同轮已核验补丁，结构化需求卡沿原入口提交。浏览器大结果在回执确认落盘后释放，命令身份继续防重放。未配置外部追踪平台，也未证明长期稳定或成本优势。
 
 固定决策见 [架构决策](docs/架构决策.md)。[旧工作流](figures/yoyu-current-workflow.md) 和 [历史目标建议](figures/yoyu-target-workflow.md) 保留作历史证据，不代表当前缺口或已实现功能。
 
@@ -207,7 +204,7 @@ vendor/plango_harness/          固定 Harness 源码与上游基线
 pyproject.toml / uv.lock 本项目 Python 依赖声明与锁
 ```
 
-本次清理移除了不可达的旧 TypeScript Agent/规划器、模拟供给与交易链、旧 CLI/eval 入口，以及过时设计 PDF/LaTeX 和专用截图。10 个场景 Skill 保留需求要点，执行指导已同步到当前操作与审批。历史 `eval/*.json` 保留作证据，不能作为现行运行说明。当前 [设计文档](docs/设计文档_PlanGo.md) 与 [Demo](docs/Demo脚本_3分钟.md) 已同步到实现边界。
+本次清理移除了不可达的旧 TypeScript Agent/规划器、模拟供给与交易链、旧 CLI/eval 入口，以及过时设计 PDF/LaTeX 和专用截图；2026-09-12 进一步移除了旧 `quality-v*` 评测体系（数据集、harness、报告与说明，git 历史可查），现行评测体系为 `eval/trustworthy-v1/`。10 个场景 Skill 保留需求要点，执行指导已同步到当前操作与审批。当前 [设计文档](docs/设计文档_PlanGo.md) 与 [Demo](docs/Demo脚本_3分钟.md) 已同步到实现边界。
 
 Planora 基线来自 v7 公开冻结归档，包含当时未提交的公开实现。来源和逐文件哈希见 [SNAPSHOT.json](vendor/plango_harness/SNAPSHOT.json)，完整基线在 `vendor/plango_harness/upstream-base.tar.gz`。日常构建与运行都不读取外部仓库；维护时可显式检查上游：
 

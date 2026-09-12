@@ -1,8 +1,0 @@
-{
-  "project": "plango-r0-fresh",
-  "fresh_volumes": true,
-  "ready": true,
-  "model_enabled": false,
-  "initial_runs": 0,
-  "fixture_removed_after_test": true
-}

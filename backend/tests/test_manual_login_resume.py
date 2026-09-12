@@ -1,4 +1,4 @@
-"""Controlled protocol samples; the real QR login failure is retained under eval/plango-next."""
+"""Controlled protocol samples for QR-login pause and resume."""
 
 from fastapi.testclient import TestClient
 from plango.app import create_app
