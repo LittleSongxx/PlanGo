@@ -25,8 +25,14 @@
    blind review 的分歧记录是对的，结论下错了地方。
 5. 产品侧词表（`_REOPEN_TURN`、`_COMPUTE_ASK`、`_with_unknown_mark`）与 holdout 题面动词高度重合，已在 commit 信息里记为待办；
    后续应改成结构化意图判断，而不是继续扩中文动词表。
-6. 本轮工作在一个新分支 `eval/trustworthy-v1.3` 上，分四个 commit（评测 harness／产品后端／桌面端／评分器与数据集）。
+6. 本轮工作在一个新分支 `eval/trustworthy-v1.3` 上，分多个 commit（评测 harness／产品后端／桌面端／评分器与数据集）。
    成绩要绑 revision，先看 `actor.git.commit` 与 `actor.product_sha`。
+7. **holdout-v3 第一趟已跑完**（204/204 有效）：TSR 0.794、F 0.893（120 题计分，下界 0.525）。
+   分层与问法族拆分、五类失败形态、以及两处评分合同冲突见
+   [holdout-v3/RESULTS-r1.md](holdout-v3/RESULTS-r1.md)。要点：同一批题只换问法，
+   calculate 的 TSR 从 1.000（词表内）掉到 0.350（新问法），persist 的 F 从 1.000 掉到 0.346。
+8. **v1.3 重评结果**：r3 的 F 从 0.945 升到 **1.000**——残余差距全部来自 §1.1 的列表编号假阴性；
+   但同一份报告的 `coverage` 显示 60/204 题只回了一个不确定词、F 下界 0.539。
 
 ---
 
