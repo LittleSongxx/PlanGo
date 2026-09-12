@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .contracts import Evidence, TripSpec
+from .contracts import Evidence, MemoryProposal, TripSpec
+from .decisions import _venue_hard_constraint
 
 
 def requirement_delta(previous: TripSpec | None, current: TripSpec, *, explicit_unknown: set[str] | None = None) -> tuple[list[dict[str, Any]], dict[str, bool]]:
@@ -26,6 +27,61 @@ def requirement_delta(previous: TripSpec | None, current: TripSpec, *, explicit_
     discovery = location or bool(new_activities) or bool(stricter_place) or bool(changed & {"must_visit_place_ids", "max_distance_km", "search_radius_km"})
     transport = "travel_mode" in changed
     return patch, {"discovery": discovery, "weather": location or temporal, "supply": discovery or temporal or party or transport or "selected_offer" in changed, "routes": location or temporal or party or transport or "max_distance_km" in changed}
+
+
+def confirmed_constraint_proposals(
+    previous: TripSpec | None,
+    current: TripSpec,
+    *,
+    source_event_id: str,
+) -> list[MemoryProposal]:
+    """Persist newly added venue/party hard constraints the user just confirmed.
+
+    Only strings that pass the same venue filter as RequirementOutput.to_trip_spec.
+    Identifier slugs, merchant hours, and queue facts are not written here.
+    """
+    previous_trip = set(previous.hard_constraints) if previous else set()
+    previous_party: dict[str, set[str]] = {}
+    if previous:
+        for member in previous.party:
+            previous_party.setdefault(member.role, set()).update(member.hard_constraints)
+    proposals: list[MemoryProposal] = []
+    seen: set[str] = set()
+    for text in current.hard_constraints:
+        if text in previous_trip or not _venue_hard_constraint(text):
+            continue
+        key = f"constraint:{text}"
+        if key in seen:
+            continue
+        seen.add(key)
+        proposals.append(
+            MemoryProposal(
+                kind="fact",
+                key=key,
+                value={"text": text, "scope": "trip"},
+                source_event_id=source_event_id,
+                confidence=1,
+            )
+        )
+    for member in current.party:
+        known = previous_party.get(member.role, set())
+        for text in member.hard_constraints:
+            if text in known or not _venue_hard_constraint(text):
+                continue
+            key = f"constraint:{member.role}:{text}"
+            if key in seen:
+                continue
+            seen.add(key)
+            proposals.append(
+                MemoryProposal(
+                    kind="fact",
+                    key=key,
+                    value={"text": text, "scope": "party", "role": member.role},
+                    source_event_id=source_event_id,
+                    confidence=1,
+                )
+            )
+    return proposals
 
 
 def retain_evidence(rows: list[Any], refresh: dict[str, bool]) -> list[Evidence]:

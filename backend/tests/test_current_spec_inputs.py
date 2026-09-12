@@ -65,15 +65,16 @@ async def test_current_spec_and_current_run_turn_reports_reach_real_specialist_n
     updated["advocate_reports"] += [foreign.model_dump(mode="json"), current.model_dump(mode="json")]
     synthesized = await nodes["synthesis"].ainvoke(updated)
     selected = synthesized["selected_plan"]
-    await nodes["critic"].ainvoke({**updated, **synthesized, "verifier": VerifierResult(plan_id=selected.plan_id)})
-    assert [name for name, _ in seen] == ["AdvocateReport", "PlanDraft", "CriticOutput"]
+    critique = await nodes["critic"].ainvoke({**updated, **synthesized, "verifier": VerifierResult(plan_id=selected.plan_id)})
+    assert [name for name, _ in seen] == ["AdvocateReport", "PlanDraft"]
+    assert critique["critique"].verdict == "pass"
     for _, user in seen:
         canonical = json.loads(user.splitlines()[0].removeprefix("TripSpec："))
-        assert "goal" not in canonical
+        assert canonical["goal"] == spec.goal
         assert canonical["budget"] is None and canonical["per_person_budget"] is None
         assert canonical["party_size"] == 3 and canonical["time_window_start"] == "18:30"
         assert canonical["soft_preferences"] == ["安静"] and canonical["hard_constraints"] == ["不含花生"]
-        assert "OLD_GOAL_MARKER" not in user and "OLD_REPORT_300" not in user and "FOREIGN_REPORT_300" not in user
+        assert "OLD_REPORT_300" not in user and "FOREIGN_REPORT_300" not in user
     planner_input = next(user for name, user in seen if name == "PlanDraft")
     assert "CURRENT_REPORT" in planner_input
     assert updated["advocate_reports"][0] == old_report and updated["trace"] == state["trace"]

@@ -63,10 +63,48 @@ class PlanEvaluation:
     verifier: VerifierResult
 
 
-def goal_errors(spec: TripSpec, stops: list[Any]) -> list[str]:
+def draft_stop_limit(spec: TripSpec) -> int:
+    """One slot per must-visit or named activity; empty contracts stay a single stop."""
+    return max(
+        1,
+        len(spec.must_visit_place_ids)
+        + len(spec.required_activities)
+        + len(spec.optional_activities),
+    )
+
+
+def _evidence_query(item: Evidence) -> str:
+    payload = item.payload if isinstance(item.payload, dict) else {}
+    return str(payload.get("query") or "").strip()
+
+
+def _stop_covers_activity(activity: str, stop: Any, evidence: list[Evidence] | None = None) -> bool:
+    if getattr(stop, "category", None) == activity:
+        return True
+    ids = set(getattr(stop, "evidence_ids", ()) or [])
+    return any(item.evidence_id in ids and _evidence_query(item) == activity for item in (evidence or []))
+
+
+def activity_is_covered(activity: str, stops: list[Any], evidence: list[Evidence] | None = None) -> bool:
+    return any(_stop_covers_activity(activity, stop, evidence) for stop in stops)
+
+
+def _covers_required_slot(
+    spec: TripSpec,
+    source: PlanStop,
+    stops: list[PlanStop],
+    evidence: list[Evidence] | None = None,
+) -> bool:
+    if source.place_id in spec.must_visit_place_ids and source.place_id not in {stop.place_id for stop in stops}:
+        return True
+    remaining = [activity for activity in spec.required_activities if not activity_is_covered(activity, stops, evidence)]
+    return any(_stop_covers_activity(activity, source, evidence) for activity in remaining)
+
+
+def goal_errors(spec: TripSpec, stops: list[Any], evidence: list[Evidence] | None = None) -> list[str]:
     categories = [stop.category for stop in stops]
     errors = [f"required_place:{place_id}" for place_id in spec.must_visit_place_ids if place_id not in {stop.place_id for stop in stops}]
-    errors += [f"activity:{category}" for category in spec.required_activities if category not in categories]
+    errors += [f"activity:{category}" for category in spec.required_activities if not activity_is_covered(category, stops, evidence)]
     errors.extend(f"activity_excluded:{category}" for category in spec.excluded_activities if category in categories)
     cursor = 0
     for category in spec.activity_order:
@@ -353,6 +391,9 @@ def compile_plan_draft(
         ]
         if invalid_evidence:
             place_tags.append("evidence_unknown")
+        price_known = bool(item.price_known)
+        if not price_known:
+            place_tags.append("price_unknown")
         observed.setdefault(
             item.place_id,
             PlanStop(
@@ -362,8 +403,8 @@ def compile_plan_draft(
                 category=item.category,
                 start_minute=0,
                 end_minute=1,
-                estimated_cost=round(item.average_price * party_size, 2),
-                unit_price=item.average_price if item.price_known else None,
+                estimated_cost=round(item.average_price * party_size, 2) if price_known else 0.0,
+                unit_price=item.average_price if price_known else None,
                 distance_km=item.distance_km,
                 tags=list(dict.fromkeys(place_tags)),
                 evidence_ids=list(item.evidence_ids),
@@ -399,6 +440,29 @@ def compile_plan_draft(
                     )
                 )
             continue
+        if len(stops) >= draft_stop_limit(spec):
+            if errors is not None:
+                errors.append(
+                    _draft_error(
+                        "extra_stop",
+                        "超出需求活动对应的站点数，已在编译边界丢弃",
+                        place_id=draft_stop.place_id,
+                    )
+                )
+            continue
+        if source.unit_price is None and spec.total_budget < float("inf"):
+            if not _covers_required_slot(spec, source, stops, evidence_rows) and (
+                spec.must_visit_place_ids or spec.required_activities or stops
+            ):
+                if errors is not None:
+                    errors.append(
+                        _draft_error(
+                            "unknown_price",
+                            "未知单价不能按免费计入预算，已在编译边界丢弃",
+                            place_id=draft_stop.place_id,
+                        )
+                    )
+                continue
         projected_cost = compiled_cost + float(source.estimated_cost or 0)
         if projected_cost > spec.total_budget:
             if errors is not None:
@@ -444,7 +508,7 @@ def compile_plan_draft(
             errors.append(_draft_error("empty_compilation", "PlanDraft 没有可编译站点"))
         return None
 
-    missing_goals = goal_errors(spec, stops)
+    missing_goals = goal_errors(spec, stops, evidence_rows)
     if missing_goals:
         if errors is not None:
             errors.extend(_draft_error(code, "计划未保留必达活动或明确顺序") for code in missing_goals)
@@ -802,7 +866,7 @@ async def verify_plan(
                                     detail="明确角色人数、总人数与计划组成不一致；需要确认"))
     if abs(plan.total_cost - sum(stop.estimated_cost for stop in plan.stops)) > .01:
         hard.append(ConstraintCheck(name="total_pricing", kind="hard", passed=False, detail="计划总价与站点合计不符"))
-    for code in goal_errors(spec, plan.stops):
+    for code in goal_errors(spec, plan.stops, evidence_rows):
         hard.append(ConstraintCheck(name=code, kind="hard", passed=False, detail=f"未满足必达活动或顺序：{code}"))
     window_start = parse_minute(spec.time_window_start)
     window_end = min(1440, window_start + spec.duration_minutes)

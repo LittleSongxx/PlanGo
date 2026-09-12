@@ -11,8 +11,6 @@ from urllib.parse import urlsplit
 from plango_harness.agent.contracts import Evidence, PlanStop, TripSpec
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-CURRENT_PAGE = re.compile(r"(?:当前|这个|此)(?:浏览器)?(?:中|上|里)?的?(?:页面|网页|页)|本(?:页面|网页|页)")
-
 
 class ExecutionGoal(BaseModel):
     """The approved itinerary carried into browser preparation, never a page-write grant."""
@@ -113,14 +111,6 @@ def read_goal(state, context):
     if context.get("mode") != "browser" or context.get("kind") != "extract":
         return None
     request = task_text({**state, "browser_task_context": context})
-    requests = [str(context.get("request") or ""), *(str(text) for text in context.get("edits", []))]
-    boundaries = [index for index, text in enumerate(requests) if CURRENT_PAGE.search(text)
-                  and re.match(r"\s*(?:请)?(?:只|仅)(?:需(?:要)?|要)?(?:读取?|查看|提取)", text)]
-    if boundaries:
-        # Preserve all history, but only the latest explicit scope and later
-        # edits define the active checklist, including across a paused restart.
-        active = requests[boundaries[-1]:]
-        request = active[0] + ("\n后续修改（后文优先）：\n" + "\n".join(active[1:]) if len(active) > 1 else "")
     # The task owner states the source and kind; they are not inferred from wording.
     source = context.get("read_source") or "browser"
     kind = context.get("read_kind") or "page_read"
@@ -155,12 +145,6 @@ def _fresh_artifact(item, now):
 def browser_manual_error(observation):
     dom = (observation.get("fields") or {}).get("dom")
     gate = dom.get("manual_gate") if isinstance(dom, dict) else None
-    try:
-        page = urlsplit(str(observation.get("url") or ""))
-        if page.hostname == "verify.meituan.com" and page.path == "/v2/app/general_page":
-            gate = "captcha"
-    except ValueError:
-        pass
     return "authentication_required" if gate == "login" else "captcha_required" if gate == "captcha" else None
 
 
@@ -247,8 +231,7 @@ def read_outcome(state, now=None):
         if item.get("source") != "browser" or not item.get("url"):
             continue
         if goal.required_fields and item.get("type") == "browser_page":
-            if CURRENT_PAGE.search(goal.request) and (
-                    item.get("url") != observation.get("url") or item.get("snapshot_id") != observation.get("snapshot_id")):
+            if item.get("url") != observation.get("url") or item.get("snapshot_id") != observation.get("snapshot_id"):
                 continue
             fields, partial = _read_page_fields(data, item.get("title") or "")
             observed_fields.update(fields)

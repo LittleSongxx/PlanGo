@@ -7,6 +7,8 @@ from pydantic import model_validator
 
 
 class DesktopSettings(Settings):
+    """Desktop runtime. ``agent_mode`` / ``perspective`` is Advocate fan-out, not a second graph."""
+
     model_config = {**Settings.model_config, "env_file": None}
     app_name: str = "PlanGo"
     event_stream: str = "plango:runs"

@@ -263,6 +263,7 @@ class SandboxWorldProvider:
                     "average_price": place.average_price,
                     "price_known": place.price_known,
                     "tags": list(place.tags),
+                    "query": query,
                 },
                 observed_at=observed_at,
                 expires_at=expires_at,
@@ -535,6 +536,7 @@ class AmapWorldProvider:
                     "category": place.category,
                     "average_price": place.average_price,
                     "price_known": place.price_known,
+                    "query": query,
                 },
                 observed_at=observed_at,
                 expires_at=expires_at,
@@ -636,6 +638,53 @@ class AmapWorldProvider:
         return city
 
     @staticmethod
+    def _decode_polyline(value: Any) -> list[list[float]]:
+        if not isinstance(value, str) or not value.strip():
+            return []
+        points: list[list[float]] = []
+        for pair in value.replace(" ", "").split(";"):
+            if not pair:
+                continue
+            parts = pair.split(",")
+            if len(parts) != 2:
+                continue
+            try:
+                longitude, latitude = float(parts[0]), float(parts[1])
+            except (TypeError, ValueError):
+                continue
+            if math.isfinite(longitude) and math.isfinite(latitude):
+                points.append([longitude, latitude])
+        return points
+
+    @classmethod
+    def _path_from_steps(cls, steps: Any) -> list[list[float]]:
+        points: list[list[float]] = []
+        if not isinstance(steps, list):
+            return points
+        for step in steps:
+            if isinstance(step, dict):
+                points.extend(cls._decode_polyline(step.get("polyline")))
+        return points
+
+    @classmethod
+    def _limit_path(cls, points: list[list[float]], limit: int = 1500) -> list[list[float]]:
+        if len(points) <= limit:
+            return points
+        step = math.ceil(len(points) / limit)
+        trimmed = points[::step]
+        if trimmed[-1] != points[-1]:
+            trimmed.append(points[-1])
+        return trimmed
+
+    @classmethod
+    def _route_paths(cls, mode: str, path: dict[str, Any], parts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        if mode == "transit":
+            return [{"mode": part["mode"], **({"name": part["name"]} if part.get("name") else {}),
+                     "path": cls._limit_path(part["path"])} for part in parts if len(part.get("path") or []) >= 2]
+        points = cls._limit_path(cls._decode_polyline(path.get("polyline")) or cls._path_from_steps(path.get("steps")))
+        return [{"mode": mode, "path": points}] if len(points) >= 2 else []
+
+    @staticmethod
     def _transit_segments(path: dict[str, Any]) -> list[dict[str, Any]]:
         def populated(value):
             if isinstance(value, dict):
@@ -651,9 +700,11 @@ class AmapWorldProvider:
                 raise WorldProviderError("unsupported_transit_segment")
             walking = segment.get("walking")
             if populated(walking):
+                walk_path = AmapWorldProvider._path_from_steps(walking.get("steps")) or AmapWorldProvider._decode_polyline(walking.get("polyline"))
                 parts.append({"mode": "walking", "distance_m": float(walking["distance"]),
                     "duration_seconds": float(walking["duration"]),
                     "origin": walking.get("origin"), "destination": walking.get("destination"),
+                    "path": walk_path,
                     "instructions": [step["instruction"] for step in walking.get("steps", []) if isinstance(step.get("instruction"), str)]})
             lines = (segment.get("bus") or {}).get("buslines")
             if lines:
@@ -666,6 +717,7 @@ class AmapWorldProvider:
                 parts.append({"mode": "transit", "name": line["name"], "distance_m": float(line["distance"]),
                     "duration_seconds": float(line["duration"]), "departure_stop": line["departure_stop"]["name"],
                     "arrival_stop": line["arrival_stop"]["name"], "via_num": line.get("via_num"),
+                    "path": AmapWorldProvider._decode_polyline(line.get("polyline")),
                     "entrance": segment.get("entrance"), "exit": segment.get("exit")})
         if not parts or not any(part["mode"] == "transit" for part in parts) or any(
             not math.isfinite(part[key]) or part[key] < 0 for part in parts for key in ("distance_m", "duration_seconds")
@@ -697,6 +749,8 @@ class AmapWorldProvider:
                 "destination": f"{destination.longitude:.6f},{destination.latitude:.6f}"}
             if mode != "walking":
                 params["strategy"] = 0
+            if mode == "driving":
+                params["extensions"] = "all"
             if mode == "transit":
                 if timezone_name != "Asia/Shanghai" or (at_minute is not None and not 0 <= at_minute < 1440):
                     raise WorldProviderError("unsupported_transit_departure")
@@ -724,17 +778,34 @@ class AmapWorldProvider:
                 cost_note = (f"标准票价估算 ¥{fare:g}/人；未计儿童/老人优惠及返程" if fare is not None else "标准票价/人待核验；未计儿童/老人优惠及返程")
             elif mode == "walking":
                 cost_note = "步行交通费 ¥0；未计返程及其他消费"
-            labels = [f"步行{part['distance_m']:g}米（约{math.ceil(part['duration_seconds'] / 60)}分钟）" if part["mode"] == "walking" else
-                      f"{part['name']}：{part['departure_stop']}→{part['arrival_stop']}（约{math.ceil(part['duration_seconds'] / 60)}分钟）" for part in parts]
+            labels = []
+            for index, part in enumerate(parts):
+                nxt = parts[index + 1] if index + 1 < len(parts) else None
+                minutes_part = math.ceil(part["duration_seconds"] / 60)
+                if part["mode"] == "walking":
+                    toward = f"至{nxt['departure_stop']}" if nxt and nxt.get("departure_stop") else ""
+                    labels.append(f"步行{part['distance_m']:g}米{toward}（约{minutes_part}分钟）")
+                else:
+                    labels.append(f"{part['name']}：{part['departure_stop']}→{part['arrival_stop']}（约{minutes_part}分钟）")
             name = {"walking": "步行", "driving": "驾车", "transit": "公交"}[mode]
             summary = f"{origin.name} → {destination.name}；{name}约{distance_km:g}公里 / {minutes}分钟"
             if labels:
-                summary += "；" + " → ".join(labels)
+                joined = []
+                seen_transit = False
+                for index, label in enumerate(labels):
+                    if parts[index]["mode"] == "transit":
+                        joined.append(("转乘" if seen_transit else "") + label)
+                        seen_transit = True
+                    else:
+                        joined.append(label)
+                summary += "；" + " → ".join(joined)
             summary += "；" + cost_note
+            route_paths = self._route_paths(mode, path, parts)
             route = {**context, "distance_km": distance_km, "distance_kind": "route",
                 "driving_min": minutes if mode == "driving" else None, "transit_min": minutes if mode == "transit" else None,
                 "walking_min": minutes if mode == "walking" else None, "recommended": mode, "source": "amap",
-                "cost_per_person": fare, "cost_note": cost_note, "summary": summary, "segments": parts}
+                "cost_per_person": fare, "cost_note": cost_note, "summary": summary, "segments": parts,
+                "paths": route_paths}
             if parts:
                 route.update(walking_distance_m=sum(part["distance_m"] for part in parts if part["mode"] == "walking"),
                              transfers=max(0, sum(part["mode"] == "transit" for part in parts) - 1))

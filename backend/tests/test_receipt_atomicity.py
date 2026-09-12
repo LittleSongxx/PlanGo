@@ -80,6 +80,44 @@ def test_saved_screenshot_receipt_replays_after_31_seconds(tmp_path, monkeypatch
         assert client.post(url, json={**body, "text": "changed immutable receipt"}).status_code == 409
 
 
+def test_fast_receipt_resumes_after_wait_projection_catches_up(tmp_path):
+    app = create_app(settings(str(tmp_path)), token=TOKEN)
+    runtime = app.state.runtime
+    with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
+        async def setup_result_before_wait():
+            await runtime.runs.create_with_event("fast-receipt", "desktop", "读取当前网页")
+            await runtime.bridge.bind("fast-receipt", "fixture-desktop")
+            row = await runtime.runs.get("fast-receipt")
+            await runtime.runs.save_state_and_events(
+                {**row["state_json"], "run_id": "fast-receipt", "phase": "REQUIREMENTS_READY"}, events=[]
+            )
+            async with runtime.database.session() as session:
+                async with session.begin():
+                    await session.execute(insert(commands).values(
+                        command_id="fast-cmd", run_id="fast-receipt", browser_session_id="fixture-desktop",
+                        payload={"command_id": "fast-cmd", "operation": "screenshot", "run_id": "fast-receipt"},
+                        result={"command_id": "fast-cmd", "ok": True, "outcome": "observed", "url": "https://fixture.invalid/"},
+                        created_at=time.time(),
+                    ))
+
+        async def project_wait():
+            row = await runtime.runs.get("fast-receipt")
+            wait = {"type": "browser", "id": "browser:fast-cmd", "command_id": "fast-cmd",
+                    "operation": "screenshot", "message": "等待桌面浏览器结果。"}
+            await runtime.runs.save_state_and_events(
+                {**row["state_json"], "run_id": "fast-receipt", "phase": "REQUIREMENTS_READY",
+                 "interrupt_id": "browser:fast-cmd", "browser_wait": wait},
+                events=[{"event_type": "GRAPH_INTERRUPTED", "payload": {"interrupts": [wait]}}],
+            )
+
+        client.portal.call(setup_result_before_wait)
+        assert client.portal.call(runtime.resume_browser, "fast-receipt", "fast-cmd")["accepted"] is False
+        client.portal.call(project_wait)
+        client.portal.call(runtime._reconcile_browser_receipt, "fast-receipt", "fast-cmd")
+        events = client.get("/api/v1/runs/fast-receipt/events").json()["events"]
+        assert any(event["event_type"] == "BROWSER_RESUME_REQUESTED" for event in events)
+
+
 def test_late_first_capture_is_acknowledged_but_graph_does_not_use_or_recapture_it(tmp_path, monkeypatch):
     config = settings(str(tmp_path)).model_copy(update={"browser_vision_enabled": True, "openai_api_key": "replaced-local-model"})
     app = create_app(config, token=TOKEN)

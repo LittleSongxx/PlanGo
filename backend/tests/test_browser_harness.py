@@ -223,6 +223,8 @@ class ActionAndPlanningCheck(unittest.TestCase):
                     "/api/v1/browser/commands?browser_session_id=fixture-desktop"
                 ).json()["commands"][0]
                 obs = fixture(cmd, elements=[{"idx": 3, "tag": "button", "text": "预约"}])
+                obs["url"] = "https://www.meituan.com/reservation/new"
+                obs["text"] = "星河餐厅 预约确认"
                 self.assertEqual(
                     client.post(
                         "/api/v1/browser/commands/" + cmd["command_id"] + "/result", json=obs
@@ -293,13 +295,17 @@ class ActionAndPlanningCheck(unittest.TestCase):
                     json={
                         **fixture(verify_command),
                         "snapshot_id": "fixture-after",
-                        "text": "结果仍在处理中",
+                        "url": "https://www.meituan.com/reservation/result",
+                        "text": "星河餐厅 预约成功\n预约编号：R2026090888",
                     },
                 )
                 done = wait_for(
                     client, run_id, lambda v: v["phase"] in {"PARTIAL_FAILED", "FAILED"}
                 )
                 self.assertEqual(done["state"]["action_results"][0]["status"], "UNKNOWN", done)
+                self.assertEqual(
+                    done["state"]["action_results"][0]["result"]["scope"], "page_confirmation"
+                )
                 self.assertEqual(
                     client.get(
                         "/api/v1/browser/commands?browser_session_id=fixture-desktop"
@@ -1005,26 +1011,18 @@ class BrowserTurnRegressionCheck(unittest.TestCase):
                         "snapshot_id": "fresh-unchanged-input",
                     },
                 )
-                final = wait_for(
-                    client, rid, lambda v: v["phase"] in {"PARTIAL_FAILED", "FAILED", "SUCCEEDED"}
+                continued = wait_for(
+                    client,
+                    rid,
+                    lambda v: v["phase"] == "WAITING_APPROVAL" and v.get("interrupt_id") != approval["interrupt_id"],
                 )
-                self.assertEqual(final["phase"], "PARTIAL_FAILED", final)
-                self.assertEqual(final["state"]["action_results"][0]["status"], "UNKNOWN")
-                self.assertTrue(
-                    final["state"]["action_results"][0]["result"]["resolution_required"]
+                self.assertEqual(continued["phase"], "WAITING_APPROVAL", continued)
+                self.assertNotEqual(
+                    continued["state"]["action_results"][0]["status"], "UNKNOWN", continued
                 )
-                action_id = final["state"]["action_results"][0]["action_id"]
-                resolved = client.post(
-                    f"/api/v1/runs/{rid}/actions/{action_id}/resolve",
-                    json={"status": "FAILED", "note": "我已核对网站，输入没有完成"},
-                )
-                self.assertEqual(resolved.status_code, 200, resolved.text)
-                self.assertEqual(resolved.json()["state"]["action_results"][0]["status"], "FAILED")
-                self.assertEqual(
-                    resolved.json()["state"]["action_results"][0]["result"]["source"], "user"
-                )
+                self.assertEqual(continued["state"]["action_results"][0]["status"], "FAILED")
                 self.assertFalse(
-                    resolved.json()["state"]["action_results"][0]["resolution_required"]
+                    continued["state"]["action_results"][0]["result"].get("resolution_required")
                 )
 
 

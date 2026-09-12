@@ -1,6 +1,7 @@
 """Offline graph checks: internal gaps do not become new user constraints."""
 
 from copy import deepcopy
+from datetime import date
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -154,6 +155,28 @@ async def test_unresolved_location_proposal_is_not_geocoded_or_written():
         assert result["trip_spec"].party_size == 3
         assert result["clarification"]["fields"] == proposal.clarification_fields
         world.requirement_origin.assert_not_awaited()
+        deps.tools.execute.assert_not_awaited()
+    finally:
+        await deps.model.close()
+
+
+async def test_scalar_card_edit_writes_without_an_origin_interrupt():
+    previous = TripSpec(goal="已有需求卡", visit_date=date(2026, 10, 11), budget=415)
+    proposal = RequirementOutput(visit_date=date(2026, 11, 11))
+    state = initial_state(run_id="scalar", user_id="fixture", input_text="只把日期改成 2026-11-11")
+    state.update(previous_spec=previous, trip_spec=previous, requirement_proposal={
+        "turn_id": 1, "input_text": state["input_text"], "output": proposal.model_dump(mode="json"),
+    })
+    world = SimpleNamespace(
+        strict_location=True,
+        requirement_origin=AsyncMock(return_value=(None, None, {"source": "unknown", "name": None})),
+    )
+    deps, nodes = graph_nodes(world=world)
+    try:
+        result = await nodes["requirements"].ainvoke(state)
+        assert result["trip_spec"].visit_date == date(2026, 11, 11)
+        assert result["trip_spec"].budget == 415
+        assert result["clarification"] is None
         deps.tools.execute.assert_not_awaited()
     finally:
         await deps.model.close()

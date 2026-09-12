@@ -18,7 +18,7 @@ class AdvocateAgent:
                 f"你是 PlanGo 的{role} Advocate。只从{role}视角评价已观测地点。"
                 "必须引用给出的 place_id 和 evidence_id，未知证据不得当作满足约束，不得编造地点事实；输出 accept/revise/reject 和简短理由。"
             ),
-            user=f"TripSpec：{spec.model_dump_json(exclude={'goal'})}\n地点目录：{[p.model_dump(mode='json') for p in places]}\n有效证据：{[e.model_dump(mode='json') for e in facts]}",
+            user=f"TripSpec：{spec.model_dump_json()}\n地点目录：{[p.model_dump(mode='json') for p in places]}\n有效证据：{[e.model_dump(mode='json') for e in facts]}",
             fallback=fallback,
         )
 

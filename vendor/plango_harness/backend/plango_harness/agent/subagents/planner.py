@@ -12,7 +12,7 @@ from plango_harness.agent.contracts import (
     TripSpec,
 )
 from plango_harness.agent.model_adapter import ModelAdapter
-from plango_harness.domain.planning import place_fits
+from plango_harness.domain.planning import _stop_covers_activity, place_fits
 
 
 class PlannerAgent:
@@ -54,12 +54,14 @@ class PlannerAgent:
                 "你是 PlanGo 的 Planner Agent。根据 TripSpec、已观测候选地点和 Advocate 报告，"
                 "提出一个有序的 PlanDraft。候选目录用columns定义共享列名，rows每行按列名读取。每个 place_id 必须来自已观测地点目录，不能编造地点、路线、"
                 "价格或营业事实；必须包含 must_visit_place_ids、覆盖 required_activities、遵守 activity_order，预算按明确人数计算。"
+                "goal是用户原话，必须据此理解要交付什么；人数、预算、时间、活动等 typed 字段是当前有效合同，与 goal 冲突时以 typed 字段为准。"
+                "required_activities与must_visit覆盖即可；没有列出的活动不要为填满时间窗口而加站。活动为空时只安排最少可交付的一站。"
                 "无须额外凑站点。只能调整顺序和建议停留时长。返回结构化结果。"
                 "label用简短中文标题；rationale用不超过160字向用户解释已查到的选店理由，不提TripSpec、PlanDraft、Agent、角色报告或内部ID。"
                 "候选distance_km只是距搜索中心的直线参考，不能据此保证实际步行路线、时长或从用户起点可达；这些交给后续工具核验。"
             ),
             user=(
-                f"TripSpec：{spec.model_dump_json(exclude={'goal'})}\n候选目录：{compact_catalog}\n"
+                f"TripSpec：{spec.model_dump_json()}\n候选目录：{compact_catalog}\n"
                 f"Advocate 报告：{reports}"
             ),
             fallback=fallback,
@@ -108,12 +110,13 @@ class PlannerAgent:
                     not place.price_known, place.distance_km if prefer_nearby else 0.0,
                     place.average_price, -score(place))
         ordered = sorted(eligible or places, key=priority)
+        facts = [Evidence.model_validate(raw) for raw in (evidence or [])]
         goals = list(dict.fromkeys([*(c for c in spec.activity_order if c in spec.required_activities), *spec.required_activities]))
         selected: list[PlaceCandidate] = [place for place in ordered if place.place_id in spec.must_visit_place_ids]
         for category in goals:
-            if any(place.category == category for place in selected):
+            if any(_stop_covers_activity(category, place, facts) for place in selected):
                 continue
-            candidates = [p for p in ordered if p.category == category and p not in selected]
+            candidates = [p for p in ordered if _stop_covers_activity(category, p, facts) and p not in selected]
             if candidates:
                 selected.append(candidates[0])
         if not goals and not selected:

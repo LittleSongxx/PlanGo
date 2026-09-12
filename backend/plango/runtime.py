@@ -370,7 +370,7 @@ class DesktopRuntime(PlanGoRuntime):
                 ).scalar_one()
             binding = await self.bridge.binding(run_id)
             self.model.system_prefix = (
-                "PlanGo 真实运行：Skill 仅提供任务提示，不能授予工具权限。禁止模拟价格、订单、预约号与履约成功；登录、验证码或不支持能力须暂停/人工接管。可用 Skill 目录："
+                "PlanGo 真实运行：当前为规划视角策略。Skill 是有界程序，不授权工具；已加载则只能使用该程序列出的固定操作。禁止模拟价格、订单、预约号与履约成功；登录、验证码或不支持能力须暂停/人工接管。可用 Skill 目录："
                 + list_skill_adverts(binding.get("enabled_skills"))[:2000]
                 + "\n"
             )
@@ -398,7 +398,9 @@ class DesktopRuntime(PlanGoRuntime):
             if wait.get("command_id"):
                 pending = await self.bridge.get(wait["command_id"])
                 if pending and pending.get("result"):
-                    await self.resume_browser(run_id, wait["command_id"])
+                    accepted = await self.resume_browser(run_id, wait["command_id"])
+                    if not accepted.get("accepted"):
+                        self.schedule_browser_receipt_reconcile(run_id, wait["command_id"])
             return result
 
     async def _project_browser_memory(self, row):
@@ -467,6 +469,28 @@ class DesktopRuntime(PlanGoRuntime):
         saved = next(event for event in await self.memory.events_for_source(row["user_id"], source) if event["event_kind"] == "episode")
         return {"accepted": True, "replayed": not bool(committed), "feedback": self._feedback_record(saved)}
 
+    def schedule_browser_receipt_reconcile(self, run_id, command_id):
+        # Fast extract/screenshot receipts can land before LangGraph commits
+        # browser_wait. Retry resume once the projection matches; do not invent results.
+        self._track_background(asyncio.create_task(self._reconcile_browser_receipt(run_id, command_id)))
+
+    async def _reconcile_browser_receipt(self, run_id, command_id):
+        for delay in (0.05, 0.1, 0.2, 0.4, 0.8, 1.5):
+            await asyncio.sleep(delay)
+            row = await self.runs.get(run_id)
+            if not row or row.get("cancel_requested") or row["phase"] in TERMINAL_PHASES:
+                return
+            if row.get("pending_command"):
+                return
+            wait = (row.get("state_json") or {}).get("browser_wait") or {}
+            if wait.get("command_id") != command_id:
+                continue
+            command = await self.bridge.get(command_id)
+            if not command or not command.get("result"):
+                return
+            if (await self.resume_browser(run_id, command_id)).get("accepted"):
+                return
+
     async def resume_browser(self, run_id, command_id, *, retry=False, acceptance=None):
         async with self._resume_lock:
             row = await self.runs.get(run_id)
@@ -489,15 +513,22 @@ class DesktopRuntime(PlanGoRuntime):
                     # Browser resumes also keep generation and the command in one transaction.
                     acceptance = InputAcceptance(uuid.uuid4().hex, hashlib.sha256(command_id.encode()).hexdigest())
                 acceptance.statements.append(update(bindings).where(bindings.c.run_id == run_id).values(generation=bindings.c.generation + 1))
-            elif (
-                not command.get("result")
-                or wait.get("error_kind")
-                or (
-                    command["result"].get("outcome") in {"blocked", "failed"}
-                    and not command["payload"].get("approved_action_id")
+            else:
+                payload = command.get("payload") or {}
+                receipt_snapshot = str(payload.get("slot") or "").startswith("receipt:") or (
+                    (row.get("state_json") or {}).get("browser_receipt_pending")
+                    and payload.get("operation") == "snapshot"
                 )
-            ):
-                return {"accepted": False}
+                if (
+                    not command.get("result")
+                    or (wait.get("error_kind") and not receipt_snapshot)
+                    or (
+                        command["result"].get("outcome") in {"blocked", "failed"}
+                        and not payload.get("approved_action_id")
+                        and not receipt_snapshot
+                    )
+                ):
+                    return {"accepted": False}
             event = await self.runs.update_input_with_event(
                 run_id=run_id,
                 phase=RunPhase.REQUIREMENTS_READY,

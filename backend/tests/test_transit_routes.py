@@ -26,17 +26,21 @@ PLACES = [PlaceCandidate(place_id=f"amap:controlled-{index}", name=f"受控站�
 
 
 def transit_path(cost="4.5"):
-    def walk(distance, duration):
-        return {"distance": str(distance), "duration": str(duration), "steps": [{"instruction": "受控步行衔接"}]}
+    def walk(distance, duration, polyline):
+        return {"distance": str(distance), "duration": str(duration),
+                "steps": [{"instruction": "受控步行衔接", "polyline": polyline}]}
 
-    def bus(name, distance, duration):
+    def bus(name, distance, duration, polyline):
         return {"name": name, "distance": str(distance), "duration": str(duration),
-                "departure_stop": {"name": name + "起站"}, "arrival_stop": {"name": name + "终站"}}
+                "departure_stop": {"name": name + "起站"}, "arrival_stop": {"name": name + "终站"},
+                "polyline": polyline}
 
     return {"cost": cost, "duration": "1200", "walking_distance": "700", "segments": [
-        {"walking": walk(200, 180), "bus": {"buslines": [bus("受控1路", 1000, 300), bus("备选不应累加", 99999, 300)]}},
-        {"walking": walk(300, 240), "bus": {"buslines": [bus("受控2路", 2000, 300)]}},
-        {"walking": walk(200, 180), "bus": {"buslines": []}},
+        {"walking": walk(200, 180, "106.550,29.550;106.551,29.551"),
+         "bus": {"buslines": [bus("受控1路", 1000, 300, "106.551,29.551;106.560,29.560"), bus("备选不应累加", 99999, 300, "")]}},
+        {"walking": walk(300, 240, "106.560,29.560;106.562,29.562"),
+         "bus": {"buslines": [bus("受控2路", 2000, 300, "106.562,29.562;106.570,29.570")]}},
+        {"walking": walk(200, 180, "106.570,29.570;106.571,29.571"), "bus": {"buslines": []}},
     ]}
 
 
@@ -55,7 +59,8 @@ async def controlled_provider(*, path=None, cross_city=False, city_code="023", u
                 "distance": "999999",  # The provider's point-to-point walking distance is not transit distance.
                 "transits": [path if path is not None else transit_path()],
             }})
-        return httpx.Response(200, json={"status": "1", "route": {"paths": [{"distance": "1200", "duration": "420"}]}})
+        return httpx.Response(200, json={"status": "1", "route": {"paths": [{"distance": "1200", "duration": "420",
+            "polyline": "106.550000,29.550000;106.560000,29.560000"}]}})
 
     provider = AmapWorldProvider(DesktopSettings(amap_webservice_key="controlled-http-only"))
     await provider.client.aclose()
@@ -101,8 +106,12 @@ async def test_real_adapter_contract_keeps_transfer_walks_citycode_and_departure
         assert evidence.payload["distance_km"] == 3.7 and evidence.payload["walking_distance_m"] == 700
         assert evidence.payload["transfers"] == 1 and len(evidence.payload["segments"]) == 5
         assert "受控1路" in result.stops[0].transport_summary and "受控2路" in result.stops[0].transport_summary
+        assert "步行200米至受控1路起站" in result.stops[0].transport_summary
+        assert "转乘受控2路" in result.stops[0].transport_summary
         assert "标准票价估算 ¥4.5/人" in result.stops[0].transport_summary
         assert "备选不应累加" not in result.stops[0].transport_summary
+        assert evidence.payload["paths"][0]["path"][0] == [106.55, 29.55]
+        assert evidence.payload["paths"][1]["mode"] == "transit" and evidence.payload["paths"][1]["name"] == "受控1路"
         repeated = await planner.enrich(spec, result, evidence=facts)
         assert repeated.total_cost == 327 and len(calls) == 5  # No duplicate fare after enrichment/cache reuse.
         route, _ = await provider.estimate_route(ORIGIN, PLACES[0], mode="transit", visit_date=date(2026, 9, 10), at_minute=1080)
@@ -150,8 +159,12 @@ async def test_fee_scope_and_budget_include_transport_once(mode, cost, total):
         if mode == "driving":
             assert "油费、停车费及过路费未估" in result.stops[0].transport_summary
             assert any(c.name.startswith("transport_cost:") for c in checked.unknown_evidence)
+            route, _ = await provider.estimate_route(ORIGIN, PLACES[0], mode="driving")
+            assert route["paths"][0]["path"] == [[106.55, 29.55], [106.56, 29.56]]
         elif mode == "walking":
             assert checked.executable
+            route, _ = await provider.estimate_route(ORIGIN, PLACES[0], mode="walking")
+            assert route["paths"][0]["path"] == [[106.55, 29.55], [106.56, 29.56]]
     finally:
         await provider.close()
 

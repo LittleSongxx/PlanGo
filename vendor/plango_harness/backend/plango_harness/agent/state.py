@@ -47,6 +47,15 @@ def _cumulative_count(previous, value):
     return max(int(previous or 0), int(value or 0))
 
 
+def _resettable_count(previous, value):
+    """A new user/replan grant writes 0 so supervisor turns restart; a stale
+    high watermark must not keep the next edit over the run-wide cap."""
+    nxt = int(value or 0)
+    if nxt == 0:
+        return 0
+    return max(int(previous or 0), nxt)
+
+
 def _budget_checkpoint(previous, value):
     """Fan-out/replay repeats one grant; never add duplicated allowance."""
     if not previous or not previous.get("id"):
@@ -69,16 +78,22 @@ class PlanGoState(TypedDict, total=False):
     location_origin: dict[str, Any]
     browser_vision_turn: int | None
     browser_vision_reason: str | None
-    browser_steps: int
+    # Resume Command(update=fresh budget) may write 0 in the same step as a
+    # node that still carries the previous count. Last write must not crash.
+    # browser_steps keeps the high watermark; turn_count must accept 0 so a
+    # later edit is not immediately killed as "达到最大 Agent 回合数".
+    browser_steps: Annotated[int, _cumulative_count]
     processed_image_hash: str | None
     browser_image_context: str
     browser_image_turn_id: int | None
     browser_skill_context: str
+    browser_skill_procedure: dict[str, Any] | None
     browser_next: dict[str, Any]
     browser_observation: dict[str, Any]
     browser_action: dict[str, Any] | None
     browser_before_action: dict[str, Any]
     browser_receipt_pending: bool
+    browser_retry_read: bool
     browser_artifacts: list[dict[str, Any]]
     browser_task_context: dict[str, Any]
     thread_id: str
@@ -96,7 +111,7 @@ class PlanGoState(TypedDict, total=False):
     phase: RunPhase
     outcome: str | None
     reason: str
-    turn_count: int
+    turn_count: Annotated[int, _resettable_count]
     turn_id: int
     plan_version: int
     tool_call_count: Annotated[int, _cumulative_count]
@@ -173,6 +188,8 @@ def initial_state(
         "requirement_refresh": {},
         "previous_plan": None,
         "selected_poi": None,
+        "browser_skill_context": "",
+        "browser_skill_procedure": None,
         "messages": [HumanMessage(content=input_text, id=f"user:{run_id}:1")],
         "phase": RunPhase.CREATED,
         "outcome": None,

@@ -181,6 +181,13 @@ def test_first_offer_origin_answer_merges_all_explicit_slots_and_survives_restar
     runtime.model.structured = AsyncMock(side_effect=lambda schema, *, fallback, **kwargs: proposal if schema is RequirementOutput else fallback)
     with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
         rid, source, items, _ = seed_page(client)
+        async def mark_browser_progress():
+            row = await runtime.runs.get(rid)
+            await runtime.runs.save_state_and_events(
+                {**row["state_json"], "browser_steps": 7, "turn_count": 3},
+                expected_version=row["version"], events=[],
+            )
+        client.portal.call(mark_browser_progress)
         client.portal.call(runtime.bridge.update_location, rid, {"city": "重庆", "source": "config"})
         before = client.get(f"/api/v1/runs/{rid}").json()
         edited = client.post(f"/api/v1/runs/{rid}/requirements", json={"expected_version": before["version"], "fields": fields, "offer_source": source}).json()

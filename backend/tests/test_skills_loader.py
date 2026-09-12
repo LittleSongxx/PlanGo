@@ -7,7 +7,15 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from plango.skills import MAX_ADVERT_BYTES, MAX_SKILL_BYTES, list_skill_adverts, read_skill
+from plango.skills import (
+    MAX_ADVERT_BYTES,
+    MAX_SKILL_BYTES,
+    SKILL_OPERATIONS,
+    list_skill_adverts,
+    parse_skill,
+    read_skill,
+    skill_allows,
+)
 
 
 class SkillLoaderTest(unittest.TestCase):
@@ -56,6 +64,40 @@ class SkillLoaderTest(unittest.TestCase):
                 self.assertLessEqual(len(all_adverts.encode()), MAX_ADVERT_BYTES)
                 self.assertIsInstance(json.loads(all_adverts), list)
                 self.assertNotIn("private secret", all_adverts)
+
+    def test_parse_skill_operations_and_default_allowlist(self):
+        listed = parse_skill(
+            "---\nname: 观测\ndescription: 读页\noperations:\n  - snapshot\n  - extract\n  - finish\n---\n先观测。"
+        )
+        self.assertEqual(listed["name"], "观测")
+        self.assertEqual(listed["operations"], ["snapshot", "extract", "finish"])
+        self.assertEqual(listed["body"], "先观测。")
+        comma = parse_skill("---\nname: 逗号\ndescription: x\noperations: snapshot, click, read_skill\n---\n")
+        self.assertEqual(comma["operations"], ["snapshot", "click"])
+        missing = parse_skill("---\nname: 缺省\ndescription: x\n---\n")
+        self.assertEqual(missing["operations"], list(SKILL_OPERATIONS))
+        self.assertTrue(skill_allows("navigate", None))
+        self.assertTrue(skill_allows("read_skill", listed))
+        self.assertFalse(skill_allows("click", listed))
+        self.assertTrue(skill_allows("extract", listed))
+
+    def test_repo_skills_are_bounded_procedures(self):
+        for skill_id in (
+            "citywalk",
+            "dianping-queue",
+            "diet-friendly",
+            "parent-child",
+            "elder-care",
+            "pet-friendly",
+            "rainy-indoor",
+            "date-gift",
+            "anniversary-surprise",
+            "friends-gathering",
+        ):
+            parsed = parse_skill(read_skill(skill_id))
+            self.assertTrue(parsed["operations"], skill_id)
+            self.assertNotIn("read_skill", parsed["operations"])
+            self.assertTrue(set(parsed["operations"]) <= set(SKILL_OPERATIONS))
 
 
 if __name__ == "__main__":
