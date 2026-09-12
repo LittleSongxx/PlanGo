@@ -1,7 +1,7 @@
-# holdout-v3（第三套，金标未独立审）
+# holdout-v3（第三套，金标已独立审：accepted）
 
-- `evaluation_kind=holdout_unreviewed`
-- `report_kind=provisional_holdout`（独立审金标之前，不得报 official TSR / Faithfulness）
+- `evaluation_kind=holdout_reviewed`（2026-09-12 独立会话全量 204 题审阅，`gold_review.json` verdict=accepted、errata 为空）
+- `report_kind=provisional_holdout`（金标已审；正式报分前还须修正下述时间锚并复核 runner 审计，在此之前仍不称 official）
 - 规模：6 层 × 34 题 = 204，`dataset_sha=b2e9d40fced5f27ba070551d51e0dc7e4d8ac6cccaf07b7ac90ec39596512836`
 - 执行器只读 `tasks.json` 与 `worlds.json`，不要打开 `oracles.json`
 
@@ -30,7 +30,7 @@ calculate 仍把结果写在页文里（数值选取在多个数字之间），�
 ## 状态与限制
 
 - **本套由实现会话生成**（`authoring.json` 如实记录），不是独立出题；因此即便金标审完，也只能作为受控开发集，不能单独支撑"未见泛化"结论。
-- 金标未审。独立审阅请另开会话，用 `GOLD_REVIEW_PROMPT.md`。
+- 金标已审（`gold_review.json`）。遗留一项 major：题面 `as_of=2026-09-20T18:00` 早于全部世界包 `observed_at=2026-09-21`，时间锚倒置不改变任何期望值，但须在下一版数据集或正式报分前对齐并留痕（届时无需重跑数值核对）。另有三条 note 见 `gold_review.json`。
 - 世界包仍是冻结注入文本（单页到两页），不是真实网页回放；不覆盖浏览器加载、导航与真实商家履约。
 
 ## 命令

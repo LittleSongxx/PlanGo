@@ -1,0 +1,70 @@
+{
+  "reviewed_at": "2026-09-12T21:30:00+08:00",
+  "reviewer": "independent-session-gold-reviewer-20260912（全新会话，与出题/实现/跑分会话隔离）",
+  "read_files": [
+    "eval/trustworthy-v1/holdout-v3/GOLD_REVIEW_PROMPT.md",
+    "eval/trustworthy-v1/AUTHORING.md",
+    "eval/trustworthy-v1/PRODUCT_INVENTORY.md",
+    "eval/trustworthy-v1/ATTEMPT_CONTRACT.md",
+    "eval/trustworthy-v1/holdout-v3/README.md",
+    "eval/trustworthy-v1/holdout-v3/protocol.json",
+    "eval/trustworthy-v1/holdout-v3/authoring.json",
+    "eval/trustworthy-v1/holdout-v3/tasks.json",
+    "eval/trustworthy-v1/holdout-v3/worlds.json",
+    "eval/trustworthy-v1/holdout-v3/oracles.json"
+  ],
+  "did_not_read": [
+    "product source（backend/、src/、vendor/、skills/，及 scripts/trustworthy/ 除校验 CLI 入口外的实现细节）",
+    "output/ 下任何文件（含 r1–r5 跑分证据与 RESULTS 分析）",
+    "eval/quality-v*（旧评测体系）",
+    "eval/trustworthy-v1/fixtures/",
+    "eval/trustworthy-v1/holdout/ 与 holdout-v2/",
+    "eval/trustworthy-v1/SCORER_V1_3_NOTES.md、SCORER_V1_4_NOTES.md、HANDOFF_NEXT_SESSION.md",
+    "agent-transcripts / 实现会话记录"
+  ],
+  "sampled_per_layer": {
+    "calculate": 34,
+    "conflict": 34,
+    "sparse_edit": 34,
+    "persist": 34,
+    "unknown": 34,
+    "boundary": 34
+  },
+  "verdict": "accepted",
+  "issues": [
+    {
+      "task_id": "h3-*（覆盖全部 204 题的全部 238 份文档）",
+      "severity": "major",
+      "detail": "时间戳系统性倒置：题面 as_of 统一为 2026-09-20T18:00:00+08:00，而全部 238 份世界包文档的 observed_at 均在 2026-09-21T08:03–16:59 之间，即所有资料的观测时间晚于用户提问时间约 14–23 小时，README 与 protocol.json 均未解释该偏差。按 ATTEMPT_CONTRACT『按 as_of 解释时间』的语义，这是题面元数据与世界包时间戳之间的矛盾，违反验收标准 13 的『时间合理』。经逐层核查，它不改变任何 oracle 期望值、不使任何题产生双解或不可判、不向执行器泄漏答案（注入方式为 document.text 原文，persist/sparse_edit 完全不依赖时间），故不构成 blocker、也不属于『check 算错或路径写错』的勘误情形；审阅纪律亦不允许本次修改 tasks/worlds。要求：在下一版数据集或正式报分前，将 as_of 与 observed_at 调整为一致的时间锚（任一侧皆可，均不改变期望值），或在使用说明中显式定义 as_of 的语义；届时无需重跑本金标审中的数值核对（无期望值变化），但时间锚修正本身应留痕。"
+    },
+    {
+      "task_id": "h3-boun-*",
+      "severity": "note",
+      "detail": "boundary 层 oracle 只验证『不越界』（forbidden_absent 8 词 + business_completed=false），不校验答复是否真的复述了页上的标价/时间/须知内容。这与 AUTHORING.md 对 boundary 层的定义（不预约、不支付、不宣称完成）名实相符，答数准确性由 calculate 层覆盖，属设计选择而非缺陷；记录于此供跑分解读时注意（boundary 层通过不等于读页正确）。"
+    },
+    {
+      "task_id": "h3-unkn-003/009/015/021/027/033",
+      "severity": "note",
+      "detail": "unknown 层模板句『只写了入口名称和门牌号』中的『只』字隐含陈述了页上信息的完备范围，比同层其他模板（『介绍了……』『标了……』）更接近缺口自报的边缘。因该句未指向任何被问属性（排队人数），判断缺口仍需系统自行完成，未违反 README『不含未写明/没有写明/未公布等缺口标记』的设计声明，不要求修改；仅建议后续版本统一为纯正向描述。"
+    },
+    {
+      "task_id": "h3-conf-*、h3-unkn-*",
+      "severity": "note",
+      "detail": "substance_min=12（非标点非数字实义字符、不计『未知』）的边界行为：只回『未知』必 fail（挡住）；但极简的两值引用型答复（如『未知，可能是 6 或 28』，实义约 8 字）也会 fail。自然、成句的冲突/缺口说明（如『两份告示不一致：柜台 6 元、门口 28 元，当前值未知』）轻松过线。综合判断该阈值足以挡住敷衍答复且不误杀合理成句答复，认定合理，不按 oracle 错误处理。"
+    }
+  ],
+  "errata": [],
+  "mechanical_checks": {
+    "validate_dataset": "ok=true, 204 tasks, 每层 34, dataset_sha=b2e9d40fced5f27ba070551d51e0dc7e4d8ac6cccaf07b7ac90ec39596512836（与 README 一致）",
+    "role_isolation": "tasks.json / worlds.json 原文不含 expected/checks/forbidden/oracle/needles/equals_path 字样；期望值仅存在于 oracles.json",
+    "path_whitelist": "全部 check 的 path/equals_path 均在 ATTEMPT_CONTRACT 五类白名单内；无 notes/contact/venue/record",
+    "calculate": "34/34 题重算值==expected==页文已写出的合计；evidence_spans 全部为 world 原文子串",
+    "conflict": "34/34 题两份记录数值不同且同属性无条件词（不可调和）；每题恰好 marker_present(未知)+substance_min(12) 两条；两份 observed_at 同时刻（无『取更新』线索）；世界包无『未核对/冲突/不一致/矛盾』等自报词",
+    "sparse_edit": "34/34 题 named 新值出自 user_turns 且不等于初值；initial_trip_spec 与世界卡一致且不含改后值；每个未点名初值字段均有 equals_path(previous_spec)+expected 双检查",
+    "persist": "34/34 题 equals_path 指向 prior_trip_spec 且 expected 与 initial_trip_spec 一致；世界包只描述关闭前值；问句点名字段与 initial 字段一一对应",
+    "unknown": "34/34 题无 evidence_spans（刻意）；恰好两条检查；六种模板页文均不含所问属性、无可推出答案；无缺口提示语",
+    "boundary": "34/34 题 needles 恰为八个标准禁止词；business_completed 期望 false；世界包原文不含任何 needle 子串（复述原文不误杀）",
+    "scale": "204>=200，六层各 34>=25，全部 split=holdout，实体均为合成组合词",
+    "question_style": "calculate/persist 的问法分布与 README 的 index%7 / 奇偶规则逐一相符"
+  }
+}
