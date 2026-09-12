@@ -48,10 +48,40 @@ v1.2 里这两层 68 题的唯一检查是 `marker_present: "未知"`，且含�
 | `actor_sha` | 只哈希 `protocol/tasks/worlds`，两趟不同产品代码会得到同一个 actor 标识（r2 与 r3 实测同为 `99b0350cb03c`，其间 `task.py`／`graph.py` 在 03:31 被改过） | 新增 `actor` 块：`product_sha`（`backend/plango` + `vendor/.../plango_harness` + `skills/*/SKILL.md` 全量哈希）、`product_files`、`git{commit,branch,dirty}`、`model{model,base_url_host,configured}`（不含密钥） |
 | `scorer_sha` | 只哈希版本字符串 + 评委元数据，两个不同的评分器构建会得到同一个指纹（所有 v1.2-llm 报告同为 `69a70c7d…`） | `scorer_sources_sha()` 哈希 6 个评分器源文件后并入指纹 |
 
+### 2.4 已知：v3-r1 那份 attempts 的 actor 记的是跑完时的树
+
+`output/trustworthy-v1/holdout-v3-attempts-r1.json` 的 `actor.product_sha` = `f26d5017bd3b…`，
+`actor.git.commit` = `a1c711b`，但这一趟实际执行的是 **`a7ccd0b`** 的产品代码。
+原因是身份当时仍按「跑完时」计算（15:29 开跑，15:52 落盘），中途的提交被算了进去；
+修法见 commit `ce9ed94`（身份改为构造时快照），**之后的跑不会再出现**。
+
+可自行复核（跑前代码的产品哈希 = `9281f8c1ffcf1609…`）：
+
+```bash
+git worktree add /tmp/plango-at-a7ccd0b a7ccd0b
+conda run --no-capture-output -n plango python -c "import sys;sys.path.insert(0,'scripts');\
+from pathlib import Path;from trustworthy.provenance import product_identity;\
+print(product_identity(Path('/tmp/plango-at-a7ccd0b'))['product_sha'])"
+git diff a7ccd0b a1c711b --stat -- backend/plango vendor/plango_harness skills   # 只有 import 增删与排序
+```
+
+两个 revision 之间产品文件只差两处：`graph.py` 删掉一个未使用的 import、`task.py` 调整两行 import 顺序——
+都是 ruff 的 CI 门禁修复，不改变行为。原始 attempts 不作改写，以此处记录为准。
+
 ## 3. 重评与结论
 
 - 重评产物：`output/trustworthy-v1/holdout-v2-report-*-v1.3.json`（新文件名，旧报告不动）。
 - 金标未改：`dataset_sha` 全程不变（`7d29e4d9…`）。
+
+实际重评结果（同一批交付、只换判据）：
+
+| 交付 | v1.2 F | v1.3 F | TSR | F 计分题 | 空交付 | 只回不确定词 | F 下界（未计分按 0） |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| r3 | 0.945 | **1.000** | 1.000 | 110/204 | 34 | 60 | 0.539 |
+| v2 首跑 | 0.745 | 0.770 | 0.985 | 107/204 | 38 | 59 | 0.404 |
+
+r3 那 0.055 的差距**全部**来自列表编号假阴性（boundary 层 5 题从 F=0 回到正常）。修好后 r3 在 110 道计分题上
+每一条被评委看到的断言都 supported；但请注意 F 仍是 110/204 题上的数，另外 94 题里 60 题只回了一个不确定词。
 - 旧 attempt 在新合同下的对照（`delivery` 未变，只换判据）见下表；这是**同一批旧交付换判据**，不是新跑。
 
 | 交付 | v1.2 口径 TSR | 加「未知 + 说明缺口」后 | 其中 unknown / conflict 掉分 |
