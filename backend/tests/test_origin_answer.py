@@ -52,7 +52,8 @@ def test_initial_city_extract_is_not_replaced_by_the_whole_task_sentence():
 
 
 async def test_geocode_without_key_does_not_extract():
-    world = BrowserWorld(DesktopSettings(amap_webservice_key=""), SimpleNamespace(), SimpleNamespace())
+    bridge = SimpleNamespace(binding=AsyncMock(return_value={}))
+    world = BrowserWorld(DesktopSettings(amap_webservice_key=""), SimpleNamespace(), bridge)
     world.page = AsyncMock(side_effect=AssertionError("no-key geocode must not extract"))
     token = run_context.set({"run_id": "origin-fixture"})
     try:

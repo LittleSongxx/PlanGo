@@ -592,22 +592,54 @@ def _answer_numbers(text: str) -> set[str]:
     return set(_STATED_NUMBER.findall(_LIST_ORDINAL.sub(" ", str(text or ""))))
 
 
+def _stated_by_user(context: dict[str, Any]) -> set[str]:
+    """Figures the user's own turns wrote, whatever surface form they used.
+
+    A user-supplied budget is not something the page has to record, and the turn
+    that answers a clarification is not the turn that stated it, so every user
+    turn counts.
+    """
+    texts = [
+        str(context.get("original_request") or ""),
+        str(context.get("current_request") or ""),
+        str(context.get("question_being_answered") or ""),
+    ]
+    texts += [
+        str(item.get("content") or "")
+        for item in context.get("messages") or []
+        if isinstance(item, dict) and str(item.get("type") or item.get("role") or "") in {"human", "user"}
+    ]
+    return set(_STATED_NUMBER.findall("\n".join(texts)))
+
+
 def _derived_answer(answer: str, context: dict[str, Any]) -> bool:
-    """The answer states more figures than the current sources contain.
+    """The answer states a derived figure the sources do not state.
 
     This replaces the request-word list: whether a delivery needed the
     calculator is a fact about the answer and the page, not about which verb the
-    user chose. One unlocated figure can still be the page value restated, so a
-    single number stays a plain delivery; two or more distinct figures that no
-    record states is a derivation, and the calculator is what produces one.
+    user chose. A figure the sources state is a lookup, and a figure the user
+    wrote is the user's own input, so neither is a derivation.
+
+    A user-supplied figure settles the question: an answer that carries one is
+    restating what the user asked for, so its other figures — a card value, a
+    party size — belong to the user's own turn as well. Without one, an off-page
+    figure is a quantity the calculator was supposed to produce.
+
+    Known limit: a page that prints the answer to its own arithmetic question
+    states the figure, so this gate does not fire on it. Requiring the tool there
+    as well would mean reading the request again, which is what this replaced.
     """
     stated = _answer_numbers(answer)
-    if len(stated) < 2:
+    if not stated:
         return False
     recorded = set(_STATED_NUMBER.findall(_sources_text(context)))
     if not recorded:
         return False
-    return any(number not in recorded for number in stated)
+    user_figures = _stated_by_user(context)
+    off_page = {number for number in stated if number not in recorded}
+    if off_page & user_figures:
+        return False
+    return bool(off_page)
 
 
 def _with_unknown_mark(answer: str) -> str:

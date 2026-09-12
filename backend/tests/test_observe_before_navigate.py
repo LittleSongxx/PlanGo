@@ -17,7 +17,7 @@ from plango.graph import (
     _settle_existing_card,
     artifact,
 )
-from plango.task import Calculation, RequirementOutput
+from plango.task import Calculation, RequirementOutput, enforce_delivery_contract
 from plango_harness.agent.contracts import TripSpec
 from plango_harness.agent.graph import GraphDeps
 from test_browser_harness import TOKEN, settings
@@ -409,8 +409,15 @@ def test_confirming_card_ignores_refresh_and_read():
         assert not _asks_if_current_card_holds(state, RequirementOutput(party_size=5)), mutating
         assert not _asks_if_current_card_holds(state, RequirementOutput(visit_date=date(2026, 11, 11))), mutating
         assert not _asks_if_current_card_holds(state, RequirementOutput(clear_budget=True)), mutating
-    task = TaskDecision(operation="plan", requirements=RequirementOutput(refresh_sources=True, location_name="云阶码头"))
-    settled = _settle_existing_card(task, {"trip_spec": spec, "input_text": "重新打开后核对一下人数。"})
+    # A refresh request asks for the page again, so it is not answered from the card.
+    refresh = TaskDecision(
+        operation="plan", requirements=RequirementOutput(refresh_sources=True, location_name="云阶码头")
+    )
+    reread = {"trip_spec": spec, "input_text": "重新打开后核对一下人数。"}
+    assert not _asks_if_current_card_holds(reread, refresh.requirements)
+    plain = TaskDecision(operation="plan", requirements=RequirementOutput(location_name="云阶码头"))
+    assert _asks_if_current_card_holds(reread, plain.requirements)
+    settled = _settle_existing_card(plain, reread)
     assert settled is not None
     assert settled.party_size == 3
 
@@ -486,6 +493,22 @@ def test_itinerary_card_keeps_planning_after_a_scalar_write():
     settled = _settle_existing_card(task, state)
     assert settled is not None and settled.budget == 500
     assert _complete_settled_card(task, state, settled) is False
+
+
+def test_answer_echoing_the_user_supplied_figures_is_a_delivery():
+    """The run that answers a clarification is not the turn that stated the number."""
+    task = TaskDecision(operation="answer", answer="已按3人、总预算180元继续。")
+    out = enforce_delivery_contract(
+        task,
+        {
+            "current_request": "总预算",
+            "original_request": "我们3人，预算100，算已知材料费。",
+            "question_being_answered": "180是总预算还是每人预算？",
+            "sources": [{"records": [{"text": "材料费每人28.5元；配送费用尚未给出。"}]}],
+            "tool_results": [],
+        },
+    )
+    assert out.answer.startswith("已按")
 
 
 def _quantity_page_state(**extra):
