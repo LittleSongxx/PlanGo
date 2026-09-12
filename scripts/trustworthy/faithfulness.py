@@ -12,7 +12,16 @@ NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
 # "1. ", "2、", "(3)", "（4）" and friends enumerate a list; they are not
 # asserted quantities, so they must not be read as invented numbers.
 ORDINAL = re.compile(r"^\s*(?:[-*•·]\s*)?(?:[（(]\s*\d{1,3}\s*[)）]|\d{1,3}\s*[.、)）．])\s*")
-UNCERTAINTY = re.compile(r"未知|无法确定|资料未写明|当前值未知|没有写明|未公布")
+# Non-factual, group 1: the uncertainty family. "无法得出/推算/判断" is the same
+# move as "无法确定" — the answer says it cannot conclude, not that something is so.
+UNCERTAINTY = re.compile(
+    r"未知|无法确定|资料未写明|当前值未知|没有写明|未公布|无法得出|无法推算|无法判断"
+)
+# Non-factual, group 2: an answer that names what this run's observation does not
+# contain. It counts next to a word for the observation, because a bare 未包含 can
+# describe a record rather than the run's own page.
+GAP = re.compile(r"未包含|未提供|未标注|未给出|未列出|未显示|未记录|未提及")
+OBSERVATION_WORD = re.compile(r"页面|资料|记录|告示|公示|快照|观测|文本|菜单|说明")
 SLOT_LEFT = re.compile(r"([\u4e00-\u9fff]{2,8})\s*$")
 SLOT_RIGHT = re.compile(r"^\s*([\u4e00-\u9fff]{1,4}|元|分钟|人|点)")
 PUNCT = set("。！？!?；;，,、：: \t\n")
@@ -128,7 +137,7 @@ def asserted_numbers(claim: str) -> list[str]:
 
 
 def _contract_label(claim: str, observation: str, *, conflicts: bool) -> dict[str, Any] | None:
-    if UNCERTAINTY.search(claim):
+    if UNCERTAINTY.search(claim) or (GAP.search(claim) and OBSERVATION_WORD.search(claim)):
         return {"text": claim, "label": "non-factual", "span": None, "by": "contract"}
     for number in asserted_numbers(claim):
         if conflicts:
