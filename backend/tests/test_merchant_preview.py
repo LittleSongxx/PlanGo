@@ -12,7 +12,8 @@ from test_browser_harness import TOKEN, fixture, settings, wait_for
 
 @pytest.mark.parametrize("elements", [[], [{"idx": 0, "tag": "a", "text": "点击下载", "name": "", "href": "https://www.dianping.com/app/download?utm_source=dp_pc_index"}]])
 def test_app_only_menu_preview_preserves_partial_fields_without_a_vision_loop(tmp_path, elements):
-    assert browser_manual_error({"url": "https://verify.meituan.com/v2/app/general_page", "fields": {"dom": {"manual_gate": None}}}) == "captcha_required"
+    assert browser_manual_error({"url": "https://verify.meituan.com/v2/app/general_page", "fields": {"dom": {"manual_gate": None}}}) is None
+    assert browser_manual_error({"fields": {"dom": {"manual_gate": "captcha"}}}) == "captcha_required"
     app = create_app(settings(tmp_path), token=TOKEN)
     place = "受控餐厅\n地址：重庆市受控路1号"
     offer = "精选双人餐\n周一至周日\n随时退\n98元"

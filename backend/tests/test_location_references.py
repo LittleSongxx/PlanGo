@@ -4,11 +4,16 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+from plango.location import select_origin
 from plango_harness.agent.contracts import Location, PlaceCandidate, TripSpec
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.graph import GraphDeps, build_graph
 from plango_harness.agent.state import initial_state
 from plango_harness.agent.subagents.requirement import RequirementAgent
+
+
+async def _select_origin(state, extracted_name, previous_spec):
+    return select_origin(state, extracted_name, previous_spec, None)
 
 
 def test_explicit_center_edit_reuses_selected_identity_but_queries_a_new_area():
@@ -94,5 +99,54 @@ def test_named_origin_assignment_precedes_same_message_origin_references():
         model.structured.return_value = RequirementOutput(location_name="重庆市江北区观音桥步行街1号")
         correction = await RequirementAgent(model).run("起点更正为重庆市江北区观音桥步行街1号，其他条件保留。", [], previous)
         assert correction.location_name == "重庆市江北区观音桥步行街1号" and correction.location_reference is None
+
+    asyncio.run(exercise())
+
+
+def test_must_visit_venue_yields_origin_when_another_point_is_already_resolved():
+    async def exercise():
+        shop = Location(name="已选门店", latitude=29.57522, longitude=106.532842)
+        home = Location(name="用户出发地址", latitude=29.439716, longitude=106.517123)
+        selected = PlaceCandidate(place_id="amap:shop", name=shop.name, category="餐厅", latitude=shop.latitude, longitude=shop.longitude, source="amap")
+        previous = TripSpec(goal="核对已选门店路线", location=shop, search_location=home, must_visit_place_ids=[selected.place_id])
+        execute = AsyncMock(side_effect=AssertionError("an inverted origin is swapped from the existing spec"))
+        deps = GraphDeps(model=SimpleNamespace(structured=AsyncMock(return_value=RequirementOutput(party_size=2))),
+                         world=SimpleNamespace(requirement_origin=_select_origin), tools=SimpleNamespace(schemas=lambda: [], execute=execute),
+                         planner=None, memory=None, runs=None, action_provider=None)
+        nodes = {}
+        build_graph(deps, extension=lambda graph: nodes.update(requirements=graph.nodes["requirements"].runnable))
+        state = initial_state(run_id="controlled", user_id="controlled", input_text="人数2人，按已给起点继续")
+        state.update(previous_spec=previous, selected_poi=selected.model_dump(mode="json"),
+                     location_origin={"source": "user", "reference": "selected_place", "name": shop.name})
+        result = await nodes["requirements"].ainvoke(state)
+        spec = result["trip_spec"]
+        assert spec.location == home and spec.search_location == shop
+        assert spec.must_visit_place_ids == [selected.place_id] and spec.party_size == 2
+        assert result["location_origin"]["name"] == home.name
+        execute.assert_not_awaited()
+
+    asyncio.run(exercise())
+
+
+def test_named_search_center_is_origin_when_model_points_origin_at_must_visit():
+    async def exercise():
+        shop = Location(name="已选门店", latitude=29.57522, longitude=106.532842)
+        home = Location(name="用户出发地址", latitude=29.439716, longitude=106.517123)
+        selected = PlaceCandidate(place_id="amap:shop", name=shop.name, category="餐厅", latitude=shop.latitude, longitude=shop.longitude, source="amap")
+        previous = TripSpec(goal="核对已选门店路线", location=shop, search_location=shop, must_visit_place_ids=[selected.place_id])
+        execute = AsyncMock(return_value={"ok": True, "result": home.model_dump(mode="json")})
+        deps = GraphDeps(model=SimpleNamespace(structured=AsyncMock(return_value=RequirementOutput(
+            location_reference="selected_place", search_location_name=home.name))),
+                         world=SimpleNamespace(requirement_origin=_select_origin), tools=SimpleNamespace(schemas=lambda: [], execute=execute),
+                         planner=None, memory=None, runs=None, action_provider=None)
+        nodes = {}
+        build_graph(deps, extension=lambda graph: nodes.update(requirements=graph.nodes["requirements"].runnable))
+        state = initial_state(run_id="controlled", user_id="controlled", input_text=f"出发地是{home.name}，已选门店是目的地")
+        state.update(previous_spec=previous, selected_poi=selected.model_dump(mode="json"),
+                     location_origin={"source": "user", "reference": "selected_place", "name": shop.name})
+        result = await nodes["requirements"].ainvoke(state)
+        spec = result["trip_spec"]
+        assert spec.location == home and spec.search_location == shop
+        assert execute.await_count == 1 and execute.await_args.args[:2] == ("geocode", {"address": home.name})
 
     asyncio.run(exercise())

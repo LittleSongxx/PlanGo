@@ -76,7 +76,12 @@ class Settings(BaseSettings):
     amap_webservice_key: str = Field("", validation_alias="AMAP_WEBSERVICE_KEY", repr=False)
     amap_timeout_seconds: float = Field(8.0, validation_alias="AMAP_TIMEOUT_SECONDS")
 
+    # Perspective strategy: whether Advocate fans out. Not a second orchestration.
     agent_mode: Literal["multi", "single"] = "multi"
+
+    @property
+    def perspective(self) -> Literal["multi", "single"]:
+        return self.agent_mode
 
     max_turns: int = Field(12, validation_alias="PLANGO_MAX_TURNS", ge=1, le=100)
     # A run may include an edit/replan before approval; keep one bounded

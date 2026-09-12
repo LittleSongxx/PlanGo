@@ -10,7 +10,8 @@ def browser_actor(next_step=None):
         if schema not in {TaskDecision, DeliveryDecision}:
             return await next_step(schema, fallback=fallback, **kwargs) if next_step else fallback
         context = json.loads(kwargs['user'])
-        if not context.get('browser_steps'):
+        observation = context.get('observation') or {}
+        if not context.get('browser_steps') or not observation.get('snapshot_id'):
             return TaskDecision(operation='read')
         if next_step:
             decision = await next_step(BrowserDecision, fallback=BrowserDecision(), **kwargs)

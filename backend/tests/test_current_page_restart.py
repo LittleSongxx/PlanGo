@@ -25,7 +25,8 @@ def test_new_explicit_current_page_read_after_restart_does_not_reuse_previous_ta
     async def extract(schema, *, fallback, **kwargs):
         import json
         assert schema in {TaskDecision, DeliveryDecision}
-        if not json.loads(kwargs["user"])["browser_steps"]:
+        user = json.loads(kwargs["user"])
+        if not (user.get("observation") or {}).get("snapshot_id"):
             return TaskDecision(operation="read")
         return TaskDecision(operation="answer", answer="已读取当前页面的门店、地址和优惠预览。")
 

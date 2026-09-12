@@ -29,12 +29,29 @@ class LocationContext(BaseModel):
         return self
 
 
-def select_origin(state, extracted_name, previous_spec, context):
-    def same_name(left, right):
-        return str(left or "").strip().removesuffix("市") == str(right or "").strip().removesuffix(
-            "市"
-        )
+def _same_place_name(left, right):
+    return str(left or "").strip().removesuffix("市") == str(right or "").strip().removesuffix("市")
 
+
+def _latest_user_text(state):
+    for item in reversed(state.get("messages") or []):
+        content = item.get("content") if isinstance(item, dict) else getattr(item, "content", None)
+        role = (item.get("type") or item.get("role")) if isinstance(item, dict) else getattr(item, "type", None)
+        if content and str(role or "") in {"human", "user"}:
+            return str(content).strip()
+    pending = str(state.get("pending_message") or "").strip()
+    if pending:
+        return pending
+    text = str(state.get("input_text") or "")
+    return text.rsplit("\n", 1)[-1].strip() if "\n" in text else text.strip()
+
+
+def _answering_origin_prompt(state):
+    question = str((state.get("clarification") or {}).get("question") or "")
+    return "起点" in question or "出发地点" in question
+
+
+def select_origin(state, extracted_name, previous_spec, context):
     def precise_client_point():
         return (
             context is not None
@@ -45,8 +62,28 @@ def select_origin(state, extracted_name, previous_spec, context):
         )
 
     explicit = str(extracted_name or "").strip()
+    answer = _latest_user_text(state)
+    # A location interrupt already has the user's origin sentence. If the
+    # structured extract collapsed it to the search city, geocode that sentence.
+    if (
+        context
+        and _answering_origin_prompt(state)
+        and explicit
+        and _same_place_name(explicit, context.city)
+        and answer
+        and not _same_place_name(answer, context.city)
+    ):
+        explicit = answer[:200]
     previous_origin = state.get("location_origin") or {}
     previous_location = previous_spec.location if previous_spec is not None else None
+    selected_raw = state.get("selected_poi") or {}
+    selected_name = str(selected_raw.get("name") or "").strip() if isinstance(selected_raw, dict) else ""
+    previous_is_destination = bool(selected_name) and (
+        previous_origin.get("reference") == "selected_place"
+        or (previous_location is not None and _same_place_name(previous_location.name, selected_name))
+    )
+    if previous_is_destination and explicit and not _same_place_name(explicit, selected_name):
+        return explicit, None, {"source": "user", "name": explicit}
     if explicit:
         name = explicit
         source = "user"
@@ -68,12 +105,12 @@ def select_origin(state, extracted_name, previous_spec, context):
     else:
         return None, None, {"source": "unknown", "name": None}
     metadata = {"source": source, "name": name}
-    if context and same_name(name, context.city) and precise_client_point():
+    if context and _same_place_name(name, context.city) and precise_client_point():
         return (
             name,
             Location(name=name, latitude=context.latitude, longitude=context.longitude),
             {**metadata, "coordinate_source": context.source},
         )
-    if previous_location is not None and same_name(name, previous_location.name):
+    if previous_location is not None and _same_place_name(name, previous_location.name):
         return name, previous_location, metadata
     return name, None, metadata

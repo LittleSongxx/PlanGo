@@ -16,7 +16,7 @@ from plango.task import DeliveryDecision, TaskDecision
 from plango_harness.agent.contracts import Location, RunPhase
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.model_adapter import ModelAdapter
-from plango_harness.agent.state import PlanGoState, _budget_checkpoint
+from plango_harness.agent.state import PlanGoState, _budget_checkpoint, _cumulative_count, _resettable_count
 from plango_harness.runtime import PlanGoRuntime
 from plango_harness.settings import Settings
 from test_browser_harness import TOKEN, settings, wait_for
@@ -87,6 +87,14 @@ def test_budget_fanout_merge_never_adds_or_restores_an_old_grant():
     resumed = {**new, "deadline_at": 600}
     assert _budget_checkpoint(_budget_checkpoint(new, resumed), new) == resumed
     assert _budget_checkpoint(resumed, {}) == resumed
+
+
+def test_replan_resets_supervisor_turns_without_losing_browser_progress():
+    assert _resettable_count(12, 0) == 0
+    assert _resettable_count(0, 3) == 3
+    assert _resettable_count(3, 5) == 5
+    assert _cumulative_count(7, 0) == 7
+    assert _cumulative_count(7, 9) == 9
 
 
 async def runtime_with_gate(directory, kind):

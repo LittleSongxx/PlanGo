@@ -13,11 +13,13 @@ from plango.task import (
     BrowserDecision,
     Calculation,
     Citation,
+    DecisionNotUsable,
     DeliveryDecision,
     TaskDecision,
     _prompt_tokens,
     calculate,
     decide_task,
+    enforce_delivery_contract,
     _compact_context,
     _local_date,
     fit_decision_prompt,
@@ -117,6 +119,10 @@ async def test_one_semantic_call_preserves_request_sources_and_real_tool_results
     validate_citations(compacted, [{"artifact_id": "page:previous", "type": "browser_page", "current": False}])
     assert compacted.citations == [] and compacted.answer.startswith("草案已按")
     assert BrowserDecision(operation="type", idx=1, text="3").arguments() == {"idx": 1, "text": "3"}
+    with pytest.raises(Exception, match="input_text_required"):
+        BrowserDecision(operation="type", idx=0, text="")
+    with pytest.raises(Exception, match="input_text_required"):
+        BrowserDecision(operation="type", idx=0, text="   ")
     assert task_context(state)["tool_results"] == []
 
     async def unavailable(schema, *, fallback, **kwargs):
@@ -291,6 +297,31 @@ async def test_finished_arithmetic_still_reaches_delivery_after_a_tight_reserve(
     assert adapter.token_reserve == 2000
 
 
+def test_compaction_keeps_form_submit_targets():
+    """Token fitting used to drop forms, so a filled box had no submit idx left."""
+    state = _page_just_read("搜索框已填。")
+    state["browser_observation"]["elements"] = [
+        {"idx": 3, "name": "关键词", "tag": "input", "input_type": "search"},
+        {"idx": 4, "name": "搜索", "tag": "button", "input_type": "submit"},
+    ]
+    state["browser_observation"]["fields"] = {
+        "dom": {
+            "manual_gate": None,
+            "forms": [{
+                "form_id": "form-0", "action_url": "https://fixture.invalid/search",
+                "context_text": "搜索", "truncated": False,
+                "controls": [{"idx": 3, "input_type": "search", "name": "q", "label": "关键词", "value": "受控词", "disabled": False}],
+                "submit_indices": [4],
+            }],
+        }
+    }
+    context = task_context(state)
+    compacted = _compact_context(context, 1)
+    forms = ((compacted.get("observation") or {}).get("fields") or {}).get("dom", {}).get("forms") or []
+    assert forms and forms[0]["submit_indices"] == [4]
+    assert forms[0]["controls"][0]["value"] == "受控词"
+
+
 def test_compaction_keeps_the_execution_goal():
     """A live itinerary goal is why the next step is fill/check, not a new plan."""
     text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 40
@@ -354,7 +385,7 @@ async def test_runtime_prefix_does_not_block_the_page_just_read():
             return {"parsed": parsed, "raw": SimpleNamespace(usage_metadata={"total_tokens": 400})}
 
     adapter = ModelAdapter(DesktopSettings(_env_file=None, max_model_tokens=12000), model=Provider())
-    adapter.system_prefix = "PlanGo 真实运行：Skill 仅提供任务提示。" + ("可用技能条目。" * 80) + "\n"
+    adapter.system_prefix = "PlanGo 真实运行：Skill 是有界程序，不授权工具。" + ("可用技能条目。" * 80) + "\n"
     adapter.reset_run(1999, call_count=1)
     adapter.set_run_budget(None, token_baseline=0)
     context = task_context(_page_just_read(text))
@@ -409,3 +440,122 @@ def test_both_decision_prompts_keep_recorded_comparison_off_the_current_value():
     assert RECORDED_VS_CURRENT in TASK_INSTRUCTIONS
     assert RECORDED_VS_CURRENT in DELIVERY_INSTRUCTIONS
     assert "数字差不能用来选定其中一份作为当前适用值" in TASK_INSTRUCTIONS
+    assert "字面「未知」" in RECORDED_VS_CURRENT
+    assert "字面「未知」" in TASK_INSTRUCTIONS
+    assert "字面「未知」" in DELIVERY_INSTRUCTIONS
+
+
+def test_uncertain_answer_must_carry_the_unknown_mark():
+    task = TaskDecision(operation="answer", answer="当前无法确定开门时间，不能任选其一。")
+    out = enforce_delivery_contract(task, {"current_request": "现在开门吗？", "sources": [], "tool_results": []})
+    assert "未知" in out.answer
+    assert "无法确定" in out.answer
+
+
+@pytest.mark.parametrize(
+    "request_text,answer",
+    [
+        ("还剩多少额度？", "还剩 160 元。"),
+        ("退还后还能拿回多少？", "还能拿回 190 元。"),
+        ("两段导览加起来要多久？", "两段加起来要 41 分钟。"),
+    ],
+)
+def test_quantity_answer_without_arithmetic_is_unusable(request_text, answer):
+    task = TaskDecision(operation="answer", answer=answer)
+    with pytest.raises(DecisionNotUsable, match="quantity_requires_calculate"):
+        enforce_delivery_contract(
+            task,
+            {"current_request": request_text, "sources": [], "tool_results": []},
+        )
+
+
+def test_quantity_answer_is_allowed_after_arithmetic():
+    task = TaskDecision(operation="answer", answer="还能拿回 160 元。")
+    out = enforce_delivery_contract(
+        task,
+        {
+            "current_request": "退还后还能拿回多少？",
+            "sources": [],
+            "tool_results": [{"scope": "arithmetic_only", "ok": True, "value": "160"}],
+        },
+    )
+    assert out.answer.startswith("还能拿回")
+
+
+def test_quantity_block_asks_the_next_decision_to_calculate():
+    state = {
+        "input_text": "退还后还能拿回多少？",
+        "browser_task_context": {"original_request": "退还后还能拿回多少？"},
+        "browser_observation": {},
+        "browser_artifacts": [],
+    }
+    context = task_context(
+        state,
+        [{"tool": "decision_validation", "ok": False, "error": "quantity_requires_calculate"}],
+    )
+    assert context["required_operation"] == "calculate"
+
+
+def test_ask_for_a_missing_page_quantity_becomes_unknown():
+    task = TaskDecision(operation="ask", question="请提供出发位置。")
+    out = enforce_delivery_contract(
+        task,
+        {
+            "current_request": "现在要排多久？",
+            "sources": [{"records": [{"text": "资料未写明排队时长。"}]}],
+            "tool_results": [],
+        },
+    )
+    assert out.operation == "answer"
+    assert "未知" in out.answer
+
+
+def test_ask_for_origin_when_page_omits_a_measure_becomes_unknown():
+    task = TaskDecision(operation="ask", question="请提供出发地点，以便估算步行距离。")
+    out = enforce_delivery_contract(
+        task,
+        {
+            "current_request": "到店步行有多远？",
+            "sources": [{"records": [{"text": "资料未写明步行距离。"}]}],
+            "tool_results": [],
+        },
+    )
+    assert out.operation == "answer"
+    assert "未知" in out.answer
+
+
+def test_ask_without_a_source_gap_stays_an_ask():
+    task = TaskDecision(operation="ask", question="请确认日期")
+    out = enforce_delivery_contract(
+        task,
+        {"current_request": "周末安排一个行程", "sources": [{"records": [{"text": "菜单已打开。"}]}], "tool_results": []},
+    )
+    assert out.operation == "ask"
+
+
+def test_unknown_quantity_answer_does_not_require_calculate():
+    task = TaskDecision(operation="answer", answer="两份记录分别是 10 和 14，当前确定值未知。")
+    out = enforce_delivery_contract(
+        task,
+        {"current_request": "现在要排多久？", "sources": [], "tool_results": []},
+    )
+    assert out.operation == "answer"
+    assert "未知" in out.answer
+
+
+def test_posted_price_lookup_does_not_require_calculate():
+    task = TaskDecision(operation="answer", answer="票价写了 88 元。")
+    out = enforce_delivery_contract(
+        task,
+        {"current_request": "标价写了多少？不要代我付款。", "sources": [], "tool_results": []},
+    )
+    assert out.answer.startswith("票价")
+
+
+def test_non_quantity_numeric_answer_does_not_require_calculate():
+    task = TaskDecision(operation="answer", answer="告示只供阅读，标价 88 元。")
+    out = enforce_delivery_contract(
+        task,
+        {"current_request": "这张告示能不能代收？", "sources": [], "tool_results": []},
+    )
+    assert "88" in out.answer

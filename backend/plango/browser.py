@@ -304,6 +304,8 @@ class BrowserBridge:
                 _budget_id=context.get("budget_id", "initial"),
                 _generation=binding["generation"],
             )
+            if slot:
+                payload["slot"] = slot
             if operation == "screenshot":
                 payload["_expected_page"] = expected_page
             try:
@@ -478,7 +480,9 @@ class BrowserBridge:
                 await self.runtime.runs.append_event_in_transaction(session, run_id=row["run_id"],
                     phase=RunPhase.REQUIREMENTS_READY, event_type="BROWSER_OBSERVATION",
                     payload={"command_id": command_id, "outcome": observation.outcome, "url": observation.url}, agent_id="browser")
-        await self.runtime.resume_browser(row["run_id"], command_id)
+        resumed = await self.runtime.resume_browser(row["run_id"], command_id)
+        if isinstance(resumed, dict) and not resumed.get("accepted"):
+            self.runtime.schedule_browser_receipt_reconcile(row["run_id"], command_id)
         return {"accepted": True, "replayed": written is None}
 
     async def observations(self, run_id):

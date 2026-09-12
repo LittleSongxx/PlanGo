@@ -6,8 +6,18 @@ from unittest.mock import AsyncMock
 
 import pytest
 from plango.app import create_app
-from plango.graph import BrowserDecision, TaskDecision, _kept, _page_assembly_results, artifact
-from plango.task import RequirementOutput
+from plango.graph import (
+    BrowserDecision,
+    TaskDecision,
+    _asks_if_current_card_holds,
+    _card_hold_summary,
+    _complete_settled_card,
+    _kept,
+    _page_assembly_results,
+    _settle_existing_card,
+    artifact,
+)
+from plango.task import Calculation, RequirementOutput
 from plango_harness.agent.contracts import TripSpec
 from plango_harness.agent.graph import GraphDeps
 from test_browser_harness import TOKEN, settings
@@ -71,6 +81,21 @@ async def test_asking_before_any_page_is_read_looks_at_the_current_tab(tmp_path,
         operation="ask", question="请提供这两份步行记录的具体信息。"))
     update = await node.ainvoke(read_state())
     assert update.get("clarification") is None
+    assert update["browser_next"]["operation"] == "extract"
+    assert update["browser_task_context"]["operation"] == "read"
+    note = update["browser_task_context"]["tool_results"][-1]
+    assert note["tool"] == "observe_current_page" and note["ok"] is True
+
+
+@pytest.mark.parametrize("operation,kwargs", [
+    ("click", {"idx": 0}),
+    ("type", {"idx": 0, "text": "4"}),
+])
+async def test_unread_write_looks_at_the_current_tab(tmp_path, monkeypatch, operation, kwargs):
+    node = decide_node(tmp_path, monkeypatch, TaskDecision(
+        operation="read", browser=BrowserDecision(operation=operation, **kwargs)))
+    update = await node.ainvoke(read_state())
+    assert update.get("action_proposal") is None
     assert update["browser_next"]["operation"] == "extract"
     assert update["browser_task_context"]["operation"] == "read"
     note = update["browser_task_context"]["tool_results"][-1]
@@ -282,9 +307,231 @@ async def test_page_read_entry_without_preparation_delivers_the_draft(tmp_path, 
     assert update.get("outcome") is None
 
 
+async def test_unusable_draft_review_names_the_validation_error(tmp_path, monkeypatch):
+    from plango_harness.agent.contracts import ConstraintCheck, VerifierResult
+    from test_preparation_outcome import prepared_state
+
+    nodes = graph_nodes(tmp_path, monkeypatch)
+    state, _ = prepared_state()
+    plan = state["selected_plan"]
+    state["trip_spec"] = state["execution_goal"]["requirements"]
+    state["verifier"] = VerifierResult(
+        plan_id="another-plan", hard_constraints_pass=True, evidence_complete=False,
+        unknown_evidence=[ConstraintCheck(name="queue", kind="unknown", passed=None)])
+    state.pop("execution_goal")
+    update = await nodes["first"].ainvoke(state)
+    assert update["outcome"] == "PARTIAL_FAILED"
+    assert "draft_verifier_plan_mismatch" in update["reason"]
+    assert "没有可交付的核验草案" not in update["reason"]
+    assert update["trace"][-1]["event"] == "draft_review_unusable"
+
+
 async def test_approved_preparation_still_reads_the_visible_page(tmp_path, monkeypatch):
     from test_preparation_outcome import prepared_state
 
     nodes = graph_nodes(tmp_path, monkeypatch)
     update = await nodes["first"].ainvoke(prepared_state()[0])
     assert update["browser_next"]["operation"] == "extract"
+
+
+def test_sparse_card_edit_settles_without_a_new_origin():
+    spec = TripSpec(goal="已有需求卡", visit_date=date(2026, 10, 11), budget=415)
+    task = TaskDecision(operation="plan", requirements=RequirementOutput(visit_date=date(2026, 11, 11)))
+    settled = _settle_existing_card(task, {"trip_spec": spec, "input_text": "只把日期改成 2026-11-11，其他字段不要动。"})
+    assert settled is not None
+    assert settled.visit_date == date(2026, 11, 11)
+    assert settled.budget == 415
+
+
+def test_first_plan_and_itinerary_request_do_not_settle_the_card():
+    task = TaskDecision(
+        operation="plan",
+        requirements=RequirementOutput(party_size=3, required_activities=["餐厅"]),
+    )
+    assert _settle_existing_card(task, {"input_text": "帮我排个行程"}) is None
+    spec = TripSpec(goal="已有需求卡", party_size=2)
+    assert _settle_existing_card(task, {"trip_spec": spec, "input_text": "按当前卡再排一版"}) is None
+
+
+def test_confirming_an_existing_card_does_not_replan():
+    spec = TripSpec(goal="已有需求卡", party_size=2, location={"name": "渡口码头", "latitude": 31.2, "longitude": 121.4})
+    task = TaskDecision(operation="plan", requirements=RequirementOutput(location_name="渡口码头"))
+    settled = _settle_existing_card(task, {"trip_spec": spec, "input_text": "关掉再打开后，地点名和人数还在吗？"})
+    assert settled is not None
+    assert settled.party_size == 2
+    assert settled.location.name == "渡口码头"
+
+
+async def test_sparse_card_edit_completes_from_decide(tmp_path, monkeypatch):
+    spec = TripSpec(goal="已有需求卡", visit_date=date(2026, 10, 11), budget=415, per_person_budget=74)
+    node = decide_node(tmp_path, monkeypatch, TaskDecision(
+        operation="plan", requirements=RequirementOutput(visit_date=date(2026, 11, 11))))
+    update = await node.ainvoke(read_state(
+        input_text="只把日期改成 2026-11-11，其他字段不要动。",
+        trip_spec=spec,
+        previous_spec=spec,
+        browser_observation={"ok": True, "outcome": "observed", "snapshot_id": "seen",
+                             "url": "https://fixture.invalid/card", "command_id": "card"},
+        browser_artifacts=[{
+            "artifact_id": "page:card", "type": "browser_page", "source": "browser",
+            "snapshot_id": "seen", "url": "https://fixture.invalid/card",
+            "data": {"text": "需求卡当前日期 2026-10-11，总预算 415。"},
+        }],
+    ))
+    assert update["outcome"] == "SUCCEEDED"
+    assert update["trip_spec"].visit_date == date(2026, 11, 11)
+    assert update["trip_spec"].budget == 415
+
+
+def test_confirming_card_ignores_refresh_and_read():
+    spec = TripSpec(
+        goal="已有需求卡",
+        party_size=3,
+        location={"name": "云阶码头", "latitude": 31.2, "longitude": 121.4},
+    )
+    for text in (
+        "关掉再打开后，地点名和人数还在吗？",
+        "重启之后人数还保存着吗？",
+        "重新打开后核对一下日期。",
+        "关了再开，地点名有没有丢？",
+    ):
+        assert _asks_if_current_card_holds({"trip_spec": spec, "input_text": text}), text
+    assert not _asks_if_current_card_holds({"trip_spec": spec, "input_text": "把人数改成 5，其余保持原样。"})
+    task = TaskDecision(operation="plan", requirements=RequirementOutput(refresh_sources=True, location_name="云阶码头"))
+    settled = _settle_existing_card(task, {"trip_spec": spec, "input_text": "重新打开后核对一下人数。"})
+    assert settled is not None
+    assert settled.party_size == 3
+
+
+async def test_confirming_read_completes_from_the_seeded_card(tmp_path, monkeypatch):
+    spec = TripSpec(
+        goal="已有需求卡",
+        party_size=3,
+        location={"name": "云阶码头", "latitude": 31.2, "longitude": 121.4},
+    )
+    node = decide_node(tmp_path, monkeypatch, TaskDecision(
+        operation="read", browser=BrowserDecision(operation="snapshot")))
+    update = await node.ainvoke(read_state(
+        input_text="关掉再打开后，地点名和人数还在吗？",
+        trip_spec=spec,
+        previous_spec=spec,
+    ))
+    assert update["outcome"] == "SUCCEEDED"
+    assert update["trip_spec"].party_size == 3
+    assert update.get("browser_next", {}).get("operation") != "snapshot"
+    summary = update["execution_outcome"]["summary"]
+    assert "人数是 3" in summary
+    assert "地点名是 云阶码头" in summary
+    assert "冻结" not in summary and "持久化" not in summary
+
+
+async def test_confirming_answer_does_not_deliver_model_essay(tmp_path, monkeypatch):
+    spec = TripSpec(
+        goal="已有需求卡",
+        party_size=3,
+        location={"name": "云阶码头", "latitude": 31.2, "longitude": 121.4},
+    )
+    node = decide_node(tmp_path, monkeypatch, TaskDecision(
+        operation="answer",
+        answer="冻结世界无法确认重启后是否持久化，当前页只是关闭前快照。",
+    ))
+    update = await node.ainvoke(read_state(
+        input_text="关掉再打开后，地点名和人数还在吗？",
+        trip_spec=spec,
+        previous_spec=spec,
+    ))
+    assert update["outcome"] == "SUCCEEDED"
+    summary = update["execution_outcome"]["summary"]
+    assert "人数是 3" in summary
+    assert "地点名是 云阶码头" in summary
+    assert "冻结" not in summary
+    assert "持久化" not in summary
+
+
+def test_card_hold_summary_skips_trip_spec_defaults():
+    spec = TripSpec(goal="已有需求卡", party_size=3, budget=280)
+    summary = _card_hold_summary(spec)
+    assert "人数是 3" in summary
+    assert "总预算是 280" in summary
+    assert "出行方式" not in summary
+    assert "时长" not in summary
+
+
+def test_card_hold_summary_skips_mirrored_search_radius():
+    spec = TripSpec(goal="已有需求卡", travel_mode="transit", max_distance_km=3, search_radius_km=3)
+    summary = _card_hold_summary(spec)
+    assert "路程上限是 3" in summary
+    assert "出行方式是 公交" in summary
+    assert "搜索半径" not in summary
+    distinct = TripSpec(goal="已有需求卡", search_radius_km=1.6, per_person_budget=85)
+    assert "搜索半径是 1.6" in _card_hold_summary(distinct)
+
+
+def test_itinerary_card_keeps_planning_after_a_scalar_write():
+    spec = TripSpec(goal="已有行程", budget=400, required_activities=["展览", "餐厅"])
+    task = TaskDecision(operation="plan", requirements=RequirementOutput(budget=500))
+    state = {"trip_spec": spec, "input_text": "预算改为500元"}
+    settled = _settle_existing_card(task, state)
+    assert settled is not None and settled.budget == 500
+    assert _complete_settled_card(task, state, settled) is False
+
+
+def _quantity_page_state(**extra):
+    observed = {
+        "artifact_id": "page:seen",
+        "type": "browser_page",
+        "source": "browser",
+        "url": "https://fixture.invalid/ledger",
+        "snapshot_id": "seen",
+        "data": {"text": "预收 240 元。扣留 50 元。退还后剩余 190 元。"},
+    }
+    context = read_state()["browser_task_context"]
+    return read_state(
+        input_text="退还后还能拿回多少？",
+        browser_observation={
+            "ok": True,
+            "outcome": "observed",
+            "snapshot_id": "seen",
+            "url": "https://fixture.invalid/ledger",
+            "command_id": "seen",
+        },
+        browser_artifacts=[observed],
+        browser_task_context={**context, "request": "退还后还能拿回多少？", "tool_results": []},
+        **extra,
+    )
+
+
+async def test_quantity_answer_is_retried_until_calculate(tmp_path, monkeypatch):
+    calls = []
+
+    async def structured(schema, *, system, user, fallback):
+        calls.append(json.loads(user))
+        if len(calls) < 3:
+            return TaskDecision(operation="answer", answer="还能拿回 190 元。")
+        return TaskDecision(
+            operation="calculate",
+            calculations=[Calculation(id="remain", operation="subtract", operands=["240", "50"])],
+        )
+
+    node = decide_node(tmp_path, monkeypatch, structured)
+    update = await node.ainvoke(_quantity_page_state())
+    assert len(calls) == 3
+    assert calls[1]["required_operation"] == "calculate"
+    assert update.get("outcome") != "PARTIAL_FAILED"
+    results = update["browser_task_context"]["tool_results"]
+    assert any(row.get("scope") == "arithmetic_only" and row.get("ok") and row.get("value") == "190" for row in results)
+
+
+async def test_quantity_answer_gives_up_after_calculate_retries(tmp_path, monkeypatch):
+    calls = []
+
+    async def structured(schema, *, system, user, fallback):
+        calls.append(user)
+        return TaskDecision(operation="answer", answer="还能拿回 190 元。")
+
+    node = decide_node(tmp_path, monkeypatch, structured)
+    update = await node.ainvoke(_quantity_page_state())
+    assert len(calls) == 4
+    assert update["outcome"] == "PARTIAL_FAILED"
+    assert update["trace"][-1]["event"] == "task_decision_unusable"
+    assert update["trace"][-1]["payload"]["error"] == "quantity_requires_calculate"

@@ -380,7 +380,6 @@ def create_app(settings=None, *, token=None):
         return {
             "preferences": preferences,
             "favorites": favorites,
-            "footprints": [],
             "summaries": [
                 {"id": r["id"], "text": r["summary"], "createdAt": _utc(r["created_at"]).isoformat(), "scope": (r["payload_json"] or {}).get("scope")}
                 for r in episodes

@@ -130,7 +130,10 @@ class PlanGoRuntime:
             max_tool_calls=self.settings.max_tool_calls,
             max_run_seconds=self.settings.max_run_seconds,
             max_model_tokens=self.settings.max_model_tokens,
-            node_timeout_seconds=max(60, min(180, round(self.settings.openai_timeout_seconds * 3))),
+            node_timeout_seconds=max(
+                60,
+                min(int(self.settings.max_run_seconds), round(self.settings.openai_timeout_seconds * 3)),
+            ),
         )
         self.graph = self.build_graph(deps, checkpointer=checkpointer)
         self._started = True

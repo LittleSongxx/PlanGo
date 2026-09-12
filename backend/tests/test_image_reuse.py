@@ -11,7 +11,7 @@ from plango.graph import ImageReading
 from plango.outcomes import read_outcome
 from plango.task import DeliveryDecision, TaskDecision, task_context
 from plango_harness.agent.graph import GraphDeps
-from plango_harness.agent.model_adapter import ModelAdapter
+from plango_harness.agent.model_adapter import ModelAdapter, ModelProviderUnavailable
 from test_browser_harness import TOKEN, settings, wait_for
 
 IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j/a0AAAAASUVORK5CYII="
@@ -46,6 +46,53 @@ def test_same_uploaded_image_on_second_user_turn_reuses_original_source_without_
         events = client.get(f"/api/v1/runs/{run_id}/events").json()["events"]
         assert len([event for event in events if event["event_type"] == "image_extracted"]) == 1
         assert len([event for event in events if event["event_type"] == "image_reused"]) == 1
+
+
+def test_image_provider_rejection_asks_for_text_instead_of_failing_the_run(tmp_path):
+    app = create_app(settings(tmp_path).model_copy(update={"openai_api_key": "synthetic-adapter-only"}), token=TOKEN)
+
+    async def reject_image(schema, **kwargs):
+        if schema is ImageReading:
+            raise ModelProviderUnavailable("request")
+        return TaskDecision(operation="answer", answer="已记下你补充的图片文字。")
+
+    app.state.runtime.model.structured = AsyncMock(side_effect=reject_image)
+    with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
+        run_id = client.post("/api/v1/runs", json={"input_text": "读取上传图片中的文字", "image": IMAGE, "browser_session_id": "fixture-desktop"}).json()["run_id"]
+        paused = wait_for(client, run_id, lambda value: bool(value.get("interrupt_id")) or value["phase"] in {"SUCCEEDED", "FAILED", "PARTIAL_FAILED"})
+        assert paused["phase"] not in {"FAILED", "PARTIAL_FAILED"}, paused
+        assert str(paused.get("interrupt_id") or "").startswith("clarification:")
+        question = ((paused.get("state") or {}).get("clarification") or {}).get("question") or ""
+        events = client.get(f"/api/v1/runs/{run_id}/events").json()["events"]
+        interrupted = [event for event in events if event["event_type"] == "GRAPH_INTERRUPTED"]
+        asked = question or " ".join(str(item.get("payload") or "") for item in interrupted)
+        assert "补充图片" in asked or "支持图像" in asked or interrupted, paused
+        assert paused["state"].get("clarification", {}).get("question", "").startswith("截图未能识别")
+
+
+async def test_image_entry_treats_provider_rejection_as_unreadable(tmp_path, monkeypatch):
+    import plango.graph as module
+
+    model = ModelAdapter(settings(tmp_path))
+    model.structured = AsyncMock(side_effect=ModelProviderUnavailable("request"))
+    runtime = SimpleNamespace(bridge=SimpleNamespace(binding=AsyncMock(return_value={"input_image": IMAGE})))
+    deps = GraphDeps(model=model, tools=SimpleNamespace(schemas=lambda: []), world=SimpleNamespace(), planner=None, memory=None, runs=None, action_provider=None)
+    actual = module.build_graph
+    nodes = {}
+
+    def build(deps, *, extension, **kwargs):
+        def capture(graph):
+            extension(graph)
+            nodes["image"] = graph.nodes["image_entry"].runnable
+        return actual(deps, extension=capture, **kwargs)
+
+    monkeypatch.setattr(module, "build_graph", build)
+    monkeypatch.setattr(module, "interrupt", lambda payload: {"text": "套餐128元，来自用户补充"})
+    module.build_desktop_graph(runtime, deps, None)
+    result = await nodes["image"].ainvoke({"run_id": "fixture", "turn_id": 1, "input_text": "读取图片文字"})
+    assert result["browser_image_context"] == "套餐128元，来自用户补充"
+    assert result["browser_artifacts"][0]["data"]["text"] == "套餐128元，来自用户补充"
+    model.structured.assert_awaited_once()
 
 
 @pytest.mark.parametrize("case", ["old_cached_image", "empty_text", "missing_artifact", "wrong_source", "wrong_artifact"])

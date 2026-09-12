@@ -160,3 +160,22 @@ def test_single_policy_preserves_browser_role_and_skill_prefix():
         assert systems == [adapter.system_prefix + system] * 2
 
     asyncio.run(exercise())
+
+
+def test_model_goal_does_not_replace_user_request_or_previous_goal():
+    user = "这周六中午两个人从重庆出发，附近安排半天"
+    spec = RequirementOutput(goal="half_day_itinerary", party_size=2).to_trip_spec(user)
+    assert spec.goal == user
+    edited = RequirementOutput(goal="evening_itinerary", budget=500).to_trip_spec("预算改为500元", spec)
+    assert edited.goal == user
+    assert edited.budget == 500
+
+
+def test_identifier_hard_constraints_are_not_venue_conditions():
+    spec = RequirementOutput(
+        hard_constraints=["no_ordering", "清淡", "过敏:花生"],
+    ).to_trip_spec("要清淡，花生过敏")
+    assert spec.hard_constraints == ["清淡", "过敏:花生"]
+    previous = TripSpec(goal="已确认", hard_constraints=["no_reservation", "可携带滑板"])
+    edited = RequirementOutput(hard_constraints=["距离优先"]).to_trip_spec("距离优先", previous)
+    assert edited.hard_constraints == ["可携带滑板", "距离优先"]

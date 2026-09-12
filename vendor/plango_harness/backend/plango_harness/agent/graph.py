@@ -31,7 +31,11 @@ from plango_harness.agent.contracts import (
 )
 from plango_harness.agent.decisions import RequirementOutput, SupervisorDecision
 from plango_harness.agent.model_adapter import ModelAdapter
-from plango_harness.agent.requirements import requirement_delta, retain_evidence
+from plango_harness.agent.requirements import (
+    confirmed_constraint_proposals,
+    requirement_delta,
+    retain_evidence,
+)
 from plango_harness.agent.state import PlanGoState, planning_reset
 from plango_harness.agent.subagents import (
     AdvocateAgent,
@@ -74,6 +78,7 @@ class GraphDeps:
     tools: ToolRegistry
     action_provider: ActionProvider
     ledger: ActionLedger | None = None
+    # Perspective strategy: whether Advocate fans out. Routing still reads agent_mode.
     agent_mode: Literal["multi", "single"] = "multi"
     max_turns: int = 12
     max_repair_rounds: int = 2
@@ -82,6 +87,10 @@ class GraphDeps:
     max_run_seconds: int = 300
     max_model_tokens: int = 200000
     node_timeout_seconds: int = 60
+
+    @property
+    def perspective(self) -> Literal["multi", "single"]:
+        return self.agent_mode
 
     def tool_limit(self, state) -> int:
         return self.max_tool_calls + int((state.get("turn_budget") or {}).get("tool_baseline", 0))
@@ -112,6 +121,49 @@ class GraphDeps:
 def _short_reason(value: Any, limit: int = 240) -> str:
     text = " ".join(str(value or "").split())
     return text[:limit] + ("…" if len(text) > limit else "")
+
+
+def _point_name(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    return str(getattr(value, "name", "") or "").strip()
+
+
+def _same_named_point(left: Any, right: Any) -> bool:
+    first, second = _point_name(left), _point_name(right)
+    return bool(first) and first.removesuffix("市") == second.removesuffix("市")
+
+
+def _origin_required_this_turn(output: RequirementOutput, previous_spec: TripSpec | None) -> bool:
+    """First plans and new departure names need coordinates. Scalar card edits do not."""
+    if previous_spec is None:
+        return True
+    if output.location_reference:
+        return True
+    name = (output.location_name or "").strip()
+    previous = previous_spec.location.name if previous_spec.location else ""
+    if name and not _same_named_point(name, previous):
+        return True
+    if previous_spec.location is None and (
+        output.refresh_sources
+        or output.required_activities
+        or output.search_location_name
+        or output.search_location_reference
+    ):
+        return True
+    return False
+
+
+def _same_resolved_point(left: Any, right: Any) -> bool:
+    if left is None or right is None:
+        return False
+    lat1, lon1 = getattr(left, "latitude", None), getattr(left, "longitude", None)
+    lat2, lon2 = getattr(right, "latitude", None), getattr(right, "longitude", None)
+    if None not in (lat1, lon1, lat2, lon2):
+        return abs(lat1 - lat2) < 1e-5 and abs(lon1 - lon2) < 1e-5
+    return _same_named_point(left, right)
 
 
 def _trace(state: PlanGoState, event: str, **payload: Any) -> list[dict[str, Any]]:
@@ -558,8 +610,16 @@ def build_graph(
                 # A city configured for search does not establish this user's starting point.
                 location_name = None
             if output.location_reference == "selected_place":
-                resolved_location = selected_location
-                location_origin = {"source": "user", "reference": "selected_place", "name": selected_poi.name if selected_poi else None}
+                named_origin = (output.location_name or "").strip()
+                if named_origin and selected_poi and not _same_named_point(named_origin, selected_poi.name):
+                    # An explicit departure name outranks a destination reference.
+                    output = output.model_copy(update={"location_reference": None})
+                    location_name = named_origin
+                    resolved_location = None
+                    location_origin = {"source": "user", "name": named_origin}
+                else:
+                    resolved_location = selected_location
+                    location_origin = {"source": "user", "reference": "selected_place", "name": selected_poi.name if selected_poi else None}
             if resolved_location is None and location_name and output.location_reference is None:
                 geocode_response = await deps.tools.execute("geocode", {"address": location_name}, ctx)
         elif previous_spec is not None and output.location_name is None:
@@ -586,7 +646,13 @@ def build_graph(
         tool_call_count = ctx.tool_call_count
         # A picked venue is a destination, not a starting point: adopting it would make
         # every leg zero kilometres. Where the user departs from is theirs to state.
-        if resolved_location is None and getattr(deps.world, "strict_location", False) and not origin_pending:
+        # An existing card that only patches scalars does not need a new origin.
+        if (
+            resolved_location is None
+            and getattr(deps.world, "strict_location", False)
+            and not origin_pending
+            and _origin_required_this_turn(output, previous_spec)
+        ):
             question = "当前起点有多个匹配，请补区县、街道或门牌号。" if (geocode_observation or {}).get("error") == "ambiguous_location" else f"未能取得{location_name or '当前城市'}的真实起点坐标，请提供定位，或配置高德 Key 并明确出发地点。"
             answer = interrupt({"type": "clarification", "id": f"clarification:{state['run_id']}:location:{state.get('turn_id',1)}", "question": question})
             text = str((answer or {}).get("text", "")) if isinstance(answer, dict) else str(answer or "")
@@ -620,6 +686,19 @@ def build_graph(
             else:
                 spec = spec.model_copy(update={"search_location": None})
                 output = output.model_copy(update={"clarification_needed": True, "clarification_fields": ["search_location"], "clarification_question": "未能核实目标地区，请提供明确商圈或地址。"})
+        if (
+            selected_poi
+            and selected_location is not None
+            and selected_poi.place_id in spec.must_visit_place_ids
+            and spec.location is not None
+            and _same_resolved_point(spec.location, selected_location)
+            and spec.search_location is not None
+            and not _same_resolved_point(spec.search_location, selected_location)
+        ):
+            # A must-visit venue in the origin slot zeros every leg. The other
+            # resolved point is the departure the user already supplied.
+            spec = spec.model_copy(update={"location": spec.search_location, "search_location": selected_location})
+            location_origin = {"source": "user", "name": spec.location.name}
         unknown = {field for field, flag in (("visit_date", output.visit_date_unknown), ("time_window_start", output.time_window_start_unknown)) if flag}
         if "search_location" in output.clarification_fields:
             unknown.add("search_location")
@@ -672,6 +751,15 @@ def build_graph(
             # A geocode error cannot clear a missing-goal prerequisite. Cached
             # categories may be reused; the selected plan is still reverified.
             result["last_observation"] = {**(result.get("last_observation") or {}), "refresh_discovery": True}
+        if deps.memory is not None:
+            proposals = confirmed_constraint_proposals(
+                previous_spec,
+                spec,
+                source_event_id=f"user-confirmed:{state['run_id']}:{state.get('turn_id', 1)}",
+            )
+            if proposals:
+                committed = await deps.memory.commit(state["user_id"], proposals)
+                result["memory_delta"] = [MemoryProposal.model_validate(item) for item in committed]
         return result
 
     async def discovery(state: PlanGoState) -> dict[str, Any]:
@@ -1687,12 +1775,14 @@ def build_graph(
             "propose_actions": "propose_actions",
             "ask_user": "prepare_ask_user",
             "finish": "finalize",
+            "prepare_browser_execution": "prepare_browser_execution",
+            "execute": "execute",
         }.get(state.get("next_action") or "", "finalize")
 
     def after_approval(state: PlanGoState) -> str:
         decision = state.get("approval_decision")
         if decision == "approve":
-            return "execute"
+            return "prepare_browser_execution"
         if decision == "edit":
             return "replan"
         return "reflect"
@@ -1732,7 +1822,10 @@ def build_graph(
     graph.add_node("propose_actions", propose_actions, timeout=30)
     graph.add_node("approval", approval)
     graph.add_node("replan", replan)
-    graph.add_node("execute", getattr(deps.tools, "prepare_browser_execution", execute))
+    execute_fn = getattr(deps.tools, "prepare_browser_execution", execute)
+    graph.add_node("prepare_browser_execution", execute_fn)
+    # Retain the persisted node identifier for existing checkpoints.
+    graph.add_node("execute", execute_fn)
     graph.add_node("reflect", reflection_subgraph(reflect))
     graph.add_node("prepare_ask_user", prepare_ask_user)
     graph.add_node("ask_user", ask_user)
@@ -1760,6 +1853,7 @@ def build_graph(
     graph.add_edge("critic", "supervisor")
     graph.add_edge("propose_actions", "approval")
     graph.add_conditional_edges("approval", after_approval)
+    graph.add_edge("prepare_browser_execution", after_execute)
     graph.add_edge("execute", after_execute)
     graph.add_edge("reflect", "finalize")
     graph.add_edge("replan", replan_entry)

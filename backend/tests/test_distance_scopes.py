@@ -26,7 +26,9 @@ def test_legacy_limits_and_independent_set_clear_are_preserved():
     reset = RequirementOutput(clear_route_distance=True).to_trip_spec("取消路程上限", search)
     assert reset.search_radius_km == .5 and reset.max_distance_km is None
     old_edit = RequirementOutput(max_distance_km=2).to_trip_spec("旧客户端修改", search)
-    assert old_edit.search_radius_km == old_edit.max_distance_km == 2
+    assert old_edit.search_radius_km == .5 and old_edit.max_distance_km == 2
+    coupled = RequirementOutput(max_distance_km=2).to_trip_spec("旧单一范围", legacy)
+    assert coupled.search_radius_km == coupled.max_distance_km == 2
     assert TripSpec(goal="旧大范围", max_distance_km=100).search_radius_km == 50
 
 

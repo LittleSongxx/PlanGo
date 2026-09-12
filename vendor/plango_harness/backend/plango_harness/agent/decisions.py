@@ -15,6 +15,13 @@ _CLEAR_FIELDS = (
     ("search_radius_km", "clear_search_radius"), ("route_distance_km", "clear_route_distance"),
     ("max_queue_minutes", "clear_max_queue"),
 )
+_IDENTIFIER_CONSTRAINT = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+
+
+def _venue_hard_constraint(value: Any) -> bool:
+    """Keep observable venue conditions; drop internal identifier slugs."""
+    text = str(value).strip()
+    return bool(text) and _IDENTIFIER_CONSTRAINT.fullmatch(text) is None
 
 
 class SupervisorDecision(ContractModel):
@@ -126,8 +133,9 @@ class RequirementOutput(ContractModel):
             "location": None,
             "weather_sensitive": True,
         }
-        if self.goal:
-            values["goal"] = self.goal
+        # TripSpec.goal is the conversational request, not a classification label.
+        # First turn keeps the user text; later turns keep the previous goal.
+        values["goal"] = base.goal if base is not None else fallback_goal
         previous_members = {member.role: member.model_dump() for member in base.party} if base else {}
         if self.party:
             values["party"] = [PartyMember.model_validate({**previous_members.get(member.role, {}), **member.model_dump(exclude_unset=True)}) for member in self.party]
@@ -212,9 +220,16 @@ class RequirementOutput(ContractModel):
             value = getattr(self, field)
             if value is not None:
                 values[field] = value
-        if self.max_distance_km is not None:
-            # Legacy input changed both limits; explicit new fields below override each independently.
-            values["search_radius_km"] = min(self.max_distance_km, 50) if self.max_distance_km > 0 else None
+        if self.max_distance_km is not None and self.search_radius_km is None and not self.clear_search_radius:
+            # Old single-limit cards mirrored road distance into search. A card that
+            # already split the two fields keeps search when only the road limit changes.
+            previous_max = base.max_distance_km if base is not None else None
+            previous_search = base.search_radius_km if base is not None else None
+            still_coupled = previous_search is None or (
+                previous_max is not None and previous_search == min(previous_max, 50)
+            )
+            if still_coupled:
+                values["search_radius_km"] = min(self.max_distance_km, 50) if self.max_distance_km > 0 else None
         if self.search_radius_km is not None:
             values["search_radius_km"] = self.search_radius_km
         if self.route_distance_km is not None:
@@ -237,7 +252,7 @@ class RequirementOutput(ContractModel):
         values["hard_constraints"] = [
             str(item).strip()
             for item in hard_values
-            if str(item).strip()
+            if _venue_hard_constraint(item)
         ]
         values["soft_preferences"] = [
             str(item).strip() for item in soft_values if str(item).strip()

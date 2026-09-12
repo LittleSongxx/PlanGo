@@ -546,6 +546,9 @@ class BrowserWorld:
                 run_context.get()["geocode_city"] = result.city_code
             if result or not self._uses_browser():
                 return result
+        else:
+            # No live geocoder: do not issue extract and park the graph on browser_wait.
+            return None
         binding = await self.bridge.binding(run_context.get()["run_id"])
         if binding.get("location_context"):
             return None  # Client city without coordinates needs live geocoding, never guessed coordinates.

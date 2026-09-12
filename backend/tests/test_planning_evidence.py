@@ -117,3 +117,81 @@ def test_compiled_summary_uses_observed_stops_and_preserves_untrusted_draft(pric
     assert plan is not None
     assert plan.rationale == f"行程草案：普通餐厅；4 人；{cost_text}。待核验：营业/排队、可订情况、路线、交通费用。"
     assert draft.model_dump() == original, "Original model output remains available for the synthesis audit artifact"
+
+
+def _place(place_id, category, *, price=50, known=True):
+    return PlaceCandidate(
+        place_id=place_id, name=place_id, category=category,
+        latitude=29.56, longitude=106.57, average_price=price, price_known=known,
+    )
+
+
+def test_compile_caps_stops_to_requested_slots():
+    places = [_place(f"p{index}", "餐厅") for index in range(5)]
+    draft = PlanDraft(stops=[PlanDraftStop(place_id=place.place_id, duration_minutes=15) for place in places])
+    errors = []
+    plan = compile_plan_draft(
+        TripSpec(goal="用户原话安排半天", party_size=2, duration_minutes=720, time_window_start="10:00"),
+        draft, places, errors=errors,
+    )
+    assert plan is not None and [stop.place_id for stop in plan.stops] == ["p0"]
+    assert any(item["code"] == "extra_stop" for item in errors)
+
+    places = [_place("exhibit", "展览", price=20), _place("meal", "餐厅", price=60), _place("extra", "餐厅", price=30)]
+    errors = []
+    plan = compile_plan_draft(
+        TripSpec(goal="看展再吃饭", party_size=2, required_activities=["展览", "餐厅"],
+                 budget=400, duration_minutes=720, time_window_start="10:00"),
+        PlanDraft(stops=[PlanDraftStop(place_id=place.place_id, duration_minutes=15) for place in places]),
+        places, errors=errors,
+    )
+    assert plan is not None and [stop.place_id for stop in plan.stops] == ["exhibit", "meal"]
+    assert any(item["code"] == "extra_stop" for item in errors)
+
+
+def test_compile_drops_unknown_price_extras_when_budget_is_finite():
+    places = [_place("exhibit", "展览", price=30), _place("extra", "餐厅", price=0, known=False)]
+    errors = []
+    plan = compile_plan_draft(
+        TripSpec(goal="先看展", party_size=2, required_activities=["展览"], optional_activities=["餐厅"],
+                 budget=200, duration_minutes=720, time_window_start="10:00"),
+        PlanDraft(stops=[PlanDraftStop(place_id=place.place_id, duration_minutes=15) for place in places]),
+        places, errors=errors,
+    )
+    assert plan is not None and [stop.place_id for stop in plan.stops] == ["exhibit"]
+    assert any(item["code"] == "unknown_price" for item in errors)
+
+
+def test_user_phrased_activity_is_covered_by_retrieval_query():
+    place = _place("meal", "餐厅", price=59)
+    place = place.model_copy(update={"evidence_ids": ["retrieved"]})
+    now = datetime.now(timezone.utc)
+    evidence = [Evidence(
+        evidence_id="retrieved", source="amap", source_ref="https://fixture.invalid/search",
+        claim="检索返回候选", payload={"place_id": place.place_id, "query": "午餐"},
+        observed_at=now, expires_at=now + timedelta(minutes=10),
+    )]
+    plan = compile_plan_draft(
+        TripSpec(goal="中午吃饭", party_size=2, required_activities=["午餐"], budget=200),
+        PlanDraft(stops=[PlanDraftStop(place_id=place.place_id)]),
+        [place], evidence=evidence,
+    )
+    assert plan is not None and [stop.place_id for stop in plan.stops] == ["meal"]
+
+    other = compile_plan_draft(
+        TripSpec(goal="先看展", party_size=2, required_activities=["展览"], budget=200),
+        PlanDraft(stops=[PlanDraftStop(place_id=place.place_id)]),
+        [place], evidence=evidence,
+    )
+    assert other is None
+
+
+def test_compile_keeps_unknown_price_when_it_covers_a_required_slot():
+    place = _place("exhibit", "展览", price=0, known=False)
+    plan = compile_plan_draft(
+        TripSpec(goal="看展", party_size=2, required_activities=["展览"], budget=200),
+        PlanDraft(stops=[PlanDraftStop(place_id=place.place_id)]),
+        [place],
+    )
+    assert plan is not None and plan.stops[0].unit_price is None
+    assert "price_unknown" in plan.stops[0].tags

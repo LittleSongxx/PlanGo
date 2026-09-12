@@ -233,6 +233,45 @@ def test_rejected_browser_approval_does_not_enter_visual_fallback(tmp_path):
             assert database.execute("SELECT count(*) FROM agent_action WHERE run_id=?", (run_id,)).fetchone()[0] == 0
 
 
+def test_repeated_spent_vision_stops_instead_of_burning_the_turn_budget(tmp_path):
+    config = settings(tmp_path).model_copy(update={
+        "browser_vision_enabled": True, "openai_api_key": "offline-fixture-replaced", "max_tool_calls": 12,
+    })
+    app = create_app(config, token=TOKEN)
+    calls = []
+
+    async def model(schema, *, fallback, **kwargs):
+        calls.append(schema)
+        if schema in {TaskDecision, DeliveryDecision}:
+            if json.loads(kwargs["user"]).get("browser_steps", 0) == 0:
+                return TaskDecision(operation="read")
+            return TaskDecision(operation="read", browser=BrowserDecision(operation="snapshot", vision_reason="canvas"))
+        if schema is VisualReading:
+            return VisualReading(status="observed", text="测试截图上的图形，业务状态未核验")
+        return fallback
+
+    app.state.runtime.model.structured = model
+    with TestClient(app, headers={"Authorization": "Bearer " + TOKEN}) as client:
+        run_id = client.post("/api/v1/runs", json={"input_text": "读取当前网页内容", "browser_session_id": "fixture-desktop"}).json()["run_id"]
+        command, respond, _ = browser_driver(client, run_id)
+        respond(command("extract"), snapshot_id="dom-snapshot", page_version="document:1", text="", tables=[], elements=[], fields={"dom": {"canvas_count": 1}})
+        capture = command("screenshot")
+        payload = capture_metadata()
+        raw = {**fixture(capture), "snapshot_id": "dom-snapshot", "page_version": "document:1", "screenshot": payload, "text": "", "tables": []}
+        assert client.post("/api/v1/browser/commands/" + capture["command_id"] + "/result", json=raw).status_code == 200
+        respond(command("extract"), snapshot_id="dom-snapshot-2", page_version="document:2", text="", tables=[], elements=[])
+        done = wait_for(client, run_id, lambda v: v["phase"] in {"SUCCEEDED", "PARTIAL_FAILED", "FAILED"})
+        assert done["phase"] == "PARTIAL_FAILED", done
+        assert "截图理解本轮已用尽" in (done["state"].get("reason") or "")
+        vision_errors = [row for row in (done["state"].get("browser_task_context") or {}).get("tool_results", []) if row.get("tool") == "vision" and not row.get("ok")]
+        assert len(vision_errors) == 1
+        assert calls.count(TaskDecision) + calls.count(DeliveryDecision) <= 8
+        assert calls.count(VisualReading) == 1
+        with sqlite3.connect(tmp_path / "runs.sqlite") as database:
+            rows = database.execute("SELECT payload FROM plango_browser_command WHERE run_id=?", (run_id,)).fetchall()
+            assert sum(json.loads(row[0])["operation"] == "screenshot" for row in rows) == 1
+
+
 def test_spent_vision_counter_alone_or_foreign_evidence_does_not_complete_a_read():
     before, observation, _ = binding()
     state = {"turn_id": 3, "browser_vision_turn": 3, "browser_observation": observation, "browser_artifacts": []}

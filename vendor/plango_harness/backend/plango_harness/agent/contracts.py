@@ -109,7 +109,7 @@ class OfferReference(ContractModel):
 
 
 class TripSpec(ContractModel):
-    goal: str = Field(min_length=1, max_length=4000)
+    goal: str = Field(min_length=1, max_length=4000, description="用户原话中的出行目标，不是分类标签")
     party: list[PartyMember] = Field(
         default_factory=lambda: [PartyMember(role="用户")], min_length=1, max_length=12
     )
