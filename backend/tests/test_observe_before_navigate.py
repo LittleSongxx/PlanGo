@@ -313,7 +313,6 @@ async def test_unusable_draft_review_names_the_validation_error(tmp_path, monkey
 
     nodes = graph_nodes(tmp_path, monkeypatch)
     state, _ = prepared_state()
-    plan = state["selected_plan"]
     state["trip_spec"] = state["execution_goal"]["requirements"]
     state["verifier"] = VerifierResult(
         plan_id="another-plan", hard_constraints_pass=True, evidence_complete=False,

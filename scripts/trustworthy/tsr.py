@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import re
 from decimal import Decimal, InvalidOperation
 from typing import Any

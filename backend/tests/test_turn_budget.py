@@ -16,7 +16,12 @@ from plango.task import DeliveryDecision, TaskDecision
 from plango_harness.agent.contracts import Location, RunPhase
 from plango_harness.agent.decisions import RequirementOutput
 from plango_harness.agent.model_adapter import ModelAdapter
-from plango_harness.agent.state import PlanGoState, _budget_checkpoint, _cumulative_count, _resettable_count
+from plango_harness.agent.state import (
+    PlanGoState,
+    _budget_checkpoint,
+    _cumulative_count,
+    _resettable_count,
+)
 from plango_harness.runtime import PlanGoRuntime
 from plango_harness.settings import Settings
 from test_browser_harness import TOKEN, settings, wait_for

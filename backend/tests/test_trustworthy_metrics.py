@@ -11,17 +11,27 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from datetime import date
+from datetime import date  # noqa: E402
 
-from plango.graph import _card_hold_summary
-from plango_harness.agent.contracts import TripSpec
+from plango.graph import _card_hold_summary  # noqa: E402
+from plango_harness.agent.contracts import TripSpec  # noqa: E402
 
-from scripts.trustworthy.cli import main as cli_main
-from scripts.trustworthy.faithfulness import asserted_numbers, score_delivery
-from scripts.trustworthy.faithfulness_judge import JudgeError, judge_user_payload, parse_labels, prompt_sha
-from scripts.trustworthy.report import json_fingerprint, scorer_sources_sha, summarize, wilson_interval
-from scripts.trustworthy.schema import load_attempts, load_dataset, validate_dataset
-from scripts.trustworthy.tsr import delivery_substance, score_attempt
+from scripts.trustworthy.cli import main as cli_main  # noqa: E402
+from scripts.trustworthy.faithfulness import asserted_numbers, score_delivery  # noqa: E402
+from scripts.trustworthy.faithfulness_judge import (  # noqa: E402
+    JudgeError,
+    judge_user_payload,
+    parse_labels,
+    prompt_sha,
+)
+from scripts.trustworthy.report import (  # noqa: E402
+    json_fingerprint,
+    scorer_sources_sha,
+    summarize,
+    wilson_interval,
+)
+from scripts.trustworthy.schema import load_attempts, load_dataset, validate_dataset  # noqa: E402
+from scripts.trustworthy.tsr import delivery_substance, score_attempt  # noqa: E402
 
 DATASET = ROOT / "eval" / "trustworthy-v1"
 ATTEMPTS = DATASET / "fixtures" / "attempts.json"

@@ -3,7 +3,13 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
-from plango_harness.agent.contracts import ConstraintCheck, PlanCandidate, PlanStop, TripSpec, VerifierResult
+from plango_harness.agent.contracts import (
+    ConstraintCheck,
+    PlanCandidate,
+    PlanStop,
+    TripSpec,
+    VerifierResult,
+)
 from plango_harness.agent.subagents.critic import CriticAgent
 
 
