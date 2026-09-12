@@ -42,7 +42,7 @@ from .outcomes import (
 )
 from .planning import variants
 from .skills import parse_skill, read_skill, skill_allows
-from .task import BrowserDecision, DecisionNotUsable, TaskDecision, calculate, decide_task
+from .task import BrowserDecision, TaskDecision, calculate, decide_task
 from .world import dianping_preview_data, table_data
 
 

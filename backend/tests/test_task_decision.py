@@ -16,16 +16,16 @@ from plango.task import (
     DecisionNotUsable,
     DeliveryDecision,
     TaskDecision,
+    _compact_context,
+    _local_date,
+    _page_in_hand,
     _prompt_tokens,
     calculate,
     decide_task,
     enforce_delivery_contract,
-    _compact_context,
-    _local_date,
     fit_decision_prompt,
     task_context,
     validate_citations,
-    _page_in_hand,
 )
 from plango_harness.agent.contracts import TripSpec
 from plango_harness.agent.decisions import RequirementOutput

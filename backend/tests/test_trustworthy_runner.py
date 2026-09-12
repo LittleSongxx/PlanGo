@@ -8,10 +8,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from scripts.trustworthy.actor import load_actor_dataset
-from scripts.trustworthy.project import delivery_from, infrastructure_reason, project_attempt
-from scripts.trustworthy.runner import IsolatedRunner, isolated_settings, trip_spec_from_initial
-from scripts.trustworthy.schema import world_pack
+from scripts.trustworthy.actor import load_actor_dataset  # noqa: E402
+from scripts.trustworthy.project import (  # noqa: E402
+    delivery_from,
+    infrastructure_reason,
+    project_attempt,
+)
+from scripts.trustworthy.runner import (  # noqa: E402
+    IsolatedRunner,
+    isolated_settings,
+    trip_spec_from_initial,
+)
+from scripts.trustworthy.schema import world_pack  # noqa: E402
 
 HOLDOUT = ROOT / "eval" / "trustworthy-v1" / "holdout"
 
