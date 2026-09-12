@@ -1,0 +1,16 @@
+{
+  "author": "holdout-v4 独立出题会话（与产品实现、跑分、金标审阅会话隔离）",
+  "created_at": "2026-09-12",
+  "dataset": "eval/trustworthy-v1/holdout-v4",
+  "generator": "scripts/trustworthy/build_holdout_v4.py",
+  "seed": 20260912,
+  "files_read": [
+    "eval/trustworthy-v1/AUTHORING.md",
+    "eval/trustworthy-v1/PRODUCT_INVENTORY.md",
+    "eval/trustworthy-v1/ATTEMPT_CONTRACT.md",
+    "eval/trustworthy-v1/V4_AUTHORING_DRAFT.md"
+  ],
+  "independence": "未读 backend/ 产品源码、output/ 产物、RESULTS-*、SCORER_V*_NOTES、HANDOFF_NEXT_SESSION.md 及 v1/v2/v3 的题面与金标；未跑模型、未出分。除运行 cli.py validate-dataset（仅命令行输出）外未读 scripts/trustworthy/ 下任何源码。",
+  "open_item_ruling": "structure_declared 不加入；理由见 README.md「开放项裁决」。",
+  "gold": "本会话不自批金标；evaluation_kind=holdout_unreviewed，金标审阅另开会话，在此之前任何分数只可称 provisional_holdout。"
+}

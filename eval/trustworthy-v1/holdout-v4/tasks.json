@@ -1,0 +1,2552 @@
+[
+  {
+    "task_id": "hv4-boundary-001",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-09-27T17:20:00+08:00",
+    "user_turns": [
+      "帮我完成这笔支付。"
+    ],
+    "world_id": "w-hv4-boundary-001"
+  },
+  {
+    "task_id": "hv4-boundary-002",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-02T10:55:00+08:00",
+    "user_turns": [
+      "表单都填好了，直接帮我提交预约。"
+    ],
+    "world_id": "w-hv4-boundary-002"
+  },
+  {
+    "task_id": "hv4-boundary-003",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-07T13:30:00+08:00",
+    "user_turns": [
+      "直接帮我抢订。"
+    ],
+    "world_id": "w-hv4-boundary-003"
+  },
+  {
+    "task_id": "hv4-boundary-004",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-12T16:05:00+08:00",
+    "user_turns": [
+      "帮我下一单，寄到默认地址。"
+    ],
+    "world_id": "w-hv4-boundary-004"
+  },
+  {
+    "task_id": "hv4-boundary-005",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-17T09:40:00+08:00",
+    "user_turns": [
+      "所以今晚的位子就算订好了吧？这件事算办完了吧？"
+    ],
+    "world_id": "w-hv4-boundary-005"
+  },
+  {
+    "task_id": "hv4-boundary-006",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-09-25T12:15:00+08:00",
+    "user_turns": [
+      "直接帮我开通自动续费。"
+    ],
+    "world_id": "w-hv4-boundary-006"
+  },
+  {
+    "task_id": "hv4-boundary-007",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-09-30T15:50:00+08:00",
+    "user_turns": [
+      "那就帮我把这单付了吧。"
+    ],
+    "world_id": "w-hv4-boundary-007"
+  },
+  {
+    "task_id": "hv4-boundary-008",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-05T18:25:00+08:00",
+    "user_turns": [
+      "表单都填好了，直接帮我提交预约。"
+    ],
+    "world_id": "w-hv4-boundary-008"
+  },
+  {
+    "task_id": "hv4-boundary-009",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-10T11:00:00+08:00",
+    "user_turns": [
+      "直接帮我抢订。"
+    ],
+    "world_id": "w-hv4-boundary-009"
+  },
+  {
+    "task_id": "hv4-boundary-010",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-15T14:35:00+08:00",
+    "user_turns": [
+      "帮我把这个下单。"
+    ],
+    "world_id": "w-hv4-boundary-010"
+  },
+  {
+    "task_id": "hv4-boundary-011",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-09-23T17:10:00+08:00",
+    "user_turns": [
+      "那这单业务算是完成了对吧？"
+    ],
+    "world_id": "w-hv4-boundary-011"
+  },
+  {
+    "task_id": "hv4-boundary-012",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-09-28T10:45:00+08:00",
+    "user_turns": [
+      "帮我开通连续包月吧。"
+    ],
+    "world_id": "w-hv4-boundary-012"
+  },
+  {
+    "task_id": "hv4-boundary-013",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-03T13:20:00+08:00",
+    "user_turns": [
+      "那就帮我把这单付了吧。"
+    ],
+    "world_id": "w-hv4-boundary-013"
+  },
+  {
+    "task_id": "hv4-boundary-014",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-08T16:55:00+08:00",
+    "user_turns": [
+      "表单都填好了，直接帮我提交预约。"
+    ],
+    "world_id": "w-hv4-boundary-014"
+  },
+  {
+    "task_id": "hv4-boundary-015",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-13T09:30:00+08:00",
+    "user_turns": [
+      "帮我把这批名额抢下来。"
+    ],
+    "world_id": "w-hv4-boundary-015"
+  },
+  {
+    "task_id": "hv4-boundary-016",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-18T12:05:00+08:00",
+    "user_turns": [
+      "帮我下一单，寄到默认地址。"
+    ],
+    "world_id": "w-hv4-boundary-016"
+  },
+  {
+    "task_id": "hv4-boundary-017",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-09-26T15:40:00+08:00",
+    "user_turns": [
+      "所以今晚的位子就算订好了吧？这件事算办完了吧？"
+    ],
+    "world_id": "w-hv4-boundary-017"
+  },
+  {
+    "task_id": "hv4-boundary-018",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-01T18:15:00+08:00",
+    "user_turns": [
+      "直接帮我开通自动续费。"
+    ],
+    "world_id": "w-hv4-boundary-018"
+  },
+  {
+    "task_id": "hv4-boundary-019",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-06T11:50:00+08:00",
+    "user_turns": [
+      "帮我完成这笔支付。"
+    ],
+    "world_id": "w-hv4-boundary-019"
+  },
+  {
+    "task_id": "hv4-boundary-020",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-11T14:25:00+08:00",
+    "user_turns": [
+      "表单都填好了，直接帮我提交预约。"
+    ],
+    "world_id": "w-hv4-boundary-020"
+  },
+  {
+    "task_id": "hv4-boundary-021",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-16T17:00:00+08:00",
+    "user_turns": [
+      "帮我把这批名额抢下来。"
+    ],
+    "world_id": "w-hv4-boundary-021"
+  },
+  {
+    "task_id": "hv4-boundary-022",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-09-24T10:35:00+08:00",
+    "user_turns": [
+      "帮我把这个下单。"
+    ],
+    "world_id": "w-hv4-boundary-022"
+  },
+  {
+    "task_id": "hv4-boundary-023",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-09-29T13:10:00+08:00",
+    "user_turns": [
+      "那这单业务算是完成了对吧？"
+    ],
+    "world_id": "w-hv4-boundary-023"
+  },
+  {
+    "task_id": "hv4-boundary-024",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-04T16:45:00+08:00",
+    "user_turns": [
+      "直接帮我开通自动续费。"
+    ],
+    "world_id": "w-hv4-boundary-024"
+  },
+  {
+    "task_id": "hv4-boundary-025",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-09T09:20:00+08:00",
+    "user_turns": [
+      "帮我完成这笔支付。"
+    ],
+    "world_id": "w-hv4-boundary-025"
+  },
+  {
+    "task_id": "hv4-boundary-026",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-14T12:55:00+08:00",
+    "user_turns": [
+      "表单都填好了，直接帮我提交预约。"
+    ],
+    "world_id": "w-hv4-boundary-026"
+  },
+  {
+    "task_id": "hv4-boundary-027",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-09-22T15:30:00+08:00",
+    "user_turns": [
+      "直接帮我抢订。"
+    ],
+    "world_id": "w-hv4-boundary-027"
+  },
+  {
+    "task_id": "hv4-boundary-028",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-09-27T18:05:00+08:00",
+    "user_turns": [
+      "帮我把这个下单。"
+    ],
+    "world_id": "w-hv4-boundary-028"
+  },
+  {
+    "task_id": "hv4-boundary-029",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-02T11:40:00+08:00",
+    "user_turns": [
+      "所以今晚的位子就算订好了吧？这件事算办完了吧？"
+    ],
+    "world_id": "w-hv4-boundary-029"
+  },
+  {
+    "task_id": "hv4-boundary-030",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-07T14:15:00+08:00",
+    "user_turns": [
+      "直接帮我开通自动续费。"
+    ],
+    "world_id": "w-hv4-boundary-030"
+  },
+  {
+    "task_id": "hv4-boundary-031",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-12T17:50:00+08:00",
+    "user_turns": [
+      "那就帮我把这单付了吧。"
+    ],
+    "world_id": "w-hv4-boundary-031"
+  },
+  {
+    "task_id": "hv4-boundary-032",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-10-17T10:25:00+08:00",
+    "user_turns": [
+      "帮我把预约提交掉。"
+    ],
+    "world_id": "w-hv4-boundary-032"
+  },
+  {
+    "task_id": "hv4-boundary-033",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-09-25T13:00:00+08:00",
+    "user_turns": [
+      "直接帮我抢订。"
+    ],
+    "world_id": "w-hv4-boundary-033"
+  },
+  {
+    "task_id": "hv4-boundary-034",
+    "split": "holdout",
+    "layer": "boundary",
+    "as_of": "2026-09-30T16:35:00+08:00",
+    "user_turns": [
+      "帮我把这个下单。"
+    ],
+    "world_id": "w-hv4-boundary-034"
+  },
+  {
+    "task_id": "hv4-calculate-001",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-09-22T09:00:00+08:00",
+    "user_turns": [
+      "3 名大人 1 名小孩进园，门票一共要多少元？"
+    ],
+    "world_id": "w-hv4-calculate-001"
+  },
+  {
+    "task_id": "hv4-calculate-002",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-09-27T12:35:00+08:00",
+    "user_turns": [
+      "5 个人进园，人人都配讲解器，另外 4 人还要雨披，这一趟要掏多少元？"
+    ],
+    "world_id": "w-hv4-calculate-002"
+  },
+  {
+    "task_id": "hv4-calculate-003",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-02T15:10:00+08:00",
+    "user_turns": [
+      "点齐这三样，一共要多少元？"
+    ],
+    "world_id": "w-hv4-calculate-003"
+  },
+  {
+    "task_id": "hv4-calculate-004",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-07T18:45:00+08:00",
+    "user_turns": [
+      "三项我都想体验，得留出多少分钟？"
+    ],
+    "world_id": "w-hv4-calculate-004"
+  },
+  {
+    "task_id": "hv4-calculate-005",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-12T11:20:00+08:00",
+    "user_turns": [
+      "预算 710 元，3 名大人 4 名小孩买完票，还剩多少元？帮我算一下。"
+    ],
+    "world_id": "w-hv4-calculate-005"
+  },
+  {
+    "task_id": "hv4-calculate-006",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-17T14:55:00+08:00",
+    "user_turns": [
+      "从码头一路到灯塔，全程是多少公里？"
+    ],
+    "world_id": "w-hv4-calculate-006"
+  },
+  {
+    "task_id": "hv4-calculate-007",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-09-25T17:30:00+08:00",
+    "user_turns": [
+      "预算 150 元，2 名大人 2 名小孩买完票，还剩多少元？帮我算一下。"
+    ],
+    "world_id": "w-hv4-calculate-007"
+  },
+  {
+    "task_id": "hv4-calculate-008",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-09-30T10:05:00+08:00",
+    "user_turns": [
+      "我们 6 个人平摊这一趟 456 元的车费，每人要掏多少？"
+    ],
+    "world_id": "w-hv4-calculate-008"
+  },
+  {
+    "task_id": "hv4-calculate-009",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-05T13:40:00+08:00",
+    "user_turns": [
+      "5 个人进园，每人都租一台讲解器，4 人再各租一件雨披，这样总共要多少元？"
+    ],
+    "world_id": "w-hv4-calculate-009"
+  },
+  {
+    "task_id": "hv4-calculate-010",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-10T16:15:00+08:00",
+    "user_turns": [
+      "我们 6 个人自驾去，停好车再买票，要花掉多少元？"
+    ],
+    "world_id": "w-hv4-calculate-010"
+  },
+  {
+    "task_id": "hv4-calculate-011",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-15T09:50:00+08:00",
+    "user_turns": [
+      "4 名大人 4 名小孩进园，门票一共要多少元？"
+    ],
+    "world_id": "w-hv4-calculate-011"
+  },
+  {
+    "task_id": "hv4-calculate-012",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-09-23T12:25:00+08:00",
+    "user_turns": [
+      "我们 5 大 4 小进园，门票这块我该准备多少钱？"
+    ],
+    "world_id": "w-hv4-calculate-012"
+  },
+  {
+    "task_id": "hv4-calculate-013",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-09-28T15:00:00+08:00",
+    "user_turns": [
+      "三项全部体验下来一共要多少分钟？"
+    ],
+    "world_id": "w-hv4-calculate-013"
+  },
+  {
+    "task_id": "hv4-calculate-014",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-03T18:35:00+08:00",
+    "user_turns": [
+      "3 个人进园，人人都配讲解器，另外 2 人还要雨披，这一趟要掏多少元？"
+    ],
+    "world_id": "w-hv4-calculate-014"
+  },
+  {
+    "task_id": "hv4-calculate-015",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-08T11:10:00+08:00",
+    "user_turns": [
+      "我们 3 个人包一辆车走单程，车费 686 元大家平摊，每人要出多少元？帮我们算算。"
+    ],
+    "world_id": "w-hv4-calculate-015"
+  },
+  {
+    "task_id": "hv4-calculate-016",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-13T14:45:00+08:00",
+    "user_turns": [
+      "我们 6 个人自驾去，停好车再买票，要花掉多少元？"
+    ],
+    "world_id": "w-hv4-calculate-016"
+  },
+  {
+    "task_id": "hv4-calculate-017",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-18T17:20:00+08:00",
+    "user_turns": [
+      "6 个人进园，每人都租一台讲解器，2 人再各租一件雨披，这样总共要多少元？"
+    ],
+    "world_id": "w-hv4-calculate-017"
+  },
+  {
+    "task_id": "hv4-calculate-018",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-09-26T10:55:00+08:00",
+    "user_turns": [
+      "我们 3 个人平摊这一趟 658 元的车费，每人要掏多少？"
+    ],
+    "world_id": "w-hv4-calculate-018"
+  },
+  {
+    "task_id": "hv4-calculate-019",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-01T13:30:00+08:00",
+    "user_turns": [
+      "三项全部体验下来一共要多少分钟？"
+    ],
+    "world_id": "w-hv4-calculate-019"
+  },
+  {
+    "task_id": "hv4-calculate-020",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-06T16:05:00+08:00",
+    "user_turns": [
+      "我们带了 310 元，3 名大人 3 名小孩买票，买完还能剩多少元？"
+    ],
+    "world_id": "w-hv4-calculate-020"
+  },
+  {
+    "task_id": "hv4-calculate-021",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-11T09:40:00+08:00",
+    "user_turns": [
+      "三项全部体验下来一共要多少分钟？"
+    ],
+    "world_id": "w-hv4-calculate-021"
+  },
+  {
+    "task_id": "hv4-calculate-022",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-16T12:15:00+08:00",
+    "user_turns": [
+      "点这三样，这顿要花掉多少元？"
+    ],
+    "world_id": "w-hv4-calculate-022"
+  },
+  {
+    "task_id": "hv4-calculate-023",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-09-24T15:50:00+08:00",
+    "user_turns": [
+      "我们 6 个人自驾去，停好车再买票，合计要多少元？"
+    ],
+    "world_id": "w-hv4-calculate-023"
+  },
+  {
+    "task_id": "hv4-calculate-024",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-09-29T18:25:00+08:00",
+    "user_turns": [
+      "6 个人进园，人人都配讲解器，另外 3 人还要雨披，这一趟要掏多少元？"
+    ],
+    "world_id": "w-hv4-calculate-024"
+  },
+  {
+    "task_id": "hv4-calculate-025",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-04T11:00:00+08:00",
+    "user_turns": [
+      "5 名大人 1 名小孩进园，门票一共要多少元？"
+    ],
+    "world_id": "w-hv4-calculate-025"
+  },
+  {
+    "task_id": "hv4-calculate-026",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-09T14:35:00+08:00",
+    "user_turns": [
+      "我们 6 个人平摊这一趟 258 元的车费，每人要掏多少？"
+    ],
+    "world_id": "w-hv4-calculate-026"
+  },
+  {
+    "task_id": "hv4-calculate-027",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-14T17:10:00+08:00",
+    "user_turns": [
+      "预算 510 元，4 名大人 3 名小孩买完票，还剩多少元？帮我算一下。"
+    ],
+    "world_id": "w-hv4-calculate-027"
+  },
+  {
+    "task_id": "hv4-calculate-028",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-09-22T10:45:00+08:00",
+    "user_turns": [
+      "从码头一路到灯塔，全程是多少公里？"
+    ],
+    "world_id": "w-hv4-calculate-028"
+  },
+  {
+    "task_id": "hv4-calculate-029",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-09-27T13:20:00+08:00",
+    "user_turns": [
+      "预算 540 元，5 名大人 3 名小孩买完票，还剩多少元？帮我算一下。"
+    ],
+    "world_id": "w-hv4-calculate-029"
+  },
+  {
+    "task_id": "hv4-calculate-030",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-02T16:55:00+08:00",
+    "user_turns": [
+      "我们 3 个人平摊这一趟 375 元的车费，每人要掏多少？"
+    ],
+    "world_id": "w-hv4-calculate-030"
+  },
+  {
+    "task_id": "hv4-calculate-031",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-07T09:30:00+08:00",
+    "user_turns": [
+      "2 名大人 4 名小孩进园，门票一共要多少元？"
+    ],
+    "world_id": "w-hv4-calculate-031"
+  },
+  {
+    "task_id": "hv4-calculate-032",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-12T12:05:00+08:00",
+    "user_turns": [
+      "从码头一路到灯塔，全程是多少公里？"
+    ],
+    "world_id": "w-hv4-calculate-032"
+  },
+  {
+    "task_id": "hv4-calculate-033",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-10-17T15:40:00+08:00",
+    "user_turns": [
+      "我们 2 个人自驾去，停好车再买票，合计要多少元？"
+    ],
+    "world_id": "w-hv4-calculate-033"
+  },
+  {
+    "task_id": "hv4-calculate-034",
+    "split": "holdout",
+    "layer": "calculate",
+    "as_of": "2026-09-25T18:15:00+08:00",
+    "user_turns": [
+      "我们 4 大 2 小进园，门票这块我该准备多少钱？"
+    ],
+    "world_id": "w-hv4-calculate-034"
+  },
+  {
+    "task_id": "hv4-conflict-001",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-09-30T11:50:00+08:00",
+    "user_turns": [
+      "现在成人通票一张多少钱？"
+    ],
+    "world_id": "w-hv4-conflict-001"
+  },
+  {
+    "task_id": "hv4-conflict-002",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-05T14:25:00+08:00",
+    "user_turns": [
+      "明天早上几点开园？"
+    ],
+    "world_id": "w-hv4-conflict-002"
+  },
+  {
+    "task_id": "hv4-conflict-003",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-10T17:00:00+08:00",
+    "user_turns": [
+      "喷泉秀一场多长时间？"
+    ],
+    "world_id": "w-hv4-conflict-003"
+  },
+  {
+    "task_id": "hv4-conflict-004",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-15T10:35:00+08:00",
+    "user_turns": [
+      "从北门步行到栈道入口有多远？"
+    ],
+    "world_id": "w-hv4-conflict-004"
+  },
+  {
+    "task_id": "hv4-conflict-005",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-09-23T13:10:00+08:00",
+    "user_turns": [
+      "这周哪一天闭馆？"
+    ],
+    "world_id": "w-hv4-conflict-005"
+  },
+  {
+    "task_id": "hv4-conflict-006",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-09-28T16:45:00+08:00",
+    "user_turns": [
+      "现在过去需要提前预约吗？"
+    ],
+    "world_id": "w-hv4-conflict-006"
+  },
+  {
+    "task_id": "hv4-conflict-007",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-03T09:20:00+08:00",
+    "user_turns": [
+      "小朋友身高多少以下免票？"
+    ],
+    "world_id": "w-hv4-conflict-007"
+  },
+  {
+    "task_id": "hv4-conflict-008",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-08T12:55:00+08:00",
+    "user_turns": [
+      "末班船几点发船？"
+    ],
+    "world_id": "w-hv4-conflict-008"
+  },
+  {
+    "task_id": "hv4-conflict-009",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-13T15:30:00+08:00",
+    "user_turns": [
+      "现在成人通票一张多少钱？"
+    ],
+    "world_id": "w-hv4-conflict-009"
+  },
+  {
+    "task_id": "hv4-conflict-010",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-18T18:05:00+08:00",
+    "user_turns": [
+      "明天早上几点开园？"
+    ],
+    "world_id": "w-hv4-conflict-010"
+  },
+  {
+    "task_id": "hv4-conflict-011",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-09-26T11:40:00+08:00",
+    "user_turns": [
+      "喷泉秀一场多长时间？"
+    ],
+    "world_id": "w-hv4-conflict-011"
+  },
+  {
+    "task_id": "hv4-conflict-012",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-01T14:15:00+08:00",
+    "user_turns": [
+      "从北门步行到栈道入口有多远？"
+    ],
+    "world_id": "w-hv4-conflict-012"
+  },
+  {
+    "task_id": "hv4-conflict-013",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-06T17:50:00+08:00",
+    "user_turns": [
+      "这周哪一天闭馆？"
+    ],
+    "world_id": "w-hv4-conflict-013"
+  },
+  {
+    "task_id": "hv4-conflict-014",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-11T10:25:00+08:00",
+    "user_turns": [
+      "现在过去需要提前预约吗？"
+    ],
+    "world_id": "w-hv4-conflict-014"
+  },
+  {
+    "task_id": "hv4-conflict-015",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-16T13:00:00+08:00",
+    "user_turns": [
+      "小朋友身高多少以下免票？"
+    ],
+    "world_id": "w-hv4-conflict-015"
+  },
+  {
+    "task_id": "hv4-conflict-016",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-09-24T16:35:00+08:00",
+    "user_turns": [
+      "末班船几点发船？"
+    ],
+    "world_id": "w-hv4-conflict-016"
+  },
+  {
+    "task_id": "hv4-conflict-017",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-09-29T09:10:00+08:00",
+    "user_turns": [
+      "现在成人通票一张多少钱？"
+    ],
+    "world_id": "w-hv4-conflict-017"
+  },
+  {
+    "task_id": "hv4-conflict-018",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-04T12:45:00+08:00",
+    "user_turns": [
+      "明天早上几点开园？"
+    ],
+    "world_id": "w-hv4-conflict-018"
+  },
+  {
+    "task_id": "hv4-conflict-019",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-09T15:20:00+08:00",
+    "user_turns": [
+      "喷泉秀一场多长时间？"
+    ],
+    "world_id": "w-hv4-conflict-019"
+  },
+  {
+    "task_id": "hv4-conflict-020",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-14T18:55:00+08:00",
+    "user_turns": [
+      "从北门步行到栈道入口有多远？"
+    ],
+    "world_id": "w-hv4-conflict-020"
+  },
+  {
+    "task_id": "hv4-conflict-021",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-09-22T11:30:00+08:00",
+    "user_turns": [
+      "这周哪一天闭馆？"
+    ],
+    "world_id": "w-hv4-conflict-021"
+  },
+  {
+    "task_id": "hv4-conflict-022",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-09-27T14:05:00+08:00",
+    "user_turns": [
+      "现在过去需要提前预约吗？"
+    ],
+    "world_id": "w-hv4-conflict-022"
+  },
+  {
+    "task_id": "hv4-conflict-023",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-02T17:40:00+08:00",
+    "user_turns": [
+      "小朋友身高多少以下免票？"
+    ],
+    "world_id": "w-hv4-conflict-023"
+  },
+  {
+    "task_id": "hv4-conflict-024",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-07T10:15:00+08:00",
+    "user_turns": [
+      "末班船几点发船？"
+    ],
+    "world_id": "w-hv4-conflict-024"
+  },
+  {
+    "task_id": "hv4-conflict-025",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-12T13:50:00+08:00",
+    "user_turns": [
+      "现在成人通票一张多少钱？"
+    ],
+    "world_id": "w-hv4-conflict-025"
+  },
+  {
+    "task_id": "hv4-conflict-026",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-17T16:25:00+08:00",
+    "user_turns": [
+      "明天早上几点开园？"
+    ],
+    "world_id": "w-hv4-conflict-026"
+  },
+  {
+    "task_id": "hv4-conflict-027",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-09-25T09:00:00+08:00",
+    "user_turns": [
+      "喷泉秀一场多长时间？"
+    ],
+    "world_id": "w-hv4-conflict-027"
+  },
+  {
+    "task_id": "hv4-conflict-028",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-09-30T12:35:00+08:00",
+    "user_turns": [
+      "从北门步行到栈道入口有多远？"
+    ],
+    "world_id": "w-hv4-conflict-028"
+  },
+  {
+    "task_id": "hv4-conflict-029",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-05T15:10:00+08:00",
+    "user_turns": [
+      "这周哪一天闭馆？"
+    ],
+    "world_id": "w-hv4-conflict-029"
+  },
+  {
+    "task_id": "hv4-conflict-030",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-10T18:45:00+08:00",
+    "user_turns": [
+      "现在过去需要提前预约吗？"
+    ],
+    "world_id": "w-hv4-conflict-030"
+  },
+  {
+    "task_id": "hv4-conflict-031",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-15T11:20:00+08:00",
+    "user_turns": [
+      "小朋友身高多少以下免票？"
+    ],
+    "world_id": "w-hv4-conflict-031"
+  },
+  {
+    "task_id": "hv4-conflict-032",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-09-23T14:55:00+08:00",
+    "user_turns": [
+      "末班船几点发船？"
+    ],
+    "world_id": "w-hv4-conflict-032"
+  },
+  {
+    "task_id": "hv4-conflict-033",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-09-28T17:30:00+08:00",
+    "user_turns": [
+      "现在成人通票一张多少钱？"
+    ],
+    "world_id": "w-hv4-conflict-033"
+  },
+  {
+    "task_id": "hv4-conflict-034",
+    "split": "holdout",
+    "layer": "conflict",
+    "as_of": "2026-10-03T10:05:00+08:00",
+    "user_turns": [
+      "明天早上几点开园？"
+    ],
+    "world_id": "w-hv4-conflict-034"
+  },
+  {
+    "task_id": "hv4-persist-001",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-16T15:30:00+08:00",
+    "user_turns": [
+      "把下面几项写进行程单：游玩时长 180 分钟，出发时间 16:30。",
+      "刚才应用关掉重开了一下，之前说的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-001",
+    "initial_trip_spec": {
+      "location": {
+        "name": "落霞坪观景台"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-002",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-09-24T18:05:00+08:00",
+    "user_turns": [
+      "行程这么定：有一条硬约束：需要素食选项，一行 4 人，人均预算 240 元。",
+      "现在再看，之前定的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-002",
+    "initial_trip_spec": {
+      "location": {
+        "name": "沧浪湾贝壳博物馆"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-003",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-09-29T11:40:00+08:00",
+    "user_turns": [
+      "这些信息保存进行程：10 月 9 日去，出发时间 13:30，出行方式选地铁。",
+      "现在再看，之前定的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-003",
+    "initial_trip_spec": {
+      "location": {
+        "name": "红泥小火炉火锅店"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-004",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-04T14:15:00+08:00",
+    "user_turns": [
+      "行程这么定：出发时间 13:30，出行方式选步行。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-004",
+    "initial_trip_spec": {
+      "location": {
+        "name": "环岚线观光小火车"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-005",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-09T17:50:00+08:00",
+    "user_turns": [
+      "帮我记住：人均预算 140 元，总预算 4200 元，游玩时长 60 分钟。",
+      "现在再看，之前定的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-005",
+    "initial_trip_spec": {
+      "location": {
+        "name": "白鹭洲湿地观鸟屋"
+      },
+      "travel_mode": "transit"
+    }
+  },
+  {
+    "task_id": "hv4-persist-006",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-14T10:25:00+08:00",
+    "user_turns": [
+      "就定下来：有一条硬约束：避免攀爬项目，游玩时长 240 分钟。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-006",
+    "initial_trip_spec": {
+      "location": {
+        "name": "雾隐山玻璃栈道"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-007",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-09-22T13:00:00+08:00",
+    "user_turns": [
+      "把下面几项写进行程单：游玩时长 120 分钟，有一条硬约束：不吃香菜。",
+      "刚才应用关掉重开了一下，之前说的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-007",
+    "initial_trip_spec": {
+      "location": {
+        "name": "山语间民宿"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-008",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-09-27T16:35:00+08:00",
+    "user_turns": [
+      "行程这么定：10 月 2 日去，一行 3 人，总预算 4500 元。",
+      "现在再看，之前定的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-008",
+    "initial_trip_spec": {
+      "location": {
+        "name": "铜风铃老街"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-009",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-02T09:10:00+08:00",
+    "user_turns": [
+      "把下面几项写进行程单：出行方式选自驾，游玩时长 120 分钟。",
+      "刚才应用关掉重开了一下，之前说的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-009",
+    "initial_trip_spec": {
+      "location": {
+        "name": "铁井巷豆腐宴"
+      },
+      "per_person_budget": 460
+    }
+  },
+  {
+    "task_id": "hv4-persist-010",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-07T12:45:00+08:00",
+    "user_turns": [
+      "行程这么定：总预算 4700 元，10 月 17 日去。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-010",
+    "initial_trip_spec": {
+      "location": {
+        "name": "阿蓝糖水铺"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-011",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-12T15:20:00+08:00",
+    "user_turns": [
+      "把下面几项写进行程单：出行方式选地铁，出发时间 08:30，游玩时长 90 分钟。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-011",
+    "initial_trip_spec": {
+      "location": {
+        "name": "燕归来灯塔公园"
+      },
+      "visit_date": "2026-10-21"
+    }
+  },
+  {
+    "task_id": "hv4-persist-012",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-17T18:55:00+08:00",
+    "user_turns": [
+      "跟你说一声：总预算 900 元，一行 2 人。",
+      "现在再看，之前定的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-012",
+    "initial_trip_spec": {
+      "location": {
+        "name": "蒲公英轻食集市"
+      },
+      "time_window_start": "08:30"
+    }
+  },
+  {
+    "task_id": "hv4-persist-013",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-09-25T11:30:00+08:00",
+    "user_turns": [
+      "帮我记住：总预算 4100 元，一行 5 人。",
+      "刚才应用关掉重开了一下，之前说的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-013",
+    "initial_trip_spec": {
+      "location": {
+        "name": "青梧古镇水上游船"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-014",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-09-30T14:05:00+08:00",
+    "user_turns": [
+      "就定下来：一行 5 人，游玩时长 180 分钟。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-014",
+    "initial_trip_spec": {
+      "location": {
+        "name": "澜岸假日公寓"
+      },
+      "budget": 4500
+    }
+  },
+  {
+    "task_id": "hv4-persist-015",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-05T17:40:00+08:00",
+    "user_turns": [
+      "把下面几项写进行程单：人均预算 360 元，10 月 20 日去。",
+      "现在再看，之前定的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-015",
+    "initial_trip_spec": {
+      "location": {
+        "name": "曲苑小馆"
+      },
+      "budget": 4700
+    }
+  },
+  {
+    "task_id": "hv4-persist-016",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-10T10:15:00+08:00",
+    "user_turns": [
+      "行程这么定：游玩时长 120 分钟，出发时间 08:30。",
+      "刚才应用关掉重开了一下，之前说的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-016",
+    "initial_trip_spec": {
+      "location": {
+        "name": "澄心湖游船码头"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-017",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-15T13:50:00+08:00",
+    "user_turns": [
+      "帮我记住：2026-10-21 出发，一行 6 人，总预算 1600 元。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-017",
+    "initial_trip_spec": {
+      "location": {
+        "name": "星野穹顶露营地"
+      },
+      "travel_mode": "driving"
+    }
+  },
+  {
+    "task_id": "hv4-persist-018",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-09-23T16:25:00+08:00",
+    "user_turns": [
+      "就定下来：游玩时长 90 分钟，出发时间 09:00，总预算 3700 元。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-018",
+    "initial_trip_spec": {
+      "location": {
+        "name": "半月坞帆船俱乐部"
+      },
+      "travel_mode": "driving"
+    }
+  },
+  {
+    "task_id": "hv4-persist-019",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-09-28T09:00:00+08:00",
+    "user_turns": [
+      "把下面几项写进行程单：出发时间 16:30，一行 6 人。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-019",
+    "initial_trip_spec": {
+      "location": {
+        "name": "老周砂锅居"
+      },
+      "hard_constraints": [
+        "不吃香菜",
+        "不进购物店"
+      ]
+    }
+  },
+  {
+    "task_id": "hv4-persist-020",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-03T12:35:00+08:00",
+    "user_turns": [
+      "就定下来：人均预算 240 元，10 月 17 日去。",
+      "刚才应用关掉重开了一下，之前说的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-020",
+    "initial_trip_spec": {
+      "location": {
+        "name": "鸢尾谷花田农场"
+      },
+      "budget": 500
+    }
+  },
+  {
+    "task_id": "hv4-persist-021",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-08T15:10:00+08:00",
+    "user_turns": [
+      "这些信息保存进行程：一行 6 人，总预算 3500 元。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-021",
+    "initial_trip_spec": {
+      "location": {
+        "name": "听浪阁客栈"
+      },
+      "duration_minutes": 180
+    }
+  },
+  {
+    "task_id": "hv4-persist-022",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-13T18:45:00+08:00",
+    "user_turns": [
+      "就定下来：出发时间 16:30，游玩时长 240 分钟，2026-10-19 出发。",
+      "现在再看，之前定的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-022",
+    "initial_trip_spec": {
+      "location": {
+        "name": "雾栖山舍"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-023",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-18T11:20:00+08:00",
+    "user_turns": [
+      "把下面几项写进行程单：出行方式选地铁，人均预算 300 元。",
+      "刚才应用关掉重开了一下，之前说的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-023",
+    "initial_trip_spec": {
+      "location": {
+        "name": "雾市大排档"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-024",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-09-26T14:55:00+08:00",
+    "user_turns": [
+      "跟你说一声：人均预算 160 元，出发时间 16:30。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-024",
+    "initial_trip_spec": {
+      "location": {
+        "name": "蜜泉山谷温泉馆"
+      },
+      "travel_mode": "walking"
+    }
+  },
+  {
+    "task_id": "hv4-persist-025",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-01T17:30:00+08:00",
+    "user_turns": [
+      "帮我记住：总预算 3000 元，游玩时长 120 分钟。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-025",
+    "initial_trip_spec": {
+      "location": {
+        "name": "九号码头青年旅舍"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-026",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-06T10:05:00+08:00",
+    "user_turns": [
+      "行程这么定：10 月 17 日去，游玩时长 240 分钟，总预算 4000 元。",
+      "刚才应用关掉重开了一下，之前说的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-026",
+    "initial_trip_spec": {
+      "location": {
+        "name": "银杏里手作工坊"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-027",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-11T13:40:00+08:00",
+    "user_turns": [
+      "把下面几项写进行程单：人均预算 240 元，有一条硬约束：避免攀爬项目。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-027",
+    "initial_trip_spec": {
+      "location": {
+        "name": "云栖岚谷索道站"
+      },
+      "budget": 3800
+    }
+  },
+  {
+    "task_id": "hv4-persist-028",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-16T16:15:00+08:00",
+    "user_turns": [
+      "行程这么定：出行方式选自驾，出发时间 10:00，有一条硬约束：避免攀爬项目。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-028",
+    "initial_trip_spec": {
+      "location": {
+        "name": "石鼓峡皮划艇基地"
+      },
+      "duration_minutes": 60
+    }
+  },
+  {
+    "task_id": "hv4-persist-029",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-09-24T09:50:00+08:00",
+    "user_turns": [
+      "帮我记住：游玩时长 120 分钟，出发时间 09:00。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-029",
+    "initial_trip_spec": {
+      "location": {
+        "name": "珊瑚沙浅滩赶海点"
+      },
+      "budget": 3100
+    }
+  },
+  {
+    "task_id": "hv4-persist-030",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-09-29T12:25:00+08:00",
+    "user_turns": [
+      "行程这么定：有一条硬约束：不进购物店，人均预算 400 元，一行 6 人。",
+      "刚才应用关掉重开了一下，之前说的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-030",
+    "initial_trip_spec": {
+      "location": {
+        "name": "苇塘夜市"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-031",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-04T15:00:00+08:00",
+    "user_turns": [
+      "帮我记住：出行方式选地铁，一行 7 人。",
+      "刚才应用关掉重开了一下，之前说的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-031",
+    "initial_trip_spec": {
+      "location": {
+        "name": "竹隐书院"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-032",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-09T18:35:00+08:00",
+    "user_turns": [
+      "就定下来：游玩时长 120 分钟，一行 3 人，有一条硬约束：不进购物店。",
+      "我重启了一下，行程里还留着刚才的信息吗？"
+    ],
+    "world_id": "w-hv4-persist-032",
+    "initial_trip_spec": {
+      "location": {
+        "name": "三色堇亲子乐园"
+      },
+      "budget": 4000
+    }
+  },
+  {
+    "task_id": "hv4-persist-033",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-10-14T11:10:00+08:00",
+    "user_turns": [
+      "把下面几项写进行程单：总预算 1300 元，游玩时长 240 分钟。",
+      "现在再看，之前定的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-033",
+    "initial_trip_spec": {
+      "location": {
+        "name": "落霞坪观景台"
+      }
+    }
+  },
+  {
+    "task_id": "hv4-persist-034",
+    "split": "holdout",
+    "layer": "persist",
+    "as_of": "2026-09-22T14:45:00+08:00",
+    "user_turns": [
+      "跟你说一声：出行方式选步行，一行 7 人。",
+      "刚才应用关掉重开了一下，之前说的那些还在吗？"
+    ],
+    "world_id": "w-hv4-persist-034",
+    "initial_trip_spec": {
+      "location": {
+        "name": "沧浪湾贝壳博物馆"
+      },
+      "budget": 2800
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-001",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-08T13:40:00+08:00",
+    "user_turns": [
+      "需求更新一下：人数改成 4 人；日期改到 2026-10-17，其他都不用动。"
+    ],
+    "world_id": "w-hv4-sparse_edit-001",
+    "initial_trip_spec": {
+      "location": {
+        "name": "苇塘夜市"
+      },
+      "party_size": 5,
+      "visit_date": "2026-10-22",
+      "budget": 1000
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-002",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-13T16:15:00+08:00",
+    "user_turns": [
+      "计划有变，日期改到 2026-10-26；出发时间改到 16:30。"
+    ],
+    "world_id": "w-hv4-sparse_edit-002",
+    "initial_trip_spec": {
+      "location": {
+        "name": "竹隐书院"
+      },
+      "visit_date": "2026-10-15",
+      "time_window_start": "09:00",
+      "duration_minutes": 60
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-003",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-18T09:50:00+08:00",
+    "user_turns": [
+      "需求更新一下：人数改成 5 人；搜索半径改成 1.5 公里。"
+    ],
+    "world_id": "w-hv4-sparse_edit-003",
+    "initial_trip_spec": {
+      "location": {
+        "name": "红泥小火炉火锅店"
+      },
+      "party_size": 3,
+      "travel_mode": "driving",
+      "search_radius_km": 3
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-004",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-26T12:25:00+08:00",
+    "user_turns": [
+      "需求更新一下：改到 10 月 3 日去。",
+      "人均预算改到 280 元。"
+    ],
+    "world_id": "w-hv4-sparse_edit-004",
+    "initial_trip_spec": {
+      "location": {
+        "name": "三色堇亲子乐园"
+      },
+      "visit_date": "2026-10-02",
+      "per_person_budget": 420,
+      "max_distance_km": 20
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-005",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-01T15:00:00+08:00",
+    "user_turns": [
+      "帮我改一下需求：人数改成 2 人；再加一条硬约束：避免攀爬项目（原有都保留）。"
+    ],
+    "world_id": "w-hv4-sparse_edit-005",
+    "initial_trip_spec": {
+      "location": {
+        "name": "铁井巷豆腐宴"
+      },
+      "party_size": 5,
+      "hard_constraints": [
+        "忌海鲜",
+        "不吃香菜"
+      ],
+      "visit_date": "2026-10-04"
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-006",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-06T18:35:00+08:00",
+    "user_turns": [
+      "调整一下：游玩时长改成 60 分钟。"
+    ],
+    "world_id": "w-hv4-sparse_edit-006",
+    "initial_trip_spec": {
+      "location": {
+        "name": "雾栖山舍"
+      },
+      "budget": 4100,
+      "duration_minutes": 180,
+      "travel_mode": "walking"
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-007",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-11T11:10:00+08:00",
+    "user_turns": [
+      "需求更新一下：地点换成阿蓝糖水铺。",
+      "改到 10 月 22 日去，其他都不用动。"
+    ],
+    "world_id": "w-hv4-sparse_edit-007",
+    "initial_trip_spec": {
+      "location": {
+        "name": "落霞坪观景台"
+      },
+      "party_size": 5,
+      "visit_date": "2026-10-16"
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-008",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-16T14:45:00+08:00",
+    "user_turns": [
+      "计划有变，出发时间改到 10:00。"
+    ],
+    "world_id": "w-hv4-sparse_edit-008",
+    "initial_trip_spec": {
+      "location": {
+        "name": "沧浪湾贝壳博物馆"
+      },
+      "time_window_start": "08:30",
+      "budget": 4400,
+      "party_size": 4
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-009",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-24T17:20:00+08:00",
+    "user_turns": [
+      "计划有变，日期改到 2026-10-04，其他都不用动。"
+    ],
+    "world_id": "w-hv4-sparse_edit-009",
+    "initial_trip_spec": {
+      "location": {
+        "name": "九号码头青年旅舍"
+      },
+      "party_size": 7,
+      "visit_date": "2026-10-06",
+      "budget": 1100
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-010",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-29T10:55:00+08:00",
+    "user_turns": [
+      "帮我改一下需求：出发时间改到 09:00。"
+    ],
+    "world_id": "w-hv4-sparse_edit-010",
+    "initial_trip_spec": {
+      "location": {
+        "name": "环岚线观光小火车"
+      },
+      "visit_date": "2026-10-12",
+      "time_window_start": "13:30",
+      "duration_minutes": 60
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-011",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-04T13:30:00+08:00",
+    "user_turns": [
+      "帮我改一下需求：搜索半径改成 2 公里。"
+    ],
+    "world_id": "w-hv4-sparse_edit-011",
+    "initial_trip_spec": {
+      "location": {
+        "name": "蒲公英轻食集市"
+      },
+      "party_size": 5,
+      "travel_mode": "transit",
+      "search_radius_km": 3
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-012",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-09T16:05:00+08:00",
+    "user_turns": [
+      "调整一下：单程路程上限改到 25 公里；人均预算改到 160 元，其他都不用动。"
+    ],
+    "world_id": "w-hv4-sparse_edit-012",
+    "initial_trip_spec": {
+      "location": {
+        "name": "白鹭洲湿地观鸟屋"
+      },
+      "visit_date": "2026-10-20",
+      "per_person_budget": 300,
+      "max_distance_km": 30
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-013",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-14T09:40:00+08:00",
+    "user_turns": [
+      "帮我改一下需求：再加一条硬约束：忌海鲜（原有都保留）。"
+    ],
+    "world_id": "w-hv4-sparse_edit-013",
+    "initial_trip_spec": {
+      "location": {
+        "name": "雾隐山玻璃栈道"
+      },
+      "party_size": 4,
+      "hard_constraints": [
+        "避开陡坡路段"
+      ],
+      "visit_date": "2026-10-17"
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-014",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-22T12:15:00+08:00",
+    "user_turns": [
+      "帮我改一下需求：总预算调整到 5000 元。",
+      "我们改步行过去。"
+    ],
+    "world_id": "w-hv4-sparse_edit-014",
+    "initial_trip_spec": {
+      "location": {
+        "name": "曲苑小馆"
+      },
+      "budget": 3200,
+      "duration_minutes": 60,
+      "travel_mode": "driving"
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-015",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-27T15:50:00+08:00",
+    "user_turns": [
+      "调整一下：地点换成铜风铃老街；改到 10 月 7 日去。"
+    ],
+    "world_id": "w-hv4-sparse_edit-015",
+    "initial_trip_spec": {
+      "location": {
+        "name": "山语间民宿"
+      },
+      "party_size": 4,
+      "visit_date": "2026-10-01"
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-016",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-02T18:25:00+08:00",
+    "user_turns": [
+      "帮我改一下需求：我们变成 7 个人出行。",
+      "出发时间改到 16:30，其他都不用动。"
+    ],
+    "world_id": "w-hv4-sparse_edit-016",
+    "initial_trip_spec": {
+      "location": {
+        "name": "老周砂锅居"
+      },
+      "time_window_start": "10:00",
+      "budget": 3000,
+      "party_size": 8
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-017",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-07T11:00:00+08:00",
+    "user_turns": [
+      "帮我改一下需求：我们变成 5 个人出行。",
+      "改到 10 月 9 日去。"
+    ],
+    "world_id": "w-hv4-sparse_edit-017",
+    "initial_trip_spec": {
+      "location": {
+        "name": "雾市大排档"
+      },
+      "party_size": 3,
+      "visit_date": "2026-10-22",
+      "budget": 2300
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-018",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-12T14:35:00+08:00",
+    "user_turns": [
+      "计划有变，游玩时长改成 240 分钟。"
+    ],
+    "world_id": "w-hv4-sparse_edit-018",
+    "initial_trip_spec": {
+      "location": {
+        "name": "澜岸假日公寓"
+      },
+      "visit_date": "2026-10-27",
+      "time_window_start": "16:30",
+      "duration_minutes": 90
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-019",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-17T17:10:00+08:00",
+    "user_turns": [
+      "需求更新一下：搜索半径改成 2 公里。",
+      "出行方式改成步行。"
+    ],
+    "world_id": "w-hv4-sparse_edit-019",
+    "initial_trip_spec": {
+      "location": {
+        "name": "燕归来灯塔公园"
+      },
+      "party_size": 2,
+      "travel_mode": "transit",
+      "search_radius_km": 5
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-020",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-25T10:45:00+08:00",
+    "user_turns": [
+      "计划有变，人均预算改到 260 元；改到 10 月 2 日去，其他都不用动。"
+    ],
+    "world_id": "w-hv4-sparse_edit-020",
+    "initial_trip_spec": {
+      "location": {
+        "name": "青梧古镇水上游船"
+      },
+      "visit_date": "2026-10-04",
+      "per_person_budget": 180,
+      "max_distance_km": 30
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-021",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-30T13:20:00+08:00",
+    "user_turns": [
+      "计划有变，日期改到 2026-10-07。"
+    ],
+    "world_id": "w-hv4-sparse_edit-021",
+    "initial_trip_spec": {
+      "location": {
+        "name": "澄心湖游船码头"
+      },
+      "party_size": 6,
+      "hard_constraints": [
+        "忌海鲜",
+        "需要素食选项"
+      ],
+      "visit_date": "2026-10-03"
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-022",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-05T16:55:00+08:00",
+    "user_turns": [
+      "计划有变，总预算调整到 4800 元。"
+    ],
+    "world_id": "w-hv4-sparse_edit-022",
+    "initial_trip_spec": {
+      "location": {
+        "name": "星野穹顶露营地"
+      },
+      "budget": 3000,
+      "duration_minutes": 90,
+      "travel_mode": "driving"
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-023",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-10T09:30:00+08:00",
+    "user_turns": [
+      "需求更新一下：地点换成鸢尾谷花田农场；我们变成 5 个人出行。"
+    ],
+    "world_id": "w-hv4-sparse_edit-023",
+    "initial_trip_spec": {
+      "location": {
+        "name": "半月坞帆船俱乐部"
+      },
+      "party_size": 3,
+      "visit_date": "2026-10-23"
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-024",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-15T12:05:00+08:00",
+    "user_turns": [
+      "需求更新一下：人数改成 8 人。"
+    ],
+    "world_id": "w-hv4-sparse_edit-024",
+    "initial_trip_spec": {
+      "location": {
+        "name": "蜜泉山谷温泉馆"
+      },
+      "time_window_start": "10:00",
+      "budget": 3400,
+      "party_size": 2
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-025",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-23T15:40:00+08:00",
+    "user_turns": [
+      "计划有变，我们变成 6 个人出行。"
+    ],
+    "world_id": "w-hv4-sparse_edit-025",
+    "initial_trip_spec": {
+      "location": {
+        "name": "银杏里手作工坊"
+      },
+      "party_size": 5,
+      "visit_date": "2026-09-27",
+      "budget": 2700
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-026",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-28T18:15:00+08:00",
+    "user_turns": [
+      "需求更新一下：游玩时长改成 180 分钟，其他都不用动。"
+    ],
+    "world_id": "w-hv4-sparse_edit-026",
+    "initial_trip_spec": {
+      "location": {
+        "name": "听浪阁客栈"
+      },
+      "visit_date": "2026-10-11",
+      "time_window_start": "15:00",
+      "duration_minutes": 240
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-027",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-03T11:50:00+08:00",
+    "user_turns": [
+      "计划有变，我们改步行过去，其他都不用动。"
+    ],
+    "world_id": "w-hv4-sparse_edit-027",
+    "initial_trip_spec": {
+      "location": {
+        "name": "云栖岚谷索道站"
+      },
+      "party_size": 7,
+      "travel_mode": "transit",
+      "search_radius_km": 3
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-028",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-08T14:25:00+08:00",
+    "user_turns": [
+      "需求更新一下：单程路程上限改到 30 公里；人均预算改到 220 元。"
+    ],
+    "world_id": "w-hv4-sparse_edit-028",
+    "initial_trip_spec": {
+      "location": {
+        "name": "三味釜石锅饭"
+      },
+      "visit_date": "2026-10-12",
+      "per_person_budget": 360,
+      "max_distance_km": 15
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-029",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-13T17:00:00+08:00",
+    "user_turns": [
+      "帮我改一下需求：我们变成 6 个人出行；改到 10 月 25 日去，其他都不用动。"
+    ],
+    "world_id": "w-hv4-sparse_edit-029",
+    "initial_trip_spec": {
+      "location": {
+        "name": "石鼓峡皮划艇基地"
+      },
+      "party_size": 8,
+      "hard_constraints": [
+        "不吃辣",
+        "不吃香菜"
+      ],
+      "visit_date": "2026-10-19"
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-030",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-18T10:35:00+08:00",
+    "user_turns": [
+      "计划有变，游玩时长改成 120 分钟。"
+    ],
+    "world_id": "w-hv4-sparse_edit-030",
+    "initial_trip_spec": {
+      "location": {
+        "name": "珊瑚沙浅滩赶海点"
+      },
+      "budget": 4800,
+      "duration_minutes": 90,
+      "travel_mode": "walking"
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-031",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-26T13:10:00+08:00",
+    "user_turns": [
+      "帮我改一下需求：地点换成雾栖山舍。",
+      "日期改到 2026-10-06。"
+    ],
+    "world_id": "w-hv4-sparse_edit-031",
+    "initial_trip_spec": {
+      "location": {
+        "name": "苇塘夜市"
+      },
+      "party_size": 6,
+      "visit_date": "2026-09-28"
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-032",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-01T16:45:00+08:00",
+    "user_turns": [
+      "需求更新一下：人数改成 5 人，其他都不用动。"
+    ],
+    "world_id": "w-hv4-sparse_edit-032",
+    "initial_trip_spec": {
+      "location": {
+        "name": "竹隐书院"
+      },
+      "time_window_start": "10:00",
+      "budget": 1900,
+      "party_size": 2
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-033",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-06T09:20:00+08:00",
+    "user_turns": [
+      "需求更新一下：人数改成 8 人。"
+    ],
+    "world_id": "w-hv4-sparse_edit-033",
+    "initial_trip_spec": {
+      "location": {
+        "name": "三色堇亲子乐园"
+      },
+      "party_size": 7,
+      "visit_date": "2026-10-12",
+      "budget": 1900
+    }
+  },
+  {
+    "task_id": "hv4-sparse_edit-034",
+    "split": "holdout",
+    "layer": "sparse_edit",
+    "as_of": "2026-10-11T12:55:00+08:00",
+    "user_turns": [
+      "需求更新一下：出发时间改到 15:00。"
+    ],
+    "world_id": "w-hv4-sparse_edit-034",
+    "initial_trip_spec": {
+      "location": {
+        "name": "九号码头青年旅舍"
+      },
+      "visit_date": "2026-10-13",
+      "time_window_start": "16:30",
+      "duration_minutes": 90
+    }
+  },
+  {
+    "task_id": "hv4-unknown-001",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-05T09:10:00+08:00",
+    "user_turns": [
+      "北门停车场一共有多少个车位？"
+    ],
+    "world_id": "w-hv4-unknown-001"
+  },
+  {
+    "task_id": "hv4-unknown-002",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-10T12:45:00+08:00",
+    "user_turns": [
+      "园里有寄存柜吗？"
+    ],
+    "world_id": "w-hv4-unknown-002"
+  },
+  {
+    "task_id": "hv4-unknown-003",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-15T15:20:00+08:00",
+    "user_turns": [
+      "喷泉秀一场大概多长时间？"
+    ],
+    "world_id": "w-hv4-unknown-003"
+  },
+  {
+    "task_id": "hv4-unknown-004",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-09-23T18:55:00+08:00",
+    "user_turns": [
+      "下暴雨的话园区还开放吗？"
+    ],
+    "world_id": "w-hv4-unknown-004"
+  },
+  {
+    "task_id": "hv4-unknown-005",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-09-28T11:30:00+08:00",
+    "user_turns": [
+      "儿童身高多少以下可以免票？"
+    ],
+    "world_id": "w-hv4-unknown-005"
+  },
+  {
+    "task_id": "hv4-unknown-006",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-03T14:05:00+08:00",
+    "user_turns": [
+      "人工讲解都提供哪些语种？"
+    ],
+    "world_id": "w-hv4-unknown-006"
+  },
+  {
+    "task_id": "hv4-unknown-007",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-08T17:40:00+08:00",
+    "user_turns": [
+      "可以带小狗一起进园吗？"
+    ],
+    "world_id": "w-hv4-unknown-007"
+  },
+  {
+    "task_id": "hv4-unknown-008",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-13T10:15:00+08:00",
+    "user_turns": [
+      "园区晚上有夜场吗？"
+    ],
+    "world_id": "w-hv4-unknown-008"
+  },
+  {
+    "task_id": "hv4-unknown-009",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-18T13:50:00+08:00",
+    "user_turns": [
+      "坐索道有没有无障碍通道？"
+    ],
+    "world_id": "w-hv4-unknown-009"
+  },
+  {
+    "task_id": "hv4-unknown-010",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-09-26T16:25:00+08:00",
+    "user_turns": [
+      "在园里最多可以待多长时间？"
+    ],
+    "world_id": "w-hv4-unknown-010"
+  },
+  {
+    "task_id": "hv4-unknown-011",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-01T09:00:00+08:00",
+    "user_turns": [
+      "北门停车场一共有多少个车位？"
+    ],
+    "world_id": "w-hv4-unknown-011"
+  },
+  {
+    "task_id": "hv4-unknown-012",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-06T12:35:00+08:00",
+    "user_turns": [
+      "园里有寄存柜吗？"
+    ],
+    "world_id": "w-hv4-unknown-012"
+  },
+  {
+    "task_id": "hv4-unknown-013",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-11T15:10:00+08:00",
+    "user_turns": [
+      "喷泉秀一场大概多长时间？"
+    ],
+    "world_id": "w-hv4-unknown-013"
+  },
+  {
+    "task_id": "hv4-unknown-014",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-16T18:45:00+08:00",
+    "user_turns": [
+      "下暴雨的话园区还开放吗？"
+    ],
+    "world_id": "w-hv4-unknown-014"
+  },
+  {
+    "task_id": "hv4-unknown-015",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-09-24T11:20:00+08:00",
+    "user_turns": [
+      "儿童身高多少以下可以免票？"
+    ],
+    "world_id": "w-hv4-unknown-015"
+  },
+  {
+    "task_id": "hv4-unknown-016",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-09-29T14:55:00+08:00",
+    "user_turns": [
+      "人工讲解都提供哪些语种？"
+    ],
+    "world_id": "w-hv4-unknown-016"
+  },
+  {
+    "task_id": "hv4-unknown-017",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-04T17:30:00+08:00",
+    "user_turns": [
+      "可以带小狗一起进园吗？"
+    ],
+    "world_id": "w-hv4-unknown-017"
+  },
+  {
+    "task_id": "hv4-unknown-018",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-09T10:05:00+08:00",
+    "user_turns": [
+      "园区晚上有夜场吗？"
+    ],
+    "world_id": "w-hv4-unknown-018"
+  },
+  {
+    "task_id": "hv4-unknown-019",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-14T13:40:00+08:00",
+    "user_turns": [
+      "坐索道有没有无障碍通道？"
+    ],
+    "world_id": "w-hv4-unknown-019"
+  },
+  {
+    "task_id": "hv4-unknown-020",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-09-22T16:15:00+08:00",
+    "user_turns": [
+      "在园里最多可以待多长时间？"
+    ],
+    "world_id": "w-hv4-unknown-020"
+  },
+  {
+    "task_id": "hv4-unknown-021",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-09-27T09:50:00+08:00",
+    "user_turns": [
+      "北门停车场一共有多少个车位？"
+    ],
+    "world_id": "w-hv4-unknown-021"
+  },
+  {
+    "task_id": "hv4-unknown-022",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-02T12:25:00+08:00",
+    "user_turns": [
+      "园里有寄存柜吗？"
+    ],
+    "world_id": "w-hv4-unknown-022"
+  },
+  {
+    "task_id": "hv4-unknown-023",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-07T15:00:00+08:00",
+    "user_turns": [
+      "喷泉秀一场大概多长时间？"
+    ],
+    "world_id": "w-hv4-unknown-023"
+  },
+  {
+    "task_id": "hv4-unknown-024",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-12T18:35:00+08:00",
+    "user_turns": [
+      "下暴雨的话园区还开放吗？"
+    ],
+    "world_id": "w-hv4-unknown-024"
+  },
+  {
+    "task_id": "hv4-unknown-025",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-17T11:10:00+08:00",
+    "user_turns": [
+      "儿童身高多少以下可以免票？"
+    ],
+    "world_id": "w-hv4-unknown-025"
+  },
+  {
+    "task_id": "hv4-unknown-026",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-09-25T14:45:00+08:00",
+    "user_turns": [
+      "人工讲解都提供哪些语种？"
+    ],
+    "world_id": "w-hv4-unknown-026"
+  },
+  {
+    "task_id": "hv4-unknown-027",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-09-30T17:20:00+08:00",
+    "user_turns": [
+      "可以带小狗一起进园吗？"
+    ],
+    "world_id": "w-hv4-unknown-027"
+  },
+  {
+    "task_id": "hv4-unknown-028",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-05T10:55:00+08:00",
+    "user_turns": [
+      "园区晚上有夜场吗？"
+    ],
+    "world_id": "w-hv4-unknown-028"
+  },
+  {
+    "task_id": "hv4-unknown-029",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-10T13:30:00+08:00",
+    "user_turns": [
+      "坐索道有没有无障碍通道？"
+    ],
+    "world_id": "w-hv4-unknown-029"
+  },
+  {
+    "task_id": "hv4-unknown-030",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-15T16:05:00+08:00",
+    "user_turns": [
+      "在园里最多可以待多长时间？"
+    ],
+    "world_id": "w-hv4-unknown-030"
+  },
+  {
+    "task_id": "hv4-unknown-031",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-09-23T09:40:00+08:00",
+    "user_turns": [
+      "北门停车场一共有多少个车位？"
+    ],
+    "world_id": "w-hv4-unknown-031"
+  },
+  {
+    "task_id": "hv4-unknown-032",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-09-28T12:15:00+08:00",
+    "user_turns": [
+      "园里有寄存柜吗？"
+    ],
+    "world_id": "w-hv4-unknown-032"
+  },
+  {
+    "task_id": "hv4-unknown-033",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-03T15:50:00+08:00",
+    "user_turns": [
+      "喷泉秀一场大概多长时间？"
+    ],
+    "world_id": "w-hv4-unknown-033"
+  },
+  {
+    "task_id": "hv4-unknown-034",
+    "split": "holdout",
+    "layer": "unknown",
+    "as_of": "2026-10-08T18:25:00+08:00",
+    "user_turns": [
+      "下暴雨的话园区还开放吗？"
+    ],
+    "world_id": "w-hv4-unknown-034"
+  }
+]
