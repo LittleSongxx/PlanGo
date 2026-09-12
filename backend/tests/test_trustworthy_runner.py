@@ -212,3 +212,22 @@ def test_persist_restart_keeps_seeded_spec(tmp_path):
     assert attempt["valid_attempt"], attempt.get("invalid_reason")
     assert attempt["end_state"]["prior_trip_spec"].get("party_size") == task["initial_trip_spec"]["party_size"]
     assert attempt["end_state"]["trip_spec"].get("party_size") == task["initial_trip_spec"]["party_size"]
+
+
+def test_poll_shape_operation_is_read_at_top_level():
+    """The poll endpoint flattens the command payload; a nested-only read served every
+    real browser request as blocked, which no v1/v2 task happened to exercise."""
+    from scripts.trustworthy.runner import READ_OPS, command_operation, frozen_observation
+
+    flat = {"command_id": "c1", "browser_session_id": "s", "operation": "snapshot", "arguments": {}}
+    assert command_operation(flat) == "snapshot"
+    assert command_operation({"command_id": "c1", "payload": {"operation": "extract"}}) == "extract"
+    assert command_operation({"command_id": "c1"}) is None
+    world = {
+        "world_id": "w",
+        "documents": [{"doc_id": "d", "title": "t", "text": "页文", "observed_at": "2026-09-12T00:00:00+08:00"}],
+    }
+    observed = frozen_observation(flat, "s", world, blocked=command_operation(flat) not in READ_OPS)
+    assert observed["ok"] is True and observed["text"] == "页文"
+    blocked = frozen_observation(flat, "s", world, blocked=True)
+    assert blocked["ok"] is False and blocked["outcome"] == "blocked"

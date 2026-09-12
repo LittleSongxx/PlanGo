@@ -10,6 +10,26 @@
 
 ---
 
+## 0.0 2026-09-12 第二轮修订（v1.3）——先读这个
+
+本文件下方 §5、§6、§8 描述的是 v1.2 状态，保留为历史。当前状态见
+[SCORER_V1_3_NOTES.md](SCORER_V1_3_NOTES.md)，要点：
+
+1. **评分器已升到 `trustworthy.v1.3`**，修了三处：合同层把列表编号当断言数字（假阴性，5 道 boundary 题 F=0）、
+   `marker_present` 搜整个 state 而不只是用户可见答复、unknown/conflict 只回「未知」两字即可通过（新增 `substance_min`）。
+   `scorer_sha` 现在哈希评分器源码；`actor_sha` 之外新增 `actor` 块记录产品代码 hash、git 状态与被调模型。
+2. **重评产物用新文件名**：`output/trustworthy-v1/holdout-v2-report-*-v1.3.json`；v1.2 报告与 r1–r3 原件一律不动。
+3. **新增 `eval/trustworthy-v1/holdout-v3/`**：新实体、新数字、新问法，且 conflict 不再写「未核对」、unknown 不再写「未写明」，
+   两层都加 `substance_min`。它在实现流里生成，`authoring.json` 已如实声明**不是独立出题**，金标待另开会话审（`GOLD_REVIEW_PROMPT.md`）。
+4. 上一轮把 boundary「整理稿要点」假阴性写成「评委模型不一致」是**误诊**：那 10 条断言由确定性合同层直接判掉，评委根本没看到。
+   blind review 的分歧记录是对的，结论下错了地方。
+5. 产品侧词表（`_REOPEN_TURN`、`_COMPUTE_ASK`、`_with_unknown_mark`）与 holdout 题面动词高度重合，已在 commit 信息里记为待办；
+   后续应改成结构化意图判断，而不是继续扩中文动词表。
+6. 本轮工作在一个新分支 `eval/trustworthy-v1.3` 上，分四个 commit（评测 harness／产品后端／桌面端／评分器与数据集）。
+   成绩要绑 revision，先看 `actor.git.commit` 与 `actor.product_sha`。
+
+---
+
 ## 0. 给新会话的开场指令（可直接粘贴）
 
 你接手 PlanGo 的 **trustworthy-v1** 公开评测，不是旧的 `quality-v*`。先读本文件和冻结合同，再动代码。
