@@ -1,0 +1,34 @@
+{
+  "dataset": "holdout-v5",
+  "authored_at": "2026-09-13",
+  "author": "independent v5 authoring session (isolated from product, runner, and gold-review sessions)",
+  "generator": "scripts/trustworthy/build_holdout_v5.py",
+  "seed": 20260913,
+  "contract_files_read": [
+    "eval/trustworthy-v1/AUTHORING.md",
+    "eval/trustworthy-v1/PRODUCT_INVENTORY.md",
+    "eval/trustworthy-v1/ATTEMPT_CONTRACT.md",
+    "eval/trustworthy-v1/V5_AUTHORING_DRAFT.md"
+  ],
+  "tooling_interfaces_read": [
+    "scripts/trustworthy/schema.py",
+    "scripts/trustworthy/__init__.py",
+    "scripts/trustworthy/cli.py (validate-dataset entry)",
+    "scripts/trustworthy/runner.py (stateful/persist turn semantics)",
+    "scripts/trustworthy/tsr.py (check evaluation semantics)",
+    "scripts/trustworthy/project.py",
+    "scripts/trustworthy/actor.py"
+  ],
+  "independence": "未读产品源码、output/、RESULTS-*、SCORER_V*_NOTES、HANDOFF、PROPOSAL、v1–v4 题面金标；未跑模型、未出分；金标审阅另开会话。",
+  "self_review": "none (gold review pending; evaluation_kind=holdout_unreviewed)",
+  "design_assertions_in_generator": [
+    "calculate 双路实算一致且合计/差额不出现在页文",
+    "conflict 两记录同一 observed_at、值不同、无自报词",
+    "unknown 页文无缺口提示语且长度足够",
+    "sparse/persist 口述新值不出现在世界页文",
+    "persist 口述子句数 == 期望字段数",
+    "as_of >= 全部 observed_at",
+    "tasks/worlds 无 actor 禁键",
+    "evidence_spans 均为世界正文子串"
+  ]
+}
