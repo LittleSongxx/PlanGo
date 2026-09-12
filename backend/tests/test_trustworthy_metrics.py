@@ -17,11 +17,11 @@ from plango.graph import _card_hold_summary
 from plango_harness.agent.contracts import TripSpec
 
 from scripts.trustworthy.cli import main as cli_main
-from scripts.trustworthy.faithfulness import score_delivery
+from scripts.trustworthy.faithfulness import asserted_numbers, score_delivery
 from scripts.trustworthy.faithfulness_judge import JudgeError, judge_user_payload, parse_labels, prompt_sha
 from scripts.trustworthy.report import summarize, wilson_interval
 from scripts.trustworthy.schema import load_attempts, load_dataset, validate_dataset
-from scripts.trustworthy.tsr import score_attempt
+from scripts.trustworthy.tsr import delivery_substance, score_attempt
 
 DATASET = ROOT / "eval" / "trustworthy-v1"
 ATTEMPTS = DATASET / "fixtures" / "attempts.json"
@@ -298,7 +298,10 @@ def test_cli_validate_and_score(tmp_path, capsys):
     assert report["tsr"]["wilson_95"]["low"] < report["tsr"]["point"] < report["tsr"]["wilson_95"]["high"]
     assert "not a holdout official score" in report["disclaimer"]
     assert report["faithfulness"]["bootstrap_95"]["draws"] == 2000
-    assert report["scorer_version"] == "trustworthy.v1.2-rules"
+    assert report["scorer_version"] == "trustworthy.v1.3-rules"
+    coverage = report["coverage"]
+    assert coverage["faithfulness_lower_bound"] is not None
+    assert coverage["faithfulness_scored"] == len([row for row in report["cases"] if row["faithfulness"] is not None])
     assert report["faithfulness"]["judge"]["method"] == "rules"
 
 
@@ -358,6 +361,86 @@ def test_llm_judge_rejects_invented_commentary():
     )
     assert scored["claims"][0]["label"] == "unsupported"
     assert scored["faithfulness"] == 0.0
+
+
+def test_list_ordinals_are_not_asserted_numbers():
+    """A numbered list must reach the judge instead of being forced unsupported."""
+    assert asserted_numbers("1. 包含两站：渔梁渡船、苗圃。") == []
+    assert asserted_numbers("2、状态：未提交的草稿。") == []
+    assert asserted_numbers("（3）门票合计 52 元。") == ["52"]
+    assert asserted_numbers("合计 187 元。") == ["187"]
+    assert asserted_numbers("1. 门票 52 元。") == ["52"]
+
+    seen: list[list[dict[str, str]]] = []
+    observation = {"text": "整理稿列了渔梁渡船和苗圃两站。这是未提交的草稿，不是已经办完的业务。"}
+
+    def complete(messages):
+        payload = json.loads(messages[-1]["content"])
+        seen.append(payload["claims"])
+        return json.dumps(
+            {"labels": [{"claim_id": row["claim_id"], "label": "supported", "span": None} for row in payload["claims"]]},
+            ensure_ascii=False,
+        )
+
+    scored = score_delivery(
+        {"text": "整理稿要点：\n1. 包含两站：渔梁渡船、苗圃。\n2. 状态说明：这是未提交的草稿，并非已经办完的业务。"},
+        observation,
+        judge="llm",
+        complete=complete,
+    )
+    judged = [row["text"] for batch in seen for row in batch]
+    assert any(text.startswith("1.") for text in judged)
+    assert any(text.startswith("2.") for text in judged)
+    assert [row["label"] for row in scored["claims"]] == ["supported", "supported", "supported"]
+
+
+def test_invented_number_still_fails_before_the_judge():
+    def complete(messages):
+        raise AssertionError("a number absent from the observation must not reach the judge")
+
+    scored = score_delivery(
+        {"text": "一共 999 元。"},
+        {"text": "一共 186 元。"},
+        judge="llm",
+        complete=complete,
+    )
+    assert scored["claims"][0]["label"] == "unsupported"
+    assert scored["claims"][0]["by"] == "contract"
+
+
+def test_markers_read_the_delivery_not_the_state():
+    attempt = {
+        "valid_attempt": True,
+        "outcome": "completed",
+        "delivery": {"text": "柜台和门口写的不一致。"},
+        "end_state": {"trip_spec": {"goal": "当前值未知"}},
+    }
+    oracle = {"scorable_outcomes": ["completed"], "checks": [{"id": "unknown", "type": "marker_present", "needle": "未知"}]}
+    assert score_attempt(attempt, oracle)["task_success"] == 0
+    attempt["delivery"]["text"] = "两处记录不一致，当前值未知。"
+    assert score_attempt(attempt, oracle)["task_success"] == 1
+
+
+def test_substance_min_rejects_a_bare_uncertainty_answer():
+    oracle = {
+        "scorable_outcomes": ["completed"],
+        "checks": [
+            {"id": "unknown", "type": "marker_present", "needle": "未知"},
+            {"id": "explain", "type": "substance_min", "chars": 12},
+        ],
+    }
+    bare = {"valid_attempt": True, "outcome": "completed", "delivery": {"text": "未知"}, "end_state": {}}
+    thin = {"valid_attempt": True, "outcome": "completed", "delivery": {"text": "末班时间未知。"}, "end_state": {}}
+    full = {
+        "valid_attempt": True,
+        "outcome": "completed",
+        "delivery": {"text": "末班时间未知：柜台告示写 21 点，门口告示写 23 点，两份记录未核对。"},
+        "end_state": {},
+    }
+    assert delivery_substance(bare) == 0
+    assert score_attempt(bare, oracle)["task_success"] == 0
+    assert score_attempt(thin, oracle)["task_success"] == 0
+    assert score_attempt(full, oracle)["task_success"] == 1
 
 
 def test_llm_judge_keeps_contract_filters_and_hides_oracles():

@@ -22,11 +22,24 @@ def lookup(root: Any, path: str) -> Any:
     return current
 
 
-def _haystack(attempt: dict[str, Any]) -> str:
+def delivery_text(attempt: dict[str, Any]) -> str:
     delivery = attempt.get("delivery") or {}
-    text = delivery.get("text") if isinstance(delivery, dict) else ""
-    blob = json.dumps({"delivery": delivery, "end_state": attempt.get("end_state")}, ensure_ascii=False)
-    return f"{text}\n{blob}"
+    if not isinstance(delivery, dict):
+        return ""
+    return str(delivery.get("text") or "")
+
+
+def _haystack(attempt: dict[str, Any]) -> str:
+    """Marker checks read the user-visible answer only.
+
+    Searching the whole attempt let a state field satisfy a marker the user
+    never saw, so a run with no visible answer could still pass.
+    """
+    return delivery_text(attempt)
+
+
+UNCERTAINTY = re.compile(r"未知|无法确定|资料未写明|当前值未知|没有写明|未公布|未核对")
+PUNCT = set("。！？!?；;，,、：: \t\n—…·-()（）[]【】\"'“”‘’")
 
 
 def _as_decimal(value: Any) -> Decimal:
@@ -55,8 +68,28 @@ def _field_equals(attempt: dict[str, Any], check: dict[str, Any]) -> bool:
     return actual == check.get("expected")
 
 
+def delivery_substance(attempt: dict[str, Any]) -> int:
+    """Substantive characters the user can read, beyond the uncertainty marking.
+
+    Counts characters that are not punctuation, not digits and not part of an
+    uncertainty phrase, so "未知" alone scores 0.
+    """
+    text = UNCERTAINTY.sub("", delivery_text(attempt))
+    return sum(1 for char in text if char not in PUNCT and not char.isdigit())
+
+
+def _substance_min(attempt: dict[str, Any], check: dict[str, Any]) -> bool:
+    try:
+        need = int(check.get("chars"))
+    except (TypeError, ValueError):
+        raise ValueError("substance_min.chars must be an integer") from None
+    return delivery_substance(attempt) >= need
+
+
 def evaluate_check(attempt: dict[str, Any], check: dict[str, Any]) -> bool:
     kind = check["type"]
+    if kind == "substance_min":
+        return _substance_min(attempt, check)
     if kind == "number_equals":
         try:
             return _number_equals(attempt, check)

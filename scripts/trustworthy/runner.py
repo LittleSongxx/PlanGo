@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 
 from .actor import compose_user_text, load_actor_dataset
 from .project import infrastructure_reason, project_attempt, retryable_infrastructure
+from .provenance import run_identity
 from .schema import world_pack
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -378,6 +379,7 @@ class IsolatedRunner:
             "schema_version": 1,
             "evaluation_kind": actor["protocol"].get("evaluation_kind"),
             "actor_sha": actor["actor_sha"],
+            "actor": run_identity(self.live, live_model_config() if self.live else None),
             "oracles_opened": False,
             "attempts": attempts,
         }
