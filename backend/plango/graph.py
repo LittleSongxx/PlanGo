@@ -244,6 +244,7 @@ def _settle_existing_card(task, state) -> TripSpec | None:
         return None
     if _asks_if_current_card_holds(state, req):
         return req.to_trip_spec(str(state.get("input_text") or ""), base)
+    req = _without_card_echo(req, base)
     if _requirement_starts_itinerary(req) or _requirement_needs_new_origin(req, base):
         return None
     last = _latest_turn(state)
@@ -322,12 +323,22 @@ def _without_card_echo(req: RequirementOutput, base: TripSpec | None) -> Require
 
     The model often restates the destination it just read. That is not a new
     origin, but it is also not a card value, so it must not decide the turn.
+    The venue can also come back as an "activity" — a page the user never
+    asked to plan — which would otherwise turn a card write into an itinerary.
     """
-    if base is None or not req.location_name:
+    if base is None:
         return req
-    if not _same_card_name(req.location_name, base.location.name if base.location else ""):
-        return req
-    return req.model_copy(update={"location_name": None})
+    updates: dict[str, Any] = {}
+    if req.location_name and _same_card_name(req.location_name, base.location.name if base.location else ""):
+        updates["location_name"] = None
+    place = str(base.location.name or "").strip() if base.location else ""
+    if place:
+        for field in ("required_activities", "optional_activities"):
+            items = [str(item).strip() for item in (getattr(req, field) or [])]
+            kept = [item for item in items if item and not _same_card_name(item, place)]
+            if len(kept) != len(items):
+                updates[field] = kept
+    return req.model_copy(update=updates) if updates else req
 
 
 def _sparse_card_change(req: RequirementOutput) -> RequirementOutput | None:
