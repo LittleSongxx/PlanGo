@@ -120,6 +120,11 @@ def validate_dataset(root: Path) -> dict[str, Any]:
         require(isinstance(task.get("as_of"), str) and task["as_of"], f"{task_id}: as_of required")
         turns = task.get("user_turns")
         require(isinstance(turns, list) and turns, f"{task_id}: user_turns required")
+        for turn in turns:
+            if isinstance(turn, dict):
+                require(isinstance(turn.get("text"), str) and turn["text"].strip(), f"{task_id}: turn.text required")
+            else:
+                require(isinstance(turn, str) and turn.strip(), f"{task_id}: turn text required")
         world_id = task.get("world_id")
         require(world_id in dataset["worlds"], f"{task_id}: missing world {world_id}")
         require(task_id in dataset["oracles"], f"{task_id}: missing oracle")

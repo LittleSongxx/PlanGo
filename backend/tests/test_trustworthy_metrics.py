@@ -638,3 +638,17 @@ def test_uncalculated_number_still_dies_at_the_contract_gate():
         {"text": "两场合买 112 元。"}, {"text": "日场 45 元。夜场 67 元。"}, judge="rules"
     )
     assert any(row["label"] == "unsupported" and row["by"] == "contract" for row in scored["claims"])
+
+
+def test_validate_accepts_string_turns_and_rejects_empty_ones(tmp_path):
+    for name in ("protocol.json", "tasks.json", "worlds.json", "oracles.json"):
+        (tmp_path / name).write_bytes((DATASET / name).read_bytes())
+    tasks = json.loads((tmp_path / "tasks.json").read_text(encoding="utf-8"))
+    for task in tasks:
+        task["user_turns"] = [str(turn["text"]) for turn in task["user_turns"]]
+    (tmp_path / "tasks.json").write_text(json.dumps(tasks, ensure_ascii=False), encoding="utf-8")
+    validate_dataset(tmp_path)  # holdout-v4 shape: bare strings
+    tasks[0]["user_turns"] = [""]
+    (tmp_path / "tasks.json").write_text(json.dumps(tasks, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError, match="turn text required"):
+        validate_dataset(tmp_path)
