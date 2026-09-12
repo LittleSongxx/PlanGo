@@ -242,7 +242,7 @@ def _settle_existing_card(task, state) -> TripSpec | None:
     req = task.requirements
     if req.clarification_needed and req.clarification_fields:
         return None
-    if _asks_if_current_card_holds(state):
+    if _asks_if_current_card_holds(state, req):
         return req.to_trip_spec(str(state.get("input_text") or ""), base)
     if _requirement_starts_itinerary(req) or _requirement_needs_new_origin(req, base):
         return None
@@ -258,16 +258,123 @@ def _latest_turn(state) -> str:
     return request.rsplit("\n", 1)[-1]
 
 
-_CARD_MUTATION = re.compile(r"改成|换成|设为|改到|只把|只改")
-_REOPEN_TURN = re.compile(r"关掉|重启|重新打开|关了再开")
+# Card fields whose value a sparse proposal states; the rest of the proposal is
+# bookkeeping the requirements node adds on its own turn.
+_CARD_HOLD_FIELDS = (
+    "goal",
+    "planning_source",
+    "refresh_sources",
+    "party",
+    "hard_constraints",
+    "soft_preferences",
+    "remove_hard_constraints",
+    "remove_soft_preferences",
+    "visit_date",
+    "visit_date_unknown",
+    "timezone",
+    "time_window_start_unknown",
+    "time_window_start",
+    "duration_minutes",
+    "budget",
+    "per_person_budget",
+    "clear_budget",
+    "clear_per_person_budget",
+    "party_size",
+    "party_size_unknown",
+    "party_counts",
+    "required_activities",
+    "optional_activities",
+    "remove_activities",
+    "activity_order",
+    "location_name",
+    "search_location_name",
+    "location_reference",
+    "search_location_reference",
+    "clarification_needed",
+    "clarification_fields",
+    "clarification_question",
+    "field_evidence",
+    "indoor_required",
+    "outdoor_required",
+    "max_queue_minutes",
+    "max_distance_km",
+    "search_radius_km",
+    "route_distance_km",
+    "clear_search_radius",
+    "clear_route_distance",
+    "clear_max_queue",
+    "travel_mode",
+)
+_CARD_HOLD_FLAGS = frozenset(_CARD_HOLD_FIELDS)
+_CARD_HOLD_UNKNOWN = ("party_size_unknown", "visit_date_unknown", "time_window_start_unknown")
+# A user-issued clear is a change: it takes the field away.
+_CARD_HOLD_CLEARED = (
+    "clear_budget",
+    "clear_per_person_budget",
+    "clear_search_radius",
+    "clear_route_distance",
+    "clear_max_queue",
+)
 
 
-def _asks_if_current_card_holds(state) -> bool:
-    """User is checking the seeded card after a close/reopen, not mutating or rereading a page."""
+def _without_card_echo(req: RequirementOutput, base: TripSpec | None) -> RequirementOutput:
+    """Drop a same-name place echo and a refresh request from a read-back turn."""
+    if base is None:
+        return req
+    updates: dict[str, bool | None] = {}
+    if req.refresh_sources:
+        updates["refresh_sources"] = False
+    if req.location_name and _same_card_name(req.location_name, base.location.name if base.location else ""):
+        updates["location_name"] = None
+    return req.model_copy(update=updates) if updates else req
+
+
+def _sparse_card_change(req: RequirementOutput) -> RequirementOutput | None:
+    """The card values this proposal states, or None when it states none.
+
+    `unknown` / `clear` flags say the card has no value; they restate the
+    current card instead of changing it, so they do not count as a change. What
+    remains is the user's own patch, whatever verb carried it.
+    """
+    if any(getattr(req, name) for name in _CARD_HOLD_CLEARED):
+        return req
+    if any(req.remove_hard_constraints or []) or any(req.remove_soft_preferences or []):
+        return req
+    # An unknown flag only says the card has no value, which is what the question
+    # itself is about, so it is not a patch either.
+    stated = {
+        name: getattr(req, name)
+        for name in req.model_fields_set & _CARD_HOLD_FLAGS
+        if name not in _CARD_HOLD_UNKNOWN
+    }
+    return req if any(stated.values()) else None
+
+
+def _asks_if_current_card_holds(state, req: RequirementOutput | None) -> bool:
+    """The turn reads the accepted card back instead of changing it.
+
+    The signal is structural: a card is on file, this turn starts no itinerary
+    and asks for no new origin, and the sparse proposal states no new card
+    value. Which words the user chose for "is it still there" is not consulted,
+    so a question the word list never saw still resolves to the card.
+    """
     if _accepted_spec(state) is None:
         return False
-    last = _latest_turn(state)
-    return bool(_REOPEN_TURN.search(last) and not _CARD_MUTATION.search(last))
+    if state.get("execution_goal") or state.get("execution_started"):
+        # A preparation turn is about the plan on the table, not about the card.
+        return False
+    base = _accepted_spec(state)
+    # read/ask/answer carry no proposal at all, which states no new card value.
+    req = req or RequirementOutput()
+    if _requirement_needs_new_origin(req, base):
+        return False
+    # A model that reads the card back may also echo the site it just read and ask
+    # to refresh it. Neither is a user patch, so normalize them away before asking
+    # whether this turn starts an itinerary.
+    req = _without_card_echo(req, base)
+    if _requirement_starts_itinerary(req):
+        return False
+    return _sparse_card_change(req) is None
 
 
 _CARD_HOLD_MODE = {"driving": "开车", "walking": "步行", "transit": "公交"}
@@ -332,7 +439,7 @@ def _finish_held_card(update: dict[str, Any], spec: TripSpec) -> dict[str, Any]:
 def _complete_settled_card(task, state, settled: TripSpec) -> bool:
     """Finish a card-only edit. An in-progress itinerary keeps planning after the write."""
     last = _latest_turn(state)
-    if _asks_if_current_card_holds(state) or any(mark in last for mark in ("？", "?", "吗")):
+    if _asks_if_current_card_holds(state, task.requirements) or any(mark in last for mark in ("？", "?", "吗")):
         return True
     base = _accepted_spec(state)
     return base is None or not _card_has_itinerary(base)
@@ -1133,7 +1240,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
             if settled is not None:
                 update["trip_spec"] = settled
                 if _complete_settled_card(task, state, settled):
-                    if _asks_if_current_card_holds(state):
+                    if _asks_if_current_card_holds(state, task.requirements):
                         return _finish_held_card(update, settled)
                     delivered = ExecutionOutcome(
                         kind="task_answer",
@@ -1152,7 +1259,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
             context.pop("question", None)
             context.update(mode="planning", kind="planning")
             return update
-        if _asks_if_current_card_holds(state) and task.operation in {"read", "ask", "answer"}:
+        if _asks_if_current_card_holds(state, task.requirements) and task.operation in {"read", "ask", "answer"}:
             spec = _accepted_spec(state)
             if spec is not None:
                 return _finish_held_card(update, spec)
