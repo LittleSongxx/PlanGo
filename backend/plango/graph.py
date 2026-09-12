@@ -318,15 +318,16 @@ _CARD_HOLD_CLEARED = (
 
 
 def _without_card_echo(req: RequirementOutput, base: TripSpec | None) -> RequirementOutput:
-    """Drop a same-name place echo and a refresh request from a read-back turn."""
-    if base is None:
+    """Drop a same-name place echo from a read-back turn.
+
+    The model often restates the destination it just read. That is not a new
+    origin, but it is also not a card value, so it must not decide the turn.
+    """
+    if base is None or not req.location_name:
         return req
-    updates: dict[str, bool | None] = {}
-    if req.refresh_sources:
-        updates["refresh_sources"] = False
-    if req.location_name and _same_card_name(req.location_name, base.location.name if base.location else ""):
-        updates["location_name"] = None
-    return req.model_copy(update=updates) if updates else req
+    if not _same_card_name(req.location_name, base.location.name if base.location else ""):
+        return req
+    return req.model_copy(update={"location_name": None})
 
 
 def _sparse_card_change(req: RequirementOutput) -> RequirementOutput | None:
@@ -364,6 +365,10 @@ def _asks_if_current_card_holds(state, req: RequirementOutput | None) -> bool:
         # A preparation turn is about the plan on the table, not about the card.
         return False
     base = _accepted_spec(state)
+    # A refresh request asks for the page again, so it is honored instead of
+    # being replaced by a card recitation, whatever wording carried it.
+    if req is not None and req.refresh_sources:
+        return False
     # read/ask/answer carry no proposal at all, which states no new card value.
     req = req or RequirementOutput()
     if _requirement_needs_new_origin(req, base):

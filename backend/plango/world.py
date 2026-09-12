@@ -546,8 +546,9 @@ class BrowserWorld:
                 run_context.get()["geocode_city"] = result.city_code
             if result or not self._uses_browser():
                 return result
-        elif not self._uses_browser():
-            # No live geocoder and no browser world: nothing can resolve the address.
+        else:
+            # No live geocoder. A browser extract cannot resolve an address into
+            # coordinates either, so it would only burn the turn and park the run.
             return None
         binding = await self.bridge.binding(run_context.get()["run_id"])
         if binding.get("location_context"):
