@@ -492,6 +492,57 @@ def test_quantity_answer_stated_on_the_page_needs_no_arithmetic():
     assert out.answer.startswith("卡里还能用")
 
 
+def test_answer_stating_a_total_two_records_produce_needs_the_calculator():
+    """The page lists the parts only, so the total is not on the page."""
+    page = [{"records": [{"text": "日场 45 元。夜场 67 元。"}]}]
+    task = TaskDecision(operation="answer", answer="两场合买 112 元。")
+    with pytest.raises(DecisionNotUsable, match="quantity_requires_calculate"):
+        enforce_delivery_contract(
+            task, {"current_request": "两场合买多少钱？", "sources": page, "tool_results": []}
+        )
+
+
+def test_answer_reciting_a_value_the_record_states_is_a_lookup():
+    """The record prints the value itself, so nothing has to be produced."""
+    page = [{"records": [{"text": "总额 325 元。已用 150 元。余额 175 元。"}]}]
+    task = TaskDecision(operation="answer", answer="卡里还能用 175 元。")
+    out = enforce_delivery_contract(
+        task, {"current_request": "卡里还能用多少？", "sources": page, "tool_results": []}
+    )
+    assert out.answer.startswith("卡里还能用")
+
+
+def test_answer_reciting_a_card_value_is_not_an_arithmetic_derivation():
+    """A card value the record states must not be read as a combination."""
+    page = [{"records": [{"text": "关闭前快照：人数是 7，日期是 2027-02-14。"}]}]
+    task = TaskDecision(operation="answer", answer="人数是 7，日期是 2027-02-14。")
+    out = enforce_delivery_contract(
+        task,
+        {
+            "current_request": "重新进入程序，人数和日期有没有丢？",
+            "sources": page,
+            "tool_results": [],
+        },
+    )
+    assert out.answer.startswith("人数是 7")
+
+
+def test_user_figure_that_coincidentally_matches_page_arithmetic_is_a_delivery():
+    """The user wrote the number, so the turn is not a derivation."""
+    page = [{"records": [{"text": "日场 45 元。夜场 67 元。"}]}]
+    task = TaskDecision(operation="answer", answer="已按2人、总预算112元继续。")
+    out = enforce_delivery_contract(
+        task,
+        {
+            "current_request": "总预算",
+            "edits": ["改2人，预算112，其余不变"],
+            "sources": page,
+            "tool_results": [],
+        },
+    )
+    assert out.answer.startswith("已按2人")
+
+
 def test_quantity_answer_is_allowed_after_arithmetic():
     task = TaskDecision(operation="answer", answer="还能拿回 160 元，其中预收 240 元。")
     out = enforce_delivery_contract(
