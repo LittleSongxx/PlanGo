@@ -48,6 +48,54 @@ def _mean(values: list[float]) -> float | None:
     return sum(values) / len(values)
 
 
+def delivery_coverage(
+    valid: list[dict[str, Any]],
+    faith_values: list[float],
+    successes: int,
+) -> dict[str, Any]:
+    """How much of the suite the headline numbers actually rest on.
+
+    Faithfulness is not defined for an empty delivery or for a delivery that is
+    nothing but an uncertainty marking, so those tasks leave the denominator.
+    That is the honest convention, but the share it removes has to be visible
+    next to the macro mean, together with a lower bound that counts every
+    unscored task as unsupported.
+    """
+    n = len(valid)
+    empty = [row for row in valid if not (row.get("delivery_chars") or 0)]
+    bare = [
+        row
+        for row in valid
+        if (row.get("delivery_chars") or 0) and row.get("faithfulness_applicable") is False
+    ]
+    scored = len(faith_values)
+    lower = (sum(faith_values) / n) if n else None
+    by_layer: dict[str, dict[str, int]] = {}
+    for row in valid:
+        layer = str(row.get("layer") or "?")
+        entry = by_layer.setdefault(layer, {"tasks": 0, "scored": 0, "empty": 0, "bare": 0, "tsr_successes": 0})
+        entry["tasks"] += 1
+        entry["scored"] += 1 if row.get("faithfulness") is not None else 0
+        entry["empty"] += 1 if not (row.get("delivery_chars") or 0) else 0
+        entry["bare"] += (
+            1
+            if (row.get("delivery_chars") or 0) and row.get("faithfulness_applicable") is False
+            else 0
+        )
+        entry["tsr_successes"] += int(row.get("task_success") or 0)
+    return {
+        "tasks_valid": n,
+        "tsr_successes": successes,
+        "faithfulness_scored": scored,
+        "faithfulness_scored_share": (scored / n) if n else None,
+        "delivery_empty": len(empty),
+        "delivery_bare_uncertainty": len(bare),
+        "faithfulness_macro_mean": _mean(faith_values),
+        "faithfulness_lower_bound": lower,
+        "by_layer": by_layer,
+    }
+
+
 DISCLAIMERS = {
     "provisional_dev": (
         "provisional_dev seed report, not a holdout official score. "
@@ -69,6 +117,7 @@ def summarize(
     report_kind: str = "provisional_dev",
     judge: str = "rules",
     judge_meta: dict[str, Any] | None = None,
+    actor_meta: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     valid = [row for row in rows if row.get("valid_attempt")]
     invalid = [row for row in rows if not row.get("valid_attempt")]
@@ -84,6 +133,7 @@ def summarize(
     version = f"{SCORER_VERSION}-{judge}"
     meta = {"method": judge, **(judge_meta or {})}
     fingerprint = json_fingerprint(version, meta)
+    coverage = delivery_coverage(valid, faith_values, successes)
     return {
         "schema_version": 1,
         "report_kind": report_kind,
@@ -92,6 +142,7 @@ def summarize(
         "dataset_sha": dataset_sha,
         "attempts_sha": attempts_sha,
         "scorer_sha": fingerprint,
+        "actor": actor_meta,
         "n_attempts": len(rows),
         "n_valid": n,
         "n_invalid": len(invalid),
@@ -107,6 +158,7 @@ def summarize(
             "bootstrap_95": bootstrap_mean(faith_values),
             "judge": meta,
         },
+        "coverage": coverage,
         "disclaimer": DISCLAIMERS.get(report_kind, DISCLAIMERS["provisional_dev"]),
         "cases": rows,
     }

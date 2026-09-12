@@ -22,10 +22,11 @@ from scripts.trustworthy.schema import (
     file_sha,
     load_attempts,
     load_dataset,
+    read_json,
     validate_dataset,
     world_pack,
 )
-from scripts.trustworthy.tsr import score_attempt
+from scripts.trustworthy.tsr import delivery_substance, delivery_text, score_attempt
 
 
 def _score_rows(
@@ -46,6 +47,7 @@ def _score_rows(
         pack = attempt.get("observation_pack") or world_pack(world)
         tsr = score_attempt(attempt, oracle)
         faith = score_delivery(attempt.get("delivery"), pack, judge=judge, complete=complete)
+        text = delivery_text(attempt)
         rows.append(
             {
                 "trial_id": attempt["trial_id"],
@@ -53,6 +55,8 @@ def _score_rows(
                 "layer": task.get("layer"),
                 "split": task.get("split"),
                 "expected_pass": attempt.get("expected_pass"),
+                "delivery_chars": len(text.strip()),
+                "delivery_substance": delivery_substance(attempt),
                 "valid_attempt": tsr["valid_attempt"],
                 "task_success": tsr.get("task_success"),
                 "failed_checks": tsr.get("failed_checks") or [],
@@ -88,6 +92,8 @@ def cmd_score(args: argparse.Namespace) -> int:
     dataset = load_dataset(Path(args.dataset))
     attempts_path = Path(args.attempts)
     attempts = load_attempts(attempts_path)
+    raw_bundle = read_json(attempts_path)
+    actor_meta = raw_bundle.get("actor") if isinstance(raw_bundle, dict) else None
     try:
         rows = _score_rows(dataset, attempts, judge=judge)
     except JudgeError as error:
@@ -101,6 +107,7 @@ def cmd_score(args: argparse.Namespace) -> int:
         report_kind=meta["report_kind"],
         judge=judge,
         judge_meta=judge_meta,
+        actor_meta=actor_meta,
     )
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)

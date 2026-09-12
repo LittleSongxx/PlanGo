@@ -9,6 +9,9 @@ from .schema import world_pack
 
 SENTENCE = re.compile(r"(?<=[。！？!?;；\n])\s*")
 NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+# "1. ", "2、", "(3)", "（4）" and friends enumerate a list; they are not
+# asserted quantities, so they must not be read as invented numbers.
+ORDINAL = re.compile(r"^\s*(?:[-*•·]\s*)?(?:[（(]\s*\d{1,3}\s*[)）]|\d{1,3}\s*[.、)）．])\s*")
 UNCERTAINTY = re.compile(r"未知|无法确定|资料未写明|当前值未知|没有写明|未公布")
 SLOT_LEFT = re.compile(r"([\u4e00-\u9fff]{2,8})\s*$")
 SLOT_RIGHT = re.compile(r"^\s*([\u4e00-\u9fff]{1,4}|元|分钟|人|点)")
@@ -119,10 +122,15 @@ def _empty_score() -> dict[str, Any]:
     }
 
 
+def asserted_numbers(claim: str) -> list[str]:
+    """Numbers the claim actually asserts, ignoring a leading list ordinal."""
+    return NUMBER.findall(ORDINAL.sub("", claim, count=1))
+
+
 def _contract_label(claim: str, observation: str, *, conflicts: bool) -> dict[str, Any] | None:
     if UNCERTAINTY.search(claim):
         return {"text": claim, "label": "non-factual", "span": None, "by": "contract"}
-    for number in NUMBER.findall(claim):
+    for number in asserted_numbers(claim):
         if conflicts:
             conflict = _conflict_span(claim, number, observation)
             if conflict:

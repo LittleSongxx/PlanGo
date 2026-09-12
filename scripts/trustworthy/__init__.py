@@ -1,6 +1,6 @@
 """Isolated TSR / Faithfulness scoring. Hidden oracles never enter actor tasks."""
 
-SCORER_VERSION = "trustworthy.v1.2"
+SCORER_VERSION = "trustworthy.v1.3"
 LAYERS = (
     "calculate",
     "conflict",
