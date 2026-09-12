@@ -866,6 +866,12 @@ def build_persist(sub: random.Random, idx: int, seq: int, ent: Ent) -> dict:
     probes = []
     for f in writes:
         v = _init_field(r, f, as_of, ent)
+        if f == "hard_constraints":
+            # The dictation clause states exactly one constraint; the oracle
+            # expects what the turn states, so a second unspoken sample would
+            # be unachievable by any legal execution (gold-review blockers on
+            # hv4-persist-030/032).
+            v = v[:1]
         written_values[f] = v
         clauses.append(_persist_clause(r, f, v, iso_date))
         if f == "visit_date":

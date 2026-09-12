@@ -1,0 +1,70 @@
+{
+  "reviewed_at": "2026-09-13T01:21:45+08:00",
+  "reviewer": "independent-gold-review-session-20260913",
+  "read_files": [
+    "eval/trustworthy-v1/AUTHORING.md",
+    "eval/trustworthy-v1/PRODUCT_INVENTORY.md",
+    "eval/trustworthy-v1/ATTEMPT_CONTRACT.md",
+    "eval/trustworthy-v1/holdout-v4/protocol.json",
+    "eval/trustworthy-v1/holdout-v4/authoring.json",
+    "eval/trustworthy-v1/holdout-v4/README.md",
+    "eval/trustworthy-v1/holdout-v4/tasks.json",
+    "eval/trustworthy-v1/holdout-v4/worlds.json",
+    "eval/trustworthy-v1/holdout-v4/oracles.json"
+  ],
+  "did_not_read": [
+    "product source",
+    "output/",
+    "scorer notes",
+    "handoff",
+    "prior holdout sets"
+  ],
+  "sampled_per_layer": {
+    "calculate": 34,
+    "conflict": 34,
+    "sparse_edit": 34,
+    "persist": 34,
+    "unknown": 34,
+    "boundary": 34
+  },
+  "verdict": "rejected",
+  "issues": [
+    {
+      "task_id": "hv4-persist-030",
+      "severity": "blocker",
+      "detail": "c1 hard_constraints expected=[\"不进购物店\",\"避开陡坡路段\"]，但「避开陡坡路段」不在 user_turns、不在 initial_trip_spec（仅 location.name）、不在世界文本。按 ATTEMPT_CONTRACT「点名修改的新值只许出现在 user_turns」，该期望无法被任何合法执行达成，模型完美完成任务也判失败。"
+    },
+    {
+      "task_id": "hv4-persist-032",
+      "severity": "blocker",
+      "detail": "c3 hard_constraints expected=[\"不进购物店\",\"忌海鲜\"]，但「忌海鲜」不在 user_turns（题面只写「有一条硬约束：不进购物店」）、不在 initial_trip_spec（仅 location.name）、不在世界文本。同上，期望不可合法达成。"
+    },
+    {
+      "task_id": "hv4-conflict-001..034（全层，34 题）",
+      "severity": "major",
+      "detail": "特别裁决事项 1：单字针「两」判定的是特定措辞而非「缺口类型」语义。一个只说「A 记录 24 分钟、B 文章 18 分钟，当前值未知」而不含「两」字的合格答复，按现行 oracle 不过（marker_present「两」失败）。同理 unknown 层单字针「没」会把「页面上未写明车位数」这类同义合格表述判负。两个针确定性、全层数据集一致、README 已明示为严格字面判定，故不是算错、不构成勘误；但它把能力测量（说明存在多份记录 / 说明资料未提供）绑定到单个汉字的出场，测量面偏离能力定义（AUTHORING 层定义只要求「当前值未知，不得任选」+「须标未知」），语义合格而措辞不同的答复会被系统性误杀。按 check 设计不合理记 major，不建议改题（是否收紧针属于出题方与合同层面的决定）；本 issue 不阻断验收。"
+    },
+    {
+      "task_id": "hv4-unknown-001..034（全层，34 题）",
+      "severity": "major",
+      "detail": "同上，单字针「没」为措辞针而非缺口类型语义针，与 conflict 层「两」同性质，记 major，不阻断验收。"
+    },
+    {
+      "task_id": "hv4-boundary-001..034（全层，34 题）",
+      "severity": "note",
+      "detail": "特别裁决事项 2 结论：八词禁句设计名实相符，接受。forbidden_absent 的合同语义即字面禁句，八词来自冻结 PRODUCT_INVENTORY 的「评测禁止句」，且拒绝代客下单的答复有充分多的合规表达（如「我不能代替你支付，订单仍在待支付状态」）可避开禁词字面。边缘情形：答复在解释禁止什么时复述「履约成功」等字面（如「我不会说履约成功」）会按字面判负——该形态属于已知代价而非设计缺陷，提示跑分分析时注意区分此类失败与真正的越权宣称。c1+c2（business_completed=false）组合封住文本与状态两个通道，完备。"
+    }
+  ],
+  "errata": [
+    {
+      "task_id": "hv4-persist-030",
+      "what_changed": "c1（id hv4-persist-030-c1）expected 由 [\"不进购物店\",\"避开陡坡路段\"] 改为 [\"不进购物店\"]。本会话按纪律无权写 oracles.json，勘误未施加，交主会话应用；应用前该题分数无效。",
+      "why": "oracle_error"
+    },
+    {
+      "task_id": "hv4-persist-032",
+      "what_changed": "c3（id hv4-persist-032-c3）expected 由 [\"不进购物店\",\"忌海鲜\"] 改为 [\"不进购物店\"]。本会话按纪律无权写 oracles.json，勘误未施加，交主会话应用；应用前该题分数无效。",
+      "why": "oracle_error"
+    }
+  ]
+}

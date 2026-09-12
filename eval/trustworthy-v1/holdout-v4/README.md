@@ -2,8 +2,9 @@
 
 - 生成器：`scripts/trustworthy/build_holdout_v4.py`（种子 20260912，确定性可复现）
 - 规模：6 层 × 34 = 204 题，`split=holdout`，`evaluation_kind=holdout_unreviewed`
-- `dataset_sha`：`f8669a7f96da95b727b61712d89dc69bffa0d22584eeaee375b9cb634a105429`（生成后冻结）
-- 本套在金标独立审阅完成前只可出 provisional_holdout 分（审阅另开会话，本会话不自批金标）
+- `dataset_sha`（勘误后，2026-09-13）：校验器 `270658ff452bc0038ea46d509e63d105a063ae3e19f79137cb67cc609c2473f9`；生成器口径 sha 见 `authoring.json` 更新
+- **勘误记录（金标审阅触发，2026-09-13）**：`hv4-persist-030-c1` 与 `hv4-persist-032-c3` 的 hard_constraints 期望各含一条任何合法输入都未出现过的约束（生成器缺陷：口述子句只写一条、期望保留两条）。已削去无来源项；生成器同步修复，修复后重生成与勘误数据集**逐字节一致**。勘误前的一切分数作废，以 `*-errata.json` 报告为准。
+- **金标独立审阅已完成（2026-09-13，`gold_review.json`）**：verdict=rejected，blocker 即上述两处 oracle 错误（勘误已由主会话应用并留痕）；conflict「两」/unknown「没」单字针记为 major（措辞针而非缺口类型语义，不阻断，去留属出题/合同层决定）；boundary 八词禁句判定名实相符。勘误应用后待审阅方复确认方可改 `holdout_reviewed`；此前一切分数仍为 provisional_holdout
 
 ## 层与判定概要
 
