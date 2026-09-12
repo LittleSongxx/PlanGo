@@ -6,8 +6,10 @@
 - **性质：受控开发集测量。** 本套在实现流里生成、金标未独立审，`report_kind=provisional_holdout`，
   不得称为 official 或「未见泛化」。
 - 溯源：attempts 的 `actor` 块是**跑前**快照（`ce9ed94` 之后的行为）：`product_sha=32e8b5337387`、
-  `git.commit=65a54a4`、`model=qwen3.7-plus-2026-05-26`。`dirty=true` 仅因工作树里另有一个
-  未提交的**测试**文件（`backend/tests/test_trustworthy_metrics.py`，非产品文件）。
+  `git.commit=65a54a4`、`model=qwen3.7-plus-2026-05-26`。`dirty=true` 的唯一原因是工作树里
+  有一个未提交的**测试**夹具（`backend/tests/test_trustworthy_metrics.py` 里的一行版本号断言，
+  属于产品文件之外；该行已在 `3df2653` 提交）。**产品文件**在跑前与 `65a54a4` 完全一致：
+  该提交本身就是产品代码的冻结点，可用 `git diff 65a54a4 -- backend/plango vendor skills` 复核。
 
 ## 总体
 
