@@ -122,11 +122,24 @@ def frozen_observation(command: dict[str, Any], session_id: str, world: dict[str
     }
 
 
+def command_operation(command: dict[str, Any]) -> str | None:
+    """The poll endpoint flattens the payload: operation is a top-level key."""
+    operation = command.get("operation")
+    if isinstance(operation, str) and operation:
+        return operation
+    nested = command.get("payload")
+    if isinstance(nested, dict):
+        value = nested.get("operation")
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
 def drain_frozen_browser(client: TestClient, session_id: str, world: dict[str, Any]) -> int:
     payload = client.get("/api/v1/browser/commands", params={"browser_session_id": session_id}).json()
     posted = 0
     for command in payload.get("commands") or []:
-        operation = (command.get("payload") or {}).get("operation")
+        operation = command_operation(command)
         body = frozen_observation(command, session_id, world, blocked=operation not in READ_OPS)
         response = client.post(f"/api/v1/browser/commands/{command['command_id']}/result", json=body)
         if response.status_code < 400:
