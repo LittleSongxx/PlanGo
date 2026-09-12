@@ -308,7 +308,7 @@ def test_cli_validate_and_score(tmp_path, capsys):
     assert report["tsr"]["wilson_95"]["low"] < report["tsr"]["point"] < report["tsr"]["wilson_95"]["high"]
     assert "not a holdout official score" in report["disclaimer"]
     assert report["faithfulness"]["bootstrap_95"]["draws"] == 2000
-    assert report["scorer_version"] == "trustworthy.v1.4-rules"
+    assert report["scorer_version"] == "trustworthy.v1.5-rules"
     coverage = report["coverage"]
     assert coverage["faithfulness_lower_bound"] is not None
     assert coverage["faithfulness_scored"] == len([row for row in report["cases"] if row["faithfulness"] is not None])
@@ -525,3 +525,50 @@ def test_judge_parser_requires_every_claim_and_drops_foreign_span():
     with pytest.raises(JudgeError, match="missed claims"):
         parse_labels('{"labels":[]}', ["S1"], observation)
     assert len(prompt_sha()) == 64
+
+
+def test_declared_missing_value_sentence_is_non_factual_by_structure():
+    scored = score_delivery(
+        {
+            "text": "页面上只有展陈介绍，关门时间拿不到。展陈分三个展区，都在一层。",
+            "uncertainty": {"kind": "missing_value", "subject": "关门时间", "records": []},
+        },
+        {"text": "展陈分三个展区，都在一层。"},
+    )
+    by_id = {row["claim_id"]: row for row in scored["claims"]}
+    assert by_id["S1"]["label"] == "non-factual" and by_id["S1"]["by"] == "structure"
+    assert by_id["S2"]["label"] == "supported"
+
+
+def test_declared_conflict_keeps_citations_factual_and_covers_record_numbers():
+    observation = {"text": "柜台告示：余票 6 张。门口公示：余票 24 张。"}
+    declared = {
+        "text": "柜台写余票 6 张，门口公示余票 24 张。当前确定值未知。",
+        "uncertainty": {
+            "kind": "conflicting_records",
+            "subject": "余票数量",
+            "records": ["柜台告示：余票 6 张", "门口公示：余票 24 张"],
+        },
+    }
+    scored = score_delivery(declared, observation)
+    by_id = {row["claim_id"]: row for row in scored["claims"]}
+    assert by_id["S1"]["label"] == "supported"
+    assert by_id["S2"]["label"] == "non-factual"
+    assert scored["faithfulness"] == 1.0 and scored["factual_claims"] == 1
+
+
+def test_records_declaration_allows_numbers_the_pack_omits():
+    observation = {"text": "两份告示内容一致地只写了入场须知。"}
+    scored = score_delivery(
+        {
+            "text": "柜台记余票 6 张，门口记余票 24 张。",
+            "uncertainty": {
+                "kind": "conflicting_records",
+                "subject": "余票数量",
+                "records": ["柜台记余票 6 张", "门口记余票 24 张"],
+            },
+        },
+        observation,
+        judge="rules",
+    )
+    assert all(row["label"] != "unsupported" or row["by"] != "contract" for row in scored["claims"])

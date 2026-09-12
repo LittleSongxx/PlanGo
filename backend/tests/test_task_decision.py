@@ -16,6 +16,7 @@ from plango.task import (
     DecisionNotUsable,
     DeliveryDecision,
     TaskDecision,
+    UncertaintyClaim,
     _compact_context,
     _local_date,
     _page_in_hand,
@@ -196,8 +197,10 @@ def test_a_page_just_read_still_fits_the_next_decision():
     """
     # The page is sized against a fixed 12000 cap on purpose: the delivery
     # instruction grew with the unknown-explanation requirement, so the fixture
-    # is trimmed to keep the same cap tight instead of moving the cap.
-    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 34
+    # is trimmed to keep the same cap tight instead of moving the cap. Trimmed
+    # again after the r5 instruction growth (65a54a4) and the v1.5 uncertainty
+    # field pushed compaction past its floor on a tree that shipped red.
+    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 23
             + "周六开放 13:00 至 18:00。材料费未公布。")
     context = task_context(_page_just_read(text))
     assert _page_in_hand(context)
@@ -641,3 +644,49 @@ def test_non_quantity_numeric_answer_does_not_require_calculate():
         {"current_request": "这张告示能不能代收？", "sources": [], "tool_results": []},
     )
     assert "88" in out.answer
+
+
+def test_declared_uncertainty_appends_the_mark_and_survives_the_contract():
+    task = TaskDecision(
+        operation="answer",
+        answer="页面上只有展陈介绍，关门时间拿不到。",
+        uncertainty=UncertaintyClaim(kind="missing_value", subject="关门时间"),
+    )
+    out = enforce_delivery_contract(
+        task,
+        {"current_request": "今天几点关门？", "sources": [{"records": [{"text": "展陈分三个展区。"}]}], "tool_results": []},
+    )
+    assert "未知" in out.answer
+    assert out.uncertainty is not None and out.uncertainty.kind == "missing_value"
+
+
+def test_conflicting_records_declaration_round_trips_through_the_schema():
+    task = TaskDecision(
+        operation="answer",
+        answer="柜台写余票 6 张，门口公示余票 24 张，当前确定值未知。",
+        uncertainty=UncertaintyClaim(
+            kind="conflicting_records",
+            subject="余票数量",
+            records=["柜台告示：余票 6 张", "门口公示：余票 24 张"],
+        ),
+    )
+    out = enforce_delivery_contract(
+        task,
+        {
+            "current_request": "现在还剩几张票？",
+            "sources": [{"records": [{"text": "柜台告示：余票 6 张。"}, {"text": "门口公示：余票 24 张。"}]}],
+            "tool_results": [],
+        },
+    )
+    assert "未知" in out.answer
+    assert [row for row in out.uncertainty.records] == ["柜台告示：余票 6 张", "门口公示：余票 24 张"]
+
+
+def test_delivery_decision_carries_uncertainty_to_task():
+    decision = DeliveryDecision(
+        operation="answer",
+        answer="关门时间未知。",
+        uncertainty=UncertaintyClaim(kind="missing_value", subject="关门时间"),
+    )
+    task = decision.to_task()
+    assert task.uncertainty is not None and task.uncertainty.subject == "关门时间"
