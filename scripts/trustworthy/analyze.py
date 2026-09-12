@@ -95,7 +95,12 @@ def print_split(row: dict[str, Any]) -> None:
     if not cases:
         return
     print(f"\n=== {row['file']} ===")
-    for key, label in ((lambda c: c.get("layer"), "layer"), (lambda c: wording_family(c["task_id"]), "wording")):
+    # The wording families only describe holdout-v3, which mixes them on purpose.
+    is_v3 = all(str(case.get("task_id", "")).startswith("h3-") for case in cases)
+    groups = [(lambda c: c.get("layer"), "layer")]
+    if is_v3:
+        groups.append((lambda c: wording_family(c["task_id"]), "wording"))
+    for key, label in groups:
         agg: dict[str, dict[str, Any]] = collections.defaultdict(
             lambda: {"n": 0, "ok": 0, "f": [], "claims": 0, "sup": 0, "thin": 0}
         )
