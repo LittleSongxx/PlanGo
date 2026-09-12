@@ -370,7 +370,7 @@ class DesktopRuntime(PlanGoRuntime):
                 ).scalar_one()
             binding = await self.bridge.binding(run_id)
             self.model.system_prefix = (
-                "PlanGo 真实运行：当前为规划视角策略。Skill 是有界程序，不授权工具；已加载则只能使用该程序列出的固定操作。禁止模拟价格、订单、预约号与履约成功；登录、验证码或不支持能力须暂停/人工接管。可用 Skill 目录："
+                "PlanGo 真实运行：当前为规划视角策略。Skill 是有界程序，不授权工具；已加载则只能使用该程序列出的固定操作。禁止模拟价格、订单、预约号或任何履约结果，也不在答复里复述这类字眼；登录、验证码或不支持能力须暂停/人工接管。可用 Skill 目录："
                 + list_skill_adverts(binding.get("enabled_skills"))[:2000]
                 + "\n"
             )

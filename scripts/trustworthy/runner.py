@@ -321,10 +321,17 @@ class IsolatedRunner:
             else None
         )
         last_reason = "invalid_attempt"
+        # After a restart the task's final turn is the one in play: a
+        # single-turn task replays its only turn, a write-then-ask task asks
+        # its read-back question instead of dictating the write again.
+        last_turn = turns[-1] if turns else None
+        replay = (
+            str(last_turn.get("text") or "") if isinstance(last_turn, dict) else str(last_turn or "")
+        ) or question
         for attempt_no in range(1, EVAL_INFRA_ATTEMPTS + 1):
             try:
                 if task.get("layer") in {"sparse_edit", "persist"}:
-                    snapshot, prior = self._run_stateful(task, world, session_id, question)
+                    snapshot, prior = self._run_stateful(task, world, session_id, question, replay)
                 else:
                     with self._client() as client:
                         run_id = self._create(client, compose_user_text(task, world, question), session_id)
@@ -358,6 +365,7 @@ class IsolatedRunner:
         world: dict[str, Any],
         session_id: str,
         question: str,
+        replay: str,
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         spec = self._seed_spec or trip_spec_from_initial(task.get("initial_trip_spec"), question)
         with self._client() as client:
@@ -370,7 +378,7 @@ class IsolatedRunner:
             restored = client.get(f"/api/v1/runs/{run_id}")
             restored.raise_for_status()
             prior = dict((restored.json().get("state") or {}).get("trip_spec") or prior)
-            self._message(client, run_id, compose_user_text(task, world, question))
+            self._message(client, run_id, compose_user_text(task, world, replay))
             return wait_settled(client, run_id, session_id, world, timeout=self._settle_timeout()), prior
 
     def run_dataset(self, root: Path, *, task_ids: list[str] | None = None, limit: int | None = None) -> dict[str, Any]:

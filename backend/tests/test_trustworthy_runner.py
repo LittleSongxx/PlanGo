@@ -239,3 +239,34 @@ def test_poll_shape_operation_is_read_at_top_level():
     assert observed["ok"] is True and observed["text"] == "页文"
     blocked = frozen_observation(flat, "s", world, blocked=True)
     assert blocked["ok"] is False and blocked["outcome"] == "blocked"
+
+
+def test_persist_restart_sends_the_tasks_final_turn_not_the_first(tmp_path):
+    """v4 persist tasks are write-then-ask; replaying the write after the restart
+    never asked the read-back question and walked into planning instead."""
+    from plango.task import DeliveryDecision, TaskDecision
+
+    task = {
+        "task_id": "tw-persist-two-turn",
+        "split": "holdout",
+        "layer": "persist",
+        "as_of": "2026-09-13T12:00:00+08:00",
+        "world_id": "w-two-turn",
+        "user_turns": ["把出发时间写成 13:30。", "重启之后出发时间还在吗？"],
+        "initial_trip_spec": {"location": {"name": "测试点"}},
+    }
+    world = {"world_id": "w-two-turn", "documents": [{"doc_id": "d", "title": "页", "text": "测试页文。", "observed_at": "2026-09-13T10:00:00+08:00"}]}
+    seen = []
+
+    async def choose(schema, *, fallback, **kwargs):
+        seen.append(str(kwargs.get("user") or ""))
+        if schema in {TaskDecision, DeliveryDecision}:
+            return TaskDecision(operation="answer", answer="出发时间仍是 13:30。")
+        return fallback
+
+    runner = IsolatedRunner(tmp_path / "two-turn", live=False, timeout=90, structured=choose)
+    attempt = runner.run_task(task, world)
+    assert attempt["valid_attempt"], attempt.get("invalid_reason")
+    assert seen, "the model must have been called"
+    assert any("还在吗" in text for text in seen), "the final turn must reach the model after the restart"
+    assert "还在吗" not in seen[0], "the first send is the write turn"
