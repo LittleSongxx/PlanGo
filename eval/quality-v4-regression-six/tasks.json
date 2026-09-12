@@ -1,0 +1,212 @@
+[
+  {
+    "case_id": "NEW-01",
+    "family": "reading",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:01",
+      "entity:河盐小馆"
+    ],
+    "source_ids": [
+      "NEW-S01"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "仅依据受控菜单，为9月11日19:00的两人用餐交付价格和规则核对卡；不执行商家操作。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "只用这份虚构菜单，给我和朋友做一张9月11日19:00到河盐小馆吃一套双人炖锅的核对卡：这套实际付多少、人均多少、标价多少、时间是否落在资料时段内，还有哪些要核实？"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-07",
+    "family": "offers",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:04",
+      "entity:榛影影像馆"
+    ],
+    "source_ids": [
+      "NEW-S04"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "交付双人照片所涉抵扣券和套餐的分口径比较，明确能计算与不能计算的成本。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我想拍双人照片，帮我把榛影影像馆的A券和B套餐做成比较卡。把实际售价、抵扣额或包含内容写清；资料够不够算A方案拍完总共花多少，也请明确。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-14",
+    "family": "routes",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:07",
+      "entity:银禾展厅"
+    ],
+    "source_ids": [
+      "NEW-S07"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "比较18:40出发的步行可计算时间与缺少候车时间的公交方案，交付有依据的路线建议。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我9月11日18:40才到纸桥站，19点要在银禾展厅开场。步行和公交哪个更有依据？请把能算的时间写出来，不要把候车当作零分钟。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-18",
+    "family": "recovery",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:09",
+      "entity:琥珀汤铺"
+    ],
+    "source_ids": [
+      "NEW-S09"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "发送一条真实编辑输入，在服务端实际返回HTTP 202接收后丢弃客户端响应，再用同一请求标识lookup恢复原任务；不得重发输入。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "把琥珀汤铺这份行程的开始时间改成19:20，结束时间随原120分钟顺延，其余不变。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "message_recovery",
+      "expected_stop": "draft_review",
+      "initial_state": {
+        "run_id": "fixture:new-18",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 2,
+          "visit_date": "2026-09-11",
+          "time_window_start": "18:30",
+          "duration_minutes": 120,
+          "budget": 260,
+          "per_person_budget": null,
+          "search_radius_km": 1,
+          "route_distance_km": 3,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:poi-new-s09",
+            "name": "琥珀汤铺",
+            "address": "虚构琥珀南路21号"
+          },
+          "selected_offer": {
+            "source_id": "NEW-S09",
+            "offer_id": "fixture:offer-new-s09",
+            "price": 158,
+            "face_value": 208,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "NEW-21",
+    "family": "boundaries",
+    "case_class": "delivery",
+    "group_ids": [
+      "new-source:11",
+      "entity:月栈桌游室"
+    ],
+    "source_ids": [
+      "NEW-S11"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "仅凭接待说明制作四人两小时待确认到店卡，区分确定价格、余位未知和未执行的外部操作。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我们4人计划9月11日周五19:00到月栈桌游室玩2小时。请按这份虚构说明做一张待确认到店卡，列已知桌费和人均，以及空位等需要问清的事项。只整理这张卡。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "NEW-29",
+    "family": "edits",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "new-source:15",
+      "entity:斑榕砂锅铺"
+    ],
+    "source_ids": [
+      "NEW-S15"
+    ],
+    "as_of": "2026-09-09T12:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "真实编辑确定的人数，同时保留尚未确定口径的预算，停在澄清而非猜测后完成。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "人数改成4人。预算改成180吧，但180是总额还是人均我还没决定，先别替我选；能确定的先改，保留斑榕砂锅铺和原套餐，先别保存。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "edit",
+      "expected_stop": "clarification",
+      "initial_state": {
+        "run_id": "fixture:new-29",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 2,
+          "visit_date": "2026-09-11",
+          "time_window_start": "18:30",
+          "duration_minutes": 120,
+          "budget": 240,
+          "per_person_budget": null,
+          "search_radius_km": 1,
+          "route_distance_km": 3,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:poi-new-s15",
+            "name": "斑榕砂锅铺",
+            "address": "虚构斑榕路42号"
+          },
+          "selected_offer": {
+            "source_id": "NEW-S15",
+            "offer_id": "fixture:offer-new-s15",
+            "price": 178,
+            "face_value": 218,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  }
+]

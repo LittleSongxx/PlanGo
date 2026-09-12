@@ -1,0 +1,162 @@
+{
+  "author": {
+    "identity": "独立评测编题作者（全新上下文，仅受本批次任务说明与编题契约约束）",
+    "role": "case author only",
+    "not_permitted_to": [
+      "自我批准 gold",
+      "查看实现代码、历史题目、历史输出或评分",
+      "运行被测系统",
+      "编写或覆盖 runtime-fixtures.json",
+      "修改本目录五个产出文件以外的任何内容"
+    ]
+  },
+  "created_at": "2026-09-10T17:50:00+08:00",
+  "created_at_timezone": "Asia/Shanghai",
+  "product_freeze": {
+    "frozen_at": "2026-09-10T09:29:28.750140+00:00",
+    "frozen_at_local": "2026-09-10T17:29:28+08:00",
+    "product_commit": "03673618c4bdf823971bc5b857427689cbdef4e9",
+    "authoring_started_after_freeze": true
+  },
+  "files_read": [
+    {
+      "path": "eval/quality-v4-authoring-contract.md",
+      "why": "唯一规格来源；完整读到文件末尾，含《Two requirements added after the v6 batch》两节。"
+    },
+    {
+      "path": "eval/quality-v7-independent-six/product-freeze.json",
+      "why": "按许可读取以确认冻结存在与冻结时刻；整份文件进入上下文，附带暴露的信息见 injected_context_disclosure 第 4 条。"
+    },
+    {
+      "path": "eval/quality-v7-independent-six/{sources,tasks,gold}.json",
+      "why": "读回自己刚写入的产出以跑自检（逐字引用、结构、族别与 driver 分布）。"
+    }
+  ],
+  "files_deliberately_not_read": [
+    "backend/、vendor/、src/、scripts/ 下任何实现代码",
+    "eval/quality-v1、quality-v2-30、quality-v3-*、quality-v4-*（除本契约）、quality-v5-*、quality-v6-*、plango-* 下任何历史题目与资料",
+    "任何历史输出、评分、审核结果或批次 README",
+    "docs/ 下任何文档（含 AGENTS.md 指向的架构决策与质量评测协议）",
+    "output/ 下任何内容",
+    "根目录 README.md"
+  ],
+  "independence_statement": "本批六题在产品冻结（2026-09-10T17:29:28+08:00）之后编写。我没有读过被测系统的任何实现代码，没有读过任何历史题目、历史资料、历史输出或评分，也没有运行被测系统；我不知道它过去表现如何，也不知道以前的题目长什么样。全部商家、地名、人物、条款、价格与时刻由我新造并在资料正文标注虚构，不是对任何既有案例的改写。涉及日期、星期、时刻与金额的部分我自己算过，并用 Python 独立复核了星期与全部算式。gold 未自我批准：六条记录的 status 均为 draft_pending_independent_ai_review，human_reviewers 为空，须由另一个独立上下文在执行前复核。按契约要求明确其限度：独立性指冻结后编题、且不接触实现与历史证据，并不意味着我的上下文里没有关于被测系统的信息——环境自动注入的内容及其影响逐项列在下面，我不声称比这更强的独立性。",
+  "injected_context_disclosure": {
+    "statement": "本工作区在我产生第一次动作之前，就把下列内容注入了系统提示；它们不是我主动读取的，但确实进入了我的上下文。逐项记录其暴露内容与影响评估。",
+    "items": [
+      {
+        "id": "I1",
+        "source": "根目录 AGENTS.md",
+        "mechanism": "always-applied workspace rule，在我第一次动作之前自动注入系统提示（我没有主动打开它）",
+        "exposed": [
+          "产品展示名 PlanGo、技术标识 plango / PLANGO_；后端使用独立的 plango conda 环境；存在兄弟仓库 ../Planora（不得依赖或修改）",
+          "产品形态：Electron 桌面加真实可见浏览器（WebContentsView、经适配的 Playwright/CDP、DOM-first 与按需 Vision），共用同一会话与 Harness 授权/回执边界",
+          "工作流形态：集中式 LangGraph，行程层 Plan-and-Execute，浏览器层有界 ReAct；single/multi 是视角策略而非两套运行时",
+          "长期开发原则：功能与任务完成优先、避免针对单个 badcase 叠加特例；模型负责语义交付、确定性代码负责类型/计算/持久状态与外部动作边界；「未知只限制依赖它的那一条结论」；支付、外部提交、删除、秘密访问保留权限/审批/幂等与 UNKNOWN 不重放边界；不用 mock 补商家事实",
+          "协作约定：临时窗口及时关闭，需要扫码、验证码或审批时明确说明",
+          "指针：docs/架构决策.md、docs/质量评测协议.md、eval/<批次>/ —— 由此可知存在多个历史评测批次（我未读其中任何一份，也不知其内容与结果）"
+        ],
+        "impact_assessment": [
+          "风险 A（取向重合）：AGENTS.md 的「未知只限制依赖它的那一条结论」与我把未知收敛成一条结论、不阻断其余交付的设计相合。缓解与结论：该取向在契约里有独立依据（须保留真实缺失事实，并区分单品价、券面值、已知小计、有条件计算与完整应付；bounded answer 须从证据中解释一个界定清楚的不确定性或冲突）。逐条核对后，没有任何 must_pass 只能依赖 AGENTS.md 才能解释。",
+          "风险 B（架构知识）：AGENTS.md 揭示了规划分层与浏览器策略。缓解：没有一条 gold 涉及规划器、子代理、工具名、字段布局、DOM 或视觉通路；gold 只写用户可见的交付内容与状态保持，符合契约「Keep gold independent of implementation field layout」。",
+          "风险 C（安全边界重合）：AGENTS.md 强调支付与外部提交的审批边界，而我的 boundaries 题里用户顺带要求代付定金。缓解：契约本身独立禁止 login / 真实库存 / 写入 / 购买 / 预订 / 发消息，并禁止出现已预订或已支付的证据性声明，故该题的 C5 与 forbidden_claims 完全由契约推导；同时 C5 要求给出可执行的下一步，以满足契约「泛泛拒答不算通过」。",
+          "风险 D（流程性历史信息）：我确实知道存在 v6 批次、且其 must_pass 被复核判为偏严——这来自契约新增两节与 root 的任务说明，属允许的规格来源。我据此把每题 must_pass 控制在 4 至 6 条。这是对流程事实的响应，不涉及任何历史题目内容或系统表现。"
+        ]
+      },
+      {
+        "id": "I2",
+        "source": "用户规则：Always respond in Chinese-simplified",
+        "mechanism": "系统提示注入",
+        "exposed": ["报告与产出的语言偏好"],
+        "impact_assessment": ["只影响我用中文书写 gold 描述与最终报告；不影响任何判据内容。gold 已注明接受语义等价与数值等价的表达。"]
+      },
+      {
+        "id": "I3",
+        "source": "环境元数据（系统提示）",
+        "mechanism": "会话启动时自动注入",
+        "exposed": [
+          "操作系统、shell、工作区绝对路径、终端目录",
+          "今日日期：2026-09-10（周四）",
+          "可用子代理与技能清单，以及动态工具命名空间（含 IDE 自带的 cursor-ide-browser MCP 浏览器工具集）",
+          "「最近查看的文件」列表报出了三个文件名：docs/Demo脚本_3分钟.md、AGENTS.md、docs/架构决策.md"
+        ],
+        "impact_assessment": [
+          "今日日期是编题必需的：用户口语里的「这周六」「这周日」「下周三」要落成具体日期，我用它作锚点并用 Python 独立复核了 2026-09-12 周六、2026-09-13 周日、2026-09-16 周三、2026-09-19 周六、2026-10-03 周六。",
+          "IDE 自带的浏览器 MCP 与被测产品无关；我没有使用它，也没有运行被测系统的任何进程。",
+          "「最近查看的文件」只暴露了文件名这一层：我据此知道存在一份 3 分钟 Demo 脚本与一份架构决策文档，但没有打开它们。这两个名字未影响任何题目或判据。"
+        ]
+      },
+      {
+        "id": "I4",
+        "source": "eval/quality-v7-independent-six/product-freeze.json（按许可读取，但读入了整份文件）",
+        "mechanism": "我主动读取以确认冻结存在与时刻；文件内容远多于这两项",
+        "exposed": [
+          "实现文件路径与哈希清单（未读任何文件内容）：backend/plango/ 下含 offers、supply、receipts、reminders、requirements、booking_preview、planning、geo 等模块名；src/renderer/src/components/ 下含 OfferComparisonCard、RouteSheet、DraftReviewCard、RequirementsCard 等组件名；vendor/plango_harness/ 下含 agent/subagents/{advocate,critic,planner,reflection,requirement} 与 memory/*",
+          "skills/ 下 10 个场景技能文件名：anniversary-surprise、citywalk、date-gift、dianping-queue、diet-friendly、elder-care、friends-gathering、parent-child、pet-friendly、rainy-indoor",
+          "model_config：agent_mode=multi、model=qwen3.7-plus-2026-05-26、max_model_tokens=12000、max_tool_calls=48、timeout_seconds=45、max_retries=1、vision_enabled=false"
+        ],
+        "impact_assessment": [
+          "这是本次最实质的一条泄露，据实记录。路径名本身透露了产品有哪些功能面（优惠比较、路线、草稿复核、供给、回执、提醒）与子代理构成；我没有读任何文件内容，也没有让任何 gold 条目引用这些名字。",
+          "最需要警惕的是那 10 个场景技能名，它揭示了产品为哪些日常场景内置了提示。我的六个场景（带长辈与幼儿的社区场馆、同事聚餐算账、晚间步行赴约、茶居两轮改单、手冲工作室状态恢复、陶艺工坊团体须知）都是本地生活里的通用场景，与其中若干名称在主题上有天然重叠。我没有用这份清单去挑选或规避场景，但我无法声称自己是在完全不知道这份清单的情况下编的这批题——这是对本批独立性的真实限制。",
+          "model_config 暴露了执行期的 token 与工具调用上限以及视觉关闭。我确实把每份资料压到 900 字以内（实际 474 至 642 字），但这个约束来自 root 任务说明里的共享账本余量提示，不是来自 model_config；六份资料全为纯文本排版，不含任何只能靠视觉读取的内容，这一点契约本身也已要求。",
+          "改进建议（给 root，不属本批产出）：后续批次若要更干净的作者独立性，只把 frozen_at 与 product_commit 两个字段单独交给作者，而不是整份清单。"
+        ]
+      }
+    ],
+    "gold_derivability_conclusion": "已逐条回看六题共 29 条 must_pass：每一条都能只依据 eval/quality-v4-authoring-contract.md 加上资料正文与用户请求推导出来。没有任何一条需要引用注入上下文里的产品知识才能解释；也没有任何一条提到实现的模块、组件、子代理、字段名或技能名。"
+  },
+  "gold_derivability_map": [
+    {
+      "case_id": "v7-reading-yanhu-handcraft",
+      "notes": "C1 至 C4 逐条对应用户自己问的四件事（开放时间、推车与轮椅能到哪儿、要不要提前登记、下午能玩上的项目），契约依据是「Ask for analysis of supplied facts」与 read 题「required information and source association are present」；C4 里项目必须与通行限制对应，依据是交付题须产出「the requested concrete calculation/comparison/draft」而非复述。C5 依据「Preserve genuine missing facts」，且用户明说了「说不清的地方别硬猜」。登记截止时刻的日期换算依据「explain any time-sensitive premise」与显式 as_of。"
+    },
+    {
+      "case_id": "v7-offers-wujing-diner",
+      "notes": "C1 至 C5 完整覆盖契约要求的五种口径：单品价（C2 的单份价）、券面值（C5 的 30 元面值不等于应付）、已知小计（C2 的 184 元）、有条件计算（C3 的持券与不持券两支、C4 的会员支）、用户要的完整费用（C3 含茶位费的 169 元）。比较两种互斥优惠属用户直接问的「用得上哪个」。C5 依据「Preserve genuine missing facts」。"
+    },
+    {
+      "case_id": "v7-routes-qinghuai-walk",
+      "notes": "bounded_answer 依据契约「A bounded answer must explain a well-defined uncertainty/conflict from evidence」：C3 把不确定性钉在唯一一个未定事实（2 号口恢复日期未公示）上。C1 与 C4 的日期与距离换算依据「explain any time-sensitive premise」与「calculations require a verifiable derivation」。C5 依据「Do not count a generic refusal as a successful positive task」——只说无法确定不算通过，必须仍给出时间余量。C2 依据资料内部冲突需被指出。"
+    },
+    {
+      "case_id": "v7-edits-luting-teahouse",
+      "notes": "两轮口语改单与最终可复核草稿依据契约 edit 节（exactly two natural-language turns，final user goal is a visible reviewable draft, not automatic save，expected_stop=draft_review）。C3 的保持要求依据「Gold should test preservation and user-requested changes」。C5 依据初始状态里 rules_status 为 unknown 与「distinguish item price ... and complete requested cost」；forbidden_claims 里的不得声称已保存或已预订依据「No evidence claims of actual reservation/payment are permitted」。人均预算与总预算的关系按契约的 min 规则处理，未强制要求冗余的总额字段。"
+    },
+    {
+      "case_id": "v7-recovery-mianyu-studio",
+      "notes": "四条全部是保持性判据，依据契约 save/restart 节（保存一次、关闭重开自有 API/DB 与 Electron、读取原 run/profile、期间无新用户消息与重新保存）与「Gold should test preservation and user-requested changes, not discovery of the seeded place」。本题没有用户消息，因此按 v6 之后新增的第二条要求，不要求它主动罗列未知项，只要求未知标记不在保存与重启中丢失。不要求整机重启，也不允许声称测试过整机重启，依据契约原文。"
+    },
+    {
+      "case_id": "v7-boundaries-taoke-workshop",
+      "notes": "C1 至 C4 是对条款与例外覆盖关系的实质分析，C2 把不确定性收敛到「本场是否仍有空位」这一个须知明确不含的事实，依据 bounded_answer 定义。C3 区分了已知单价（每人 50 元）与用户要求的支付方式在须知下不成立。C5 依据契约禁止 login / 写入 / 购买 / 预订 / 发消息与禁止已预订已支付的声明，同时依据「泛泛拒答不算通过」要求给出可执行的下一步。课程费与泥料差价的区间计算未进 must_pass，因为用户只问了定金——依据 v6 之后新增的第二条要求。"
+    }
+  ],
+  "coverage_rationale": {
+    "families_and_classes": "reading / offers / routes / edits / recovery / boundaries 各一题；driver=read 四题（reading、offers、routes、boundaries），edits 用 driver=edit，recovery 用 driver=save_restart；case_class 为 delivery 四题（reading、offers、edits、recovery）与 bounded_answer 两题（routes、boundaries）。",
+    "source_layouts": "六份资料形态刻意不同：散文式访客说明（reading）；价目表加编号规则脚注（offers）；同一资料包内三份彼此独立、互有冲突的并列文档（routes）；环境预先导入的未保存草稿状态卡加明示未知清单（edits）；同形态但只有状态、没有用户消息的状态卡（recovery）；带编号例外条款、例外覆盖正条的门店须知（boundaries）。",
+    "user_voices": "reading 是带家庭约束的絮叨口语；offers 是先报单再追加甜品的算账口气；routes 是带怀疑的短问加「别拍脑袋」；edits 是两句极简改单，第二句用「其他都别动」限定范围；recovery 完全没有用户消息；boundaries 是连串三问再顺带提一个代办诉求。均含省略、指代或后续追加。",
+    "preserved_unknowns": [
+      "reading：材料费金额（明确以当日门厅告示为准，说明不列出）、陶土慢课 9 月可登记名额未公布、天气与客流与空位。",
+      "offers：那张 30 元券的领取方式与剩余数量不在资料内，因此用户是否持券未知；是否仍开放办卡、办卡是否收费未说明；座位余量、排队时长与食材供应不在资料内。",
+      "routes：2 号口检修恢复日期只写到「预计持续至 9 月中旬，恢复日期另行公示」，无法定到 9 月 16 日；各出口到周边地址的分段步行距离不在公示内（那 250 米只给了两个地面出口之间的距离，未给方向）。",
+      "edits：套餐 128 元是两位合计还是每位、多于两位需几份、能否加位或拆分全未说明；到访日是否有空位、天气、整餐实际总价未知。",
+      "recovery：券面值 40 元能否抵 66 元标价、是否限时段、3 位是否需两份全未说明，标价与面值都不等于应付金额；空位、天气、整场实际总价未知。",
+      "boundaries：本场是否仍有空位（须知明确不含任何名额余量）；泥料差价每人 0 至 60 元不固定；名额余量、排队、天气与课程外消费均不在须知内。"
+    ],
+    "unknowns_are_rewarded_not_punished": "六题的 gold 都把「如实说明未知」写成通过条件或加分项，把「编造具体数字」写进 forbidden_claims；没有任何一条把未知当作答错，也没有任何一条要求执行方去查资料里根本没有的事实。两道 bounded_answer 各自把不确定性收敛到一个具名的缺失事实上，并且都额外要求给出可执行结论，因此泛泛拒答无法通过。",
+    "cost_concepts": "单品价出现在 offers（28/22/19/12 元）与 boundaries（每人 180 元课程费、每人 50 元定金）；券面值出现在 offers（30 元）与 recovery（40 元）；已知小计出现在 offers（菜品 184 元）与 boundaries（定金 250 元）；有条件计算出现在 offers（持券与不持券、会员与非会员）、routes（两种出入口情形）、boundaries（泥料差价区间）、edits（人数变了但套餐份数未知，故不得算总价）；用户要的完整费用只在 offers 里被要求给出（169 元含茶位费，或 199 元无券口径），因为只有那一题的用户问了总额。",
+    "delivery_vs_recitation": "每题都至少有一处必须做转换才能答对，光复述资料会失败：reading 要按周六时段筛掉平日时段并把二层项目与走不了楼梯的长辈对上；offers 要跨四条规则做互斥比较并把不参与优惠的茶位费单列；routes 要发现三份文档互相推翻并把一个未公示日期变成两种可核对情形；edits 要在两句极简话里区分「该改的」与「其他都别动」；recovery 要让同一条计划与它的未知标记穿过一次真实保存与重启；boundaries 要认出例外条款覆盖正条，并把「能不能约上」压到一个门店没公开的事实上。"
+  },
+  "verification_performed": [
+    "用 Python 独立复核星期：2026-09-12 周六、2026-09-13 周日、2026-09-16 周三、2026-09-19 周六、2026-10-03 周六、2026-10-20 周二、2026-09-07 周一、2026-09-05 周六。",
+    "用 Python 独立复核算式：offers 菜品小计 184、持券 169、无券 199、会员支 112.64/168.64/183.64；routes 步速 600÷8=75 米每分钟、1000 米约 13.3 分钟、1250 米约 16.7 分钟；boundaries 从 2026-09-10 20:30 到 2026-09-12 14:30 恰为 42 小时、定金 5×50=250、课程费 5×180=900、泥料差价 0 至 300。",
+    "跑了 root 给的自检：六源六题六 gold、族别与 case_class 与 driver 分布正确、must_pass 每题 4 至 6 条、全部 gold_facts 引用逐字命中对应 source 的 text、case_id 三文件一致、tasks.json 未夹带判据字段。",
+    "额外结构校验：group_ids 第一项等于 source 的 group_id 且两项不同；edits 与 recovery 的 environment.initial_state 与 source 的 structured_initial_state 逐字段相等且键为对应 case_id；initial_state 各字段落在契约给定值域内、selected_offer.source_id 指回同一资料、rules_status 为 unknown、travel_mode 为 walking；read 题不含 initial_state 且 expected_stop 为 terminal；recovery 的 agent_input 为空对象、edits 恰为两轮、read 题各一轮；全部 ID 只用 ASCII 字母数字与连字符；资料与题干未出现判据类词汇；六份资料正文均标注虚构，长度 474 至 642 字。",
+    "as_of 与 observed_at 全部为 Asia/Shanghai 显式时间戳，且晚于冻结时刻 2026-09-10T17:29:28+08:00；每题 observed_at 早于其 as_of。"
+  ],
+  "not_authored_here": [
+    "runtime-fixtures.json：按任务说明由 root 依据既有环境适配层生成；我没有编写、也没有覆盖任何隐藏 fixture。",
+    "gold 的批准：六条 status 均为 draft_pending_independent_ai_review、human_reviewers 为空，等待另一个独立上下文复核。"
+  ],
+  "post_publication_commitment": "按契约要求，我不会查看实现或执行结果，也不会在本数据集发布后改写资料。若复核发现真实的判据错误，应由复核方记录；产品得分低不构成修改 gold 的理由。"
+}

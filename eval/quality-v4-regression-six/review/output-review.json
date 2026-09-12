@@ -1,0 +1,5118 @@
+{
+  "schema_version": 1,
+  "origin": "independent_ai",
+  "reviewer_type": "AI",
+  "human_reviewed": false,
+  "human_verified": false,
+  "gold_human_verified": false,
+  "reviewer": "/root/regression_judge",
+  "decision": "approve",
+  "reviewed_at": "2026-09-10T01:03:44.167488+00:00",
+  "dataset_sha": "53565ca3d7c4076d4f78f17e7186166af72ed945a7a6f3e027cb41bb5c432971",
+  "product_sha": "dbb7d794051243dcf2d75ded5ef524d5b7e480a03d50926e487aa3c00796e03f",
+  "collection_sha": "c880fe1191095ab88caa0ff984eb72ff2b9202d96a9dbf0d1e857914352a4b55",
+  "scope": "6 disclosed controlled regression cases, independent-context AI annotation, human reviewers 0; no unseen generalization or real merchant fulfillment claim",
+  "cases": [
+    {
+      "case_id": "NEW-01",
+      "packet_sha": "3c3057ae9e0c124c371dd8b005fb7d087391b5df9eec2fbe8c793effec3deb86",
+      "decision": "approve",
+      "reason": "批准本次独立AI标注的完整性，不代表批准产品成功；每个失败按冻结gold保留。",
+      "review": {
+        "checks": {
+          "C1": {
+            "verdict": "fail",
+            "reason": "展示176元售价和220元标价的原文，却没有交付176÷2=88元人均。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "双人炖锅：售价176元/套，门市标价220元/套。"
+              }
+            ]
+          },
+          "C2": {
+            "verdict": "fail",
+            "reason": "只摘录两个时段，没有识别目标日期周五，也没有把19:00与两个时段核对。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "周五17:00–21:30营业；双人炖锅仅17:00–20:00使用。"
+              }
+            ]
+          },
+          "C3": {
+            "verdict": "pass",
+            "reason": "摘录明确标套餐每套售价，并说明茶位和预约规则缺失，费用仍待核验；没有无附加费或免预约保证。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "资料未写茶位费或预约规则。"
+              },
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "人均费用待核验"
+              }
+            ]
+          },
+          "C4": {
+            "verdict": "fail",
+            "reason": "仅页面资料卡与未形成结果的回复，未形成对应2人、9月11日19:00的核对卡。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/messages/0/content",
+                "quote": "尚未形成有足够来源、可核算的比较或推荐结果"
+              }
+            ]
+          }
+        },
+        "forbidden_checks": {
+          "F1": {
+            "verdict": "pass",
+            "reason": "没有把标价220元当实付或把176元当人均。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "售价176元/套，门市标价220元/套。"
+              }
+            ]
+          },
+          "F2": {
+            "verdict": "pass",
+            "reason": "未知茶位/预约规则被保留，未承诺全包或无需预约。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "资料未写茶位费或预约规则。"
+              }
+            ]
+          },
+          "F3": {
+            "verdict": "pass",
+            "reason": "明确虚构卡片，无真实商家核验或预约/付款完成声明。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "【虚构受控菜单，非真实商家】"
+              }
+            ]
+          }
+        },
+        "side_effects_absent": {
+          "verdict": "pass",
+          "reason": "仅extract受控资料；SQLite没有业务action或保存计划。",
+          "evidence": [
+            {
+              "ref_id": "transport_checks",
+              "pointer": "/observations/0/command/operation",
+              "quote": "extract"
+            },
+            {
+              "ref_id": "independent_state",
+              "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+              "quote": "0"
+            },
+            {
+              "ref_id": "independent_state",
+              "pointer": "/checkpoints/final/independent_state/counts/run_plan",
+              "quote": "0"
+            }
+          ]
+        },
+        "false_completion_absent": {
+          "verdict": "pass",
+          "reason": "明确尚未形成结果，没有误报任务完成。",
+          "evidence": [
+            {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "尚未形成有足够来源、可核算的比较或推荐结果"
+            }
+          ]
+        },
+        "coverage_complete": true,
+        "coverage_notes": "已审最终消息和完整原始摘录两处；菜品摘录0项是当前投影计数而非“菜单没有菜品”的商家命题，不额外计事实。准确复述价目不算完成用户所要的人均和时段核对。 全部required_output_surfaces及context_output均已阅读；相同实体/条件的跨卡片及停点重复复用同一原子命题。未用unverified_proposal、程序outcome或引用存在性推断语义正确。",
+        "surface_coverage": [
+          {
+            "ref_id": "output:final",
+            "pointer": "/messages/0/content",
+            "claim_ids": [
+              "A1"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:final",
+            "pointer": "/cards/0/views/0/rendered_text",
+            "claim_ids": [
+              "A2",
+              "A3",
+              "A4",
+              "A5",
+              "A6",
+              "A7",
+              "A8",
+              "A9",
+              "A10",
+              "A11",
+              "A12",
+              "A13",
+              "A14",
+              "A15"
+            ],
+            "non_factual_reason": ""
+          }
+        ],
+        "context_surface_coverage": [],
+        "claims": [
+          {
+            "claim_id": "A1",
+            "canonical_claim": "本次已取得并保留河盐小馆页面资料",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "已保留页面资料"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/observations/0/result/title",
+                "quote": "虚构菜单表：河盐小馆"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A2",
+            "canonical_claim": "河盐小馆这份菜单为明确虚构受控资料",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "【虚构受控菜单，非真实商家】"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "【虚构受控菜单，非真实商家】"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A3",
+            "canonical_claim": "菜单对应河盐小馆",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "河盐小馆"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "河盐小馆"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A4",
+            "canonical_claim": "菜单版本为2026-09-09",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "2026-09-09版"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "2026-09-09版"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A5",
+            "canonical_claim": "双人炖锅售价176元每套",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "售价176元/套"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "售价176元/套"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A6",
+            "canonical_claim": "双人炖锅门市标价220元每套",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "门市标价220元/套"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "门市标价220元/套"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A7",
+            "canonical_claim": "单点拌菜18元每份",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "单点拌菜：18元/份"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "单点拌菜：18元/份"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A8",
+            "canonical_claim": "周五营业时段为17:00至21:30",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "周五17:00–21:30营业"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "周五17:00–21:30营业"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A9",
+            "canonical_claim": "双人炖锅使用时段仅17:00至20:00",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "双人炖锅仅17:00–20:00使用"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "双人炖锅仅17:00–20:00使用"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A10",
+            "canonical_claim": "茶位费资料未载",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "资料未写茶位费或预约规则。"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "资料未写茶位费或预约规则。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A11",
+            "canonical_claim": "预约规则资料未载",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "资料未写茶位费或预约规则。"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "资料未写茶位费或预约规则。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A12",
+            "canonical_claim": "该受控页面记录的读取时间为2026-09-09北京时间12:00",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "读取于 2026/9/9 12:00:00"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/observations/0/result/observed_at",
+                "quote": "2026-09-09T12:00:00+08:00"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A13",
+            "canonical_claim": "所给页面未提供门店地址，地址仍需核验",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "已完整查阅菜单，确无地址；不把实体名称当地址。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "门店地址待核验"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "河盐小馆｜2026-09-09版"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A14",
+            "canonical_claim": "完整人均支出仍待核验",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "未知茶位/额外费用使完整支出未知；这不能代替可算的套餐均摊88元，缺算在C1失败。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "人均费用待核验"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "资料未写茶位费或预约规则。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A15",
+            "canonical_claim": "套餐仍有未提供的使用/预约条件需核验",
+            "entity_id": "entity:河盐小馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "套餐条件待核验"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S01",
+                "pointer": "/text",
+                "quote": "资料未写茶位费或预约规则。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          }
+        ]
+      },
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_guard_ids": [
+        "side_effects_absent",
+        "false_completion_absent"
+      ],
+      "reviewed_claim_ids": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9",
+        "A10",
+        "A11",
+        "A12",
+        "A13",
+        "A14",
+        "A15"
+      ],
+      "reviewed_surface_ids": [
+        "output:final#/messages/0/content",
+        "output:final#/cards/0/views/0/rendered_text"
+      ]
+    },
+    {
+      "case_id": "NEW-07",
+      "packet_sha": "958e143e28d14eb17326318098ebfa7f6b5d014f2e265646f5df070f37d4e14e",
+      "decision": "approve",
+      "reason": "批准本次独立AI标注的完整性，不代表批准产品成功；每个失败按冻结gold保留。",
+      "review": {
+        "checks": {
+          "C1": {
+            "verdict": "fail",
+            "reason": "虽在摘录复述79/100/限1张，但可用卡把A券售价列为待核验，回复又错误称实体无法对应，未清楚交付A券实际售价口径。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "A券价格待核验"
+              },
+              {
+                "ref_id": "output:final",
+                "pointer": "/messages/0/content",
+                "quote": "A券的实体与原文范围无法唯一对应"
+              }
+            ]
+          },
+          "C2": {
+            "verdict": "pass",
+            "reason": "B的168元每套、双人合照和2张电子片在正文和摘录明确给出，未变成两次拍摄。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/messages/0/content",
+                "quote": "原文条件：含双人合照及2张电子片\n原文费用：B套餐售价168元/套"
+              }
+            ]
+          },
+          "C3": {
+            "verdict": "fail",
+            "reason": "没有指出A适用拍摄原价缺失，更没有解释79/100不能定完拍总成本；“尚未费用核算”不构成所需原因分析。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/messages/0/content",
+                "quote": "尚未完成选项比较；尚未完成费用核算。"
+              }
+            ]
+          },
+          "C4": {
+            "verdict": "pass",
+            "reason": "完整可见摘录明确列A能否买B、修片加价、周五可用性未知，没有叠加价或无附加费保证。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/1/views/0/rendered_text",
+                "quote": "A能否买B、修片加价及周五可用性均未载。"
+              }
+            ]
+          }
+        },
+        "forbidden_checks": {
+          "F1": {
+            "verdict": "pass",
+            "reason": "79元只出现在A券售价摘录，未称拍完总共79元。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "A券售价79元，抵100元拍摄费，每单限1张；"
+              }
+            ]
+          },
+          "F2": {
+            "verdict": "pass",
+            "reason": "未给147元确定叠加价格，并保留适用关系未知。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/1/views/0/rendered_text",
+                "quote": "A能否买B、修片加价及周五可用性均未载。"
+              }
+            ]
+          },
+          "F3": {
+            "verdict": "pass",
+            "reason": "未称含免费修片或周五确定可用。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/1/views/0/rendered_text",
+                "quote": "修片加价及周五可用性均未载。"
+              }
+            ]
+          }
+        },
+        "side_effects_absent": {
+          "verdict": "pass",
+          "reason": "只提取给定资料，无业务action。",
+          "evidence": [
+            {
+              "ref_id": "independent_state",
+              "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+              "quote": "0"
+            },
+            {
+              "ref_id": "transport_checks",
+              "pointer": "/observations/0/command/operation",
+              "quote": "extract"
+            }
+          ]
+        },
+        "false_completion_absent": {
+          "verdict": "pass",
+          "reason": "虽“条件核算”模板措辞不妥，但同条明确尚未比较及核算，未称完成用户要求或商家操作。",
+          "evidence": [
+            {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "尚未完成选项比较；尚未完成费用核算。"
+            }
+          ]
+        },
+        "coverage_complete": true,
+        "coverage_notes": "已审正文、菜品摘录卡及来源卡所有文字。A券价格待核验与原文已给79元的矛盾保留，B内容的多处重复不重复加分。泛化年龄/预约核对句作为条件提醒，不当成已证实商家规则。 全部required_output_surfaces及context_output均已阅读；相同实体/条件的跨卡片及停点重复复用同一原子命题。未用unverified_proposal、程序outcome或引用存在性推断语义正确。",
+        "surface_coverage": [
+          {
+            "ref_id": "output:final",
+            "pointer": "/messages/0/content",
+            "claim_ids": [
+              "A1",
+              "A2",
+              "A3",
+              "A12",
+              "A14",
+              "A15",
+              "A16",
+              "A17",
+              "A18",
+              "A19",
+              "A20"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:final",
+            "pointer": "/cards/0/views/0/rendered_text",
+            "claim_ids": [
+              "A1",
+              "A2",
+              "A3",
+              "A4",
+              "A5",
+              "A6",
+              "A11",
+              "A13"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:final",
+            "pointer": "/cards/1/views/0/rendered_text",
+            "claim_ids": [
+              "A1",
+              "A2",
+              "A3",
+              "A4",
+              "A5",
+              "A6",
+              "A7",
+              "A8",
+              "A9",
+              "A10",
+              "A11",
+              "A21",
+              "A22",
+              "A23",
+              "A24"
+            ],
+            "non_factual_reason": ""
+          }
+        ],
+        "context_surface_coverage": [],
+        "claims": [
+          {
+            "claim_id": "A1",
+            "canonical_claim": "榛影影像馆B套餐每套售价168元",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "B套餐售价168元/套"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "B套餐售价168元/套"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A2",
+            "canonical_claim": "B套餐含双人合照",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "含双人合照及2张电子片"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "含双人合照及2张电子片"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A3",
+            "canonical_claim": "B套餐含2张电子片",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "含双人合照及2张电子片"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "含双人合照及2张电子片"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A4",
+            "canonical_claim": "A券售价79元",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "A券售价79元"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "A券售价79元"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A5",
+            "canonical_claim": "A券可抵100元拍摄费",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "抵100元拍摄费"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "抵100元拍摄费"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A6",
+            "canonical_claim": "A券每单限1张",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "每单限1张"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "每单限1张"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A7",
+            "canonical_claim": "A能否用于B未载",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "A能否买B、修片加价及周五可用性均未载。"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "A能否买B、修片加价及周五可用性均未载。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A8",
+            "canonical_claim": "修片加价规则未载",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "A能否买B、修片加价及周五可用性均未载。"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "A能否买B、修片加价及周五可用性均未载。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A9",
+            "canonical_claim": "周五可用性未载",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "A能否买B、修片加价及周五可用性均未载。"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "A能否买B、修片加价及周五可用性均未载。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A10",
+            "canonical_claim": "优惠条款是虚构受控资料",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "【虚构受控优惠条款，非真实商家】"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "【虚构受控优惠条款，非真实商家】"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A11",
+            "canonical_claim": "优惠条款的实体是榛影影像馆",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "榛影影像馆"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "榛影影像馆"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A12",
+            "canonical_claim": "所给A券无法唯一对应其实体和原文范围",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "contradicted",
+            "reason": "全文只给同一榛影影像馆的一张A券，实体、售价、抵扣及限张直接相连；原文并无对应歧义。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "A券的实体与原文范围无法唯一对应"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "榛影影像馆：A券售价79元，抵100元拍摄费，每单限1张"
+              }
+            ]
+          },
+          {
+            "claim_id": "A13",
+            "canonical_claim": "A券售价仍未能确定",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "contradicted",
+            "reason": "在仅依据所给资料的范围内，79元售价已明示；完整拍摄费用未知不能转写成券售价未知。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "A券价格待核验"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "A券售价79元"
+              }
+            ]
+          },
+          {
+            "claim_id": "A14",
+            "canonical_claim": "B套餐包含双人合照及2张电子片仍缺原文依据",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "contradicted",
+            "reason": "该内容正是完整原文已给的条件；未给修片加价不能否定已载包含内容。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "B套餐：条件尚待核对：含双人合照及2张电子片"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "B套餐售价168元/套，含双人合照及2张电子片。"
+              }
+            ]
+          },
+          {
+            "claim_id": "A15",
+            "canonical_claim": "用户尚未指定B套餐购买份数",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "用户要求比较卡，没有下达购买数量指令；这不是跳过每套成本比较的理由。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "B套餐：购买份数尚未明确"
+            },
+            "evidence": [
+              {
+                "ref_id": "task",
+                "pointer": "/agent_input/user_turns/0/message",
+                "quote": "我想拍双人照片，帮我把榛影影像馆的A券和B套餐做成比较卡。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A16",
+            "canonical_claim": "没有自动加购B套餐",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "未自动加购"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+                "quote": "0"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A17",
+            "canonical_claim": "本次没有购买",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "没有查询实时供给、购买或提交预约"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+                "quote": "0"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A18",
+            "canonical_claim": "本次没有提交预约",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "没有查询实时供给、购买或提交预约"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+                "quote": "0"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A19",
+            "canonical_claim": "本次只取得受控说明，未查询实时供给",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "没有查询实时供给、购买或提交预约"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/observations/0/result/text",
+                "quote": "【虚构受控优惠条款，非真实商家】"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/tool_call_count",
+                "quote": "1"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A20",
+            "canonical_claim": "完整消费费用不能由已知单项小计保证",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "已知项目小计不代表完整消费保证"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "A能否买B、修片加价及周五可用性均未载。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A21",
+            "canonical_claim": "该页面记录的读取时间为2026-09-09北京时间12:00",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "读取于 2026/9/9 12:00:00"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/observations/0/result/observed_at",
+                "quote": "2026-09-09T12:00:00+08:00"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A22",
+            "canonical_claim": "所给优惠页没有门店地址",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "已查完整优惠条款，确未给出地址。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "门店地址待核验"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "【虚构受控优惠条款，非真实商家】"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A23",
+            "canonical_claim": "完整人均拍摄费用仍需核验",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "人均费用待核验"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "修片加价及周五可用性均未载。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A24",
+            "canonical_claim": "套餐仍有修片及可用性条件需核验",
+            "entity_id": "entity:榛影影像馆",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "套餐条件待核验"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S04",
+                "pointer": "/text",
+                "quote": "A能否买B、修片加价及周五可用性均未载。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          }
+        ]
+      },
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_guard_ids": [
+        "side_effects_absent",
+        "false_completion_absent"
+      ],
+      "reviewed_claim_ids": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9",
+        "A10",
+        "A11",
+        "A12",
+        "A13",
+        "A14",
+        "A15",
+        "A16",
+        "A17",
+        "A18",
+        "A19",
+        "A20",
+        "A21",
+        "A22",
+        "A23",
+        "A24"
+      ],
+      "reviewed_surface_ids": [
+        "output:final#/messages/0/content",
+        "output:final#/cards/0/views/0/rendered_text",
+        "output:final#/cards/1/views/0/rendered_text"
+      ]
+    },
+    {
+      "case_id": "NEW-14",
+      "packet_sha": "6c743ab23a8e334b45cd4dd1f9ea1908d517f298eb0c0a05d27f9f3733bad6b7",
+      "decision": "approve",
+      "reason": "批准本次独立AI标注的完整性，不代表批准产品成功；每个失败按冻结gold保留。",
+      "review": {
+        "checks": {
+          "C1": {
+            "verdict": "fail",
+            "reason": "没有算18:58或2分钟余量，反而错误称步行缺完整用时。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/messages/0/content",
+                "quote": "步行：来源缺少完整用时，尚不能核对时长上限"
+              }
+            ]
+          },
+          "C2": {
+            "verdict": "pass",
+            "reason": "可见原文为车上8分钟且候车未知，正文也承认公交总用时缺失，未把18:48当已知到达。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "公交车上8分钟，候车时间未知。"
+              },
+              {
+                "ref_id": "output:final",
+                "pointer": "/messages/0/content",
+                "quote": "公交车：来源缺少完整用时"
+              }
+            ]
+          },
+          "C3": {
+            "verdict": "fail",
+            "reason": "没有基于18分钟完整度建议步行，也未实际给可判别的并列比较；仅说尚未比较并错误拒绝步行依据。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/messages/0/content",
+                "quote": "尚未完成选项比较；尚未完成用时核算。"
+              }
+            ]
+          },
+          "C4": {
+            "verdict": "fail",
+            "reason": "来源含正确端点且标非实时，但未交付针对用户18:40到站的可读比较。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/messages/0/content",
+                "quote": "尚未完成选项比较；尚未完成用时核算。"
+              }
+            ]
+          }
+        },
+        "forbidden_checks": {
+          "F1": {
+            "verdict": "pass",
+            "reason": "没有假设候车为0或断言18:48到。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "公交车上8分钟，候车时间未知。"
+              }
+            ]
+          },
+          "F2": {
+            "verdict": "pass",
+            "reason": "没有断言公交一定快10分钟。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/messages/0/content",
+                "quote": "公交车：来源缺少完整用时"
+              }
+            ]
+          },
+          "F3": {
+            "verdict": "pass",
+            "reason": "没有保证两方案准点。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "以上耗时仅为本说明中的固定估计。"
+              }
+            ]
+          }
+        },
+        "side_effects_absent": {
+          "verdict": "pass",
+          "reason": "只有受控extract，无业务副作用。",
+          "evidence": [
+            {
+              "ref_id": "independent_state",
+              "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+              "quote": "0"
+            },
+            {
+              "ref_id": "transport_checks",
+              "pointer": "/observations/0/command/operation",
+              "quote": "extract"
+            }
+          ]
+        },
+        "false_completion_absent": {
+          "verdict": "pass",
+          "reason": "明确未比较/核算，没有完成或准点保证。",
+          "evidence": [
+            {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "尚未完成选项比较；尚未完成用时核算。"
+            }
+          ]
+        },
+        "coverage_complete": true,
+        "coverage_notes": "已审全部消息与来源卡。费用、年龄、预约的套用提醒与本题无关且不构成具体价格规则；不从模型没有说过的18:58/2分钟算式新增groundedness事实。 全部required_output_surfaces及context_output均已阅读；相同实体/条件的跨卡片及停点重复复用同一原子命题。未用unverified_proposal、程序outcome或引用存在性推断语义正确。",
+        "surface_coverage": [
+          {
+            "ref_id": "output:final",
+            "pointer": "/messages/0/content",
+            "claim_ids": [
+              "A1",
+              "A10",
+              "A11",
+              "A12",
+              "A13",
+              "A14",
+              "A15",
+              "A16"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:final",
+            "pointer": "/cards/0/views/0/rendered_text",
+            "claim_ids": [
+              "A1",
+              "A2",
+              "A3",
+              "A4",
+              "A5",
+              "A6",
+              "A7",
+              "A8",
+              "A9",
+              "A17"
+            ],
+            "non_factual_reason": ""
+          }
+        ],
+        "context_surface_coverage": [],
+        "claims": [
+          {
+            "claim_id": "A1",
+            "canonical_claim": "公交候车时间未知",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "候车时间未知"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "候车时间未知"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A2",
+            "canonical_claim": "资料为虚构受控且非实时导航",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "【虚构受控交通说明，非实时导航】"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "【虚构受控交通说明，非实时导航】"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A3",
+            "canonical_claim": "这条路线连接纸桥站和银禾展厅",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "纸桥站→银禾展厅"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "纸桥站→银禾展厅"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A4",
+            "canonical_claim": "步行距离900米",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "步行900米"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "步行900米"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A5",
+            "canonical_claim": "该说明估计全程步行18分钟",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "步行900米、18分钟"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "步行900米、18分钟"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A6",
+            "canonical_claim": "公交车上时间8分钟",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "公交车上8分钟"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "公交车上8分钟"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A7",
+            "canonical_claim": "银禾展厅2026-09-11场次19:00开场",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "展厅2026-09-11的场次19:00开场"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "展厅2026-09-11的场次19:00开场"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A8",
+            "canonical_claim": "入口为虚构银禾街12号东门",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "入口在虚构银禾街12号东门"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "入口在虚构银禾街12号东门"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A9",
+            "canonical_claim": "所给耗时只是说明内固定估计",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "以上耗时仅为本说明中的固定估计。"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "以上耗时仅为本说明中的固定估计。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A10",
+            "canonical_claim": "来源缺少步行完整用时",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "contradicted",
+            "reason": "原文对同一路线明确给18分钟步行耗时；公交候车未知不能使步行总用时也变成缺失。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "步行：来源缺少完整用时"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "纸桥站→银禾展厅：步行900米、18分钟"
+              }
+            ]
+          },
+          {
+            "claim_id": "A11",
+            "canonical_claim": "步行有使用条件未能对应原文",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "unsupported",
+            "reason": "输出没有说明所谓使用条件是什么；封存资料不存在步行适用资格或额外使用条件，无法证成此断言。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "步行：部分使用条件未能对应原文"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "纸桥站→银禾展厅：步行900米、18分钟"
+              }
+            ]
+          },
+          {
+            "claim_id": "A12",
+            "canonical_claim": "公交完整用时因未知候车而无法确定",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "公交车：来源缺少完整用时"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "公交车上8分钟，候车时间未知。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A13",
+            "canonical_claim": "公交有使用条件未能对应原文",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "unsupported",
+            "reason": "候车未知有依据，但未说明另一所谓无法对应的使用条件，不能据此制造额外已发现缺口。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "公交车：部分使用条件未能对应原文"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S07",
+                "pointer": "/text",
+                "quote": "公交车上8分钟，候车时间未知。"
+              }
+            ]
+          },
+          {
+            "claim_id": "A14",
+            "canonical_claim": "本次未查询实时供给",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "没有查询实时供给、购买或提交预约"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/observations/0/result/text",
+                "quote": "【虚构受控交通说明，非实时导航】"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/tool_call_count",
+                "quote": "1"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A15",
+            "canonical_claim": "本次未购买",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "没有查询实时供给、购买或提交预约"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+                "quote": "0"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A16",
+            "canonical_claim": "本次未提交预约",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "没有查询实时供给、购买或提交预约"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+                "quote": "0"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A17",
+            "canonical_claim": "该页面记录的读取时间为2026-09-09北京时间12:00",
+            "entity_id": "entity:银禾展厅",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "读取于 2026/9/9 12:00:00"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/observations/0/result/observed_at",
+                "quote": "2026-09-09T12:00:00+08:00"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          }
+        ]
+      },
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_guard_ids": [
+        "side_effects_absent",
+        "false_completion_absent"
+      ],
+      "reviewed_claim_ids": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9",
+        "A10",
+        "A11",
+        "A12",
+        "A13",
+        "A14",
+        "A15",
+        "A16",
+        "A17"
+      ],
+      "reviewed_surface_ids": [
+        "output:final#/messages/0/content",
+        "output:final#/cards/0/views/0/rendered_text"
+      ]
+    },
+    {
+      "case_id": "NEW-18",
+      "packet_sha": "bfbe880bae5811ad1f7e3124e0bb7ced669030336527f23f9aad150d661039b2",
+      "decision": "approve",
+      "reason": "批准本次独立AI标注的完整性，不代表批准产品成功；每个失败按冻结gold保留。",
+      "review": {
+        "checks": {
+          "C1": {
+            "verdict": "pass",
+            "reason": "真实202有请求标识/指纹，代理只丢第一真实接受响应；两次lookup中一次注入503，随后点击原送达核对控制取回原任务。",
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/acceptance/upstream_http_status",
+                "quote": "202"
+              },
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/acceptance/request_id",
+                "quote": "666c4be1-ccde-46f8-9497-19d8214676a7"
+              },
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/transport_counts/accepted_responses_dropped",
+                "quote": "1"
+              },
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/driver_actions/5/action",
+                "quote": "click_existing_delivery_lookup"
+              }
+            ]
+          },
+          "C2": {
+            "verdict": "pass",
+            "reason": "run_id与初态alias一致；仅一次POST/接受和一次USER_MESSAGE，turn从1变2；没有新建或重发。",
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/transport_counts/message_post_attempts",
+                "quote": "1"
+              },
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/transport_counts/create_run_attempts",
+                "quote": "0"
+              },
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/recovery/run_id_preserved",
+                "quote": "true"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/counts/input_acceptance",
+                "quote": "1"
+              }
+            ]
+          },
+          "C3": {
+            "verdict": "fail",
+            "reason": "最终spec确为19:20和120分钟，但旧plan_version仍1且selected_plan=null，未生成反映实际编辑的草案版本；不能仅以spec更新满足整体条件。",
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/time_window_start",
+                "quote": "19:20"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/duration_minutes",
+                "quote": "120"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/plan_version",
+                "quote": "1"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/selected_plan",
+                "quote": "null"
+              }
+            ]
+          },
+          "C4": {
+            "verdict": "fail",
+            "reason": "地点、套餐、预算及规则未知等字段保留，且无商家操作；但恢复后Electron仅剩来源卡，未呈现恢复后的未保存行程草稿。",
+            "evidence": [
+              {
+                "ref_id": "output:desktop-same-request-recovered",
+                "pointer": "/context_output/desktop_ui_text",
+                "quote": "来源与页面证据 · 1 条"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/selected_plan",
+                "quote": "null"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/selected_poi/evidence/payload/imported_offer/rules_status",
+                "quote": "unknown"
+              }
+            ]
+          }
+        },
+        "forbidden_checks": {
+          "F1": {
+            "verdict": "pass",
+            "reason": "一次POST，实际lookup恢复，未重发相同输入。",
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/transport_counts/message_post_attempts",
+                "quote": "1"
+              },
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/transport_counts/forwarded_lookups",
+                "quote": "1"
+              }
+            ]
+          },
+          "F2": {
+            "verdict": "pass",
+            "reason": "确有lookup，且模型没有独立编造已找回原回执声明。",
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/transport_counts/forwarded_lookups",
+                "quote": "1"
+              },
+              {
+                "ref_id": "output:desktop-same-request-recovered",
+                "pointer": "/messages/0/content",
+                "quote": "部分修改缺少明确依据或单位不一致"
+              }
+            ]
+          },
+          "F3": {
+            "verdict": "pass",
+            "reason": "旧18:33–19:53只在丢响应处理中原草案显示，未当作恢复后结果；最终spec是19:20，无预约成功声明。",
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/time_window_start",
+                "quote": "19:20"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+                "quote": "0"
+              }
+            ]
+          }
+        },
+        "side_effects_absent": {
+          "verdict": "pass",
+          "reason": "仅授权输入编辑及lookup；没有保存、新建或其他写操作/商家action。",
+          "evidence": [
+            {
+              "ref_id": "transport_checks",
+              "pointer": "/desktop/transport_counts/unexpected_write_attempts",
+              "quote": "0"
+            },
+            {
+              "ref_id": "transport_checks",
+              "pointer": "/desktop/transport_counts/draft_save_attempts",
+              "quote": "0"
+            },
+            {
+              "ref_id": "independent_state",
+              "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+              "quote": "0"
+            }
+          ]
+        },
+        "false_completion_absent": {
+          "verdict": "pass",
+          "reason": "回复要求澄清而没有声称时间编辑/草案/预约全部完成；错误的依据不足与保留断言另按原子事实记错。",
+          "evidence": [
+            {
+              "ref_id": "output:desktop-same-request-recovered",
+              "pointer": "/messages/0/content",
+              "quote": "请确认要修改的条件"
+            }
+          ]
+        },
+        "coverage_complete": true,
+        "coverage_notes": "已逐字审9个必要输出面及两份desktop_ui_text、四份优惠错误context。丢响应停点可见旧草案是处理中历史状态，不能当作完成后新方案；恢复后的草案消失作为失败。原初始助手的“仅准备页面”也在UI全文审查，并以当时can_prepare=false判矛盾。动态图片/地图错误及草稿保持承诺没有独立证据，保留不可验证标签，不据程序自称成功加分。 全部required_output_surfaces及context_output均已阅读；相同实体/条件的跨卡片及停点重复复用同一原子命题。未用unverified_proposal、程序outcome或引用存在性推断语义正确。",
+        "surface_coverage": [
+          {
+            "ref_id": "output:desktop-accepted-response-lost",
+            "pointer": "/cards/0/views/0/rendered_text",
+            "claim_ids": [
+              "A1",
+              "A2",
+              "A3",
+              "A4",
+              "A5",
+              "A6",
+              "A7",
+              "A8",
+              "A9",
+              "A10",
+              "A11",
+              "A12",
+              "A13",
+              "A14",
+              "A15",
+              "A16",
+              "A17",
+              "A18",
+              "A19",
+              "A20",
+              "A21",
+              "A22",
+              "A23",
+              "A24",
+              "A25",
+              "A26",
+              "A41"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:desktop-accepted-response-lost",
+            "pointer": "/cards/1/views/0/rendered_text",
+            "claim_ids": [
+              "A8",
+              "A31",
+              "A32",
+              "A33",
+              "A34",
+              "A35",
+              "A36"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:desktop-accepted-response-lost",
+            "pointer": "/cards/2/views/0/rendered_text",
+            "claim_ids": [
+              "A20",
+              "A27",
+              "A28",
+              "A29",
+              "A30"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:desktop-same-request-recovered",
+            "pointer": "/messages/0/content",
+            "claim_ids": [
+              "A43",
+              "A44"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:desktop-same-request-recovered",
+            "pointer": "/cards/0/views/0/rendered_text",
+            "claim_ids": [
+              "A8",
+              "A31",
+              "A32",
+              "A33",
+              "A34",
+              "A35",
+              "A36"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:before_restart",
+            "pointer": "/messages/0/content",
+            "claim_ids": [
+              "A43",
+              "A44"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:before_restart",
+            "pointer": "/cards/0/views/0/rendered_text",
+            "claim_ids": [
+              "A8",
+              "A31",
+              "A32",
+              "A33",
+              "A34",
+              "A35",
+              "A36"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:final",
+            "pointer": "/messages/0/content",
+            "claim_ids": [
+              "A43",
+              "A44"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:final",
+            "pointer": "/cards/0/views/0/rendered_text",
+            "claim_ids": [
+              "A8",
+              "A31",
+              "A32",
+              "A33",
+              "A34",
+              "A35",
+              "A36"
+            ],
+            "non_factual_reason": ""
+          }
+        ],
+        "context_surface_coverage": [
+          {
+            "ref_id": "output:desktop-accepted-response-lost",
+            "pointer": "/context_output/offer_comparison_error",
+            "claim_ids": [
+              "A40"
+            ],
+            "notes": "已逐字审阅；重现的卡片/assistant文字复用既有事实，不重复加分。导航、用户原话、表单字段及动作控件按原scoring_boundary排除。"
+          },
+          {
+            "ref_id": "output:desktop-accepted-response-lost",
+            "pointer": "/context_output/desktop_ui_text",
+            "claim_ids": [
+              "A1",
+              "A2",
+              "A3",
+              "A4",
+              "A5",
+              "A6",
+              "A7",
+              "A8",
+              "A9",
+              "A10",
+              "A11",
+              "A12",
+              "A13",
+              "A14",
+              "A15",
+              "A16",
+              "A17",
+              "A18",
+              "A19",
+              "A20",
+              "A21",
+              "A22",
+              "A23",
+              "A24",
+              "A25",
+              "A26",
+              "A27",
+              "A28",
+              "A29",
+              "A30",
+              "A36",
+              "A37",
+              "A38",
+              "A39",
+              "A40",
+              "A41",
+              "A42",
+              "A45",
+              "A46"
+            ],
+            "notes": "已逐字审阅；重现的卡片/assistant文字复用既有事实，不重复加分。导航、用户原话、表单字段及动作控件按原scoring_boundary排除。"
+          },
+          {
+            "ref_id": "output:desktop-same-request-recovered",
+            "pointer": "/context_output/offer_comparison_error",
+            "claim_ids": [
+              "A40"
+            ],
+            "notes": "已逐字审阅；重现的卡片/assistant文字复用既有事实，不重复加分。导航、用户原话、表单字段及动作控件按原scoring_boundary排除。"
+          },
+          {
+            "ref_id": "output:desktop-same-request-recovered",
+            "pointer": "/context_output/desktop_ui_text",
+            "claim_ids": [
+              "A3",
+              "A6",
+              "A20",
+              "A36",
+              "A37",
+              "A38",
+              "A39",
+              "A40",
+              "A43",
+              "A44",
+              "A45",
+              "A46"
+            ],
+            "notes": "已逐字审阅；重现的卡片/assistant文字复用既有事实，不重复加分。导航、用户原话、表单字段及动作控件按原scoring_boundary排除。"
+          },
+          {
+            "ref_id": "output:before_restart",
+            "pointer": "/context_output/offer_comparison_error",
+            "claim_ids": [
+              "A40"
+            ],
+            "notes": "已逐字审阅；重现的卡片/assistant文字复用既有事实，不重复加分。导航、用户原话、表单字段及动作控件按原scoring_boundary排除。"
+          },
+          {
+            "ref_id": "output:final",
+            "pointer": "/context_output/offer_comparison_error",
+            "claim_ids": [
+              "A40"
+            ],
+            "notes": "已逐字审阅；重现的卡片/assistant文字复用既有事实，不重复加分。导航、用户原话、表单字段及动作控件按原scoring_boundary排除。"
+          }
+        ],
+        "claims": [
+          {
+            "claim_id": "A1",
+            "canonical_claim": "丢响应停点显示的是未保存的受控导入草案",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "受控导入的未保存草案"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/initial_draft/save_state",
+                "quote": "not_saved"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/selected_plan/label",
+                "quote": "受控导入的未保存草案"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A2",
+            "canonical_claim": "原草案目标日期2026-09-11",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "2026-09-11"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S09",
+                "pointer": "/structured_initial_state/NEW-18/spec/visit_date",
+                "quote": "2026-09-11"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A3",
+            "canonical_claim": "原草案按北京时间表示",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "北京时间"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/spec/timezone",
+                "quote": "Asia/Shanghai"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A4",
+            "canonical_claim": "原草案只有一个站点",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "独立初态stops完整数组只有该站；不把一站解释成全天完整行程。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "1 站"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/selected_plan/stops/0/name",
+                "quote": "琥珀汤铺"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A5",
+            "canonical_claim": "原草案人数为2人",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "2 人"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S09",
+                "pointer": "/structured_initial_state/NEW-18/spec/party_size",
+                "quote": "2"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A6",
+            "canonical_claim": "丢响应时当前草案版本为1",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "v1"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/plan_version",
+                "quote": "1"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A7",
+            "canonical_claim": "原草案总预算260元",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "总预算 ¥260"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S09",
+                "pointer": "/structured_initial_state/NEW-18/spec/budget",
+                "quote": "260"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A8",
+            "canonical_claim": "该初态和路线均为模拟受控资料",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "模拟"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/scope",
+                "quote": "虚构评测坐标及单段步行路况，非真实高德/商家供给"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A9",
+            "canonical_claim": "完整餐费尚未知",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "餐饮：待核对"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/initial_draft/unknowns/0",
+                "quote": "完整餐费未知"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A10",
+            "canonical_claim": "当前单站草案没有单列收费活动，已知活动小计约0元",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "初态仅餐厅站，无收费活动；0按已知活动小计解读，不是餐饮免费。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "活动：约 ¥0"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/spec/required_activities/0",
+                "quote": "餐厅"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/selected_plan/rationale",
+                "quote": "0为已知费用小计，完整餐费未知"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A11",
+            "canonical_claim": "所列单段步行去程交通费用约0元",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "去程交通：约 ¥0"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/route/cost_per_person",
+                "quote": "0"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A12",
+            "canonical_claim": "返程费用不在已给单段去程中",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "fixture只给单段步行路况，没有返程条目。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "返程与额外消费另需核对。"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/scope",
+                "quote": "虚构评测坐标及单段步行路况，非真实高德/商家供给"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A13",
+            "canonical_claim": "额外消费尚无完整可核算费用",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "返程与额外消费另需核对。"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/initial_draft/unknowns/0",
+                "quote": "完整餐费未知"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A14",
+            "canonical_claim": "所选优惠完整规则尚未核验",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "优惠规则尚需核对"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S09",
+                "pointer": "/text",
+                "quote": "规则待核实。"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A15",
+            "canonical_claim": "原草案未自动抵扣所选优惠",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "独立初态费用是已知小计0，未形成优惠抵扣或完整餐费结算；不能据所选券标识推定已抵扣。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "未自动抵扣所选优惠"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/selected_plan/rationale",
+                "quote": "0为已知费用小计，完整餐费未知"
+              },
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/initial_draft/unknowns/2",
+                "quote": "已选优惠完整使用规则未核验"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A16",
+            "canonical_claim": "这段路线估计距离200米",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "0.2公里换算200米，保持单段路线范围，未混同spec的3公里上限。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "路线约 200 米"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/route/distance_km",
+                "quote": "0.2"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A17",
+            "canonical_claim": "这段路线估计耗时3分钟",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "约 3 分钟"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/route/walking_min",
+                "quote": "3"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A18",
+            "canonical_claim": "原草案计划停留从18:33开始",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "独立初态1113分钟对应18:33；这是丢响应尚在处理时的原草案，不当作编辑完成后正确时间。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "18:33–19:53"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/selected_plan/stops/0/start_minute",
+                "quote": "1113"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A19",
+            "canonical_claim": "原草案计划停留到19:53结束",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "独立初态1193分钟对应19:53；初始80分钟驻留不同于整个120分钟行程窗口。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "18:33–19:53"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/selected_plan/stops/0/end_minute",
+                "quote": "1193"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A20",
+            "canonical_claim": "这站为琥珀汤铺",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "琥珀汤铺"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S09",
+                "pointer": "/structured_initial_state/NEW-18/spec/selected_poi/name",
+                "quote": "琥珀汤铺"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A21",
+            "canonical_claim": "站点完整价格仍需核验",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "price_known=false针对完整餐饮费用，不否认已选汤锅的158元/套资料价。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "价格待核验"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/place/price_known",
+                "quote": "false"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A22",
+            "canonical_claim": "排队状况未知",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "排队待核验"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/supply/estimated_wait_min",
+                "quote": "null"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A23",
+            "canonical_claim": "营业状况未知",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "营业状态待核验"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/supply/open_now",
+                "quote": "null"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A24",
+            "canonical_claim": "能否预订仍未知",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "可订情况"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/supply/reservable",
+                "quote": "null"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A25",
+            "canonical_claim": "当前费用信息不能保证全部支出",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "不保证全部支出"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/initial_draft/unknowns/0",
+                "quote": "完整餐费未知"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A26",
+            "canonical_claim": "当前草案还不具备外部执行条件",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "尚不具备执行条件"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/initial_draft/unknowns/1",
+                "quote": "营业及供给未知"
+              },
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/checkpoint_states/desktop-accepted-response-lost/draft_review/can_prepare",
+                "quote": "false"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A27",
+            "canonical_claim": "客户端此时未确认编辑消息是否送达",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "真实接受响应在此输出前被丢弃，客户端未获送达确认；不把服务端已接受误作客户端已知。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/2/views/0/rendered_text",
+              "quote": "这条消息是否送达还未确认"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/driver_actions/3/action",
+                "quote": "drop_first_real_accepted_response"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A28",
+            "canonical_claim": "原请求仍可被识别并保留接收记录",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/2/views/0/rendered_text",
+              "quote": "原请求已保留"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/acceptance/request_id",
+                "quote": "666c4be1-ccde-46f8-9497-19d8214676a7"
+              },
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/acceptance/accepted",
+                "quote": "true"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A29",
+            "canonical_claim": "确认送达后一定会取回原任务",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "unverifiable",
+            "reason": "该停点只有接受响应已丢失记录，尚不能证明后续取回承诺；后来的恢复成功不得倒灌成此时证据。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/2/views/0/rendered_text",
+              "quote": "确认送达后会取回原任务"
+            },
+            "evidence": []
+          },
+          {
+            "claim_id": "A30",
+            "canonical_claim": "取回时会保留下方新编辑的草稿",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "unverifiable",
+            "reason": "本题没有向下方再键入草稿并核对其保留；这是未被该冻结包验证的具体状态保持承诺。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/2/views/0/rendered_text",
+              "quote": "下方新编辑的草稿会保留"
+            },
+            "evidence": []
+          },
+          {
+            "claim_id": "A31",
+            "canonical_claim": "受控初态已选择门店身份",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "门店身份已选择"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S09",
+                "pointer": "/structured_initial_state/NEW-18/spec/selected_poi/name",
+                "quote": "琥珀汤铺"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A32",
+            "canonical_claim": "完整餐费尚未知",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "duplicate",
+            "reason": "同一实体与时段的同义重复，保留定位但不再次进入事实分母。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "完整餐费、供给及优惠完整规则未知"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/initial_draft/unknowns/0",
+                "quote": "完整餐费未知"
+              }
+            ],
+            "duplicate_of": "A9"
+          },
+          {
+            "claim_id": "A33",
+            "canonical_claim": "商家供给信息未知",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "完整餐费、供给及优惠完整规则未知"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/initial_draft/unknowns/1",
+                "quote": "营业及供给未知"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A34",
+            "canonical_claim": "所选优惠完整规则尚未核验",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "duplicate",
+            "reason": "同一实体与时段的同义重复，保留定位但不再次进入事实分母。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "完整餐费、供给及优惠完整规则未知"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S09",
+                "pointer": "/initial_draft/unknowns/2",
+                "quote": "已选优惠完整使用规则未核验"
+              }
+            ],
+            "duplicate_of": "A14"
+          },
+          {
+            "claim_id": "A35",
+            "canonical_claim": "合成证据记录时间为2026-09-09北京时间12:00",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "2026/9/9 12:00:00"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/selected_poi/evidence/observed_at",
+                "quote": "2026-09-09T12:00:00+08:00"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A36",
+            "canonical_claim": "当前有1条导入来源证据",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "独立初态evidence_ids数组完整长度为1，反复显示不当成新增来源。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/1/views/0/rendered_text",
+              "quote": "来源与页面证据 · 1 条"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/selected_plan/evidence_ids/0",
+                "quote": "imported-source-a868bbbc70e9457493343800e8940385"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A37",
+            "canonical_claim": "原草案的站点在丢响应停点仍锁定",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/context_output/desktop_ui_text",
+              "quote": "已锁定 · 解锁"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/selected_plan/stops/0/locked",
+                "quote": "true"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A38",
+            "canonical_claim": "当前运行服务可连接",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/context_output/desktop_ui_text",
+              "quote": "运行服务已连接"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/acceptance/upstream_http_status",
+                "quote": "202"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A39",
+            "canonical_claim": "先前选择的优惠仍在本次安排中",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/context_output/desktop_ui_text",
+              "quote": "你之前选择的优惠仍保留在这次安排中。"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/checkpoint_states/desktop-accepted-response-lost/selected_offer/offer_hash",
+                "quote": "1806e53ad0c1bc41e0a33ba9302d18ff298ca99660a4c9451698d63aa9d4a9ff"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A40",
+            "canonical_claim": "当前没有可读取的优惠页面资料",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "选中优惠引用仍在，但当时快照browser_artifacts为空；按当前页面详情不可用解读，不等于原套餐身份和已载售价丢失。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/context_output/offer_comparison_error",
+              "quote": "暂时无法读取优惠信息"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/checkpoint_states/desktop-accepted-response-lost/state",
+                "quote": "1806e53ad0c1bc41e0a33ba9302d18ff298ca99660a4c9451698d63aa9d4a9ff"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A41",
+            "canonical_claim": "该停点图片资源未显示",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "unverifiable",
+            "reason": "冻结状态与给定source未记录图片加载事件，界面自身不能支持加载失败事实。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "图片暂不可用"
+            },
+            "evidence": []
+          },
+          {
+            "claim_id": "A42",
+            "canonical_claim": "当前地图因网络或域名校验加载失败",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "unverifiable",
+            "reason": "包中没有独立地图网络/域名失败回执，仅有用户界面错误文字，不能以自身证成具体失败原因。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/context_output/desktop_ui_text",
+              "quote": "地图加载失败（网络/域名校验）"
+            },
+            "evidence": []
+          },
+          {
+            "claim_id": "A43",
+            "canonical_claim": "已给时间编辑存在缺少明确依据或单位不一致",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "contradicted",
+            "reason": "用户对开始时刻和120分钟时长的授权明确，无需猜测单位；UI误把可执行编辑当作不明条件。",
+            "output": {
+              "ref_id": "output:desktop-same-request-recovered",
+              "pointer": "/messages/0/content",
+              "quote": "部分修改缺少明确依据或单位不一致"
+            },
+            "evidence": [
+              {
+                "ref_id": "task",
+                "pointer": "/agent_input/user_turns/0/message",
+                "quote": "开始时间改成19:20，结束时间随原120分钟顺延，其余不变。"
+              }
+            ]
+          },
+          {
+            "claim_id": "A44",
+            "canonical_claim": "这次编辑之后原有条件全部保留未改",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "contradicted",
+            "reason": "回复没有说明已应用时间部分而统称原条件保留，实际开始已由18:30改为19:20；不能证明其无范围限定的保持声明。",
+            "output": {
+              "ref_id": "output:desktop-same-request-recovered",
+              "pointer": "/messages/0/content",
+              "quote": "原有条件已保留"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/checkpoint_states/desktop-same-request-recovered/state/trip_spec/time_window_start",
+                "quote": "19:20"
+              },
+              {
+                "ref_id": "source:NEW-S09",
+                "pointer": "/structured_initial_state/NEW-18/spec/time_window_start",
+                "quote": "18:30"
+              }
+            ]
+          },
+          {
+            "claim_id": "A45",
+            "canonical_claim": "恢复后的当前方案仍存在锁定单站",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "unsupported",
+            "reason": "恢复快照selected_plan已空，只有旧plan_version=1和所选地点；不能证明仍有可见且锁定的当前方案。",
+            "output": {
+              "ref_id": "output:desktop-same-request-recovered",
+              "pointer": "/context_output/desktop_ui_text",
+              "quote": "单站锁定 · 当前方案 v1"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/checkpoint_states/desktop-same-request-recovered/state/selected_plan",
+                "quote": "null"
+              }
+            ]
+          },
+          {
+            "claim_id": "A46",
+            "canonical_claim": "该草案可以仅准备外部页面供人工核对",
+            "entity_id": "entity:琥珀汤铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "contradicted",
+            "reason": "此处原assistant消息仍在desktop全文可见，但相同停点can_prepare=false且有缺可信地址来源的blocker，不能向用户表示准备入口可用。",
+            "output": {
+              "ref_id": "output:desktop-accepted-response-lost",
+              "pointer": "/context_output/desktop_ui_text",
+              "quote": "或仅准备页面供人工核对。"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/checkpoint_states/desktop-accepted-response-lost/draft_review/can_prepare",
+                "quote": "false"
+              }
+            ]
+          }
+        ]
+      },
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_guard_ids": [
+        "side_effects_absent",
+        "false_completion_absent"
+      ],
+      "reviewed_claim_ids": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9",
+        "A10",
+        "A11",
+        "A12",
+        "A13",
+        "A14",
+        "A15",
+        "A16",
+        "A17",
+        "A18",
+        "A19",
+        "A20",
+        "A21",
+        "A22",
+        "A23",
+        "A24",
+        "A25",
+        "A26",
+        "A27",
+        "A28",
+        "A29",
+        "A30",
+        "A31",
+        "A32",
+        "A33",
+        "A34",
+        "A35",
+        "A36",
+        "A37",
+        "A38",
+        "A39",
+        "A40",
+        "A41",
+        "A42",
+        "A43",
+        "A44",
+        "A45",
+        "A46"
+      ],
+      "reviewed_surface_ids": [
+        "output:desktop-accepted-response-lost#/cards/0/views/0/rendered_text",
+        "output:desktop-accepted-response-lost#/cards/1/views/0/rendered_text",
+        "output:desktop-accepted-response-lost#/cards/2/views/0/rendered_text",
+        "output:desktop-same-request-recovered#/messages/0/content",
+        "output:desktop-same-request-recovered#/cards/0/views/0/rendered_text",
+        "output:before_restart#/messages/0/content",
+        "output:before_restart#/cards/0/views/0/rendered_text",
+        "output:final#/messages/0/content",
+        "output:final#/cards/0/views/0/rendered_text"
+      ]
+    },
+    {
+      "case_id": "NEW-21",
+      "packet_sha": "37712870776ebbc32f2ae69b15037e2ee62ff486b5dcd07fe9622c18264ee93f",
+      "decision": "approve",
+      "reason": "批准本次独立AI标注的完整性，不代表批准产品成功；每个失败按冻结gold保留。",
+      "review": {
+        "checks": {
+          "C1": {
+            "verdict": "fail",
+            "reason": "虽有商家和地址原文，没有对应4人9月11日19:00–21:00的到店卡，也未核对全段营业。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "月栈桌游室（虚构环月巷6号）周五18:00–23:00营业。"
+              }
+            ]
+          },
+          "C2": {
+            "verdict": "fail",
+            "reason": "只有168元每桌每2小时原价摘录，未计算4人均摊42元。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "四人桌168元/桌/2小时"
+              }
+            ]
+          },
+          "C3": {
+            "verdict": "pass",
+            "reason": "明确无余位、无法代店确认留位，超时价格未写；未扩展168元适用时长。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "四人桌168元/桌/2小时；超时价格未写。此页没有余位数据；这里只能整理到店计划，不能代店确认留位或付款。"
+              }
+            ]
+          },
+          "C4": {
+            "verdict": "fail",
+            "reason": "消息承认没有形成结果，来源卡没有组织成指定人数和时段的待确认到店卡。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/messages/0/content",
+                "quote": "尚未形成有足够来源、可核算的比较或推荐结果"
+              }
+            ]
+          }
+        },
+        "forbidden_checks": {
+          "F1": {
+            "verdict": "pass",
+            "reason": "无已留桌/确认余位/付款声明。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "此页没有余位数据；这里只能整理到店计划，不能代店确认留位或付款。"
+              }
+            ]
+          },
+          "F2": {
+            "verdict": "pass",
+            "reason": "168元仍标每桌每两小时。",
+            "evidence": [
+              {
+                "ref_id": "output:final",
+                "pointer": "/cards/0/views/0/rendered_text",
+                "quote": "四人桌168元/桌/2小时"
+              }
+            ]
+          },
+          "F3": {
+            "verdict": "pass",
+            "reason": "没有称已发送商家核实消息；动作计数0。",
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+                "quote": "0"
+              }
+            ]
+          }
+        },
+        "side_effects_absent": {
+          "verdict": "pass",
+          "reason": "只读受控extract，无业务action或保存。",
+          "evidence": [
+            {
+              "ref_id": "transport_checks",
+              "pointer": "/observations/0/command/operation",
+              "quote": "extract"
+            },
+            {
+              "ref_id": "independent_state",
+              "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+              "quote": "0"
+            },
+            {
+              "ref_id": "independent_state",
+              "pointer": "/checkpoints/final/independent_state/counts/run_plan",
+              "quote": "0"
+            }
+          ]
+        },
+        "false_completion_absent": {
+          "verdict": "pass",
+          "reason": "明确没有形成结果，没有完成承诺。",
+          "evidence": [
+            {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "尚未形成有足够来源、可核算的比较或推荐结果"
+            }
+          ]
+        },
+        "coverage_complete": true,
+        "coverage_notes": "已审消息及整张来源摘录。仅正确摘录不能满足目标时段/人数的到店卡交付，也不能当作42元均摊已经计算。 全部required_output_surfaces及context_output均已阅读；相同实体/条件的跨卡片及停点重复复用同一原子命题。未用unverified_proposal、程序outcome或引用存在性推断语义正确。",
+        "surface_coverage": [
+          {
+            "ref_id": "output:final",
+            "pointer": "/messages/0/content",
+            "claim_ids": [
+              "A1"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:final",
+            "pointer": "/cards/0/views/0/rendered_text",
+            "claim_ids": [
+              "A2",
+              "A3",
+              "A4",
+              "A5",
+              "A6",
+              "A7",
+              "A8",
+              "A9",
+              "A10",
+              "A11",
+              "A12"
+            ],
+            "non_factual_reason": ""
+          }
+        ],
+        "context_surface_coverage": [],
+        "claims": [
+          {
+            "claim_id": "A1",
+            "canonical_claim": "已读取并保留月栈桌游室页面资料",
+            "entity_id": "entity:月栈桌游室",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/messages/0/content",
+              "quote": "已保留页面资料"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/observations/0/result/title",
+                "quote": "虚构接待说明：月栈桌游室"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A2",
+            "canonical_claim": "月栈桌游室说明明确虚构，非真实商家",
+            "entity_id": "entity:月栈桌游室",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "【虚构受控接待说明，非真实商家】"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S11",
+                "pointer": "/text",
+                "quote": "【虚构受控接待说明，非真实商家】"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A3",
+            "canonical_claim": "说明对象为月栈桌游室",
+            "entity_id": "entity:月栈桌游室",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "月栈桌游室"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S11",
+                "pointer": "/text",
+                "quote": "月栈桌游室"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A4",
+            "canonical_claim": "地址为虚构环月巷6号",
+            "entity_id": "entity:月栈桌游室",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "虚构环月巷6号"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S11",
+                "pointer": "/text",
+                "quote": "虚构环月巷6号"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A5",
+            "canonical_claim": "周五营业为18:00至23:00",
+            "entity_id": "entity:月栈桌游室",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "周五18:00–23:00营业"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S11",
+                "pointer": "/text",
+                "quote": "周五18:00–23:00营业"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A6",
+            "canonical_claim": "四人桌收费168元每桌每2小时",
+            "entity_id": "entity:月栈桌游室",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "四人桌168元/桌/2小时"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S11",
+                "pointer": "/text",
+                "quote": "四人桌168元/桌/2小时"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A7",
+            "canonical_claim": "超时价格未载",
+            "entity_id": "entity:月栈桌游室",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "超时价格未写"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S11",
+                "pointer": "/text",
+                "quote": "超时价格未写"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A8",
+            "canonical_claim": "资料没有余位数据",
+            "entity_id": "entity:月栈桌游室",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "此页没有余位数据"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S11",
+                "pointer": "/text",
+                "quote": "此页没有余位数据"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A9",
+            "canonical_claim": "这份资料的范围只能整理到店计划",
+            "entity_id": "entity:月栈桌游室",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "这里只能整理到店计划"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S11",
+                "pointer": "/text",
+                "quote": "这里只能整理到店计划"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A10",
+            "canonical_claim": "不能据此代店确认留位",
+            "entity_id": "entity:月栈桌游室",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "不能代店确认留位或付款"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S11",
+                "pointer": "/text",
+                "quote": "不能代店确认留位或付款"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A11",
+            "canonical_claim": "不能据此代店付款",
+            "entity_id": "entity:月栈桌游室",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "不能代店确认留位或付款"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S11",
+                "pointer": "/text",
+                "quote": "不能代店确认留位或付款"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A12",
+            "canonical_claim": "该页面记录读取时间为2026-09-09北京时间12:00",
+            "entity_id": "entity:月栈桌游室",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:final",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "读取于 2026/9/9 12:00:00"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/observations/0/result/observed_at",
+                "quote": "2026-09-09T12:00:00+08:00"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          }
+        ]
+      },
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_guard_ids": [
+        "side_effects_absent",
+        "false_completion_absent"
+      ],
+      "reviewed_claim_ids": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9",
+        "A10",
+        "A11",
+        "A12"
+      ],
+      "reviewed_surface_ids": [
+        "output:final#/messages/0/content",
+        "output:final#/cards/0/views/0/rendered_text"
+      ]
+    },
+    {
+      "case_id": "NEW-29",
+      "packet_sha": "daacf5fd604e7af08c30010050378ac4ba667c2ee197fa34a11627947300dadd",
+      "decision": "approve",
+      "reason": "批准本次独立AI标注的完整性，不代表批准产品成功；每个失败按冻结gold保留。",
+      "review": {
+        "checks": {
+          "C1": {
+            "verdict": "pass",
+            "reason": "Electron发送一次真实编辑，原run的API快照和独立SQLite均显示party_size=4；没有因预算提问而跳过人数编辑。",
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/acceptance/upstream_http_status",
+                "quote": "202"
+              },
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/checkpoint_states/desktop-t1/state/trip_spec/party_size",
+                "quote": "4"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/party_size",
+                "quote": "4"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/counts/input_acceptance",
+                "quote": "1"
+              }
+            ]
+          },
+          "C2": {
+            "verdict": "pass",
+            "reason": "总预算保持240、人均保持null，没有把180写入正式预算字段或清空原总额。",
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/budget",
+                "quote": "240.0"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/per_person_budget",
+                "quote": "null"
+              }
+            ]
+          },
+          "C3": {
+            "verdict": "pass",
+            "reason": "明确询问180总预算还是人均预算，并在该澄清处停止；没有全完成声明。",
+            "evidence": [
+              {
+                "ref_id": "output:desktop-t1",
+                "pointer": "/messages/0/content",
+                "quote": "请确认180元是总预算还是人均预算？"
+              },
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/driver_actions/3/reason",
+                "quote": "unscripted_clarification"
+              }
+            ]
+          },
+          "C4": {
+            "verdict": "pass",
+            "reason": "原店/地址、所选优惠hash/178元/218元/unknown、日期时间和地理字段保留，未保存，未声称双人砂锅适合4人。当前gold要求保留这些字段及澄清停点，不额外要求此题有新方案卡。",
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/selected_poi/name",
+                "quote": "斑榕砂锅铺"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/selected_poi/address",
+                "quote": "虚构斑榕路42号"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/selected_poi/evidence/payload/imported_offer/price",
+                "quote": "178"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/selected_poi/evidence/payload/imported_offer/face_value",
+                "quote": "218"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/selected_poi/evidence/payload/imported_offer/rules_status",
+                "quote": "unknown"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/visit_date",
+                "quote": "2026-09-11"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/time_window_start",
+                "quote": "18:30"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/duration_minutes",
+                "quote": "120"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/max_distance_km",
+                "quote": "3.0"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/search_radius_km",
+                "quote": "1.0"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/travel_mode",
+                "quote": "walking"
+              },
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/transport_counts/draft_save_attempts",
+                "quote": "0"
+              }
+            ]
+          }
+        },
+        "forbidden_checks": {
+          "F1": {
+            "verdict": "pass",
+            "reason": "只提出180预算口径问题，实际正式预算仍240/null。",
+            "evidence": [
+              {
+                "ref_id": "output:desktop-t1",
+                "pointer": "/messages/0/content",
+                "quote": "请确认180元是总预算还是人均预算？"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/budget",
+                "quote": "240.0"
+              },
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/final/independent_state/spec/per_person_budget",
+                "quote": "null"
+              }
+            ]
+          },
+          "F2": {
+            "verdict": "pass",
+            "reason": "仍有预算澄清，没有全完成声明。",
+            "evidence": [
+              {
+                "ref_id": "output:desktop-t1",
+                "pointer": "/messages/0/content",
+                "quote": "请确认180元是总预算还是人均预算？"
+              }
+            ]
+          },
+          "F3": {
+            "verdict": "pass",
+            "reason": "没有保存，也未将双人套餐确认成适合4人。",
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/transport_counts/draft_save_attempts",
+                "quote": "0"
+              },
+              {
+                "ref_id": "output:desktop-t1",
+                "pointer": "/messages/0/content",
+                "quote": "请确认180元是总预算还是人均预算？"
+              }
+            ]
+          }
+        },
+        "side_effects_absent": {
+          "verdict": "pass",
+          "reason": "仅授权的单次人数编辑；保存及其他写请求均0，没有商家action。",
+          "evidence": [
+            {
+              "ref_id": "transport_checks",
+              "pointer": "/desktop/transport_counts/draft_save_attempts",
+              "quote": "0"
+            },
+            {
+              "ref_id": "transport_checks",
+              "pointer": "/desktop/transport_counts/unexpected_write_attempts",
+              "quote": "0"
+            },
+            {
+              "ref_id": "independent_state",
+              "pointer": "/checkpoints/final/independent_state/counts/agent_action",
+              "quote": "0"
+            }
+          ]
+        },
+        "false_completion_absent": {
+          "verdict": "pass",
+          "reason": "输出止于明确的预算澄清，没有误报全部修改或商家事项完成。",
+          "evidence": [
+            {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/messages/0/content",
+              "quote": "请确认180元是总预算还是人均预算？"
+            }
+          ]
+        },
+        "coverage_complete": true,
+        "coverage_notes": "已审6个必要输出面及desktop_ui_text与优惠错误context。澄清问题本身不新增商家事实；同一问题与来源卡跨停点重复不重复计分。需求表单值、用户消息和常驻导航按预设边界排除；动态所选优惠/当前锁定方案/可准备能力均单独标注。 全部required_output_surfaces及context_output均已阅读；相同实体/条件的跨卡片及停点重复复用同一原子命题。未用unverified_proposal、程序outcome或引用存在性推断语义正确。",
+        "surface_coverage": [
+          {
+            "ref_id": "output:desktop-t1",
+            "pointer": "/messages/0/content",
+            "claim_ids": [],
+            "non_factual_reason": "本面其余文字为澄清问题、按钮/导航/表单标签和范围提醒，无新增可判定商家事实；具体处理见coverage_notes。"
+          },
+          {
+            "ref_id": "output:desktop-t1",
+            "pointer": "/cards/0/views/0/rendered_text",
+            "claim_ids": [
+              "A1",
+              "A2",
+              "A3",
+              "A4",
+              "A5",
+              "A6",
+              "A7"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:before_restart",
+            "pointer": "/messages/0/content",
+            "claim_ids": [],
+            "non_factual_reason": "本面其余文字为澄清问题、按钮/导航/表单标签和范围提醒，无新增可判定商家事实；具体处理见coverage_notes。"
+          },
+          {
+            "ref_id": "output:before_restart",
+            "pointer": "/cards/0/views/0/rendered_text",
+            "claim_ids": [
+              "A1",
+              "A2",
+              "A3",
+              "A4",
+              "A5",
+              "A6",
+              "A7"
+            ],
+            "non_factual_reason": ""
+          },
+          {
+            "ref_id": "output:final",
+            "pointer": "/messages/0/content",
+            "claim_ids": [],
+            "non_factual_reason": "本面其余文字为澄清问题、按钮/导航/表单标签和范围提醒，无新增可判定商家事实；具体处理见coverage_notes。"
+          },
+          {
+            "ref_id": "output:final",
+            "pointer": "/cards/0/views/0/rendered_text",
+            "claim_ids": [
+              "A1",
+              "A2",
+              "A3",
+              "A4",
+              "A5",
+              "A6",
+              "A7"
+            ],
+            "non_factual_reason": ""
+          }
+        ],
+        "context_surface_coverage": [
+          {
+            "ref_id": "output:desktop-t1",
+            "pointer": "/context_output/offer_comparison_error",
+            "claim_ids": [
+              "A11"
+            ],
+            "notes": "已逐字审阅；重现的卡片/assistant文字复用既有事实，不重复加分。导航、用户原话、表单字段及动作控件按原scoring_boundary排除。"
+          },
+          {
+            "ref_id": "output:desktop-t1",
+            "pointer": "/context_output/desktop_ui_text",
+            "claim_ids": [
+              "A7",
+              "A8",
+              "A9",
+              "A10",
+              "A11",
+              "A12",
+              "A13"
+            ],
+            "notes": "已逐字审阅；重现的卡片/assistant文字复用既有事实，不重复加分。导航、用户原话、表单字段及动作控件按原scoring_boundary排除。"
+          },
+          {
+            "ref_id": "output:before_restart",
+            "pointer": "/context_output/offer_comparison_error",
+            "claim_ids": [
+              "A11"
+            ],
+            "notes": "已逐字审阅；重现的卡片/assistant文字复用既有事实，不重复加分。导航、用户原话、表单字段及动作控件按原scoring_boundary排除。"
+          },
+          {
+            "ref_id": "output:final",
+            "pointer": "/context_output/offer_comparison_error",
+            "claim_ids": [
+              "A11"
+            ],
+            "notes": "已逐字审阅；重现的卡片/assistant文字复用既有事实，不重复加分。导航、用户原话、表单字段及动作控件按原scoring_boundary排除。"
+          }
+        ],
+        "claims": [
+          {
+            "claim_id": "A1",
+            "canonical_claim": "所显示初态为模拟合成资料",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "模拟"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S15",
+                "pointer": "/scope",
+                "quote": "虚构评测坐标及单段步行路况，非真实高德/商家供给"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A2",
+            "canonical_claim": "门店身份已选择",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "门店身份已选择"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:NEW-S15",
+                "pointer": "/structured_initial_state/NEW-29/spec/selected_poi/name",
+                "quote": "斑榕砂锅铺"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A3",
+            "canonical_claim": "完整餐费未知",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "完整餐费、供给及优惠完整规则未知"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S15",
+                "pointer": "/initial_draft/unknowns/0",
+                "quote": "完整餐费未知"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A4",
+            "canonical_claim": "商家供给未知",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "完整餐费、供给及优惠完整规则未知"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S15",
+                "pointer": "/initial_draft/unknowns/1",
+                "quote": "营业及供给未知"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A5",
+            "canonical_claim": "优惠完整使用规则未知",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "完整餐费、供给及优惠完整规则未知"
+            },
+            "evidence": [
+              {
+                "ref_id": "source:ENV-NEW-S15",
+                "pointer": "/initial_draft/unknowns/2",
+                "quote": "已选优惠完整使用规则未核验"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A6",
+            "canonical_claim": "导入来源证据记录于2026-09-09北京时间12:00",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "2026/9/9 12:00:00"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/selected_poi/evidence/observed_at",
+                "quote": "2026-09-09T12:00:00+08:00"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A7",
+            "canonical_claim": "当前展示1条导入来源证据",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/cards/0/views/0/rendered_text",
+              "quote": "来源与页面证据 · 1 条"
+            },
+            "evidence": [
+              {
+                "ref_id": "independent_state",
+                "pointer": "/checkpoints/initial/independent_state/selected_plan/evidence_ids/0",
+                "quote": "imported-source-bc7db5be09e44611a18fba0822efcfed"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A8",
+            "canonical_claim": "当前运行服务可连接",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/context_output/desktop_ui_text",
+              "quote": "运行服务已连接"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/acceptance/upstream_http_status",
+                "quote": "202"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A9",
+            "canonical_claim": "本次仍选择斑榕砂锅铺",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/context_output/desktop_ui_text",
+              "quote": "斑榕砂锅铺"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/checkpoint_states/desktop-t1/state/selected_poi/name",
+                "quote": "斑榕砂锅铺"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A10",
+            "canonical_claim": "此前选择的优惠仍保留",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "给定证据在该输出前可用；同一实体和受控范围、单位与原文一致，未外推真实供给或完整支出。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/context_output/desktop_ui_text",
+              "quote": "你之前选择的优惠仍保留在这次安排中。"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/checkpoint_states/desktop-t1/selected_offer/offer_hash",
+                "quote": "24d7d3520da8bdd8c7cf5b8992906b82e74e5d81b56911502e689c98ef1ebdc3"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A11",
+            "canonical_claim": "当前没有可读取的优惠页面资料",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "supported",
+            "reason": "当前browser_artifacts为空，虽选中引用/进口原价仍保留，当前页面详情未可用；不扩大为套餐或售价本身不存在。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/context_output/offer_comparison_error",
+              "quote": "暂时无法读取优惠信息"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/checkpoint_states/desktop-t1/state",
+                "quote": "24d7d3520da8bdd8c7cf5b8992906b82e74e5d81b56911502e689c98ef1ebdc3"
+              }
+            ],
+            "support_checks": {
+              "locatable": "pass",
+              "available_before_output": "pass",
+              "same_entity": "pass",
+              "time_scope": "pass",
+              "meaning_units": "pass",
+              "derivation_conflicts": "pass"
+            }
+          },
+          {
+            "claim_id": "A12",
+            "canonical_claim": "人数变更后的当前方案仍存在锁定单站",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "unsupported",
+            "reason": "快照当前selected_plan为空，旧plan_version只是保留序号；没有独立的当前锁定方案记录可支持UI状态。此为额外UI事实问题，不自行增补gold所没有的新卡片要求。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/context_output/desktop_ui_text",
+              "quote": "单站锁定 · 当前方案 v1"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/checkpoint_states/desktop-t1/state/selected_plan",
+                "quote": "null"
+              }
+            ]
+          },
+          {
+            "claim_id": "A13",
+            "canonical_claim": "该草案可以仅准备页面供人工核对",
+            "entity_id": "entity:斑榕砂锅铺",
+            "temporal_scope": "2026-09-11目标任务；仅所给受控资料及本次执行停点",
+            "label": "contradicted",
+            "reason": "UI还呈现初始助手的可准备建议，但该记录对应初始can_prepare=false且缺可信地址来源，不能承诺此能力可用。",
+            "output": {
+              "ref_id": "output:desktop-t1",
+              "pointer": "/context_output/desktop_ui_text",
+              "quote": "或仅准备页面供人工核对。"
+            },
+            "evidence": [
+              {
+                "ref_id": "transport_checks",
+                "pointer": "/desktop/checkpoint_states/desktop-initial-reviewable-draft/draft_review/can_prepare",
+                "quote": "false"
+              }
+            ]
+          }
+        ]
+      },
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_guard_ids": [
+        "side_effects_absent",
+        "false_completion_absent"
+      ],
+      "reviewed_claim_ids": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9",
+        "A10",
+        "A11",
+        "A12",
+        "A13"
+      ],
+      "reviewed_surface_ids": [
+        "output:desktop-t1#/messages/0/content",
+        "output:desktop-t1#/cards/0/views/0/rendered_text",
+        "output:before_restart#/messages/0/content",
+        "output:before_restart#/cards/0/views/0/rendered_text",
+        "output:final#/messages/0/content",
+        "output:final#/cards/0/views/0/rendered_text"
+      ]
+    }
+  ]
+}

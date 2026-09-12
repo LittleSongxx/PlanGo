@@ -1,0 +1,11 @@
+{
+  "status": "authored_after_8dcf2d3_not_yet_executed",
+  "recorded_at": "2026-09-10T01:24:45.097866+00:00",
+  "product_commit_at_authoring": "8dcf2d3b12d809bbe2227d204c00196f323f2b87",
+  "authored_at": "2026-09-10T01:24:19.241686+00:00",
+  "actor_executed": false,
+  "gold_status": "draft_pending_independent_ai_review",
+  "original_files_unchanged": true,
+  "reason": "Root在作者完成五份原件首次写入后通知：产品可能重新冻结，本批保留为当前冻结后的未执行资料。若产品改变，须由另一个新上下文在新冻结后另行编题；本批不得充当新版本测试，也不得用于调参。",
+  "post_publication_exposure": "作者在原件发布后收到root关于旧回归发现可能需要产品修复的状态消息；未进一步查看旧题、输出、评分或实现，未据此改题。此状态文件单独记录，不修改五份原件。"
+}

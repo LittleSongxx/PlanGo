@@ -1,0 +1,179 @@
+[
+  {
+    "case_id": "v7-reading-yanhu-handcraft",
+    "family": "reading",
+    "case_class": "delivery",
+    "group_ids": ["v7g-src-yanhu-handcraft", "v7g-ent-yanhu-family"],
+    "source_ids": ["v7-src-reading-yanhu"],
+    "as_of": "2026-09-10T18:20:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "从一份散文式访客说明中，按用户指定的某个半天与通行条件，交付可执行的要点清单；仅分析已提供的观察，不涉及登录、真实库存或写入。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "这周六下午想带我爸妈和两个小孩去砚湖社区手作馆坐会儿，我妈腿脚不好，走不了楼梯，小的那个还得推着车。你帮我把那天下午的开放时间、推车和轮椅能到哪儿、要不要提前登记、还有下午能玩上的项目给我列一下。说不清的地方别硬猜，直接告我。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "v7-offers-wujing-diner",
+    "family": "offers",
+    "case_class": "delivery",
+    "group_ids": ["v7g-src-wujing-diner", "v7g-ent-wujing-colleagues"],
+    "source_ids": ["v7-src-offers-wujing"],
+    "as_of": "2026-09-10T18:40:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "从一份价目表与编号规则中，为一份具体点单挑选适用优惠并算出完整应付金额；仅分析已提供的观察，不涉及下单、支付或库存查询。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "这周日晚上我们 5 个人去梧井小馆吃饭。主食按人头来，3 份豆花饭 2 份凉面，再点 2 份炝炒时蔬。哦对，甜品也来 2 份银耳羹。它家那几个优惠，我们这单用得上哪个？最后一共付多少，算给我看看，别漏了茶位费。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "v7-routes-qinghuai-walk",
+    "family": "routes",
+    "case_class": "bounded_answer",
+    "group_ids": ["v7g-src-qinghuai-walk", "v7g-ent-qinghuai-listener"],
+    "source_ids": ["v7-src-routes-qinghuai"],
+    "as_of": "2026-09-10T19:00:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "三份互有冲突的通行文档把某一天的步行耗时限定成两种情形，需说清那个唯一未定的关键事实，并仍给出可执行的时间余量；仅分析已提供的观察，不涉及实时查证。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "下周三晚上七点半我去青槐书屋听个分享，从白鹭台站走过去。它卡片上写 8 分钟，这个还靠得住吗？我几点出站比较稳？你就按手头这几份东西说，别给我拍脑袋。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "v7-edits-luting-teahouse",
+    "family": "edits",
+    "case_class": "delivery",
+    "group_ids": ["v7g-src-luting-teahouse", "v7g-ent-luting-cousins"],
+    "source_ids": ["v7-src-edits-luting"],
+    "as_of": "2026-09-10T19:10:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "对环境预先导入的未保存草稿做两处口语化改动，产出一份可见可复核的草稿；未被要求改的内容必须原样保留，未知的优惠规则不得被算成确定总价。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "人数改成 6 个，我表姐一家也要来。"
+        },
+        {
+          "message": "时间往后挪一个小时吧，其他都别动，弄好了给我看一眼。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "edit",
+      "expected_stop": "draft_review",
+      "initial_state": {
+        "run_id": "fixture:v7-edits-luting",
+        "plan_version": 3,
+        "spec": {
+          "party_size": 4,
+          "visit_date": "2026-09-19",
+          "time_window_start": "10:30",
+          "duration_minutes": 150,
+          "budget": null,
+          "per_person_budget": 90,
+          "search_radius_km": 1.5,
+          "route_distance_km": 0.2,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:luting-teahouse",
+            "name": "鹭汀茶居（虚构）",
+            "address": "虚构地址：云岚区霜叶巷 27 号 2 楼"
+          },
+          "selected_offer": {
+            "source_id": "v7-src-edits-luting",
+            "offer_id": "fixture:luting-morning-set",
+            "price": 128,
+            "face_value": null,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "v7-recovery-mianyu-studio",
+    "family": "recovery",
+    "case_class": "delivery",
+    "group_ids": ["v7g-src-mianyu-studio", "v7g-ent-mianyu-trio"],
+    "source_ids": ["v7-src-recovery-mianyu"],
+    "as_of": "2026-09-10T19:30:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "把环境预先导入的草稿真实保存一次，关闭并重开自有后端与 Electron 后读取原 run/profile，检查同一条计划及其未知标记是否原样恢复；本题没有新的用户消息。",
+    "agent_input": {},
+    "environment": {
+      "driver": "save_restart",
+      "expected_stop": "saved_restored",
+      "initial_state": {
+        "run_id": "fixture:v7-recovery-mianyu",
+        "plan_version": 2,
+        "spec": {
+          "party_size": 3,
+          "visit_date": "2026-10-03",
+          "time_window_start": "15:00",
+          "duration_minutes": 90,
+          "budget": 240,
+          "per_person_budget": null,
+          "search_radius_km": 2.0,
+          "route_distance_km": 0.2,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:mianyu-studio",
+            "name": "绵雨手冲工作室（虚构）",
+            "address": "虚构地址：云岚区蝉鸣街 4 号院 1 栋"
+          },
+          "selected_offer": {
+            "source_id": "v7-src-recovery-mianyu",
+            "offer_id": "fixture:mianyu-cup-pair",
+            "price": 66,
+            "face_value": 40,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "v7-boundaries-taoke-workshop",
+    "family": "boundaries",
+    "case_class": "bounded_answer",
+    "group_ids": ["v7g-src-taoke-workshop", "v7g-ent-taoke-group"],
+    "source_ids": ["v7-src-boundaries-taoke"],
+    "as_of": "2026-09-10T20:30:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "一份带例外条款的须知把「能否约上」收敛到一个门店未公开的事实上；需说清条款之间的覆盖关系与那个唯一缺失的事实，并把用户顺带提出的代办诉求限定在可分析范围内；不涉及预约、支付或联系门店。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "这周六下午我们 5 个人想去陶刻工坊砚山店做杯子。你看下它那份须知，我们这情况到底约不约得上？定金要交多少，能不能现在直接在线付掉？万一到时候有人来不了，这钱退不退？哦对，你要是能顺手帮我把名额和定金一起搞定就最好了。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  }
+]

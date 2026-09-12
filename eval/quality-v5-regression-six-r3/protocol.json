@@ -1,0 +1,30 @@
+{
+ "version": "plango.controlled-bounded.v1",
+ "name": "PlanGo-regression-six-v5-new-ledger",
+ "evaluation_kind": "regression",
+ "planned_case_ids": [
+  "NEW-01",
+  "NEW-07",
+  "NEW-14",
+  "NEW-18",
+  "NEW-21",
+  "NEW-29"
+ ],
+ "primary_source_groups": 6,
+ "case_authoring": "已揭示quality-v2-30原案例与gold原样子集，每家族1例；tasks/gold/sources/runtime-fixtures 与 quality-v5-regression-six 逐字节一致，未因本轮实现改动任何一题或判据。新账本只为跑完完整六题；不能声称未见泛化。",
+ "execution_scope": "4 raw-observation reads, 1 real Electron edit, 1 real Electron accepted-response-loss recovery; controlled sources only",
+ "limits": {
+  "calls": 80,
+  "case_calls": 12,
+  "reported_tokens_stop": 120000
+ },
+ "budget_ledger": "output/quality-v5-r3/model-budget.jsonl",
+ "prior_attempts": {
+  "quality-v4-regression-six": "system 28c1278, TSR 1/6, Groundedness 89.38%",
+  "quality-v4-regression-six-r2": "system 8dcf2d3, TSR 1/6, Groundedness 86.68%",
+  "quality-v5-regression-six": "system b1976f0, TSR 1/6, Groundedness 35.12%",
+  "quality-v5-regression-six-r2": "system 8953ffa, TSR 1/6, Groundedness 48.92%",
+  "quality-post-loop-partial": "system 03673618, shared ledger batch_limit after NEW-01/07; NEW-14 budget_exhausted; NEW-18/21/29 not run; TSR not scored"
+ },
+ "comparison_note": "同一六题、同一gold、新独立账本下的完整回归。旧轮结果与原件全部保留不改；本轮只用于对照当前工作树，不作为泛化证据，TSR 不拿来当质量提升。"
+}

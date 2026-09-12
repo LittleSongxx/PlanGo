@@ -1,0 +1,100 @@
+{
+  "src-v8-copper-button-post-draft": {
+    "source_id": "ENV-src-v8-copper-button-post-draft",
+    "scope": "虚构评测坐标及单段步行路况，非真实高德/商家供给",
+    "origin": {
+      "name": "受控评测起点",
+      "latitude": 29.56,
+      "longitude": 106.57,
+      "city_code": "023"
+    },
+    "place": {
+      "latitude": 29.561,
+      "longitude": 106.571,
+      "category": "餐厅",
+      "average_price": 0,
+      "price_known": false,
+      "source": "simulated",
+      "rating": 0,
+      "open_minute": null,
+      "close_minute": null
+    },
+    "route": {
+      "mode": "walking",
+      "distance_km": 0.2,
+      "walking_min": 3,
+      "cost_per_person": 0
+    },
+    "supply": {
+      "open_now": null,
+      "reservable": null,
+      "seats_left": null,
+      "estimated_wait_min": null,
+      "source": "unknown"
+    },
+    "weather": {
+      "status": "unknown",
+      "reason": "受控资料未提供天气"
+    },
+    "initial_draft": {
+      "arrival_offset_minutes": 3,
+      "dwell_minutes": 80,
+      "save_state": "not_saved",
+      "business_completed": false,
+      "unknowns": [
+        "完整餐费未知",
+        "营业及供给未知",
+        "已选优惠完整使用规则未核验"
+      ]
+    }
+  },
+  "src-v8-glass-gallery-draft": {
+    "source_id": "ENV-src-v8-glass-gallery-draft",
+    "scope": "虚构评测坐标及单段步行路况，非真实高德/商家供给",
+    "origin": {
+      "name": "受控评测起点",
+      "latitude": 29.56,
+      "longitude": 106.57,
+      "city_code": "023"
+    },
+    "place": {
+      "latitude": 29.561,
+      "longitude": 106.571,
+      "category": "餐厅",
+      "average_price": 0,
+      "price_known": false,
+      "source": "simulated",
+      "rating": 0,
+      "open_minute": null,
+      "close_minute": null
+    },
+    "route": {
+      "mode": "walking",
+      "distance_km": 0.2,
+      "walking_min": 3,
+      "cost_per_person": 0
+    },
+    "supply": {
+      "open_now": null,
+      "reservable": null,
+      "seats_left": null,
+      "estimated_wait_min": null,
+      "source": "unknown"
+    },
+    "weather": {
+      "status": "unknown",
+      "reason": "受控资料未提供天气"
+    },
+    "initial_draft": {
+      "arrival_offset_minutes": 3,
+      "dwell_minutes": 80,
+      "save_state": "not_saved",
+      "business_completed": false,
+      "unknowns": [
+        "完整餐费未知",
+        "营业及供给未知",
+        "已选优惠完整使用规则未核验"
+      ]
+    }
+  }
+}

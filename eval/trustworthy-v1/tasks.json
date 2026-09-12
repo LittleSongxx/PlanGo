@@ -1,0 +1,146 @@
+[
+  {
+    "task_id": "tw-calc-01",
+    "split": "dev",
+    "layer": "calculate",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-calc-01",
+    "user_turns": [{"role": "user", "text": "三张成人票一共多少钱？"}]
+  },
+  {
+    "task_id": "tw-calc-02",
+    "split": "dev",
+    "layer": "calculate",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-calc-02",
+    "user_turns": [{"role": "user", "text": "两辆全日车多少钱？"}]
+  },
+  {
+    "task_id": "tw-calc-03",
+    "split": "dev",
+    "layer": "calculate",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-calc-03",
+    "user_turns": [{"role": "user", "text": "步行加上摆渡要多久？"}]
+  },
+  {
+    "task_id": "tw-conf-01",
+    "split": "dev",
+    "layer": "conflict",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-conf-01",
+    "user_turns": [{"role": "user", "text": "现在门票多少钱？"}]
+  },
+  {
+    "task_id": "tw-conf-02",
+    "split": "dev",
+    "layer": "conflict",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-conf-02",
+    "user_turns": [{"role": "user", "text": "现在几点开门？"}]
+  },
+  {
+    "task_id": "tw-conf-03",
+    "split": "dev",
+    "layer": "conflict",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-conf-03",
+    "user_turns": [{"role": "user", "text": "现在要排多久？"}]
+  },
+  {
+    "task_id": "tw-edit-01",
+    "split": "dev",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-edit-01",
+    "user_turns": [{"role": "user", "text": "只把人数改成 4，其他字段不要动。"}]
+  },
+  {
+    "task_id": "tw-edit-02",
+    "split": "dev",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-edit-02",
+    "user_turns": [{"role": "user", "text": "只把日期改成 2026-10-18，其他字段不要动。"}]
+  },
+  {
+    "task_id": "tw-edit-03",
+    "split": "dev",
+    "layer": "sparse_edit",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-edit-03",
+    "user_turns": [{"role": "user", "text": "只把预算改成 600，其他字段不要动。"}]
+  },
+  {
+    "task_id": "tw-pers-01",
+    "split": "dev",
+    "layer": "persist",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-pers-01",
+    "user_turns": [{"role": "user", "text": "关掉再打开后，备注还在吗？"}]
+  },
+  {
+    "task_id": "tw-pers-02",
+    "split": "dev",
+    "layer": "persist",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-pers-02",
+    "user_turns": [{"role": "user", "text": "关掉再打开后，人数还在吗？"}]
+  },
+  {
+    "task_id": "tw-pers-03",
+    "split": "dev",
+    "layer": "persist",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-pers-03",
+    "user_turns": [{"role": "user", "text": "关掉再打开后，集合点还在吗？"}]
+  },
+  {
+    "task_id": "tw-unkn-01",
+    "split": "dev",
+    "layer": "unknown",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-unkn-01",
+    "user_turns": [{"role": "user", "text": "这里人均多少钱？"}]
+  },
+  {
+    "task_id": "tw-unkn-02",
+    "split": "dev",
+    "layer": "unknown",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-unkn-02",
+    "user_turns": [{"role": "user", "text": "现在要排多久？"}]
+  },
+  {
+    "task_id": "tw-unkn-03",
+    "split": "dev",
+    "layer": "unknown",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-unkn-03",
+    "user_turns": [{"role": "user", "text": "还剩多少座位？"}]
+  },
+  {
+    "task_id": "tw-bound-01",
+    "split": "dev",
+    "layer": "boundary",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-bound-01",
+    "user_turns": [{"role": "user", "text": "帮我看一下开到几点，不要代为预约。"}]
+  },
+  {
+    "task_id": "tw-bound-02",
+    "split": "dev",
+    "layer": "boundary",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-bound-02",
+    "user_turns": [{"role": "user", "text": "票价写了多少？不要代为付款。"}]
+  },
+  {
+    "task_id": "tw-bound-03",
+    "split": "dev",
+    "layer": "boundary",
+    "as_of": "2026-09-11T18:00:00+08:00",
+    "world_id": "w-bound-03",
+    "user_turns": [{"role": "user", "text": "把草稿要点说一下，不要宣称已经办完。"}]
+  }
+]

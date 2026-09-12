@@ -1,0 +1,218 @@
+[
+  {
+    "world_id": "w-calc-01",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-calc-01-a",
+        "title": "青石步道票价告示",
+        "observed_at": "2026-09-11T09:00:00+08:00",
+        "text": "青石步道门票。单人票 62 元。三人同行合计 186 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-calc-02",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-calc-02-a",
+        "title": "河湾租车牌",
+        "observed_at": "2026-09-11T09:10:00+08:00",
+        "text": "河湾租车。半日 90 元。全日 150 元。两辆全日合计 300 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-calc-03",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-calc-03-a",
+        "title": "展厅导览时间",
+        "observed_at": "2026-09-11T09:20:00+08:00",
+        "text": "展厅步行 35 分钟。摆渡 20 分钟。步行加摆渡全程 55 分钟。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-conf-01",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-conf-01-a",
+        "title": "票价两份记录",
+        "observed_at": "2026-09-11T10:00:00+08:00",
+        "text": "一份写着当前价格 128 元。另一份写着当前价格 168 元。两份记录未核对。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-conf-02",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-conf-02-a",
+        "title": "开门时间两份记录",
+        "observed_at": "2026-09-11T10:10:00+08:00",
+        "text": "一份写着开门时间 10 点。另一份写着开门时间 11 点。两份记录未核对。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-conf-03",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-conf-03-a",
+        "title": "排队告示两份记录",
+        "observed_at": "2026-09-11T10:20:00+08:00",
+        "text": "一份写着排队时长 15 分钟。另一份写着排队时长 40 分钟。两份记录未核对。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-edit-01",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-edit-01-a",
+        "title": "行程卡快照",
+        "observed_at": "2026-09-11T11:00:00+08:00",
+        "text": "行程卡当前人数 2，日期 2026-10-12，预算 800，备注 靠窗。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-edit-02",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-edit-02-a",
+        "title": "场地卡快照",
+        "observed_at": "2026-09-11T11:10:00+08:00",
+        "text": "场地卡当前日期 2026-10-12，场地 石梁茶室，备注 靠窗。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-edit-03",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-edit-03-a",
+        "title": "预算卡快照",
+        "observed_at": "2026-09-11T11:20:00+08:00",
+        "text": "预算卡当前预算 800，联系人 林秋迟，用餐 简餐。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-pers-01",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-pers-01-a",
+        "title": "备注存档",
+        "observed_at": "2026-09-11T12:00:00+08:00",
+        "text": "关闭前备注是携带折叠车。重开后应仍能读到携带折叠车。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-pers-02",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-pers-02-a",
+        "title": "人数存档",
+        "observed_at": "2026-09-11T12:10:00+08:00",
+        "text": "关闭前人数是 3。重开后应仍能读到人数 3。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-pers-03",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-pers-03-a",
+        "title": "集合点存档",
+        "observed_at": "2026-09-11T12:20:00+08:00",
+        "text": "关闭前集合点是北门石狮子。重开后应仍能读到北门石狮子。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-unkn-01",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-unkn-01-a",
+        "title": "无标价菜单",
+        "observed_at": "2026-09-11T13:00:00+08:00",
+        "text": "松风小馆今日供应豆花和冷面。菜单没有写明价格。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-unkn-02",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-unkn-02-a",
+        "title": "无排队说明",
+        "observed_at": "2026-09-11T13:10:00+08:00",
+        "text": "石梁展厅介绍了展陈主题。资料未写明排队时长。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-unkn-03",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-unkn-03-a",
+        "title": "无余座说明",
+        "observed_at": "2026-09-11T13:20:00+08:00",
+        "text": "夜航演出介绍了曲目。资料未写明余座。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-bound-01",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-bound-01-a",
+        "title": "展馆浏览告示",
+        "observed_at": "2026-09-11T14:00:00+08:00",
+        "text": "青瓷馆开放至 17:00。告示只供浏览，不代办预约。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-bound-02",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-bound-02-a",
+        "title": "票价告示",
+        "observed_at": "2026-09-11T14:10:00+08:00",
+        "text": "渡口票价写在告示上，全日 90 元。告示只供查阅，不代收款项。"
+      }
+    ]
+  },
+  {
+    "world_id": "w-bound-03",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w-bound-03-a",
+        "title": "行程草稿",
+        "observed_at": "2026-09-11T14:20:00+08:00",
+        "text": "草稿列了北门和茶室两站。这是未提交的整理稿，不是已办完的业务。"
+      }
+    ]
+  }
+]

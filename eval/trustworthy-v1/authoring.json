@@ -1,0 +1,9 @@
+{
+  "authors": ["dev-seed-session"],
+  "created_at": "2026-09-11",
+  "read_files": [
+    "eval/trustworthy-v1/AUTHORING.md",
+    "eval/trustworthy-v1/protocol.json"
+  ],
+  "independence": "Synthetic development seed only. No product source, no quality-v* gold or scores, and no live merchants were used."
+}
