@@ -40,6 +40,31 @@ def observation_text(pack: dict[str, Any]) -> str:
     return world_pack(pack).get("text", "")
 
 
+def with_calculator_evidence(pack: dict[str, Any], attempt: dict[str, Any]) -> dict[str, Any]:
+    """Add this run's verified arithmetic to the observation the judge may use.
+
+    A page that prints only the parts leaves the total nowhere to quote, so a
+    correct calculator answer used to die at the contract's number gate: the
+    figure was "not in the observation". The ok-rows of
+    execution_outcome.data.calculations are this run's own verified facts and
+    belong in the observation the same way page text does. The pack is copied,
+    never mutated; attempts without ok rows get an identical text back.
+    """
+    outcome = ((attempt.get("end_state") or {}).get("execution_outcome") or {})
+    rows = (outcome.get("data") or {}).get("calculations") or []
+    lines = [
+        f"本跑计算器验算：{row.get('id')} = {row.get('value')}"
+        for row in rows
+        if isinstance(row, dict) and row.get("ok") and row.get("value") is not None
+    ]
+    if not lines:
+        return pack
+    augmented = dict(pack)
+    base = observation_text(pack)
+    augmented["text"] = (base + "\n" if base else "") + "\n".join(lines)
+    return augmented
+
+
 def split_claims(text: str) -> list[str]:
     parts = [part.strip() for part in SENTENCE.split(text or "") if part and part.strip()]
     return parts or ([text.strip()] if (text or "").strip() else [])

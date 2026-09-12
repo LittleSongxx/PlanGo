@@ -17,7 +17,11 @@ from plango.graph import _card_hold_summary  # noqa: E402
 from plango_harness.agent.contracts import TripSpec  # noqa: E402
 
 from scripts.trustworthy.cli import main as cli_main  # noqa: E402
-from scripts.trustworthy.faithfulness import asserted_numbers, score_delivery  # noqa: E402
+from scripts.trustworthy.faithfulness import (  # noqa: E402
+    asserted_numbers,
+    score_delivery,
+    with_calculator_evidence,
+)
 from scripts.trustworthy.faithfulness_judge import (  # noqa: E402
     JudgeError,
     judge_user_payload,
@@ -308,7 +312,7 @@ def test_cli_validate_and_score(tmp_path, capsys):
     assert report["tsr"]["wilson_95"]["low"] < report["tsr"]["point"] < report["tsr"]["wilson_95"]["high"]
     assert "not a holdout official score" in report["disclaimer"]
     assert report["faithfulness"]["bootstrap_95"]["draws"] == 2000
-    assert report["scorer_version"] == "trustworthy.v1.5-rules"
+    assert report["scorer_version"] == "trustworthy.v1.6-rules"
     coverage = report["coverage"]
     assert coverage["faithfulness_lower_bound"] is not None
     assert coverage["faithfulness_scored"] == len([row for row in report["cases"] if row["faithfulness"] is not None])
@@ -572,3 +576,65 @@ def test_records_declaration_allows_numbers_the_pack_omits():
         judge="rules",
     )
     assert all(row["label"] != "unsupported" or row["by"] != "contract" for row in scored["claims"])
+
+
+def test_with_calculator_evidence_takes_ok_rows_and_copies_the_pack():
+    attempt = {
+        "end_state": {
+            "execution_outcome": {
+                "data": {
+                    "calculations": [
+                        {"id": "calc-1", "ok": True, "value": 112},
+                        {"id": "calc-2", "ok": False, "value": None},
+                        {"id": "calc-3", "ok": True, "value": 35},
+                    ]
+                }
+            }
+        }
+    }
+    pack = {"text": "日场 45 元。夜场 67 元。"}
+    augmented = with_calculator_evidence(pack, attempt)
+    assert "本跑计算器验算：calc-1 = 112" in augmented["text"]
+    assert "calc-3 = 35" in augmented["text"]
+    assert "calc-2" not in augmented["text"]
+    assert pack["text"] == "日场 45 元。夜场 67 元。"
+
+
+def test_with_calculator_evidence_without_rows_returns_the_same_pack():
+    attempt = {"end_state": {"execution_outcome": {"data": {"calculations": []}}}}
+    pack = {"text": "只有页文。"}
+    assert with_calculator_evidence(pack, attempt) is pack
+
+
+def test_calculator_number_reaches_the_judge_instead_of_the_contract_gate():
+    attempt = {
+        "end_state": {
+            "execution_outcome": {
+                "data": {"calculations": [{"id": "calc-1", "ok": True, "value": 112}]}
+            }
+        }
+    }
+    pack = with_calculator_evidence({"text": "日场 45 元。夜场 67 元。"}, attempt)
+    seen = []
+
+    def complete(messages):
+        seen.append(messages)
+        return json.dumps(
+            {"labels": [{"claim_id": "S1", "label": "supported", "span": None}]},
+            ensure_ascii=False,
+        )
+
+    scored = score_delivery(
+        {"text": "两场合买 112 元。"}, pack, judge="llm", complete=complete
+    )
+    assert all(row["by"] != "contract" for row in scored["claims"])
+    assert seen, "the claim must be judged, not killed by the contract number gate"
+    user_payload = "".join(str(m.get("content") or "") for m in seen[0])
+    assert "本跑计算器验算：calc-1 = 112" in user_payload
+
+
+def test_uncalculated_number_still_dies_at_the_contract_gate():
+    scored = score_delivery(
+        {"text": "两场合买 112 元。"}, {"text": "日场 45 元。夜场 67 元。"}, judge="rules"
+    )
+    assert any(row["label"] == "unsupported" and row["by"] == "contract" for row in scored["claims"])
