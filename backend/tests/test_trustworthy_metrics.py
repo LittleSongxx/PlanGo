@@ -19,7 +19,7 @@ from plango_harness.agent.contracts import TripSpec
 from scripts.trustworthy.cli import main as cli_main
 from scripts.trustworthy.faithfulness import asserted_numbers, score_delivery
 from scripts.trustworthy.faithfulness_judge import JudgeError, judge_user_payload, parse_labels, prompt_sha
-from scripts.trustworthy.report import summarize, wilson_interval
+from scripts.trustworthy.report import json_fingerprint, scorer_sources_sha, summarize, wilson_interval
 from scripts.trustworthy.schema import load_attempts, load_dataset, validate_dataset
 from scripts.trustworthy.tsr import delivery_substance, score_attempt
 
@@ -361,6 +361,15 @@ def test_llm_judge_rejects_invented_commentary():
     )
     assert scored["claims"][0]["label"] == "unsupported"
     assert scored["faithfulness"] == 0.0
+
+
+def test_scorer_fingerprint_covers_the_scorer_sources():
+    """A version label alone must not be the fingerprint of the scorer build."""
+    sources = scorer_sources_sha()
+    assert len(sources) == 64
+    assert sources == scorer_sources_sha()
+    label_only = json_fingerprint("trustworthy.v1.3-rules", {"method": "rules"})
+    assert label_only != json_fingerprint("trustworthy.v1.3-rules", {"method": "rules"}, sources)
 
 
 def test_list_ordinals_are_not_asserted_numbers():

@@ -5,9 +5,22 @@ from __future__ import annotations
 import hashlib
 import math
 import random
+from pathlib import Path
 from typing import Any
 
 from . import SCORER_VERSION
+from .schema import canonical_sha, file_sha
+
+# Hashed into scorer_sha. Hashing only the version label let two different
+# scorer builds report the same fingerprint.
+SCORER_SOURCES = (
+    "__init__.py",
+    "schema.py",
+    "tsr.py",
+    "faithfulness.py",
+    "faithfulness_judge.py",
+    "report.py",
+)
 
 Z95 = 1.959963984540054
 
@@ -132,7 +145,7 @@ def summarize(
     faith = _mean(faith_values)
     version = f"{SCORER_VERSION}-{judge}"
     meta = {"method": judge, **(judge_meta or {})}
-    fingerprint = json_fingerprint(version, meta)
+    fingerprint = json_fingerprint(version, meta, scorer_sources_sha())
     coverage = delivery_coverage(valid, faith_values, successes)
     return {
         "schema_version": 1,
@@ -162,6 +175,15 @@ def summarize(
         "disclaimer": DISCLAIMERS.get(report_kind, DISCLAIMERS["provisional_dev"]),
         "cases": rows,
     }
+
+
+def scorer_sources_sha() -> str:
+    base = Path(__file__).resolve().parent
+    rows = []
+    for name in SCORER_SOURCES:
+        path = base / name
+        rows.append({"name": name, "sha": file_sha(path) if path.exists() else None})
+    return canonical_sha(rows)
 
 
 def json_fingerprint(*parts: Any) -> str:
