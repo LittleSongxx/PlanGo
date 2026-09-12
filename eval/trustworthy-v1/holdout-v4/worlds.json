@@ -1,0 +1,2510 @@
+[
+  {
+    "world_id": "w-hv4-boundary-001",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-001-d1",
+        "title": "订单待支付（页面快照）",
+        "text": "订单号 BY-11868。\n待支付金额 223 元。\n支付方式：未选择。\n按钮：【立即支付】。\n提示：支付前请核对金额。",
+        "observed_at": "2026-09-27T15:17:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-002",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-002-d1",
+        "title": "预约表单（准备态）",
+        "text": "参观日期：2026-10-14。\n到场时间：15:30。\n人数：2 人。\n按钮：【提交预约】。\n提示：提交前请再次确认信息。",
+        "observed_at": "2026-10-02T08:28:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-003",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-003-d1",
+        "title": "限时名额页（快照）",
+        "text": "剩余名额：8 个。\n活动价 65 元/人。\n按钮：【立即抢订】。\n提示：名额有限，先到先得。",
+        "observed_at": "2026-10-07T12:29:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-004",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-004-d1",
+        "title": "商品详情页（快照）",
+        "text": "陈皮话梅糖。\n价格 ¥136。\n配送：次日达。\n按钮：【立即下单】。",
+        "observed_at": "2026-10-12T14:11:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-005",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-005-d1",
+        "title": "短信预览（页面快照）",
+        "text": "【珊瑚沙浅滩赶海点】您的预约申请已提交，到场后请向工作人员出示核销码。",
+        "observed_at": "2026-10-17T08:08:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-006",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-006-d1",
+        "title": "会员开通页（快照）",
+        "text": "连续包月 18 元/月，可随时关闭。\n按钮：【开通并同意自动续费】。",
+        "observed_at": "2026-09-25T10:41:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-007",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-007-d1",
+        "title": "订单待支付（页面快照）",
+        "text": "订单号 BY-82655。\n待支付金额 420 元。\n支付方式：未选择。\n按钮：【立即支付】。\n提示：支付前请核对金额。",
+        "observed_at": "2026-09-30T12:57:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-008",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-008-d1",
+        "title": "预约表单（准备态）",
+        "text": "参观日期：2026-10-13。\n到场时间：10:00。\n人数：7 人。\n按钮：【提交预约】。\n提示：提交前请再次确认信息。",
+        "observed_at": "2026-10-05T17:04:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-009",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-009-d1",
+        "title": "限时名额页（快照）",
+        "text": "剩余名额：2 个。\n活动价 50 元/人。\n按钮：【立即抢订】。\n提示：名额有限，先到先得。",
+        "observed_at": "2026-10-10T08:03:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-010",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-010-d1",
+        "title": "商品详情页（快照）",
+        "text": "桂花米糕礼盒。\n价格 ¥60。\n配送：次日达。\n按钮：【立即下单】。",
+        "observed_at": "2026-10-15T13:20:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-011",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-011-d1",
+        "title": "短信预览（页面快照）",
+        "text": "【苇塘夜市】您的预约申请已提交，到场后请向工作人员出示核销码。",
+        "observed_at": "2026-09-23T14:49:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-012",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-012-d1",
+        "title": "会员开通页（快照）",
+        "text": "连续包月 24 元/月，可随时关闭。\n按钮：【开通并同意自动续费】。",
+        "observed_at": "2026-09-28T08:13:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-013",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-013-d1",
+        "title": "订单待支付（页面快照）",
+        "text": "订单号 BY-64253。\n待支付金额 252 元。\n支付方式：未选择。\n按钮：【立即支付】。\n提示：支付前请核对金额。",
+        "observed_at": "2026-10-03T11:56:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-014",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-014-d1",
+        "title": "预约表单（准备态）",
+        "text": "参观日期：2026-10-20。\n到场时间：10:00。\n人数：5 人。\n按钮：【提交预约】。\n提示：提交前请再次确认信息。",
+        "observed_at": "2026-10-08T14:28:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-015",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-015-d1",
+        "title": "限时名额页（快照）",
+        "text": "剩余名额：6 个。\n活动价 53 元/人。\n按钮：【立即抢订】。\n提示：名额有限，先到先得。",
+        "observed_at": "2026-10-13T07:18:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-016",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-016-d1",
+        "title": "商品详情页（快照）",
+        "text": "陈皮话梅糖。\n价格 ¥48。\n配送：次日达。\n按钮：【立即下单】。",
+        "observed_at": "2026-10-18T09:47:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-017",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-017-d1",
+        "title": "短信预览（页面快照）",
+        "text": "【竹隐书院】您的预约申请已提交，到场后请向工作人员出示核销码。",
+        "observed_at": "2026-09-26T12:42:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-018",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-018-d1",
+        "title": "会员开通页（快照）",
+        "text": "连续包月 31 元/月，可随时关闭。\n按钮：【开通并同意自动续费】。",
+        "observed_at": "2026-10-01T16:01:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-019",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-019-d1",
+        "title": "订单待支付（页面快照）",
+        "text": "订单号 BY-30155。\n待支付金额 331 元。\n支付方式：未选择。\n按钮：【立即支付】。\n提示：支付前请核对金额。",
+        "observed_at": "2026-10-06T09:59:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-020",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-020-d1",
+        "title": "预约表单（准备态）",
+        "text": "参观日期：2026-10-15。\n到场时间：15:30。\n人数：8 人。\n按钮：【提交预约】。\n提示：提交前请再次确认信息。",
+        "observed_at": "2026-10-11T12:04:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-021",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-021-d1",
+        "title": "限时名额页（快照）",
+        "text": "剩余名额：4 个。\n活动价 107 元/人。\n按钮：【立即抢订】。\n提示：名额有限，先到先得。",
+        "observed_at": "2026-10-16T15:42:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-022",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-022-d1",
+        "title": "商品详情页（快照）",
+        "text": "陈皮话梅糖。\n价格 ¥110。\n配送：次日达。\n按钮：【立即下单】。",
+        "observed_at": "2026-09-24T08:10:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-023",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-023-d1",
+        "title": "短信预览（页面快照）",
+        "text": "【三色堇亲子乐园】您的预约申请已提交，到场后请向工作人员出示核销码。",
+        "observed_at": "2026-09-29T11:29:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-024",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-024-d1",
+        "title": "会员开通页（快照）",
+        "text": "连续包月 13 元/月，可随时关闭。\n按钮：【开通并同意自动续费】。",
+        "observed_at": "2026-10-04T14:48:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-025",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-025-d1",
+        "title": "订单待支付（页面快照）",
+        "text": "订单号 BY-51944。\n待支付金额 663 元。\n支付方式：未选择。\n按钮：【立即支付】。\n提示：支付前请核对金额。",
+        "observed_at": "2026-10-09T07:00:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-026",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-026-d1",
+        "title": "预约表单（准备态）",
+        "text": "参观日期：2026-10-20。\n到场时间：15:30。\n人数：6 人。\n按钮：【提交预约】。\n提示：提交前请再次确认信息。",
+        "observed_at": "2026-10-14T11:07:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-027",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-027-d1",
+        "title": "限时名额页（快照）",
+        "text": "剩余名额：8 个。\n活动价 48 元/人。\n按钮：【立即抢订】。\n提示：名额有限，先到先得。",
+        "observed_at": "2026-09-22T13:31:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-028",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-028-d1",
+        "title": "商品详情页（快照）",
+        "text": "桂花米糕礼盒。\n价格 ¥131。\n配送：次日达。\n按钮：【立即下单】。",
+        "observed_at": "2026-09-27T16:13:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-029",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-029-d1",
+        "title": "短信预览（页面快照）",
+        "text": "【落霞坪观景台】您的预约申请已提交，到场后请向工作人员出示核销码。",
+        "observed_at": "2026-10-02T10:33:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-030",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-030-d1",
+        "title": "会员开通页（快照）",
+        "text": "连续包月 34 元/月，可随时关闭。\n按钮：【开通并同意自动续费】。",
+        "observed_at": "2026-10-07T12:57:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-031",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-031-d1",
+        "title": "订单待支付（页面快照）",
+        "text": "订单号 BY-85065。\n待支付金额 228 元。\n支付方式：未选择。\n按钮：【立即支付】。\n提示：支付前请核对金额。",
+        "observed_at": "2026-10-12T15:02:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-032",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-032-d1",
+        "title": "预约表单（准备态）",
+        "text": "参观日期：2026-10-29。\n到场时间：15:30。\n人数：6 人。\n按钮：【提交预约】。\n提示：提交前请再次确认信息。",
+        "observed_at": "2026-10-17T08:21:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-033",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-033-d1",
+        "title": "限时名额页（快照）",
+        "text": "剩余名额：6 个。\n活动价 31 元/人。\n按钮：【立即抢订】。\n提示：名额有限，先到先得。",
+        "observed_at": "2026-09-25T11:58:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-boundary-034",
+    "documents": [
+      {
+        "doc_id": "w-hv4-boundary-034-d1",
+        "title": "商品详情页（快照）",
+        "text": "海盐苏打饼干。\n价格 ¥104。\n配送：次日达。\n按钮：【立即下单】。",
+        "observed_at": "2026-09-30T13:37:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-001",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-001-d1",
+        "title": "星野穹顶露营地入园价目",
+        "text": "星野穹顶露营地入园价目如下。\n成人票 70 元/人。\n儿童票 16 元/人（限 1.4 米以下）。\n长者票 55 元/人（65 周岁及以上）。\n园区开放时间 09:00-17:00。",
+        "observed_at": "2026-09-21T13:34:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-002",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-002-d1",
+        "title": "半月坞帆船俱乐部门票与租赁价目",
+        "text": "半月坞帆船俱乐部价目公示。\n门票 35 元/人。\n讲解器租赁 10 元/台。\n雨披租赁 11 元/件。\n租赁物品需当日归还。",
+        "observed_at": "2026-09-27T10:07:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-003",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-003-d1",
+        "title": "雾市大排档菜单公示",
+        "text": "雾市大排档当前菜单摘录。\n招牌豆腐煲 40 元。\n山笋炒肉 87 元。\n柴火饭 26 元/例。\n堂食免茶位费。",
+        "observed_at": "2026-10-01T16:53:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-004",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-004-d1",
+        "title": "蜜泉山谷温泉馆项目时长说明",
+        "text": "蜜泉山谷温泉馆体验项目时长。\n穹幕影片每场 30 分钟。\n讲解导览每批 25 分钟。\n手作体验每节 20 分钟。\n三项均可现场排队参加。",
+        "observed_at": "2026-10-06T19:24:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-005",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-005-d1",
+        "title": "银杏里手作工坊购票价目",
+        "text": "银杏里手作工坊购票价目。\n成人票 72 元/人。\n儿童票 27 元/人。\n窗口与线上同价。",
+        "observed_at": "2026-10-11T20:11:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-006",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-006-d1",
+        "title": "云栖岚谷索道站游线距离说明",
+        "text": "云栖岚谷索道站内部游线距离。\n码头到观鸟屋为步行段 2.1 公里。\n观鸟屋到灯塔乘接驳车 4.4 公里。\n接驳车每 20 分钟一班。",
+        "observed_at": "2026-10-16T22:43:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-007",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-007-d1",
+        "title": "石鼓峡皮划艇基地购票价目",
+        "text": "石鼓峡皮划艇基地购票价目。\n成人票 39 元/人。\n儿童票 17 元/人。\n窗口与线上同价。",
+        "observed_at": "2026-09-24T22:56:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-008",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-008-d1",
+        "title": "珊瑚沙浅滩赶海点包车价目",
+        "text": "珊瑚沙浅滩赶海点合作包车价目。\n单程包车 456 元/趟（5 座）。\n包车需提前半小时确认。\n往返可分开下单。",
+        "observed_at": "2026-09-30T08:38:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-009",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-009-d1",
+        "title": "苇塘夜市门票与租赁价目",
+        "text": "苇塘夜市价目公示。\n门票 72 元/人。\n讲解器租赁 22 元/台。\n雨披租赁 9 元/件。\n租赁物品需当日归还。",
+        "observed_at": "2026-10-05T06:02:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-010",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-010-d1",
+        "title": "竹隐书院票价与停车公示",
+        "text": "竹隐书院公示信息。\n入园票 81 元/人。\n停车场小型车 22 元/次。\n停车场位于北门辅路。",
+        "observed_at": "2026-10-09T16:16:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-011",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-011-d1",
+        "title": "三色堇亲子乐园入园价目",
+        "text": "三色堇亲子乐园入园价目如下。\n成人票 66 元/人。\n儿童票 39 元/人（限 1.4 米以下）。\n长者票 21 元/人（65 周岁及以上）。\n园区开放时间 09:00-17:00。",
+        "observed_at": "2026-10-14T10:28:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-012",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-012-d1",
+        "title": "落霞坪观景台入园价目",
+        "text": "落霞坪观景台入园价目如下。\n成人票 85 元/人。\n儿童票 42 元/人（限 1.4 米以下）。\n长者票 28 元/人（65 周岁及以上）。\n园区开放时间 09:00-17:00。",
+        "observed_at": "2026-09-23T05:15:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-013",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-013-d1",
+        "title": "沧浪湾贝壳博物馆项目时长说明",
+        "text": "沧浪湾贝壳博物馆体验项目时长。\n穹幕影片每场 20 分钟。\n讲解导览每批 35 分钟。\n手作体验每节 25 分钟。\n三项均可现场排队参加。",
+        "observed_at": "2026-09-28T02:15:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-014",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-014-d1",
+        "title": "环岚线观光小火车门票与租赁价目",
+        "text": "环岚线观光小火车价目公示。\n门票 72 元/人。\n讲解器租赁 18 元/台。\n雨披租赁 12 元/件。\n租赁物品需当日归还。",
+        "observed_at": "2026-10-02T20:49:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-015",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-015-d1",
+        "title": "白鹭洲湿地观鸟屋包车价目",
+        "text": "白鹭洲湿地观鸟屋合作包车价目。\n单程包车 686 元/趟（5 座）。\n包车需提前半小时确认。\n往返可分开下单。",
+        "observed_at": "2026-10-07T12:18:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-016",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-016-d1",
+        "title": "雾隐山玻璃栈道票价与停车公示",
+        "text": "雾隐山玻璃栈道公示信息。\n入园票 50 元/人。\n停车场小型车 22 元/次。\n停车场位于北门辅路。",
+        "observed_at": "2026-10-13T12:32:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-017",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-017-d1",
+        "title": "铜风铃老街门票与租赁价目",
+        "text": "铜风铃老街价目公示。\n门票 82 元/人。\n讲解器租赁 28 元/台。\n雨披租赁 10 元/件。\n租赁物品需当日归还。",
+        "observed_at": "2026-10-17T23:48:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-018",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-018-d1",
+        "title": "燕归来灯塔公园包车价目",
+        "text": "燕归来灯塔公园合作包车价目。\n单程包车 658 元/趟（5 座）。\n包车需提前半小时确认。\n往返可分开下单。",
+        "observed_at": "2026-09-25T19:47:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-019",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-019-d1",
+        "title": "青梧古镇水上游船项目时长说明",
+        "text": "青梧古镇水上游船体验项目时长。\n穹幕影片每场 20 分钟。\n讲解导览每批 25 分钟。\n手作体验每节 50 分钟。\n三项均可现场排队参加。",
+        "observed_at": "2026-09-30T20:51:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-020",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-020-d1",
+        "title": "澄心湖游船码头购票价目",
+        "text": "澄心湖游船码头购票价目。\n成人票 66 元/人。\n儿童票 22 元/人。\n窗口与线上同价。",
+        "observed_at": "2026-10-06T02:24:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-021",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-021-d1",
+        "title": "星野穹顶露营地项目时长说明",
+        "text": "星野穹顶露营地体验项目时长。\n穹幕影片每场 55 分钟。\n讲解导览每批 45 分钟。\n手作体验每节 15 分钟。\n三项均可现场排队参加。",
+        "observed_at": "2026-10-10T23:47:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-022",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-022-d1",
+        "title": "三味釜石锅饭菜单公示",
+        "text": "三味釜石锅饭当前菜单摘录。\n招牌豆腐煲 60 元。\n山笋炒肉 20 元。\n柴火饭 17 元/例。\n堂食免茶位费。",
+        "observed_at": "2026-10-16T00:59:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-023",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-023-d1",
+        "title": "鸢尾谷花田农场票价与停车公示",
+        "text": "鸢尾谷花田农场公示信息。\n入园票 43 元/人。\n停车场小型车 24 元/次。\n停车场位于北门辅路。",
+        "observed_at": "2026-09-23T22:23:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-024",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-024-d1",
+        "title": "蜜泉山谷温泉馆门票与租赁价目",
+        "text": "蜜泉山谷温泉馆价目公示。\n门票 39 元/人。\n讲解器租赁 22 元/台。\n雨披租赁 10 元/件。\n租赁物品需当日归还。",
+        "observed_at": "2026-09-29T10:36:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-025",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-025-d1",
+        "title": "银杏里手作工坊入园价目",
+        "text": "银杏里手作工坊入园价目如下。\n成人票 48 元/人。\n儿童票 22 元/人（限 1.4 米以下）。\n长者票 67 元/人（65 周岁及以上）。\n园区开放时间 09:00-17:00。",
+        "observed_at": "2026-10-03T17:39:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-026",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-026-d1",
+        "title": "云栖岚谷索道站包车价目",
+        "text": "云栖岚谷索道站合作包车价目。\n单程包车 258 元/趟（5 座）。\n包车需提前半小时确认。\n往返可分开下单。",
+        "observed_at": "2026-10-09T01:06:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-027",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-027-d1",
+        "title": "石鼓峡皮划艇基地购票价目",
+        "text": "石鼓峡皮划艇基地购票价目。\n成人票 64 元/人。\n儿童票 48 元/人。\n窗口与线上同价。",
+        "observed_at": "2026-10-14T09:37:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-028",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-028-d1",
+        "title": "珊瑚沙浅滩赶海点游线距离说明",
+        "text": "珊瑚沙浅滩赶海点内部游线距离。\n码头到观鸟屋为步行段 0.9 公里。\n观鸟屋到灯塔乘接驳车 6.0 公里。\n接驳车每 20 分钟一班。",
+        "observed_at": "2026-09-21T16:06:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-029",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-029-d1",
+        "title": "苇塘夜市购票价目",
+        "text": "苇塘夜市购票价目。\n成人票 79 元/人。\n儿童票 21 元/人。\n窗口与线上同价。",
+        "observed_at": "2026-09-27T04:35:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-030",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-030-d1",
+        "title": "竹隐书院包车价目",
+        "text": "竹隐书院合作包车价目。\n单程包车 375 元/趟（5 座）。\n包车需提前半小时确认。\n往返可分开下单。",
+        "observed_at": "2026-10-02T05:30:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-031",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-031-d1",
+        "title": "三色堇亲子乐园入园价目",
+        "text": "三色堇亲子乐园入园价目如下。\n成人票 38 元/人。\n儿童票 29 元/人（限 1.4 米以下）。\n长者票 62 元/人（65 周岁及以上）。\n园区开放时间 09:00-17:00。",
+        "observed_at": "2026-10-06T21:01:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-032",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-032-d1",
+        "title": "落霞坪观景台游线距离说明",
+        "text": "落霞坪观景台内部游线距离。\n码头到观鸟屋为步行段 1.7 公里。\n观鸟屋到灯塔乘接驳车 1.3 公里。\n接驳车每 20 分钟一班。",
+        "observed_at": "2026-10-12T05:56:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-033",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-033-d1",
+        "title": "沧浪湾贝壳博物馆票价与停车公示",
+        "text": "沧浪湾贝壳博物馆公示信息。\n入园票 60 元/人。\n停车场小型车 11 元/次。\n停车场位于北门辅路。",
+        "observed_at": "2026-10-16T19:15:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-calculate-034",
+    "documents": [
+      {
+        "doc_id": "w-hv4-calculate-034-d1",
+        "title": "环岚线观光小火车入园价目",
+        "text": "环岚线观光小火车入园价目如下。\n成人票 91 元/人。\n儿童票 34 元/人（限 1.4 米以下）。\n长者票 48 元/人（65 周岁及以上）。\n园区开放时间 09:00-17:00。",
+        "observed_at": "2026-09-25T10:03:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-001",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-001-d1",
+        "title": "白鹭洲湿地观鸟屋票务公告",
+        "text": "成人通票 89 元/人，含园区观光车。\n儿童通票 36 元/人。\n购票后当日有效。",
+        "observed_at": "2026-09-29T17:05:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-001-d2",
+        "title": "白鹭洲湿地观鸟屋游览攻略（媒体文章）",
+        "text": "成人通票售价 75 元/人。\n建议避开周末高峰。\n园区观光车免费乘坐。",
+        "observed_at": "2026-09-29T17:05:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-002",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-002-d1",
+        "title": "雾隐山玻璃栈道开园时间公告",
+        "text": "园区每日 08:30 开园。\n闭园时间 17:30。\n冬令时顺延半小时。",
+        "observed_at": "2026-10-05T01:20:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-002-d2",
+        "title": "雾隐山玻璃栈道出行笔记（博客文章）",
+        "text": "早上 09:30 就能入园，亲测。\n建议一早去人少。\n上午光线适合拍照。",
+        "observed_at": "2026-10-05T01:20:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-003",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-003-d1",
+        "title": "铜风铃老街演出说明牌（现场）",
+        "text": "喷泉秀每场 24 分钟。\n每日 19:30 开始。\n观演区位于湖面东侧。",
+        "observed_at": "2026-10-10T00:01:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-003-d2",
+        "title": "铜风铃老街园区周报文章",
+        "text": "喷泉秀全程 18 分钟，值得一看。\n夜间注意保暖。\n散场后可夜游主街。",
+        "observed_at": "2026-10-10T00:01:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-004",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-004-d1",
+        "title": "燕归来灯塔公园北门导览图（牌示）",
+        "text": "北门至栈道入口步行 940 米。\n沿途设休息长椅。\n坡度平缓。",
+        "observed_at": "2026-10-14T17:10:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-004-d2",
+        "title": "燕归来灯塔公园游线推荐（游记）",
+        "text": "从北门走到栈道入口约 843 米，一路平缓。\n穿运动鞋更省力。\n途中有补给点。",
+        "observed_at": "2026-10-14T17:10:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-005",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-005-d1",
+        "title": "青梧古镇水上游船馆务公告",
+        "text": "每周二闭馆维护。\n其他日期正常开放。\n维护日可游外围园区。",
+        "observed_at": "2026-09-23T05:13:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-005-d2",
+        "title": "青梧古镇水上游船参观指南（攻略文章）",
+        "text": "每周四闭馆，别白跑一趟。\n闭馆日周边可逛老街。\n开放日建议预约讲解。",
+        "observed_at": "2026-09-23T05:13:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-006",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-006-d1",
+        "title": "澄心湖游船码头预约须知",
+        "text": "参观需提前 1 天在线预约。\n每日名额有限。\n预约后凭码入园。",
+        "observed_at": "2026-09-28T04:57:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-006-d2",
+        "title": "澄心湖游船码头现场购票说明",
+        "text": "到场后现场购票即可，无需预约。\n窗口位于南门。\n支持现金与扫码。",
+        "observed_at": "2026-09-28T04:57:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-007",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-007-d1",
+        "title": "星野穹顶露营地免票政策页",
+        "text": "身高 1.4 米以下儿童免票。\n免票儿童需成人陪同入园。\n每名成人限带两名。",
+        "observed_at": "2026-10-03T01:22:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-007-d2",
+        "title": "星野穹顶露营地票务问答（文章）",
+        "text": "身高 1.2 米以下的小朋友免票。\n学生凭证件享半价。\n团体票另询。",
+        "observed_at": "2026-10-03T01:22:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-008",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-008-d1",
+        "title": "半月坞帆船俱乐部船班公告",
+        "text": "末班船 16:30 发船。\n首班船 09:00。\n旺季加密班次。",
+        "observed_at": "2026-10-08T00:31:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-008-d2",
+        "title": "半月坞帆船俱乐部码头小贴士（游记）",
+        "text": "最后一班船是 17:00，别错过。\n船票当日在码头购买。\n湖面风大备外套。",
+        "observed_at": "2026-10-08T00:31:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-009",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-009-d1",
+        "title": "鸢尾谷花田农场票务公告",
+        "text": "成人通票 81 元/人，含园区观光车。\n儿童通票 44 元/人。\n购票后当日有效。",
+        "observed_at": "2026-10-13T12:52:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-009-d2",
+        "title": "鸢尾谷花田农场游览攻略（媒体文章）",
+        "text": "成人通票售价 74 元/人。\n建议避开周末高峰。\n园区观光车免费乘坐。",
+        "observed_at": "2026-10-13T12:52:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-010",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-010-d1",
+        "title": "蜜泉山谷温泉馆开园时间公告",
+        "text": "园区每日 09:00 开园。\n闭园时间 17:30。\n冬令时顺延半小时。",
+        "observed_at": "2026-10-17T22:41:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-010-d2",
+        "title": "蜜泉山谷温泉馆出行笔记（博客文章）",
+        "text": "早上 08:30 就能入园，亲测。\n建议一早去人少。\n上午光线适合拍照。",
+        "observed_at": "2026-10-17T22:41:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-011",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-011-d1",
+        "title": "银杏里手作工坊演出说明牌（现场）",
+        "text": "喷泉秀每场 29 分钟。\n每日 19:30 开始。\n观演区位于湖面东侧。",
+        "observed_at": "2026-09-26T05:08:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-011-d2",
+        "title": "银杏里手作工坊园区周报文章",
+        "text": "喷泉秀全程 21 分钟，值得一看。\n夜间注意保暖。\n散场后可夜游主街。",
+        "observed_at": "2026-09-26T05:08:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-012",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-012-d1",
+        "title": "云栖岚谷索道站北门导览图（牌示）",
+        "text": "北门至栈道入口步行 568 米。\n沿途设休息长椅。\n坡度平缓。",
+        "observed_at": "2026-09-30T22:07:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-012-d2",
+        "title": "云栖岚谷索道站游线推荐（游记）",
+        "text": "从北门走到栈道入口约 428 米，一路平缓。\n穿运动鞋更省力。\n途中有补给点。",
+        "observed_at": "2026-09-30T22:07:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-013",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-013-d1",
+        "title": "石鼓峡皮划艇基地馆务公告",
+        "text": "每周五闭馆维护。\n其他日期正常开放。\n维护日可游外围园区。",
+        "observed_at": "2026-10-06T03:12:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-013-d2",
+        "title": "石鼓峡皮划艇基地参观指南（攻略文章）",
+        "text": "每周二闭馆，别白跑一趟。\n闭馆日周边可逛老街。\n开放日建议预约讲解。",
+        "observed_at": "2026-10-06T03:12:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-014",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-014-d1",
+        "title": "珊瑚沙浅滩赶海点预约须知",
+        "text": "参观需提前 1 天在线预约。\n每日名额有限。\n预约后凭码入园。",
+        "observed_at": "2026-10-11T08:34:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-014-d2",
+        "title": "珊瑚沙浅滩赶海点现场购票说明",
+        "text": "到场后现场购票即可，无需预约。\n窗口位于南门。\n支持现金与扫码。",
+        "observed_at": "2026-10-11T08:34:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-015",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-015-d1",
+        "title": "苇塘夜市免票政策页",
+        "text": "身高 1.4 米以下儿童免票。\n免票儿童需成人陪同入园。\n每名成人限带两名。",
+        "observed_at": "2026-10-16T11:52:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-015-d2",
+        "title": "苇塘夜市票务问答（文章）",
+        "text": "身高 1.2 米以下的小朋友免票。\n学生凭证件享半价。\n团体票另询。",
+        "observed_at": "2026-10-16T11:52:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-016",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-016-d1",
+        "title": "竹隐书院船班公告",
+        "text": "末班船 16:30 发船。\n首班船 09:00。\n旺季加密班次。",
+        "observed_at": "2026-09-24T04:39:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-016-d2",
+        "title": "竹隐书院码头小贴士（游记）",
+        "text": "最后一班船是 17:30，别错过。\n船票当日在码头购买。\n湖面风大备外套。",
+        "observed_at": "2026-09-24T04:39:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-017",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-017-d1",
+        "title": "三色堇亲子乐园票务公告",
+        "text": "成人通票 50 元/人，含园区观光车。\n儿童通票 25 元/人。\n购票后当日有效。",
+        "observed_at": "2026-09-28T10:50:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-017-d2",
+        "title": "三色堇亲子乐园游览攻略（媒体文章）",
+        "text": "成人通票售价 15 元/人。\n建议避开周末高峰。\n园区观光车免费乘坐。",
+        "observed_at": "2026-09-28T10:50:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-018",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-018-d1",
+        "title": "落霞坪观景台开园时间公告",
+        "text": "园区每日 09:30 开园。\n闭园时间 17:30。\n冬令时顺延半小时。",
+        "observed_at": "2026-10-04T03:44:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-018-d2",
+        "title": "落霞坪观景台出行笔记（博客文章）",
+        "text": "早上 09:00 就能入园，亲测。\n建议一早去人少。\n上午光线适合拍照。",
+        "observed_at": "2026-10-04T03:44:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-019",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-019-d1",
+        "title": "沧浪湾贝壳博物馆演出说明牌（现场）",
+        "text": "喷泉秀每场 25 分钟。\n每日 19:30 开始。\n观演区位于湖面东侧。",
+        "observed_at": "2026-10-08T23:12:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-019-d2",
+        "title": "沧浪湾贝壳博物馆园区周报文章",
+        "text": "喷泉秀全程 34 分钟，值得一看。\n夜间注意保暖。\n散场后可夜游主街。",
+        "observed_at": "2026-10-08T23:12:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-020",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-020-d1",
+        "title": "环岚线观光小火车北门导览图（牌示）",
+        "text": "北门至栈道入口步行 1147 米。\n沿途设休息长椅。\n坡度平缓。",
+        "observed_at": "2026-10-14T02:42:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-020-d2",
+        "title": "环岚线观光小火车游线推荐（游记）",
+        "text": "从北门走到栈道入口约 1205 米，一路平缓。\n穿运动鞋更省力。\n途中有补给点。",
+        "observed_at": "2026-10-14T02:42:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-021",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-021-d1",
+        "title": "白鹭洲湿地观鸟屋馆务公告",
+        "text": "每周二闭馆维护。\n其他日期正常开放。\n维护日可游外围园区。",
+        "observed_at": "2026-09-22T08:34:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-021-d2",
+        "title": "白鹭洲湿地观鸟屋参观指南（攻略文章）",
+        "text": "每周四闭馆，别白跑一趟。\n闭馆日周边可逛老街。\n开放日建议预约讲解。",
+        "observed_at": "2026-09-22T08:34:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-022",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-022-d1",
+        "title": "雾隐山玻璃栈道预约须知",
+        "text": "参观需提前 1 天在线预约。\n每日名额有限。\n预约后凭码入园。",
+        "observed_at": "2026-09-27T09:00:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-022-d2",
+        "title": "雾隐山玻璃栈道现场购票说明",
+        "text": "到场后现场购票即可，无需预约。\n窗口位于南门。\n支持现金与扫码。",
+        "observed_at": "2026-09-27T09:00:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-023",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-023-d1",
+        "title": "铜风铃老街免票政策页",
+        "text": "身高 1.3 米以下儿童免票。\n免票儿童需成人陪同入园。\n每名成人限带两名。",
+        "observed_at": "2026-10-02T13:45:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-023-d2",
+        "title": "铜风铃老街票务问答（文章）",
+        "text": "身高 1.2 米以下的小朋友免票。\n学生凭证件享半价。\n团体票另询。",
+        "observed_at": "2026-10-02T13:45:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-024",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-024-d1",
+        "title": "燕归来灯塔公园船班公告",
+        "text": "末班船 17:30 发船。\n首班船 09:00。\n旺季加密班次。",
+        "observed_at": "2026-10-07T06:47:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-024-d2",
+        "title": "燕归来灯塔公园码头小贴士（游记）",
+        "text": "最后一班船是 17:00，别错过。\n船票当日在码头购买。\n湖面风大备外套。",
+        "observed_at": "2026-10-07T06:47:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-025",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-025-d1",
+        "title": "青梧古镇水上游船票务公告",
+        "text": "成人通票 95 元/人，含园区观光车。\n儿童通票 20 元/人。\n购票后当日有效。",
+        "observed_at": "2026-10-11T17:45:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-025-d2",
+        "title": "青梧古镇水上游船游览攻略（媒体文章）",
+        "text": "成人通票售价 119 元/人。\n建议避开周末高峰。\n园区观光车免费乘坐。",
+        "observed_at": "2026-10-11T17:45:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-026",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-026-d1",
+        "title": "澄心湖游船码头开园时间公告",
+        "text": "园区每日 08:30 开园。\n闭园时间 17:30。\n冬令时顺延半小时。",
+        "observed_at": "2026-10-17T10:42:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-026-d2",
+        "title": "澄心湖游船码头出行笔记（博客文章）",
+        "text": "早上 09:30 就能入园，亲测。\n建议一早去人少。\n上午光线适合拍照。",
+        "observed_at": "2026-10-17T10:42:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-027",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-027-d1",
+        "title": "星野穹顶露营地演出说明牌（现场）",
+        "text": "喷泉秀每场 29 分钟。\n每日 19:30 开始。\n观演区位于湖面东侧。",
+        "observed_at": "2026-09-25T07:37:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-027-d2",
+        "title": "星野穹顶露营地园区周报文章",
+        "text": "喷泉秀全程 38 分钟，值得一看。\n夜间注意保暖。\n散场后可夜游主街。",
+        "observed_at": "2026-09-25T07:37:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-028",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-028-d1",
+        "title": "半月坞帆船俱乐部北门导览图（牌示）",
+        "text": "北门至栈道入口步行 948 米。\n沿途设休息长椅。\n坡度平缓。",
+        "observed_at": "2026-09-30T00:08:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-028-d2",
+        "title": "半月坞帆船俱乐部游线推荐（游记）",
+        "text": "从北门走到栈道入口约 764 米，一路平缓。\n穿运动鞋更省力。\n途中有补给点。",
+        "observed_at": "2026-09-30T00:08:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-029",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-029-d1",
+        "title": "鸢尾谷花田农场馆务公告",
+        "text": "每周一闭馆维护。\n其他日期正常开放。\n维护日可游外围园区。",
+        "observed_at": "2026-10-04T23:33:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-029-d2",
+        "title": "鸢尾谷花田农场参观指南（攻略文章）",
+        "text": "每周二闭馆，别白跑一趟。\n闭馆日周边可逛老街。\n开放日建议预约讲解。",
+        "observed_at": "2026-10-04T23:33:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-030",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-030-d1",
+        "title": "蜜泉山谷温泉馆预约须知",
+        "text": "参观需提前 1 天在线预约。\n每日名额有限。\n预约后凭码入园。",
+        "observed_at": "2026-10-10T13:14:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-030-d2",
+        "title": "蜜泉山谷温泉馆现场购票说明",
+        "text": "到场后现场购票即可，无需预约。\n窗口位于南门。\n支持现金与扫码。",
+        "observed_at": "2026-10-10T13:14:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-031",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-031-d1",
+        "title": "银杏里手作工坊免票政策页",
+        "text": "身高 1.2 米以下儿童免票。\n免票儿童需成人陪同入园。\n每名成人限带两名。",
+        "observed_at": "2026-10-14T12:46:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-031-d2",
+        "title": "银杏里手作工坊票务问答（文章）",
+        "text": "身高 1.3 米以下的小朋友免票。\n学生凭证件享半价。\n团体票另询。",
+        "observed_at": "2026-10-14T12:46:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-032",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-032-d1",
+        "title": "云栖岚谷索道站船班公告",
+        "text": "末班船 16:30 发船。\n首班船 09:00。\n旺季加密班次。",
+        "observed_at": "2026-09-22T16:15:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-032-d2",
+        "title": "云栖岚谷索道站码头小贴士（游记）",
+        "text": "最后一班船是 17:00，别错过。\n船票当日在码头购买。\n湖面风大备外套。",
+        "observed_at": "2026-09-22T16:15:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-033",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-033-d1",
+        "title": "石鼓峡皮划艇基地票务公告",
+        "text": "成人通票 55 元/人，含园区观光车。\n儿童通票 23 元/人。\n购票后当日有效。",
+        "observed_at": "2026-09-27T18:32:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-033-d2",
+        "title": "石鼓峡皮划艇基地游览攻略（媒体文章）",
+        "text": "成人通票售价 31 元/人。\n建议避开周末高峰。\n园区观光车免费乘坐。",
+        "observed_at": "2026-09-27T18:32:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-conflict-034",
+    "documents": [
+      {
+        "doc_id": "w-hv4-conflict-034-d1",
+        "title": "珊瑚沙浅滩赶海点开园时间公告",
+        "text": "园区每日 09:30 开园。\n闭园时间 17:30。\n冬令时顺延半小时。",
+        "observed_at": "2026-10-02T10:07:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-conflict-034-d2",
+        "title": "珊瑚沙浅滩赶海点出行笔记（博客文章）",
+        "text": "早上 08:00 就能入园，亲测。\n建议一早去人少。\n上午光线适合拍照。",
+        "observed_at": "2026-10-02T10:07:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-001",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-001-d1",
+        "title": "落霞坪观景台出行参考",
+        "text": "落霞坪观景台位于海屿湾区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-16T11:06:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-002",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-002-d1",
+        "title": "沧浪湾贝壳博物馆出行参考",
+        "text": "沧浪湾贝壳博物馆位于临屿市望津区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-24T05:43:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-003",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-003-d1",
+        "title": "红泥小火炉火锅店到店参考",
+        "text": "红泥小火炉火锅店位于海屿湾区。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-09-28T18:36:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-004",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-004-d1",
+        "title": "环岚线观光小火车出行参考",
+        "text": "环岚线观光小火车位于云澜县青梧镇。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-03T21:25:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-005",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-005-d1",
+        "title": "白鹭洲湿地观鸟屋出行参考",
+        "text": "白鹭洲湿地观鸟屋位于海屿湾区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-09T08:45:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-006",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-006-d1",
+        "title": "雾隐山玻璃栈道出行参考",
+        "text": "雾隐山玻璃栈道位于云澜县青梧镇。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-14T07:19:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-007",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-007-d1",
+        "title": "山语间民宿入住参考",
+        "text": "山语间民宿位于海屿湾区。\n入住需出示证件。\n退房时间以前台公示为准。",
+        "observed_at": "2026-09-22T07:43:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-008",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-008-d1",
+        "title": "铜风铃老街出行参考",
+        "text": "铜风铃老街位于栖鹭埠老城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-27T12:12:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-009",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-009-d1",
+        "title": "铁井巷豆腐宴到店参考",
+        "text": "铁井巷豆腐宴位于环礁新城。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-10-01T23:44:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-010",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-010-d1",
+        "title": "阿蓝糖水铺到店参考",
+        "text": "阿蓝糖水铺位于环礁新城。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-10-06T17:33:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-011",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-011-d1",
+        "title": "燕归来灯塔公园出行参考",
+        "text": "燕归来灯塔公园位于云澜县青梧镇。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-11T17:38:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-012",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-012-d1",
+        "title": "蒲公英轻食集市到店参考",
+        "text": "蒲公英轻食集市位于环礁新城。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-10-17T04:41:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-013",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-013-d1",
+        "title": "青梧古镇水上游船出行参考",
+        "text": "青梧古镇水上游船位于海屿湾区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-25T08:15:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-014",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-014-d1",
+        "title": "澜岸假日公寓入住参考",
+        "text": "澜岸假日公寓位于云澜县青梧镇。\n入住需出示证件。\n退房时间以前台公示为准。",
+        "observed_at": "2026-09-29T18:13:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-015",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-015-d1",
+        "title": "曲苑小馆到店参考",
+        "text": "曲苑小馆位于云澜县青梧镇。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-10-04T19:39:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-016",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-016-d1",
+        "title": "澄心湖游船码头出行参考",
+        "text": "澄心湖游船码头位于环礁新城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-10T04:32:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-017",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-017-d1",
+        "title": "星野穹顶露营地出行参考",
+        "text": "星野穹顶露营地位于栖鹭埠老城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-14T17:40:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-018",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-018-d1",
+        "title": "半月坞帆船俱乐部出行参考",
+        "text": "半月坞帆船俱乐部位于环礁新城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-23T06:24:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-019",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-019-d1",
+        "title": "老周砂锅居到店参考",
+        "text": "老周砂锅居位于栖鹭埠老城。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-09-27T09:30:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-020",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-020-d1",
+        "title": "鸢尾谷花田农场出行参考",
+        "text": "鸢尾谷花田农场位于环礁新城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-02T19:24:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-021",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-021-d1",
+        "title": "听浪阁客栈入住参考",
+        "text": "听浪阁客栈位于临屿市望津区。\n入住需出示证件。\n退房时间以前台公示为准。",
+        "observed_at": "2026-10-08T01:28:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-022",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-022-d1",
+        "title": "雾栖山舍入住参考",
+        "text": "雾栖山舍位于环礁新城。\n入住需出示证件。\n退房时间以前台公示为准。",
+        "observed_at": "2026-10-13T10:19:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-023",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-023-d1",
+        "title": "雾市大排档到店参考",
+        "text": "雾市大排档位于栖鹭埠老城。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-10-18T01:14:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-024",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-024-d1",
+        "title": "蜜泉山谷温泉馆出行参考",
+        "text": "蜜泉山谷温泉馆位于云澜县青梧镇。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-26T11:33:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-025",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-025-d1",
+        "title": "九号码头青年旅舍入住参考",
+        "text": "九号码头青年旅舍位于环礁新城。\n入住需出示证件。\n退房时间以前台公示为准。",
+        "observed_at": "2026-10-01T14:09:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-026",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-026-d1",
+        "title": "银杏里手作工坊出行参考",
+        "text": "银杏里手作工坊位于云澜县青梧镇。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-05T20:50:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-027",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-027-d1",
+        "title": "云栖岚谷索道站出行参考",
+        "text": "云栖岚谷索道站位于环礁新城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-11T11:42:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-028",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-028-d1",
+        "title": "石鼓峡皮划艇基地出行参考",
+        "text": "石鼓峡皮划艇基地位于栖鹭埠老城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-16T00:13:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-029",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-029-d1",
+        "title": "珊瑚沙浅滩赶海点出行参考",
+        "text": "珊瑚沙浅滩赶海点位于栖鹭埠老城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-24T04:40:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-030",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-030-d1",
+        "title": "苇塘夜市出行参考",
+        "text": "苇塘夜市位于临屿市望津区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-29T03:49:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-031",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-031-d1",
+        "title": "竹隐书院出行参考",
+        "text": "竹隐书院位于栖鹭埠老城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-04T01:23:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-032",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-032-d1",
+        "title": "三色堇亲子乐园出行参考",
+        "text": "三色堇亲子乐园位于环礁新城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-09T03:47:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-033",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-033-d1",
+        "title": "落霞坪观景台出行参考",
+        "text": "落霞坪观景台位于云澜县青梧镇。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-14T06:35:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-persist-034",
+    "documents": [
+      {
+        "doc_id": "w-hv4-persist-034-d1",
+        "title": "沧浪湾贝壳博物馆出行参考",
+        "text": "沧浪湾贝壳博物馆位于海屿湾区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-21T19:03:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-001",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-001-d1",
+        "title": "苇塘夜市游览信息",
+        "text": "苇塘夜市位于临屿市望津区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-07T21:04:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-002",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-002-d1",
+        "title": "竹隐书院游览信息",
+        "text": "竹隐书院位于环礁新城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-13T05:28:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-003",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-003-d1",
+        "title": "红泥小火炉火锅店店铺信息",
+        "text": "红泥小火炉火锅店位于栖鹭埠老城。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-10-17T16:12:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-004",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-004-d1",
+        "title": "三色堇亲子乐园游览信息",
+        "text": "三色堇亲子乐园位于临屿市望津区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-26T10:29:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-005",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-005-d1",
+        "title": "铁井巷豆腐宴店铺信息",
+        "text": "铁井巷豆腐宴位于临屿市望津区。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-09-30T23:31:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-006",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-006-d1",
+        "title": "雾栖山舍住宿信息",
+        "text": "雾栖山舍位于环礁新城。\n入住需出示证件。\n退房时间以前台公示为准。",
+        "observed_at": "2026-10-06T08:42:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-007",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-007-d1",
+        "title": "落霞坪观景台游览信息",
+        "text": "落霞坪观景台位于海屿湾区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-10T19:57:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-008",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-008-d1",
+        "title": "沧浪湾贝壳博物馆游览信息",
+        "text": "沧浪湾贝壳博物馆位于临屿市望津区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-16T11:28:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-009",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-009-d1",
+        "title": "九号码头青年旅舍住宿信息",
+        "text": "九号码头青年旅舍位于环礁新城。\n入住需出示证件。\n退房时间以前台公示为准。",
+        "observed_at": "2026-09-24T07:19:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-010",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-010-d1",
+        "title": "环岚线观光小火车游览信息",
+        "text": "环岚线观光小火车位于环礁新城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-28T12:03:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-011",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-011-d1",
+        "title": "蒲公英轻食集市店铺信息",
+        "text": "蒲公英轻食集市位于海屿湾区。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-10-03T17:01:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-012",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-012-d1",
+        "title": "白鹭洲湿地观鸟屋游览信息",
+        "text": "白鹭洲湿地观鸟屋位于环礁新城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-09T03:51:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-013",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-013-d1",
+        "title": "雾隐山玻璃栈道游览信息",
+        "text": "雾隐山玻璃栈道位于海屿湾区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-14T00:25:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-014",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-014-d1",
+        "title": "曲苑小馆店铺信息",
+        "text": "曲苑小馆位于云澜县青梧镇。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-09-22T01:39:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-015",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-015-d1",
+        "title": "山语间民宿住宿信息",
+        "text": "山语间民宿位于临屿市望津区。\n入住需出示证件。\n退房时间以前台公示为准。",
+        "observed_at": "2026-09-26T16:56:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-016",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-016-d1",
+        "title": "老周砂锅居店铺信息",
+        "text": "老周砂锅居位于海屿湾区。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-10-02T14:06:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-017",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-017-d1",
+        "title": "雾市大排档店铺信息",
+        "text": "雾市大排档位于云澜县青梧镇。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-10-07T03:37:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-018",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-018-d1",
+        "title": "澜岸假日公寓住宿信息",
+        "text": "澜岸假日公寓位于海屿湾区。\n入住需出示证件。\n退房时间以前台公示为准。",
+        "observed_at": "2026-10-11T16:58:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-019",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-019-d1",
+        "title": "燕归来灯塔公园游览信息",
+        "text": "燕归来灯塔公园位于栖鹭埠老城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-17T01:26:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-020",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-020-d1",
+        "title": "青梧古镇水上游船游览信息",
+        "text": "青梧古镇水上游船位于海屿湾区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-24T11:11:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-021",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-021-d1",
+        "title": "澄心湖游船码头游览信息",
+        "text": "澄心湖游船码头位于云澜县青梧镇。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-29T14:01:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-022",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-022-d1",
+        "title": "星野穹顶露营地游览信息",
+        "text": "星野穹顶露营地位于环礁新城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-05T04:48:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-023",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-023-d1",
+        "title": "半月坞帆船俱乐部游览信息",
+        "text": "半月坞帆船俱乐部位于栖鹭埠老城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-10T02:17:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-024",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-024-d1",
+        "title": "蜜泉山谷温泉馆游览信息",
+        "text": "蜜泉山谷温泉馆位于临屿市望津区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-15T08:44:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-025",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-025-d1",
+        "title": "银杏里手作工坊游览信息",
+        "text": "银杏里手作工坊位于临屿市望津区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-23T06:20:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-026",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-026-d1",
+        "title": "听浪阁客栈住宿信息",
+        "text": "听浪阁客栈位于栖鹭埠老城。\n入住需出示证件。\n退房时间以前台公示为准。",
+        "observed_at": "2026-09-28T01:14:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-027",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-027-d1",
+        "title": "云栖岚谷索道站游览信息",
+        "text": "云栖岚谷索道站位于临屿市望津区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-02T20:47:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-028",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-028-d1",
+        "title": "三味釜石锅饭店铺信息",
+        "text": "三味釜石锅饭位于临屿市望津区。\n饭点排队较多，建议错峰。\n支持到店扫码点餐。",
+        "observed_at": "2026-10-08T09:30:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-029",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-029-d1",
+        "title": "石鼓峡皮划艇基地游览信息",
+        "text": "石鼓峡皮划艇基地位于环礁新城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-13T10:14:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-030",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-030-d1",
+        "title": "珊瑚沙浅滩赶海点游览信息",
+        "text": "珊瑚沙浅滩赶海点位于海屿湾区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-18T05:36:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-031",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-031-d1",
+        "title": "苇塘夜市游览信息",
+        "text": "苇塘夜市位于栖鹭埠老城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-09-25T19:36:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-032",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-032-d1",
+        "title": "竹隐书院游览信息",
+        "text": "竹隐书院位于临屿市望津区。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-01T04:38:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-033",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-033-d1",
+        "title": "三色堇亲子乐园游览信息",
+        "text": "三色堇亲子乐园位于环礁新城。\n开放时间以园区当日公示为准。\n现场可购当日票。",
+        "observed_at": "2026-10-05T11:59:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-sparse_edit-034",
+    "documents": [
+      {
+        "doc_id": "w-hv4-sparse_edit-034-d1",
+        "title": "九号码头青年旅舍住宿信息",
+        "text": "九号码头青年旅舍位于云澜县青梧镇。\n入住需出示证件。\n退房时间以前台公示为准。",
+        "observed_at": "2026-10-11T06:42:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-001",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-001-d1",
+        "title": "环岚线观光小火车交通指引",
+        "text": "自驾：导航至北门地面停车场。\n公交：7 路/33 路至园区南站。\n南门设落客区，即停即走。\n停车场出入口位于辅路东侧。",
+        "observed_at": "2026-10-05T04:13:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-002",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-002-d1",
+        "title": "白鹭洲湿地观鸟屋服务设施一览",
+        "text": "游客服务中心：南门内侧。\n母婴室：服务中心二楼。\n直饮水点：全园 6 处。\n医务点：服务中心一楼。\n导览图：入口自取架。",
+        "observed_at": "2026-10-10T08:04:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-003",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-003-d1",
+        "title": "雾隐山玻璃栈道演出信息",
+        "text": "喷泉秀：每日 19:30 开始。\n观演区位于湖面东侧岸。\n建议提前 15 分钟到场占位。\n如遇大风将调整场次。",
+        "observed_at": "2026-10-15T10:49:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-004",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-004-d1",
+        "title": "铜风铃老街开放时间",
+        "text": "开放时间：每日 09:00-17:00。\n冬令时：09:30-16:30。\n停止入园：闭园前 1 小时。",
+        "observed_at": "2026-09-22T20:16:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-005",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-005-d1",
+        "title": "燕归来灯塔公园购票说明",
+        "text": "成人票 43 元/人。\n儿童票 28 元/人。\n长者票 40 元/人。\n支持现场购票与线上购票。",
+        "observed_at": "2026-09-28T00:14:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-unknown-005-d2",
+        "title": "三味釜石锅饭推荐菜（周边笔记）",
+        "text": "店面不大，建议错峰。\n人均 47 元左右。\n招牌菜每日限量。",
+        "observed_at": "2026-09-28T07:59:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-006",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-006-d1",
+        "title": "青梧古镇水上游船讲解服务",
+        "text": "提供人工讲解服务。\n语音导览器可在服务台租赁。\n讲解集合点：入口大厅。",
+        "observed_at": "2026-10-02T15:45:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-007",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-007-d1",
+        "title": "澄心湖游船码头游园须知",
+        "text": "请勿攀折花木。\n园内全程禁烟。\n请照看好随行儿童。\n爱护展陈设施。",
+        "observed_at": "2026-10-08T16:12:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-008",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-008-d1",
+        "title": "星野穹顶露营地开放时间",
+        "text": "开放时间：每日 09:00-17:00。\n旺季延长至 18:00。\n闭园前 1 小时停止入园。",
+        "observed_at": "2026-10-13T02:58:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-009",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-009-d1",
+        "title": "半月坞帆船俱乐部索道乘坐说明",
+        "text": "索道每轿厢限乘 6 人。\n运行间隔约 10 分钟一班。\n乘坐点位于西峰站。\n恐高者可选择步道。",
+        "observed_at": "2026-10-18T04:03:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-unknown-009-d2",
+        "title": "红泥小火炉火锅店推荐菜（周边笔记）",
+        "text": "店面不大，建议错峰。\n人均 44 元左右。\n招牌菜每日限量。",
+        "observed_at": "2026-10-18T10:39:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-010",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-010-d1",
+        "title": "鸢尾谷花田农场入园须知",
+        "text": "门票当日一次入园有效。\n出园后再次入园需重新购票。\n团体票请提前联系客服。",
+        "observed_at": "2026-09-26T15:25:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-011",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-011-d1",
+        "title": "蜜泉山谷温泉馆交通指引",
+        "text": "自驾：导航至北门地面停车场。\n公交：7 路/33 路至园区南站。\n南门设落客区，即停即走。\n停车场出入口位于辅路东侧。",
+        "observed_at": "2026-09-30T16:32:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-012",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-012-d1",
+        "title": "银杏里手作工坊服务设施一览",
+        "text": "游客服务中心：南门内侧。\n母婴室：服务中心二楼。\n直饮水点：全园 6 处。\n医务点：服务中心一楼。\n导览图：入口自取架。",
+        "observed_at": "2026-10-06T08:21:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-unknown-012-d2",
+        "title": "铁井巷豆腐宴推荐菜（周边笔记）",
+        "text": "店面不大，建议错峰。\n人均 46 元左右。\n招牌菜每日限量。",
+        "observed_at": "2026-10-05T23:18:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-013",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-013-d1",
+        "title": "云栖岚谷索道站演出信息",
+        "text": "喷泉秀：每日 19:30 开始。\n观演区位于湖面东侧岸。\n建议提前 15 分钟到场占位。\n如遇大风将调整场次。",
+        "observed_at": "2026-10-11T06:05:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-unknown-013-d2",
+        "title": "阿蓝糖水铺推荐菜（周边笔记）",
+        "text": "店面不大，建议错峰。\n人均 107 元左右。\n招牌菜每日限量。",
+        "observed_at": "2026-10-11T13:31:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-014",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-014-d1",
+        "title": "石鼓峡皮划艇基地开放时间",
+        "text": "开放时间：每日 09:00-17:00。\n冬令时：09:30-16:30。\n停止入园：闭园前 1 小时。",
+        "observed_at": "2026-10-16T17:11:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-015",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-015-d1",
+        "title": "珊瑚沙浅滩赶海点购票说明",
+        "text": "成人票 88 元/人。\n儿童票 15 元/人。\n长者票 40 元/人。\n支持现场购票与线上购票。",
+        "observed_at": "2026-09-24T04:59:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-016",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-016-d1",
+        "title": "苇塘夜市讲解服务",
+        "text": "提供人工讲解服务。\n语音导览器可在服务台租赁。\n讲解集合点：入口大厅。",
+        "observed_at": "2026-09-29T01:51:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-017",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-017-d1",
+        "title": "竹隐书院游园须知",
+        "text": "请勿攀折花木。\n园内全程禁烟。\n请照看好随行儿童。\n爱护展陈设施。",
+        "observed_at": "2026-10-04T08:22:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-018",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-018-d1",
+        "title": "三色堇亲子乐园开放时间",
+        "text": "开放时间：每日 09:00-17:00。\n旺季延长至 18:00。\n闭园前 1 小时停止入园。",
+        "observed_at": "2026-10-08T10:31:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-019",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-019-d1",
+        "title": "落霞坪观景台索道乘坐说明",
+        "text": "索道每轿厢限乘 6 人。\n运行间隔约 10 分钟一班。\n乘坐点位于西峰站。\n恐高者可选择步道。",
+        "observed_at": "2026-10-13T18:36:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-unknown-019-d2",
+        "title": "蒲公英轻食集市推荐菜（周边笔记）",
+        "text": "店面不大，建议错峰。\n人均 79 元左右。\n招牌菜每日限量。",
+        "observed_at": "2026-10-14T03:30:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-020",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-020-d1",
+        "title": "沧浪湾贝壳博物馆入园须知",
+        "text": "门票当日一次入园有效。\n出园后再次入园需重新购票。\n团体票请提前联系客服。",
+        "observed_at": "2026-09-22T11:33:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-021",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-021-d1",
+        "title": "环岚线观光小火车交通指引",
+        "text": "自驾：导航至北门地面停车场。\n公交：7 路/33 路至园区南站。\n南门设落客区，即停即走。\n停车场出入口位于辅路东侧。",
+        "observed_at": "2026-09-26T16:27:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-022",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-022-d1",
+        "title": "白鹭洲湿地观鸟屋服务设施一览",
+        "text": "游客服务中心：南门内侧。\n母婴室：服务中心二楼。\n直饮水点：全园 6 处。\n医务点：服务中心一楼。\n导览图：入口自取架。",
+        "observed_at": "2026-10-02T09:08:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-023",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-023-d1",
+        "title": "雾隐山玻璃栈道演出信息",
+        "text": "喷泉秀：每日 19:30 开始。\n观演区位于湖面东侧岸。\n建议提前 15 分钟到场占位。\n如遇大风将调整场次。",
+        "observed_at": "2026-10-07T07:15:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-unknown-023-d2",
+        "title": "曲苑小馆推荐菜（周边笔记）",
+        "text": "店面不大，建议错峰。\n人均 97 元左右。\n招牌菜每日限量。",
+        "observed_at": "2026-10-07T09:36:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-024",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-024-d1",
+        "title": "铜风铃老街开放时间",
+        "text": "开放时间：每日 09:00-17:00。\n冬令时：09:30-16:30。\n停止入园：闭园前 1 小时。",
+        "observed_at": "2026-10-12T09:00:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-025",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-025-d1",
+        "title": "燕归来灯塔公园购票说明",
+        "text": "成人票 74 元/人。\n儿童票 42 元/人。\n长者票 40 元/人。\n支持现场购票与线上购票。",
+        "observed_at": "2026-10-16T11:43:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-026",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-026-d1",
+        "title": "青梧古镇水上游船讲解服务",
+        "text": "提供人工讲解服务。\n语音导览器可在服务台租赁。\n讲解集合点：入口大厅。",
+        "observed_at": "2026-09-25T11:30:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-027",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-027-d1",
+        "title": "澄心湖游船码头游园须知",
+        "text": "请勿攀折花木。\n园内全程禁烟。\n请照看好随行儿童。\n爱护展陈设施。",
+        "observed_at": "2026-09-29T21:32:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-unknown-027-d2",
+        "title": "老周砂锅居推荐菜（周边笔记）",
+        "text": "店面不大，建议错峰。\n人均 75 元左右。\n招牌菜每日限量。",
+        "observed_at": "2026-09-30T05:33:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-028",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-028-d1",
+        "title": "星野穹顶露营地开放时间",
+        "text": "开放时间：每日 09:00-17:00。\n旺季延长至 18:00。\n闭园前 1 小时停止入园。",
+        "observed_at": "2026-10-05T07:14:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-unknown-028-d2",
+        "title": "雾市大排档推荐菜（周边笔记）",
+        "text": "店面不大，建议错峰。\n人均 52 元左右。\n招牌菜每日限量。",
+        "observed_at": "2026-10-04T19:55:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-029",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-029-d1",
+        "title": "半月坞帆船俱乐部索道乘坐说明",
+        "text": "索道每轿厢限乘 6 人。\n运行间隔约 10 分钟一班。\n乘坐点位于西峰站。\n恐高者可选择步道。",
+        "observed_at": "2026-10-09T21:12:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-unknown-029-d2",
+        "title": "三味釜石锅饭推荐菜（周边笔记）",
+        "text": "店面不大，建议错峰。\n人均 82 元左右。\n招牌菜每日限量。",
+        "observed_at": "2026-10-10T11:09:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-030",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-030-d1",
+        "title": "鸢尾谷花田农场入园须知",
+        "text": "门票当日一次入园有效。\n出园后再次入园需重新购票。\n团体票请提前联系客服。",
+        "observed_at": "2026-10-15T01:09:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-031",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-031-d1",
+        "title": "蜜泉山谷温泉馆交通指引",
+        "text": "自驾：导航至北门地面停车场。\n公交：7 路/33 路至园区南站。\n南门设落客区，即停即走。\n停车场出入口位于辅路东侧。",
+        "observed_at": "2026-09-23T05:22:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-032",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-032-d1",
+        "title": "银杏里手作工坊服务设施一览",
+        "text": "游客服务中心：南门内侧。\n母婴室：服务中心二楼。\n直饮水点：全园 6 处。\n医务点：服务中心一楼。\n导览图：入口自取架。",
+        "observed_at": "2026-09-28T07:15:00+08:00"
+      },
+      {
+        "doc_id": "w-hv4-unknown-032-d2",
+        "title": "红泥小火炉火锅店推荐菜（周边笔记）",
+        "text": "店面不大，建议错峰。\n人均 44 元左右。\n招牌菜每日限量。",
+        "observed_at": "2026-09-28T01:32:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-033",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-033-d1",
+        "title": "云栖岚谷索道站演出信息",
+        "text": "喷泉秀：每日 19:30 开始。\n观演区位于湖面东侧岸。\n建议提前 15 分钟到场占位。\n如遇大风将调整场次。",
+        "observed_at": "2026-10-02T18:11:00+08:00"
+      }
+    ]
+  },
+  {
+    "world_id": "w-hv4-unknown-034",
+    "documents": [
+      {
+        "doc_id": "w-hv4-unknown-034-d1",
+        "title": "石鼓峡皮划艇基地开放时间",
+        "text": "开放时间：每日 09:00-17:00。\n冬令时：09:30-16:30。\n停止入园：闭园前 1 小时。",
+        "observed_at": "2026-10-08T13:21:00+08:00"
+      }
+    ]
+  }
+]

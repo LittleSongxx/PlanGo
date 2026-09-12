@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "evaluation_kind": "holdout_unreviewed",
+  "report_kind": "provisional_holdout",
+  "holdout_planned": 204,
+  "layers": [
+    "calculate",
+    "conflict",
+    "sparse_edit",
+    "persist",
+    "unknown",
+    "boundary"
+  ],
+  "per_layer": {
+    "calculate": 34,
+    "conflict": 34,
+    "sparse_edit": 34,
+    "persist": 34,
+    "unknown": 34,
+    "boundary": 34
+  },
+  "split": "holdout",
+  "seed": 20260912,
+  "generated_at": "2026-09-12T12:00:00+08:00",
+  "dataset_sha": "f8669a7f96da95b727b61712d89dc69bffa0d22584eeaee375b9cb634a105429",
+  "generator": "scripts/trustworthy/build_holdout_v4.py"
+}
