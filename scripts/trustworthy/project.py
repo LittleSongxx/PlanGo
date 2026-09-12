@@ -65,6 +65,9 @@ def delivery_from(snapshot: dict[str, Any]) -> dict[str, Any]:
     number = answer_number(outcome if isinstance(outcome, dict) else None)
     if number is not None:
         delivery["answer_number"] = number
+    uncertainty = (outcome.get("data") or {}).get("uncertainty") if isinstance(outcome, dict) else None
+    if isinstance(uncertainty, dict) and uncertainty:
+        delivery["uncertainty"] = uncertainty
     return delivery
 
 

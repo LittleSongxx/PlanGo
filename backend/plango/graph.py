@@ -1298,6 +1298,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
             outcome = ExecutionOutcome(kind="task_answer", status="needs_evidence" if partial else "satisfied", summary=task.answer,
                 evidence_ids=list(dict.fromkeys(c.artifact_id for c in task.citations)),
                 data={"scope": "task_answer", "business_completed": False,
+                      "uncertainty": task.uncertainty.model_dump(mode="json") if task.uncertainty else None,
                       "citations": [c.model_dump(mode="json") for c in task.citations],
                       "calculations": context.get("tool_results", [])})
             return {**update, "browser_next": BrowserDecision().model_dump(),

@@ -136,15 +136,30 @@ def asserted_numbers(claim: str) -> list[str]:
     return NUMBER.findall(ORDINAL.sub("", claim, count=1))
 
 
-def _contract_label(claim: str, observation: str, *, conflicts: bool) -> dict[str, Any] | None:
+def _contract_label(
+    claim: str,
+    observation: str,
+    *,
+    conflicts: bool,
+    declared_missing: bool = False,
+    subject: str = "",
+    records: str = "",
+) -> dict[str, Any] | None:
     if UNCERTAINTY.search(claim) or (GAP.search(claim) and OBSERVATION_WORD.search(claim)):
         return {"text": claim, "label": "non-factual", "span": None, "by": "contract"}
+    # A declared missing value is structure, not wording: the page holds no
+    # value to cite, so a numberless sentence naming the declared subject can
+    # only be the gap statement itself. Conflict answers keep their citations
+    # in the denominator; the records the declaration quotes are a legal
+    # number surface for them.
+    if declared_missing and subject and subject in claim and not asserted_numbers(claim):
+        return {"text": claim, "label": "non-factual", "span": None, "by": "structure"}
     for number in asserted_numbers(claim):
         if conflicts:
             conflict = _conflict_span(claim, number, observation)
             if conflict:
                 return {"text": claim, "label": "contradicted", "span": conflict, "by": "contract"}
-        if number not in observation:
+        if number not in observation and number not in records:
             return {"text": claim, "label": "unsupported", "span": None, "by": "contract"}
     return None
 
@@ -185,11 +200,23 @@ def score_delivery(
     if not text.strip():
         return _empty_score() | {"judge": judge}
     observation = observation_text(observation_pack)
+    uncertainty = delivery.get("uncertainty") if isinstance(delivery, dict) else None
+    uncertainty = uncertainty if isinstance(uncertainty, dict) else {}
+    declared_missing = uncertainty.get("kind") == "missing_value"
+    subject = str(uncertainty.get("subject") or "")
+    records = "\n".join(str(row) for row in uncertainty.get("records") or [])
     pending: list[dict[str, str]] = []
     claims: list[dict[str, Any]] = []
     for index, claim in enumerate(split_claims(text), start=1):
         claim_id = f"S{index}"
-        labeled = _contract_label(claim, observation, conflicts=(judge == "rules"))
+        labeled = _contract_label(
+            claim,
+            observation,
+            conflicts=(judge == "rules"),
+            declared_missing=declared_missing,
+            subject=subject,
+            records=records,
+        )
         if labeled is not None:
             labeled["claim_id"] = claim_id
             claims.append(labeled)

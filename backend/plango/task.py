@@ -117,6 +117,20 @@ def _normalise_delivery(decision):
     return decision
 
 
+class UncertaintyClaim(BaseModel):
+    """A declared gap in the delivery, not a wording style.
+
+    The answer text stays free-form for the user; this structure is what the
+    delivery contract and the scorer read, so a gap no longer has to be
+    recognised from Chinese phrasing.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["missing_value", "conflicting_records"]
+    subject: str = Field(default="", max_length=200)
+    records: list[str] = Field(default_factory=list, max_length=8)
+
+
 class DeliveryDecision(BaseModel):
     """The delivery surface after a page is already in hand.
 
@@ -127,6 +141,14 @@ class DeliveryDecision(BaseModel):
     operation: Literal["read", "answer", "ask", "calculate", "refresh_place"]
     answer: str = Field(default="", max_length=12000)
     answer_status: Literal["complete", "partial"] = "complete"
+    uncertainty: UncertaintyClaim | None = Field(
+        default=None,
+        description=(
+            "结论是某值未知或记录互相冲突时必填，且须与answer一致：kind=missing_value（资料缺该值）"
+            "或conflicting_records（同属性多份记录不一致）；subject写所问属性；"
+            "conflicting_records时records逐条列出各份记录的值与出处。"
+        ),
+    )
     citations: list[Citation] = Field(default_factory=list, max_length=64)
     question: str = Field(default="", max_length=2000)
     calculations: list[Calculation] = Field(default_factory=list, max_length=32)
@@ -151,6 +173,14 @@ class TaskDecision(BaseModel):
     requirements: RequirementOutput | None = None
     answer: str = Field(default="", max_length=12000)
     answer_status: Literal["complete", "partial"] = "complete"
+    uncertainty: UncertaintyClaim | None = Field(
+        default=None,
+        description=(
+            "结论是某值未知或记录互相冲突时必填，且须与answer一致：kind=missing_value（资料缺该值）"
+            "或conflicting_records（同属性多份记录不一致）；subject写所问属性；"
+            "conflicting_records时records逐条列出各份记录的值与出处。"
+        ),
+    )
     citations: list[Citation] = Field(default_factory=list, max_length=64)
     question: str = Field(default="", max_length=2000)
     calculations: list[Calculation] = Field(default_factory=list, max_length=32)
@@ -740,7 +770,8 @@ def enforce_delivery_contract(task: TaskDecision, context: dict[str, Any]) -> Ta
     request = _latest_user_turn(str(context.get("current_request") or context.get("original_request") or ""))
     sources = _sources_text(context)
     if task.operation == "answer":
-        if _UNCERTAIN_SPEECH.search(task.answer) and "未知" not in task.answer:
+        declares_gap = task.uncertainty is not None or bool(_UNCERTAIN_SPEECH.search(task.answer))
+        if declares_gap and "未知" not in task.answer:
             task = task.model_copy(update={"answer": _with_unknown_mark(task.answer)})
         if "未知" in task.answer:
             return task
