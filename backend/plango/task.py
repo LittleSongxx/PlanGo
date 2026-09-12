@@ -555,7 +555,8 @@ def validate_citations(decision: TaskDecision, sources: list[dict[str, Any]]) ->
 RECORDED_VS_CURRENT = (
     "比较各份记录写下的值，不等于已经得到当前可执行值；"
     "同对象同属性出现未解决的不同观测时，当前确定值未知，用户要求给一个结论也不授权任选一份；"
-    "当前值未知时不要再补一个可执行的首选；答复须含字面「未知」，并说明是资料缺该值还是记录互相冲突。"
+    "当前值未知时不要再补一个可执行的首选；答复须含字面「未知」，并说明是资料缺该值还是记录互相冲突，"
+    "不能只写这两个字。"
 )
 
 _UNCERTAIN_SPEECH = re.compile(r"无法确定|资料未写明|没有写明|未写明|无法给出|未提供|未公布")
@@ -622,12 +623,14 @@ def _derived_answer(answer: str, context: dict[str, Any]) -> bool:
 
     A user-supplied figure settles the question: an answer that carries one is
     restating what the user asked for, so its other figures — a card value, a
-    party size — belong to the user's own turn as well. Without one, an off-page
-    figure is a quantity the calculator was supposed to produce.
+    party size — belong to the user's own turn as well. A figure the page states
+    is the lookup itself. What is left is a quantity the calculator produces,
+    whether the answer states one figure or several.
 
-    Known limit: a page that prints the answer to its own arithmetic question
-    states the figure, so this gate does not fire on it. Requiring the tool there
-    as well would mean reading the request again, which is what this replaced.
+    Known limit: when the page prints the answer to its own arithmetic question
+    next to the operands, the figure is on the page as well, so this gate does
+    not fire. Requiring the tool there as well would mean reading the request
+    again, which is what this replaced.
     """
     stated = _answer_numbers(answer)
     if not stated:
@@ -635,11 +638,10 @@ def _derived_answer(answer: str, context: dict[str, Any]) -> bool:
     recorded = set(_STATED_NUMBER.findall(_sources_text(context)))
     if not recorded:
         return False
-    user_figures = _stated_by_user(context)
     off_page = {number for number in stated if number not in recorded}
-    if off_page & user_figures:
+    if not off_page:
         return False
-    return bool(off_page)
+    return not (off_page & _stated_by_user(context))
 
 
 def _with_unknown_mark(answer: str) -> str:
