@@ -65,6 +65,28 @@ def with_calculator_evidence(pack: dict[str, Any], attempt: dict[str, Any]) -> d
     return augmented
 
 
+def with_user_turns(pack: dict[str, Any], task: dict[str, Any]) -> dict[str, Any]:
+    """Add the task's own user turns to the observation the judge may use.
+
+    An answer that restates the user's figures ("3名大人和1名小孩…226元") is
+    not inventing them: the question itself supplied 3 and 1, and the contract
+    number gate killed such sentences anyway because the question never entered
+    the observation. The turns join the observation the same way the calculator
+    rows do — labelled as the user's own words — so both the gate and the judge
+    can see them. The pack is copied; tasks without turns get it back as-is.
+    """
+    turns = task.get("user_turns") or []
+    texts = [str(t.get("text") or "") if isinstance(t, dict) else str(t or "") for t in turns]
+    texts = [t for t in texts if t.strip()]
+    if not texts:
+        return pack
+    augmented = dict(pack)
+    base = observation_text(pack)
+    lines = ["用户本轮原话（用户自述数字视为给定）：\n" + "\n".join(texts)]
+    augmented["text"] = (base + "\n" if base else "") + "\n".join(lines)
+    return augmented
+
+
 def split_claims(text: str) -> list[str]:
     parts = [part.strip() for part in SENTENCE.split(text or "") if part and part.strip()]
     return parts or ([text.strip()] if (text or "").strip() else [])

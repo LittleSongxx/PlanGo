@@ -21,6 +21,7 @@ from scripts.trustworthy.faithfulness import (  # noqa: E402
     asserted_numbers,
     score_delivery,
     with_calculator_evidence,
+    with_user_turns,
 )
 from scripts.trustworthy.faithfulness_judge import (  # noqa: E402
     JudgeError,
@@ -312,7 +313,7 @@ def test_cli_validate_and_score(tmp_path, capsys):
     assert report["tsr"]["wilson_95"]["low"] < report["tsr"]["point"] < report["tsr"]["wilson_95"]["high"]
     assert "not a holdout official score" in report["disclaimer"]
     assert report["faithfulness"]["bootstrap_95"]["draws"] == 2000
-    assert report["scorer_version"] == "trustworthy.v1.6-rules"
+    assert report["scorer_version"] == "trustworthy.v1.7-rules"
     coverage = report["coverage"]
     assert coverage["faithfulness_lower_bound"] is not None
     assert coverage["faithfulness_scored"] == len([row for row in report["cases"] if row["faithfulness"] is not None])
@@ -652,3 +653,41 @@ def test_validate_accepts_string_turns_and_rejects_empty_ones(tmp_path):
     (tmp_path / "tasks.json").write_text(json.dumps(tasks, ensure_ascii=False), encoding="utf-8")
     with pytest.raises(ValueError, match="turn text required"):
         validate_dataset(tmp_path)
+
+
+def test_with_user_turns_adds_the_users_own_figures(tmp_path):
+    task = {"user_turns": ["3 名大人和 1 名小孩门票一共多少元？"]}
+    pack = with_user_turns({"text": "成人票 58 元/人。"}, task)
+    assert "用户本轮原话" in pack["text"] and "3 名大人" in pack["text"]
+    bare = with_user_turns({"text": "页文。"}, {"user_turns": ["  "]})
+    assert bare["text"] == "页文。"
+
+
+def test_user_stated_operands_reach_the_judge_not_the_gate():
+    attempt = {
+        "end_state": {
+            "execution_outcome": {
+                "data": {"calculations": [{"id": "calc-1", "ok": True, "value": 226}]}
+            }
+        }
+    }
+    task = {"user_turns": ["3 名大人和 1 名小孩门票一共多少元？"]}
+    pack = with_user_turns(
+        with_calculator_evidence({"text": "成人票 58 元/人。儿童票 52 元/人。"}, attempt),
+        task,
+    )
+    seen = []
+
+    def complete(messages):
+        seen.append(messages)
+        return json.dumps(
+            {"labels": [{"claim_id": "S1", "label": "supported", "span": None}]},
+            ensure_ascii=False,
+        )
+
+    scored = score_delivery(
+        {"text": "3名大人和1名小孩的门票一共是226元。"}, pack, judge="llm", complete=complete
+    )
+    assert all(row["by"] != "contract" for row in scored["claims"])
+    payload = "".join(str(m.get("content") or "") for m in seen[0])
+    assert "用户本轮原话" in payload and "本跑计算器验算" in payload
