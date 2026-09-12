@@ -308,7 +308,11 @@ class IsolatedRunner:
         session_id = f"tw-{task['task_id']}"
         trial_id = f"{task['task_id']}-run"
         turns = task.get("user_turns") or []
-        question = turns[0]["text"] if turns else "请根据已观测页文作答。"
+        # Authoring sessions emit either {"role","text"} maps or bare strings.
+        first = turns[0] if turns else None
+        question = (
+            str(first.get("text") or "") if isinstance(first, dict) else str(first or "")
+        ) or "请根据已观测页文作答。"
         prior = None
         self._seed_world = world
         self._seed_spec = (
