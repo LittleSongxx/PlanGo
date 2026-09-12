@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from datetime import date, datetime, time, timedelta, timezone
-from decimal import Decimal, DecimalException, localcontext
+from decimal import Decimal, DecimalException, InvalidOperation, localcontext
 from functools import reduce
 from operator import mul
 from typing import Any, Literal
@@ -562,6 +562,7 @@ RECORDED_VS_CURRENT = (
 _UNCERTAIN_SPEECH = re.compile(r"无法确定|资料未写明|没有写明|未写明|无法给出|未提供|未公布")
 _SOURCE_GAP = re.compile(r"未写明|没有写明|未公布|未核对")
 _STATED_NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+_SENTENCE_END = set("。！？!?；;，,、：:")
 # List markup, not a figure: `1.` / `2、` / `（3）` / `• 4)`. The scorer strips the
 # same shapes before reading an assertion, so the delivery side must agree with it.
 _LIST_ORDINAL = re.compile(r"(?m)^[ \t]*(?:[（(]?\d+[)）]?[.、)）]|[•·・*][ \t]*\d*)[ \t]*")
@@ -604,6 +605,7 @@ def _stated_by_user(context: dict[str, Any]) -> set[str]:
         str(context.get("original_request") or ""),
         str(context.get("current_request") or ""),
         str(context.get("question_being_answered") or ""),
+        *[str(edit) for edit in context.get("edits") or []],
     ]
     texts += [
         str(item.get("content") or "")
@@ -611,6 +613,68 @@ def _stated_by_user(context: dict[str, Any]) -> set[str]:
         if isinstance(item, dict) and str(item.get("type") or item.get("role") or "") in {"human", "user"}
     ]
     return set(_STATED_NUMBER.findall("\n".join(texts)))
+
+
+def _decimal(token: str) -> Decimal | None:
+    try:
+        return Decimal(token)
+    except InvalidOperation:
+        return None
+
+
+def _states_own_value(observation: str, value: Decimal) -> bool:
+    """The observation writes this figure as a value, not inside a longer number."""
+    for match in _STATED_NUMBER.finditer(observation):
+        try:
+            if Decimal(match.group()) != value:
+                continue
+        except InvalidOperation:
+            continue
+        following = observation[match.end() : match.end() + 1]
+        if not following or following in _SENTENCE_END:
+            return True
+    return False
+
+
+def _record_sentences(observation: str) -> list[str]:
+    """Split what the run observed into the sentences a figure can come from."""
+    return [part.strip() for part in re.split(r"[。！？!?；;\n]", observation) if part.strip()]
+
+
+def _arithmetic_derivation(stated: set[str], observation: str) -> bool:
+    """A stated figure is what one record's figures produce arithmetically.
+
+    A record that only lists the parts cannot state their total, so a delivery
+    that reports the total from that record owes it to the calculator. The record
+    that does state the figure as its own value settles the turn instead: the
+    delivery is then reading it back, which is what the lookup branch covers.
+    This reads numbers and the four operations, never the question.
+    """
+    if not observation:
+        return False
+    sentences = _record_sentences(observation)
+    for token in stated:
+        value = _decimal(token)
+        if value is None:
+            continue
+        # The record the figure came from. A figure that no record states as its
+        # own value is not a lookup, whatever else the page contains.
+        if any(_states_own_value(sentence, value) for sentence in sentences):
+            continue
+        for sentence in sentences:
+            recorded = [number for number in (_decimal(item) for item in _STATED_NUMBER.findall(sentence)) if number is not None]
+            if value in recorded or len(recorded) < 2:
+                continue
+            for left in recorded:
+                for right in recorded:
+                    if left == right:
+                        continue
+                    produced = {left + right, left - right, left * right}
+                    if right != 0:
+                        produced.add(left / right)
+                    if value in produced:
+                        return True
+    return False
 
 
 def _derived_answer(answer: str, context: dict[str, Any]) -> bool:
@@ -624,13 +688,9 @@ def _derived_answer(answer: str, context: dict[str, Any]) -> bool:
     A user-supplied figure settles the question: an answer that carries one is
     restating what the user asked for, so its other figures — a card value, a
     party size — belong to the user's own turn as well. A figure the page states
-    is the lookup itself. What is left is a quantity the calculator produces,
-    whether the answer states one figure or several.
-
-    Known limit: when the page prints the answer to its own arithmetic question
-    next to the operands, the figure is on the page as well, so this gate does
-    not fire. Requiring the tool there as well would mean reading the request
-    again, which is what this replaced.
+    as its own value is the lookup itself. What is left is either a figure no
+    record writes at all, or a figure two recorded numbers produce arithmetically
+    while the page never states it — both are the calculator's job.
     """
     stated = _answer_numbers(answer)
     if not stated:
@@ -638,10 +698,12 @@ def _derived_answer(answer: str, context: dict[str, Any]) -> bool:
     recorded = set(_STATED_NUMBER.findall(_sources_text(context)))
     if not recorded:
         return False
-    off_page = {number for number in stated if number not in recorded}
-    if not off_page:
+    if stated & _stated_by_user(context):
         return False
-    return not (off_page & _stated_by_user(context))
+    off_page = {number for number in stated if number not in recorded}
+    if off_page:
+        return True
+    return _arithmetic_derivation(stated, _sources_text(context))
 
 
 def _with_unknown_mark(answer: str) -> str:
