@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { userMessage } from '@shared/userMessages'
+import { isImeComposing } from '@shared/ime'
 import { X, Wifi, Puzzle, MessageCircle, Bell, Brain, MapPin } from 'lucide-react'
 import { detectViaAMap, geocodeAddress } from '../lib/amap'
 import { locationLabel } from '@shared/location'
@@ -168,7 +169,7 @@ function LocationSection(): JSX.Element {
       </div>
       {coords && <div className="mt-1 text-[11px] text-neutral-400">坐标：{coords}</div>}
       <div className="flex gap-1.5 mt-2">
-        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} placeholder="手动指定我的位置，如 重庆解放碑 / 观音桥" className="plango-field flex-1 min-w-0" />
+        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !isImeComposing(e) && apply()} placeholder="手动指定我的位置，如 重庆解放碑 / 观音桥" className="plango-field flex-1 min-w-0" />
         <button onClick={apply} disabled={busy} className="text-xs px-2 py-1 rounded bg-brand text-brand-ink disabled:opacity-50">设为我的位置</button>
       </div>
       {msg && <div role="status" className="mt-1 text-[11px] text-brand-ink">{msg}</div>}

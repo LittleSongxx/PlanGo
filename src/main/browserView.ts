@@ -1,4 +1,4 @@
-import { BrowserWindow, WebContentsView, session, type WebContents, type Rectangle } from 'electron'
+import { BrowserWindow, WebContentsView, session, type BrowserWindowConstructorOptions, type WebContents, type Rectangle } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { browserUrl, allowedBrowserSite } from '../shared/browser'
 import { IPC } from '../shared/ipc'
@@ -60,21 +60,32 @@ function viewBounds(): Rectangle {
   return { x, y, width: Math.max(0, Math.min(content.width - x, Math.round(layout.width * zoom))), height: Math.max(0, Math.min(content.height - y, Math.round(layout.height * zoom))) }
 }
 function setTabVisibility(tab: Tab, visible: boolean, reason = 'browser_not_visible'): void {
+  if (reason === 'host_unmapped') return
   if (visible && !tab.visible) tab.visibility = new AbortController()
+  const was = tab.visible
   tab.visible = visible
-  if (!visible) tab.visibility.abort(new Error(reason))
+  if (!visible && was) tab.visibility.abort(new Error(reason))
+}
+function hostOperable(): boolean {
+  return !!host && !host.isDestroyed() && !host.isMinimized()
 }
 function applyLayout(): void {
   const bounds = viewBounds()
+  const mapped = hostOperable() && !!host?.isVisible()
+  let releaseHost = false
   for (const tab of tabs.values()) {
-    const visible = layout.visible && tab.id === activeId && !tab.error && !tab.closing && bounds.width > 0 && bounds.height > 0 && !!host?.isVisible() && !host.isMinimized() && !tab.popup?.isMinimized()
-    setTabVisibility(tab, visible)
+    const slotted = layout.visible && tab.id === activeId && !tab.error && !tab.closing && bounds.width > 0 && bounds.height > 0 && hostOperable() && !tab.popup?.isMinimized()
+    const visible = slotted && mapped
+    setTabVisibility(tab, visible, mapped ? 'browser_not_visible' : 'host_unmapped')
+    const guestFocused = !tab.contents.isDestroyed() && tab.contents.isFocused()
     if (tab.view) { tab.view.setBounds(bounds); tab.view.setVisible(visible) }
+    if (!visible && guestFocused) releaseHost = true
     if (tab.popup && !tab.popup.isDestroyed()) {
       if (visible && !tab.popup.isVisible()) tab.popup.showInactive()
       else if (!visible && tab.popup.isVisible()) tab.popup.hide()
     }
   }
+  if (releaseHost && host && !host.isDestroyed() && host.isFocused()) host.webContents.focus()
 }
 export function setBrowserLayout(value: BrowserLayout): void { layout = value; applyLayout() }
 export function getBrowserTab(id: string): WebContents | undefined {
@@ -89,8 +100,14 @@ export function getActiveBrowserTab(): { id: string; contents: WebContents } | u
 export function isOwnedBrowserContents(id: number): boolean { return [...tabs.values()].some(tab => tab.contents.id === id && !tab.contents.isDestroyed()) }
 export function isBrowserTabVisible(id: string): boolean {
   const tab = tabs.get(id)
-  return !!tab && !tab.contents.isDestroyed() && !tab.error && layout.visible && activeId === id && !!host?.isVisible() && !host.isMinimized()
-    && tab.visible && (tab.popup ? tab.popup.isVisible() && !tab.popup.isMinimized() : true)
+  if (!tab || tab.contents.isDestroyed() || tab.error || tab.closing || !layout.visible || activeId !== id || !hostOperable()) return false
+  if (tab.popup) return !tab.popup.isDestroyed() && !tab.popup.isMinimized()
+  const bounds = getBrowserTabBounds(id)
+  return !!bounds && bounds.width > 0 && bounds.height > 0
+}
+export function isBrowserTabReady(id: string): boolean {
+  const tab = tabs.get(id)
+  return isBrowserTabVisible(id) && !!tab && (!tab.popup || tab.popup.isVisible())
 }
 export function getBrowserTabBounds(id: string): Rectangle | undefined {
   const tab = tabs.get(id)
@@ -110,7 +127,7 @@ function attach(contents: WebContents, view?: WebContentsView, popup?: BrowserWi
   const tab: Tab = { id: 'tab_' + randomUUID(), contents, view, popup, url: contents.getURL(), visible: false, visibility }
   tabs.set(tab.id, tab)
   if (popup) {
-    popup.on('hide', () => setTabVisibility(tab, false))
+    popup.on('hide', () => setTabVisibility(tab, false, hostOperable() && host?.isVisible() ? 'browser_not_visible' : 'host_unmapped'))
     popup.on('minimize', () => setTabVisibility(tab, false))
     popup.on('restore', applyLayout)
     popup.on('show', () => { if (layout.visible) activeId = tab.id; applyLayout() })
@@ -118,6 +135,9 @@ function attach(contents: WebContents, view?: WebContentsView, popup?: BrowserWi
     popup.on('close', () => { tab.closing = true; setTabVisibility(tab, false, 'tab_closed') })
   }
   const update = (): void => { if (!contents.isDestroyed()) { tab.url = contents.getURL() || tab.url; publish() } }
+  contents.on('focus', () => {
+    if (!tab.visible && host && !host.isDestroyed() && host.isFocused()) host.webContents.focus()
+  })
   contents.on('will-prevent-unload', () => { tab.closing = false; applyLayout(); publish() })
   contents.on('did-start-loading', () => { update(); applyLayout() })
   contents.on('did-finish-load', () => { tab.error = undefined; update(); applyLayout() })
@@ -142,10 +162,14 @@ function attach(contents: WebContents, view?: WebContentsView, popup?: BrowserWi
   contents.setWindowOpenHandler(({ url }) => {
     if (!allowedBrowserSite(url)) return { action: 'deny' }
     // Returning a custom WCV from createWindow stalls this Electron/CDP build. Native popups retain their opener and session.
-    return { action: 'allow', overrideBrowserWindowOptions: { show: false, title: 'PlanGo · 浏览器', autoHideMenuBar: true,
-      webPreferences: { session: contents.session, sandbox: true, contextIsolation: true, nodeIntegration: false, webviewTag: false } } }
+    return { action: 'allow', overrideBrowserWindowOptions: {
+      ...popupWindowOptions(),
+      webPreferences: { session: contents.session, sandbox: true, contextIsolation: true, nodeIntegration: false, webviewTag: false }
+    } }
   })
   contents.on('did-create-window', child => {
+    syncPopupBounds(child)
+    child.once('ready-to-show', () => syncPopupBounds(child))
     const next = attach(child.webContents, undefined, child)
     popupHandler?.(tab.id, next.id)
     activateBrowserTab(next.id)
@@ -186,6 +210,29 @@ export async function handleBrowserIntent(intent: BrowserIntent): Promise<Browse
   }
   applyLayout(); publish(); return getBrowserState()
 }
+function hostBounds(): Rectangle | undefined {
+  if (!host || host.isDestroyed()) return undefined
+  return host.getBounds()
+}
+
+function popupWindowOptions(): BrowserWindowConstructorOptions {
+  const bounds = hostBounds()
+  return {
+    show: false,
+    title: 'PlanGo · 浏览器',
+    autoHideMenuBar: true,
+    ...(bounds ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } : {}),
+    minWidth: bounds ? Math.min(1280, bounds.width) : 1280,
+    minHeight: bounds ? Math.min(840, bounds.height) : 840
+  }
+}
+
+function syncPopupBounds(child: BrowserWindow): void {
+  const bounds = hostBounds()
+  if (!bounds || child.isDestroyed()) return
+  child.setBounds(bounds)
+}
+
 export function initializeBrowserViews(window: BrowserWindow): void {
   host = window
   installBookingPreviewGuard(session.fromPartition('persist:plango'), publish)
@@ -194,6 +241,9 @@ export function initializeBrowserViews(window: BrowserWindow): void {
   window.on('hide', applyLayout)
   window.on('minimize', applyLayout)
   window.on('restore', applyLayout)
+  window.on('focus', () => {
+    if ([...tabs.values()].some(tab => !tab.visible && !tab.contents.isDestroyed() && tab.contents.isFocused())) window.webContents.focus()
+  })
   window.on('close', () => { for (const tab of tabs.values()) { tab.closing = true; setTabVisibility(tab, false, 'tab_closed') } })
   window.webContents.on('did-finish-load', publish)
   window.once('closed', () => {

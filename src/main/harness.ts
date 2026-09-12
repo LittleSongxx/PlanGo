@@ -5,7 +5,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { app } from 'electron'
 import { getConfig, getHarnessEnvironment, safeServiceOrigin } from './config'
 import type { HarnessStatus } from '../shared/types'
-import { executeBrowserCommand, acknowledgeBrowserCommand, releaseBrowserRun, activateBrowserRun, cancelBrowserRun } from './browser-bridge'
+import { executeBrowserCommand, acknowledgeBrowserCommand, releaseBrowserRun, activateBrowserRun, cancelBrowserRun, releaseOtherBrowserRuns } from './browser-bridge'
 import { getMainWindow } from './index'
 import { HarnessClient } from './harnessClient'
 import { IPC } from '../shared/ipc'
@@ -62,7 +62,11 @@ async function connect(): Promise<HarnessClient> {
   const candidate = new HarnessClient({
     baseURL, ...id, dataDir: dataDir(), execute: executeBrowserCommand, onReceiptDelivered: acknowledgeBrowserCommand,
     onTerminal: releaseBrowserRun,
-    onActivate: (runId, supersede) => { if (supersede) cancelBrowserRun(runId); activateBrowserRun(runId) },
+    onActivate: (runId, supersede) => {
+      if (supersede) cancelBrowserRun(runId)
+      activateBrowserRun(runId)
+      releaseOtherBrowserRuns(runId)
+    },
     enabledSkills: () => listSkills().filter(skill => skill.enabled).map(skill => skill.id),
     location: () => toLocationContext(getLocation()),
     remind: (notification) => {

@@ -83,7 +83,7 @@ async function main() {
     return send(channel, ...args)
   }
   manager.onBrowserPopup((parentId, childId) => { inherited = { parentId, childId, attached: !!manager.getBrowserTab(childId), activeId: manager.getActiveBrowserTab()?.id } })
-  await first.contents.executeJavaScript(`window.open(${JSON.stringify(url + 'popup')},'_blank');true`, true)
+  await first.contents.executeJavaScript(`window.open(${JSON.stringify(url + 'popup')},'_blank','width=400,height=300');true`, true)
   await waitFor(() => manager.getBrowserState().tabs.some(tab => tab.popup))
   const popupId = manager.getBrowserState().tabs.find(tab => tab.popup).id
   host.webContents.send = send
@@ -91,14 +91,16 @@ async function main() {
   check(inherited.activeId === first.id && !publishedBeforeInheritance, 'Popup inheritance runs synchronously before activation or any state publication')
   const popup = manager.getBrowserTab(popupId), popupWindow = BrowserWindow.fromWebContents(popup)
   check(!!popupWindow && popup.session === first.contents.session && popupWindow.isVisible(), 'Popup is a real visible native BrowserWindow in the same session')
+  const hostBounds = host.getBounds(), popupBounds = popupWindow.getBounds()
+  check(Math.abs(popupBounds.width - hostBounds.width) <= 2 && Math.abs(popupBounds.height - hostBounds.height) <= 2, 'A site-supplied mini popup still opens at the host window size')
   check(beforePopup.aborted && !manager.getBrowserTabSignal(popupId).aborted, 'A popup taking the visible slot aborts its opener cycle')
   const beforeHostHide = manager.getBrowserTabSignal(popupId)
   host.hide()
   check(!popupWindow.isVisible(), 'Hiding the host also hides its native popup')
-  check(beforeHostHide.aborted, 'Host hide aborts the popup cycle')
+  check(!beforeHostHide.aborted, 'Host hide keeps an in-flight popup command instead of aborting it')
   host.show()
   check(popupWindow.isVisible(), 'Showing the host restores its active popup')
-  check(manager.getBrowserTabSignal(popupId) !== beforeHostHide && !manager.getBrowserTabSignal(popupId).aborted, 'Host show refreshes the popup cycle')
+  check(manager.getBrowserTabSignal(popupId) === beforeHostHide && !beforeHostHide.aborted, 'Host show keeps the same popup cycle')
   const beforePopupHide = manager.getBrowserTabSignal(popupId)
   popupWindow.hide()
   check(beforePopupHide.aborted, 'Native popup hide also aborts without relying on renderer layout')

@@ -2,7 +2,7 @@
 import { allowedBrowserSite, browserErrorMessage, browserCommandGuard, isBrowserWrite, validateBrowserCommand, type BrowserCommand, type BrowserObservation } from '@shared/browser'
 import { createHash } from 'node:crypto'
 import { executeBrowserOperation, captureScreenshot } from './browserDriver'
-import { activateBrowserTab, createBrowserTab, getActiveBrowserTab, getBrowserTab, getBrowserTabSignal, isBrowserTabVisible, loadBrowserURL, notifyBrowserActivity, onBrowserPopup } from './browserView'
+import { activateBrowserTab, createBrowserTab, getActiveBrowserTab, getBrowserTab, getBrowserTabSignal, isBrowserTabReady, isBrowserTabVisible, loadBrowserURL, notifyBrowserActivity, onBrowserPopup } from './browserView'
 
 export type BrowserActionResult = Partial<BrowserObservation>
 const commands = new Map<string, { fingerprint: string; result?: Promise<BrowserObservation> }>()
@@ -32,12 +32,30 @@ export function activateBrowserRun(runId: string): void { cancelledRuns.delete(r
 
 export function releaseBrowserRun(runId: string): void {
   cancelBrowserRun(runId)
-  for (const [tabId, owner] of tabOwners) {
+  for (const [tabId, owner] of [...tabOwners]) {
     if (JSON.parse(owner)[1] === runId) {
       tabOwners.delete(tabId)
       bindings.delete(owner)
     }
   }
+}
+
+export function releaseOtherBrowserRuns(exceptRunId: string): void {
+  const released = new Set<string>()
+  for (const [tabId, owner] of [...tabOwners]) {
+    const runId = JSON.parse(owner)[1]
+    if (runId === exceptRunId) continue
+    tabOwners.delete(tabId)
+    bindings.delete(owner)
+    released.add(runId)
+  }
+  for (const owner of [...bindings.keys()]) {
+    const runId = JSON.parse(owner)[1]
+    if (runId === exceptRunId) continue
+    bindings.delete(owner)
+    released.add(runId)
+  }
+  for (const runId of released) cancelBrowserRun(runId)
 }
 
 export function cancelBrowserTab(tabId: string): void {
@@ -98,7 +116,7 @@ export async function executeBrowserCommand(raw: BrowserCommand): Promise<Browse
       tabOwners.set(tabId, owner)
       notifyBrowserActivity({ active: true, action: command.operation, site: contents.getTitle() || new URL(contents.getURL()).hostname })
       activateBrowserTab(tabId)
-      while (!isBrowserTabVisible(tabId)) {
+      while (!isBrowserTabReady(tabId)) {
         check()
         await new Promise(resolve => setTimeout(resolve, 50))
       }
@@ -121,7 +139,6 @@ export async function executeBrowserCommand(raw: BrowserCommand): Promise<Browse
           ? await captureScreenshot(contents, command, context)
           : await executeBrowserOperation(contents, command, context)
       }
-      if (result.ok) context.check()
       return { ...result, ...(!result.ok ? { error: browserErrorMessage(result.error_kind || 'browser_execution_failed') } : {}), command_id: command.command_id, tab_id: tabId, ok: result.ok === true, outcome: result.outcome || 'failed' }
     } catch (error) {
       const kind = error instanceof Error ? error.message : 'browser_execution_failed'

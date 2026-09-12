@@ -1,5 +1,6 @@
 import { publicStatus } from '../../../shared/userMessages'
 import type { AgentStep, ChatMessage, HarnessEvidence, HarnessEvent, HarnessSnapshot, OutcomeCard, Plan, POISummary, SourceTag, OfferComparison, OfferSourceRef, OfferSelection } from '../../../shared/types'
+import { asRoutePaths } from './routePath'
 
 type Row = Record<string, unknown>
 export const row = (value: unknown): Row => value && typeof value === 'object' && !Array.isArray(value) ? value as Row : {}
@@ -113,6 +114,15 @@ function projectPlan(candidate: Row, run: HarnessSnapshot, evidence: HarnessEvid
     ...(!transportKnown ? ['交通费用'] : [])
   ]
   const candidateSource = (stop: Row): SourceTag => source(places.find(p => p.place_id === stop.place_id)?.source || stop.supply_source)
+  const routeEvidence = rows(state.evidence)
+  const routePathsFor = (placeId: string) => {
+    const matched = [...routeEvidence].reverse().find(item => {
+      const payload = row(item.payload)
+      return str(payload.destination_place_id) === placeId && (asRoutePaths(payload.paths).length > 0 || asRoutePaths(payload.segments).length > 0)
+    })
+    const payload = row(matched?.payload)
+    return asRoutePaths(payload.paths).length ? asRoutePaths(payload.paths) : asRoutePaths(payload.segments)
+  }
   return {
     plan_id: str(candidate.plan_id), run_id: run.run_id, version: num(candidate.version), party_size: partySize,
     visit_date: str(spec.visit_date) || undefined, timezone: str(spec.timezone) || undefined,
@@ -140,6 +150,7 @@ function projectPlan(candidate: Row, run: HarnessSnapshot, evidence: HarnessEvid
         reason: `计划停留 ${time(stop.start_minute)}–${time(stop.end_minute)}；${poi.price_per_person === undefined ? '费用待核验' : `人均估算 ¥${poi.price_per_person}`}。${supplyUnknown(stop) ? '营业/排队待核验。' : ''}`, locked: stop.locked === true, transit_from_prev_min: strings(stop.tags).includes('route_unknown') || stop.distance_kind === 'straight_line_lower_bound' ? null : num(stop.travel_min) ?? null, distance_km: num(stop.distance_km) ?? null,
         distance_kind: ['route', 'straight_line_lower_bound'].includes(str(stop.distance_kind)) ? stop.distance_kind as 'route' | 'straight_line_lower_bound' : undefined, wait_min: supplyUnknown(stop) ? null : num(stop.estimated_wait_min) ?? null,
         transport_cost: num(stop.transport_cost) ?? null, transport_summary: str(stop.transport_summary) || undefined,
+        route_paths: routePathsFor(str(stop.place_id)),
         verify_state: row(state.verifier).plan_id === candidate.plan_id && row(state.verifier).executable === true ? 'verified' as const : 'suggested' as const }
     })
   }
@@ -402,16 +413,112 @@ const eventLabels: Record<string, string> = {
   BROWSER_VISION_COMPLETED: '截图理解已完成'
 }
 const eventPhaseLabels: Record<string, string> = { CREATED: '已接收', PENDING: '排队中', RUNNING: '处理中', REQUIREMENTS_READY: '需求已整理', RESEARCHING: '查找资料', PLAN_DRAFTED: '方案已生成', REVIEWING: '核对信息', WAITING_APPROVAL: '等待确认', WAITING_BROWSER: '等待浏览器', EXECUTING: '执行中', REPLANNING: '调整方案', SUCCEEDED: '本轮已结束', PARTIAL_FAILED: '仍有待处理事项', INFEASIBLE: '当前要求无法同时满足', FAILED: '未能完成', CANCELLED: '已停止' }
+const FAILED_KIND = /FAILED|ERROR|BLOCKED|TIMEOUT|EXHAUSTED|INFEASIBLE/
+const FAILED_OUTCOME = ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED', 'PARTIAL_FAILED', 'INFEASIBLE']
+const WAIT_KIND = /WAITING|REQUESTED|QUEUED|PENDING|PAUSED|INTERRUPTED/
+const DONE_OUTCOME = ['SUCCEEDED', 'OBSERVED', 'EXECUTED']
+const RUN_KIND = /STARTED|RUNNING|EXECUTING/
+const TERMINAL_PHASE = ['SUCCEEDED', 'PARTIAL_FAILED', 'INFEASIBLE', 'FAILED', 'CANCELLED']
+
+function eventKind(event: HarnessEvent): string {
+  return event.event_type.toUpperCase()
+}
+
+function eventOutcome(event: HarnessEvent): string {
+  const kind = eventKind(event)
+  return (str(event.payload.outcome) || str(event.payload.status) || (kind === 'RUN_FINALIZED' ? str(event.payload.phase) || str(event.phase) : '')).toUpperCase()
+}
+
+function eventOwnStatus(event: HarnessEvent): AgentStep['status'] {
+  const kind = eventKind(event)
+  const outcome = eventOutcome(event)
+  if (FAILED_KIND.test(kind) || FAILED_OUTCOME.includes(outcome)) return 'error'
+  if (outcome === 'UNKNOWN') return 'waiting'
+  if (DONE_OUTCOME.includes(outcome)) return 'done'
+  if (WAIT_KIND.test(kind) || ['browser', 'approval'].includes(str(event.payload.type)) || /^WAITING_/.test(str(event.phase))) return 'waiting'
+  if (RUN_KIND.test(kind)) return 'running'
+  const phase = str(event.phase).toUpperCase()
+  if (TERMINAL_PHASE.includes(phase)) return FAILED_OUTCOME.includes(phase) ? 'error' : 'done'
+  return 'idle'
+}
+
+function preferSignal(previous: HarnessEvent, next: HarnessEvent): HarnessEvent {
+  const incoming = eventOwnStatus(next)
+  const current = eventOwnStatus(previous)
+  if (incoming === 'error' || incoming === 'waiting') return next
+  if (current === 'error' || current === 'waiting') return previous
+  return next
+}
+
+function inferOpenStatus(event: HarnessEvent): AgentStep['status'] {
+  const own = eventOwnStatus(event)
+  if (own !== 'idle') return own
+  const phase = str(event.phase).toUpperCase()
+  if (/^WAITING_/.test(phase)) return 'waiting'
+  if (FAILED_OUTCOME.includes(phase)) return 'error'
+  if (phase === 'SUCCEEDED') return 'done'
+  return 'running'
+}
+
+function eventNote(event: HarnessEvent): string {
+  return publicStatus(str(event.payload.detail) || str(event.payload.message) || str(event.payload.reason) || '')
+}
+
+function eventNamedLabel(event: HarnessEvent): string {
+  return publicStatus(str(event.payload.label))
+}
+
+function eventMappedLabel(event: HarnessEvent): string {
+  return eventLabels[eventKind(event)] || ''
+}
+
+function phaseTitle(phase: string): string {
+  return eventPhaseLabels[phase] || eventPhaseLabels[phase.toUpperCase()] || ''
+}
+
+function addsInfo(text: string, title: string): boolean {
+  return !!text && !!title && text !== title && !text.includes(title) && !title.includes(text)
+}
+
+function usableAccent(text: string, title: string): boolean {
+  return addsInfo(text, title) && !/下一处理步骤|任务进展已更新/.test(text)
+}
 
 export function projectEvents(events: HarnessEvent[]): AgentStep[] {
-  return events.map(e => {
-    const kind = e.event_type.toUpperCase()
-    const outcome = (str(e.payload.outcome) || str(e.payload.status) || (kind === 'RUN_FINALIZED' ? str(e.payload.phase) || str(e.phase) : '')).toUpperCase()
-    const status: AgentStep['status'] = /FAILED|ERROR|BLOCKED|TIMEOUT|EXHAUSTED|INFEASIBLE/.test(kind) || ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED', 'PARTIAL_FAILED', 'INFEASIBLE'].includes(outcome) ? 'error'
-      : outcome === 'UNKNOWN' || /WAITING|REQUESTED|QUEUED|PENDING|PAUSED|INTERRUPTED/.test(kind) || ['browser', 'approval'].includes(str(e.payload.type)) ? 'waiting'
-      : ['SUCCEEDED', 'OBSERVED', 'EXECUTED'].includes(outcome) || /(?:^|_)(?:SUCCEEDED|COMPLETE|COMPLETED|READY|RESOLVED|RETRIEVED|REFLECTED|RECEIVED|EXTRACTED|OBSERVED)(?:_|$)/.test(kind) ? 'done'
-      : /^WAITING_/.test(str(e.phase)) ? 'waiting'
-      : /STARTED|RUNNING|EXECUTING/.test(kind) ? 'running' : 'idle'
-    return { id: `${e.run_id}:${e.seq}`, label: publicStatus(str(e.payload.label)) || eventLabels[kind] || '任务进展已更新', status, detail: publicStatus(str(e.payload.detail) || str(e.payload.message) || str(e.payload.reason) || eventPhaseLabels[str(e.phase)] || '') }
+  type Group = { id: string; phase: string; note: string; accent: string; signal: HarnessEvent; failed: boolean }
+  const groups: Group[] = []
+  for (const event of events) {
+    const phase = str(event.phase)
+    const note = eventNote(event)
+    const named = eventNamedLabel(event)
+    const mapped = eventMappedLabel(event)
+    const last = groups.at(-1)
+    if (last && last.phase === phase && !note) {
+      last.id = `${event.run_id}:${event.seq}`
+      last.signal = preferSignal(last.signal, event)
+      last.failed = last.failed || eventOwnStatus(event) === 'error'
+      if (eventOwnStatus(event) === 'waiting') last.accent = named || mapped || last.accent
+      else if (named) last.accent = named
+      else if (usableAccent(mapped, phaseTitle(phase)) && !usableAccent(last.accent, phaseTitle(phase))) last.accent = mapped
+      continue
+    }
+    groups.push({
+      id: `${event.run_id}:${event.seq}`,
+      phase,
+      note,
+      accent: named || (usableAccent(mapped, phaseTitle(phase)) ? mapped : ''),
+      signal: event,
+      failed: eventOwnStatus(event) === 'error'
+    })
+  }
+  const visible = groups.filter((group, index) => index === groups.length - 1 || group.note || group.accent || group.failed)
+  return visible.map((group, index) => {
+    const current = index === visible.length - 1
+    const status: AgentStep['status'] = group.failed ? 'error' : current ? inferOpenStatus(group.signal) : 'done'
+    const phaseName = phaseTitle(group.phase)
+    const label = (status === 'waiting' && group.accent) || (group.note && group.accent) || phaseName || group.accent || '任务进展已更新'
+    const keepAccent = status === 'waiting' || !/等待你|需要补充要求|等待确认|等待浏览器|等待下一步/.test(group.accent)
+    const detail = group.note && group.note !== label ? group.note : keepAccent && usableAccent(group.accent, label) ? group.accent : ''
+    return { id: group.id, label, status, ...(detail ? { detail } : {}) }
   })
 }

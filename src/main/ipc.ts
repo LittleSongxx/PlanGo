@@ -4,7 +4,7 @@ import { z } from 'zod'
 import QRCode from 'qrcode'
 import { IPC } from '@shared/ipc'
 import { errorDiagnostic } from '@shared/userMessages'
-import { cancelBrowserRun, cancelBrowserTab } from './browser-bridge'
+import { cancelBrowserTab, releaseBrowserRun } from './browser-bridge'
 import { getMainWindow, isTrustedRendererUrl } from './index'
 import { handleBrowserIntent, setBrowserLayout } from './browserView'
 import { getHarness, harnessStatus, restartHarness } from './harness'
@@ -14,8 +14,10 @@ import { listSkills, toggleSkill } from './skills/loader'
 import { detectLocation, getLocation, setManualCity, setReportedLocation } from './location'
 import { locationSources, locationGranularities } from '../shared/location'
 import { geocode, reverse } from './data/amap'
+import { saveCarryOutIcs, saveCarryOutImage } from './carryOutRender'
 import { createShare, getShareFeedback } from './share/server'
 import { computeLiveDiscover } from './discover'
+import { desktopInputHint } from './inputHint'
 import { projectHarness } from '../renderer/src/lib/harnessProjection'
 import type { DealRow, Plan, POISummary, UserProfile } from '@shared/types'
 
@@ -25,8 +27,6 @@ const text = z.string().trim().min(1).max(4000)
 const image = z.string().max(12_000_000).regex(/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/).optional()
 const selectedPoi = z.object({ poi_id: id, name: z.string().min(1).max(200), address: z.string().max(500), longitude: z.number().finite().min(-180).max(180),
   latitude: z.number().finite().min(-90).max(90), source: z.literal('amap'), observed_at: z.string().datetime({ offset: true }).optional() }).strict().optional()
-let guideImage: string | undefined
-
 function trusted(event: IpcMainInvokeEvent): void {
   const win = getMainWindow()
   if (!win || event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || !isTrustedRendererUrl(event.senderFrame.url) || !isTrustedRendererUrl(win.webContents.getURL())) throw new Error('Untrusted IPC sender')
@@ -48,12 +48,24 @@ async function memoryProfile(): Promise<UserProfile> {
     preferences: (data.preferences || []).map((p: any) => ({ text: String(p.text || p.value?.text || p.value || ''), polarity: ['negative', 'dislike'].includes(p.polarity) ? 'negative' : 'positive', strength: typeof p.strength === 'number' ? p.strength : p.confidence ?? 0.6, evidence_count: p.evidence_count ?? 1, source: 'conversation', explicit: p.explicit === true, provenance: String(p.source || '') })),
     favorite_shops: (data.favorites || []).map((p: any) => typeof p === 'string' ? p : String(p.name || p.value?.name || p.value || '')),
     favorite_provenance: Object.fromEntries((data.favorites || []).filter((p: any) => p && typeof p === 'object').map((p: any) => [String(p.name || p.value?.name || p.value || ''), { explicit: p.explicit === true, source: String(p.source || '') }])),
-    avoid_shops: [], home_city: getConfig().city, footprints: data.footprints || []
+    home_city: getConfig().city
   }
 }
 
+async function resolveCanonicalPlan(requested?: Plan): Promise<{ ok: true; plan: Plan } | { ok: false; error: string }> {
+  if (!requested?.run_id || requested.version == null) return { ok: false, error: '请先从当前任务选择一份方案。' }
+  const run = await (await getHarness()).getRun(id.parse(requested.run_id))
+  const cards = projectHarness(run).cards
+  const plans = cards.flatMap(card => card.kind === 'plan' ? [card.plan] : card.kind === 'plans' ? card.variants.map(v => v.plan) : [])
+  const plan = plans.find(item => item.plan_id === requested.plan_id && item.version === requested.version)
+  return plan ? { ok: true, plan } : { ok: false, error: '方案版本已变化，请刷新后再试。' }
+}
+
 export function registerIpc(): void {
-  handle('desktop:ready', () => { console.log('[plango] Desktop ready') })
+  handle('desktop:ready', () => {
+    console.log('[plango] Desktop ready')
+    return { inputHint: desktopInputHint() }
+  })
   handle(IPC.browserRequest, async (raw: unknown) => {
     const intent = z.discriminatedUnion('kind', [
       z.object({ kind: z.literal('state') }).strict(), z.object({ kind: z.literal('create'), url: z.string().max(8192) }).strict(),
@@ -95,24 +107,8 @@ export function registerIpc(): void {
         return client.deliver(p)
       }
       case 'checkDelivery': return client.checkDelivery(z.object({ requestId: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/) }).strict().parse(raw).requestId)
-      case 'createRun': {
-        const p = z.object({ text, image, selectedPoi }).parse(raw)
-        const attached = p.image || guideImage
-        guideImage = undefined
-        return client.createRun(p.text, attached, p.selectedPoi)
-      }
       case 'getRun': return client.getRun(z.object({ runId: id }).parse(raw).runId)
       case 'listRuns': return client.listRuns()
-      case 'sendMessage': {
-        const p = z.object({ runId: id, text, image }).parse(raw)
-        const attached = p.image || guideImage
-        guideImage = undefined
-        return client.mutate(p.runId, 'messages', { text: p.text, ...(attached ? { image: attached } : {}) })
-      }
-      case 'replan': {
-        const p = z.object({ runId: id, reason: text }).parse(raw)
-        return client.mutate(p.runId, 'replan', { reason: p.reason })
-      }
       case 'selectPlan': {
         const p = z.object({ runId: id, planId: id, planVersion: z.number().int().min(1) }).parse(raw)
         return client.selectPlan(p.runId, p.planId, p.planVersion)
@@ -143,7 +139,11 @@ export function registerIpc(): void {
         return client.decideDraft(p.runId, p.interruptId, p.planId, p.planVersion, p.decision)
       }
       case 'feedback': {
-        const p = z.object({ runId: id, value: z.object({ feedback_id: z.string().uuid(), turn_id: z.number().int().min(1), rating: z.enum(['helpful', 'unhelpful']), text: z.string().max(1000).optional() }).strict() }).strict().parse(raw)
+        const p = z.object({ runId: id, value: z.object({
+          feedback_id: z.string().uuid(), turn_id: z.number().int().min(1), rating: z.enum(['helpful', 'unhelpful']),
+          text: z.string().max(1000).optional(),
+          preference: z.object({ text: z.string().trim().min(1).max(1000), polarity: z.enum(['positive', 'negative']) }).strict().optional()
+        }).strict() }).strict().parse(raw)
         return client.feedback(p.runId, p.value)
       }
       case 'resolveAction': {
@@ -152,8 +152,13 @@ export function registerIpc(): void {
       }
       case 'cancel': {
         const p = z.object({ runId: id }).parse(raw)
-        cancelBrowserRun(p.runId)
+        releaseBrowserRun(p.runId)
         return client.mutate(p.runId, 'cancel', {})
+      }
+      case 'releaseRun': {
+        const p = z.object({ runId: id }).parse(raw)
+        releaseBrowserRun(p.runId)
+        return { ok: true }
       }
       case 'resume': {
         const p = z.object({ runId: id, interruptId: id, decision: z.enum(['approve', 'reject', 'edit', 'resume']), text: z.string().max(4000).optional() }).parse(raw)
@@ -226,18 +231,22 @@ export function registerIpc(): void {
     return true
   })
   handle(IPC.shareCreate, async (payload: { plan?: Plan; city?: string }) => {
-    const requested = payload?.plan
-    if (!requested?.run_id || !requested.version) return { ok: false, error: '请先从当前 Harness 任务选择一份方案。' }
-    const run = await (await getHarness()).getRun(id.parse(requested.run_id))
-    const cards = projectHarness(run).cards
-    const plans = cards.flatMap(card => card.kind === 'plan' ? [card.plan] : card.kind === 'plans' ? card.variants.map(v => v.plan) : [])
-    const plan = plans.find(p => p.plan_id === requested.plan_id && p.version === requested.version)
-    if (!plan) return { ok: false, error: '方案版本已变化，请刷新后再分享。' }
-    const { id: shareId, url } = createShare(plan, payload.city || getConfig().city)
+    const resolved = await resolveCanonicalPlan(payload?.plan)
+    if (!resolved.ok) return resolved
+    const { id: shareId, url } = createShare(resolved.plan, payload.city || getConfig().city)
     return { ok: true, id: shareId, url, qr: await QRCode.toDataURL(url, { width: 260, margin: 1 }) }
   })
   handle(IPC.shareFeedback, (shareId: string) => getShareFeedback(id.parse(shareId)))
-  handle(IPC.guideSetImage, (raw: string) => { guideImage = image.parse(raw); return { ok: !!guideImage } })
+  handle(IPC.carryOutSaveIcs, async (requested?: Plan) => {
+    const resolved = await resolveCanonicalPlan(requested)
+    if (!resolved.ok) return resolved
+    return saveCarryOutIcs(resolved.plan)
+  })
+  handle(IPC.carryOutSaveImage, async (requested?: Plan) => {
+    const resolved = await resolveCanonicalPlan(requested)
+    if (!resolved.ok) return resolved
+    return saveCarryOutImage(resolved.plan)
+  })
   handle(IPC.discoverFetch, async (raw: unknown) => {
     const p = z.object({ city: z.string().trim().min(1).max(100).optional(), refresh: z.boolean().optional() }).strict().parse(raw || {})
     const current = getLocation()

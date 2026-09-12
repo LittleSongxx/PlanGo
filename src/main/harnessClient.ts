@@ -166,7 +166,7 @@ export class HarnessClient {
         delivery.runId = accepted.run_id
         delivery.status = 'accepted'
         this.persistDeliveries()
-        if (input.runId && !accepted.replayed) this.options.onActivate?.(input.runId, true)
+        if (!accepted.replayed) this.options.onActivate?.(accepted.run_id, Boolean(input.runId))
         return this.fetchDelivery(delivery)
       } catch (error) {
         delivery.error = (error as Error).message

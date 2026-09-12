@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createServer } from 'node:http'
-import { createShare, getShareFeedback, startShareServer, stopShareServer } from '../src/main/share/server'
+import { createShare, getShareFeedback, pickLanAddress, startShareServer, stopShareServer } from '../src/main/share/server'
 import type { Plan } from '../src/shared/types'
 
 const dir = mkdtempSync(join(tmpdir(), 'plango-share-'))
@@ -27,6 +27,8 @@ try {
   const data = await response.json() as any
   assert.equal(data.plan.total_cost, null)
   assert.equal(data.plan.party_size, 4)
+  assert.equal(pickLanAddress(['198.18.0.1', '192.168.1.55']), '192.168.1.55')
+  assert.equal(pickLanAddress(['198.18.0.1']), '198.18.0.1')
   console.log('Share persistence regression passed')
 } finally {
   stopShareServer()

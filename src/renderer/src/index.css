@@ -79,7 +79,8 @@ body {
 @layer components {
   .plango-surface { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 6px 26px -18px #30291530; }
   .plango-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 2px 12px -8px #30291524; }
-  .plango-panel-header { display: flex; align-items: center; min-height: 64px; border-bottom: 1px solid var(--line); padding: 14px 20px; }
+  .plango-panel-header { display: flex; align-items: center; min-height: 64px; border-bottom: 1px solid var(--line); padding: 14px 24px; }
+  .plango-workspace-col { width: 100%; max-width: none; }
   .plango-kicker { color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; }
   .plango-muted { color: var(--muted); }
   .plango-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--accent); color: var(--ink); border-radius: 12px; padding: 10px 16px; font-size: 13px; font-weight: 600; transition: background .16s ease, transform .16s ease; }

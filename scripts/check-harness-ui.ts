@@ -60,7 +60,8 @@ Object.defineProperty(globalThis, 'window', { value: { plango: { harness: {
   getRun: async (id: string) => { calls.push(`get:${id}`); return snapshot },
   events: async () => ({ events: [] }),
   resume: async (...args: string[]) => { calls.push(`resume:${args.join(':')}`); return snapshot },
-  cancel: async () => snapshot
+  cancel: async () => snapshot,
+  releaseRun: async () => ({ ok: true })
 } } } })
 const { useStore, loadSessions } = await import('../src/renderer/src/store')
 useStore.setState({ run: snapshot, backendReady: true, busy: false })

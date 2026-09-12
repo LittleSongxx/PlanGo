@@ -43,7 +43,7 @@ export function IconRail(): JSX.Element {
   ]
 
   return (
-    <aside className="w-[176px] shrink-0 flex flex-col min-h-0 overflow-y-auto select-none" aria-label="主导航">
+    <aside className="w-[220px] shrink-0 flex flex-col min-h-0 overflow-y-auto select-none" aria-label="主导航">
       <div className="flex items-center gap-2.5 px-2 pt-3 pb-6" title="PlanGo"><span className="w-10 h-10 rounded-[14px] bg-brand text-brand-ink flex items-center justify-center shadow-card"><Route size={21} strokeWidth={2} /></span><div><span className="text-[23px] tracking-[-0.8px] font-bold text-brand-ink">PlanGo</span><p className="text-[10px] text-[var(--muted)] mt-0.5">生活，有计划地出发</p></div></div>
       <button onClick={newSession} className="plango-primary w-full mb-6" title="开始新安排"><Plus size={16} />开始新安排</button>
       <div className="plango-kicker px-3 mb-2">工作台</div>

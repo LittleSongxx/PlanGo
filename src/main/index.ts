@@ -1,4 +1,4 @@
-import { app, shell, screen, BrowserWindow, session as electronSession } from 'electron'
+import { app, shell, BrowserWindow, session as electronSession } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'node:url'
 import { registerIpc } from './ipc'
@@ -7,12 +7,14 @@ import { startShareServer, stopShareServer } from './share/server'
 import { harnessStatus, stopHarness } from './harness'
 import { getHarnessEnvironment } from './config'
 import { prepareDesktopStorage } from './storageMigration'
-import { allowsGeolocation, sameRendererDocument } from './permissions'
+import { allowsSessionPermission, sameRendererDocument } from './permissions'
 import { initializeBrowserViews, isOwnedBrowserContents } from './browserView'
+import { attachWindowBoundsPersistence, largestWorkArea, loadWindowState } from './windowBounds'
 import { browserUrl } from '../shared/browser'
 
 app.commandLine.appendSwitch('remote-debugging-address', '127.0.0.1')
 app.commandLine.appendSwitch('remote-debugging-port', '0')
+// WSLg/X11 cannot attach the Windows IME; desktop:ready reports that to the composer.
 
 try {
   const desktopData = prepareDesktopStorage(app.getPath('appData'), app.getPath('userData'))
@@ -31,12 +33,15 @@ const rendererUrl = process.env.ELECTRON_RENDERER_URL || pathToFileURL(join(__di
 export function isTrustedRendererUrl(url: string): boolean { return sameRendererDocument(url, rendererUrl) }
 
 function createWindow(): void {
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize
+  const work = largestWorkArea()
+  const { bounds, maximized } = loadWindowState()
   mainWindow = new BrowserWindow({
-    width: Math.min(1800, width),
-    height: Math.min(1120, height),
-    minWidth: Math.min(1180, width),
-    minHeight: Math.min(740, height),
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height,
+    minWidth: Math.min(1280, work.width),
+    minHeight: Math.min(840, work.height),
     show: false,
     autoHideMenuBar: true,
     title: 'PlanGo · AI 本地生活浏览器',
@@ -51,7 +56,11 @@ function createWindow(): void {
     }
   })
 
-  mainWindow.on('ready-to-show', () => mainWindow?.show())
+  mainWindow.on('ready-to-show', () => {
+    if (maximized) mainWindow?.maximize()
+    mainWindow?.show()
+  })
+  attachWindowBoundsPersistence(mainWindow)
   initializeBrowserViews(mainWindow)
 
   // 外链走系统浏览器
@@ -76,11 +85,11 @@ function createWindow(): void {
 function hardenSession(): void {
   for (const session of [electronSession.defaultSession, electronSession.fromPartition('persist:plango')]) {
     session.setPermissionRequestHandler((wc, permission, cb, details) => {
-      cb(allowsGeolocation({ permission, isMainFrame: details.isMainFrame, requestingUrl: details.requestingUrl,
+      cb(allowsSessionPermission({ permission, isMainFrame: details.isMainFrame, requestingUrl: details.requestingUrl,
         pageUrl: wc.getURL(), hostUrl: rendererUrl, isHost: wc === mainWindow?.webContents,
         isBrowser: session === electronSession.fromPartition('persist:plango') && wc.session === session && isOwnedBrowserContents(wc.id) }))
     })
-    session.setPermissionCheckHandler((wc, permission, origin, details) => allowsGeolocation({ permission, isMainFrame: details.isMainFrame,
+    session.setPermissionCheckHandler((wc, permission, origin, details) => allowsSessionPermission({ permission, isMainFrame: details.isMainFrame,
       requestingUrl: details.requestingUrl || origin, pageUrl: wc?.getURL() || '', hostUrl: rendererUrl,
       isHost: !!wc && wc === mainWindow?.webContents, isBrowser: !!wc && session === electronSession.fromPartition('persist:plango') && wc.session === session && isOwnedBrowserContents(wc.id) }))
   }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { publicStatus, userMessage } from '@shared/userMessages'
+import { isImeComposing } from '@shared/ime'
 import { canResolveAction, readProgress } from '../lib/harnessProjection'
 import type { OutcomeCard, Plan, DishReco, ReceiptItem, SourceTag, GroupBuyPackage, HarnessEvidence } from '@shared/types'
 import { SourceBadge } from './SourceBadge'
@@ -10,6 +11,7 @@ import { ResultFeedback } from './ResultFeedback'
 import { DraftReviewCard } from './DraftReviewCard'
 import { RequirementsCard } from './RequirementsCard'
 import { OfferComparisonCard } from './OfferComparisonCard'
+import { CarryOutBar } from './CarryOutBar'
 import { Markdown } from './Markdown'
 import { MapPin, Clock, Utensils, Ticket, CheckCircle2, XCircle, AlertTriangle, Send, ListChecks, Wallet, Globe, Navigation, Mic, MicOff, ArrowRight, Sparkles, FileText } from 'lucide-react'
 
@@ -38,14 +40,14 @@ export function OutcomeCanvas(): JSX.Element {
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-5 lg:p-6">
+      <div className="flex-1 overflow-y-auto p-6 lg:p-8">
         <RequirementsCard />
-        {run?.offer_comparison_error && <div role="status" className="max-w-4xl mx-auto mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">{userMessage(run.offer_comparison_error, 'offer')}{run.selected_offer && <p className="mt-1 text-xs">你之前选择的优惠仍保留在这次安排中。</p>}</div>}
-        {!!(reading.observed.length || reading.missing.length) && <div aria-label="资料读取范围" className="max-w-4xl mx-auto plango-card p-4 mb-5 text-sm leading-6 space-y-2">
+        {run?.offer_comparison_error && <div role="status" className="plango-workspace-col mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">{userMessage(run.offer_comparison_error, 'offer')}{run.selected_offer && <p className="mt-1 text-xs">你之前选择的优惠仍保留在这次安排中。</p>}</div>}
+        {!!(reading.observed.length || reading.missing.length) && <div aria-label="资料读取范围" className="plango-workspace-col plango-card p-4 mb-5 text-sm leading-6 space-y-2">
           {!!reading.observed.length && <div className="flex items-start gap-3"><span className="text-brand-strong font-medium shrink-0">已读</span><span>{reading.observed.join('、')}</span></div>}
           {!!reading.missing.length && <div className="flex items-start gap-3"><span className="text-amber-800 font-medium shrink-0">仍需核对</span><span className="text-neutral-600">{reading.missing.map(field => `${field}${reading.partial.includes(field) ? '（仅取得部分条件）' : ''}`).join('、')}</span></div>}
         </div>}
-        {cards.length === 0 && run?.outcome ? <div className="max-w-4xl mx-auto plango-card p-6"><h2 className="text-base font-semibold">本轮尚无可展示的成果</h2><p className="text-sm text-[var(--muted)] leading-6 mt-3">{publicStatus(String(run.state.reason || '你可以在对话中查看任务记录，调整需求后继续。'))}</p></div> : cards.length === 0 ? (
+        {cards.length === 0 && run?.outcome ? <div className="plango-workspace-col plango-card p-6"><h2 className="text-base font-semibold">本轮尚无可展示的成果</h2><p className="text-sm text-[var(--muted)] leading-6 mt-3">{publicStatus(String(run.state.reason || '你可以在对话中查看任务记录，调整需求后继续。'))}</p></div> : cards.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-5">
             <div aria-hidden="true" className="relative w-32 h-28 mb-7"><div className="absolute left-4 top-3 w-20 h-24 rounded-2xl border border-brand/50 bg-brand-soft rotate-[-10deg]" /><div className="absolute right-3 top-1 w-20 h-24 rounded-2xl border border-[var(--line)] bg-white shadow-panel rotate-[8deg] flex items-center justify-center"><FileText size={30} className="text-brand-strong" /></div><span className="absolute bottom-0 right-0 h-10 w-10 rounded-2xl bg-brand text-brand-ink flex items-center justify-center"><Sparkles size={18} /></span></div>
             <div className="plango-kicker">A LITTLE PLANNING, A BETTER DAY</div>
@@ -55,7 +57,7 @@ export function OutcomeCanvas(): JSX.Element {
             <div className="flex items-center gap-5 mt-9 text-[11px] text-[var(--muted)]"><span>有来源的资料</span><span className="h-1 w-1 rounded-full bg-[#d8d4ca]" /><span>可以继续修改</span><span className="h-1 w-1 rounded-full bg-[#d8d4ca]" /><span>由你确认关键操作</span></div>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto space-y-5">
+          <div className="plango-workspace-col space-y-5">
             {cards.map((c, i) => ({ c, i })).reverse().sort((a, b) => cardPriority(b.c) - cardPriority(a.c)).map(({ c, i }) => (
               <CardView key={`${c.kind}-${i}`} card={c} />
             ))}
@@ -250,6 +252,7 @@ function PlansCard({
       ) : null}
 
       <PlanCard plan={active.plan} embed />
+      <CarryOutBar plan={active.plan} />
 
       <div className="mt-3 flex flex-wrap gap-1.5">
         <button onClick={() => void useStore.getState().selectPlan(active.plan)} className="text-[11px] px-2.5 py-1 rounded-full bg-brand text-brand-ink font-medium">
@@ -345,7 +348,7 @@ function VariantEditBox({ label, planId, version }: { label: string; planId?: st
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') submit(text)
+            if (e.key === 'Enter' && !isImeComposing(e)) submit(text)
           }}
           placeholder={listening ? '🎙️ 正在听…' : `改「${label}」这套…`}
           className="plango-field flex-1 min-w-0"
@@ -418,7 +421,7 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
             <div className="absolute -left-[13px] top-1 w-3 h-3 rounded-full bg-brand border-2 border-white" />
             {n.distance_kind === 'straight_line_lower_bound' && n.distance_km != null ? <div className="text-[11px] text-amber-700 mb-1">↓ 直线至少 {distanceLabel(n.distance_km, true)}，路线待核验</div> : n.poi?.tags.includes('route_unknown') && <div className="text-[11px] text-amber-700 mb-1">↓ 路线与通勤时间待核验</div>}
             {n.distance_kind === 'route' && n.distance_km != null && !n.route_from_prev && <div className="text-[11px] text-[var(--muted)] mb-1">↓ 路线约 {distanceLabel(n.distance_km)}{n.transit_from_prev_min != null && n.transit_from_prev_min > 0 ? ` · 约 ${n.transit_from_prev_min} 分钟` : ''}</div>}
-            {n.transport_summary && <details className="mb-2 text-xs leading-6 text-[var(--muted)]"><summary className="cursor-pointer">查看交通路线与费用依据</summary><p className="mt-1 whitespace-pre-wrap break-words">{n.transport_summary}</p></details>}
+            {n.transport_summary && <details className="mb-2 text-xs leading-6 text-[var(--muted)]"><summary className="cursor-pointer">查看交通路线与费用依据</summary><p className="mt-1 whitespace-pre-wrap break-words">{n.transport_summary.replace(/；/g, '\n')}</p></details>}
             {!n.poi?.tags.includes('route_unknown') && n.route_from_prev && (n.transit_from_prev_min ?? 0) > 0 && (
               <div className="text-[11px] text-neutral-400 mb-1">
                 ↓ {n.route_from_prev.desc}
@@ -444,7 +447,7 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
                   {n.poi && <SourceBadge source={n.poi.source} />}
               {n.poi?.lng && n.poi?.lat && (
                 <button
-                  onClick={() => openRoute({ origin: plan.origin ? `${plan.origin.longitude},${plan.origin.latitude}` : coords || undefined, originName: plan.origin?.name, originGranularity: plan.origin ? 'unknown' : undefined, initialMode: plan.travel_mode, dest: `${n.poi!.lng},${n.poi!.lat}`, destName: n.title, city })}
+                  onClick={() => openRoute({ origin: plan.origin ? `${plan.origin.longitude},${plan.origin.latitude}` : coords || undefined, originName: plan.origin?.name, originGranularity: plan.origin ? 'unknown' : undefined, initialMode: plan.travel_mode, dest: `${n.poi!.lng},${n.poi!.lat}`, destName: n.title, city, paths: n.route_paths, planned: n.distance_kind === 'route' ? { distanceKm: n.distance_km ?? undefined, durationMin: n.transit_from_prev_min ?? undefined, extra: n.transport_cost != null ? `¥${n.transport_cost}` : n.transport_summary?.split('；').find(part => part.includes('票价') || part.includes('交通费')), summary: n.transport_summary } : undefined })}
                   className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-neutral-100 hover:bg-brand/20 text-neutral-600"
                   title="页内查看路线（驾车/公交地铁/步行），打车再跳转"
                 >
@@ -491,7 +494,7 @@ function PlanCard({ plan, embed }: { plan: Plan; embed?: boolean }): JSX.Element
         </div>
       )}
       {plan.validation_notes?.length ? <div className="mt-2 text-xs text-amber-700">{plan.validation_notes.join('；')}</div> : null}
-      {!embed && <><div className="mt-3 flex gap-2"><button onClick={() => useStore.getState().openShare(plan)} className="text-xs px-3 py-1 rounded-full bg-neutral-100">分享给同行人</button><button onClick={() => void useStore.getState().send('请基于当前行程，读取真实菜单和团购价格并比较适用条件。')} className="text-xs px-3 py-1 rounded-full bg-brand/20">比价与点菜</button></div><VariantEditBox label={plan.title} planId={plan.plan_id} version={plan.version} /></>}
+      {!embed && <><CarryOutBar plan={plan} /><div className="mt-3 flex gap-2"><button onClick={() => useStore.getState().openShare(plan)} className="text-xs px-3 py-1 rounded-full bg-neutral-100">分享给同行人</button><button onClick={() => void useStore.getState().send('请基于当前行程，读取真实菜单和团购价格并比较适用条件。')} className="text-xs px-3 py-1 rounded-full bg-brand/20">比价与点菜</button></div><VariantEditBox label={plan.title} planId={plan.plan_id} version={plan.version} /></>}
     </>
   )
   return embed ? body : <Card accent>{body}</Card>

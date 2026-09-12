@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { userMessage } from '@shared/userMessages'
+import { isImeComposing } from '@shared/ime'
 import { FAVORITES } from '../lib/favorites'
 import { ArrowLeft, ArrowRight, RotateCw, Compass, ZoomIn, ZoomOut, Search, Star } from 'lucide-react'
 
@@ -47,7 +48,7 @@ export function BrowserPane(): JSX.Element {
       <button title="重新加载" className="plango-icon-button disabled:opacity-30" disabled={!active} onClick={() => action('reload')}><RotateCw size={15} className={active?.loading ? 'animate-spin' : ''} /></button>
       <div className="flex-1 min-w-0 flex items-center h-9 px-3 bg-[var(--surface-soft)] border border-[var(--line)] rounded-xl focus-within:border-brand-strong">
         <Search size={13} className="text-neutral-400 mr-1.5 shrink-0" />
-        <input value={address} onChange={event => setAddress(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') go(address) }} placeholder="输入网址或搜索词，回车打开…" aria-label="浏览器网址或搜索词" className="flex-1 min-w-0 bg-transparent text-xs outline-none" />
+        <input value={address} onChange={event => setAddress(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !isImeComposing(event)) go(address) }} placeholder="输入网址或搜索词，回车打开…" aria-label="浏览器网址或搜索词" className="flex-1 min-w-0 bg-transparent text-xs outline-none" />
       </div>
       <div className="flex items-center gap-0.5 ml-1">
         <button className="plango-icon-button disabled:opacity-30" disabled={!active} onClick={() => zoom((active?.zoom || 1) - 0.1)} title="缩小"><ZoomOut size={15} /></button>

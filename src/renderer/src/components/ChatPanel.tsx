@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { deliveryMessage, publicStatus, userMessage } from '@shared/userMessages'
-import { phaseLabel, row } from '../lib/harnessProjection'
+import { phaseLabel, projectEvents, row } from '../lib/harnessProjection'
+import { isImeComposing } from '@shared/ime'
 import { StepFlow } from './StepFlow'
 import { Markdown } from './Markdown'
 import { Send, Bell, X, ImagePlus, Plus, History, Mic, MicOff, Sparkles, ArrowUpRight } from 'lucide-react'
@@ -12,10 +13,11 @@ const QUICK = [
   '读取当前网页的门店和优惠，列出售价、适用人数及缺失规则，不下单',
   '整理这份行程草案，保留来源和待核验事项，方便我分享给同行人'
 ]
+const IMAGE_READ = '请读取这张图片中的文字、地点和价格，保留图片来源，并注明无法实时核验的信息。'
 
 export function ChatPanel(): JSX.Element {
   const messages = useStore((s) => s.messages)
-  const steps = useStore((s) => s.steps)
+  const steps = projectEvents(useStore((s) => s.events))
   const busy = useStore((s) => s.busy)
   const send = useStore((s) => s.send)
   const run = useStore((s) => s.run)
@@ -43,6 +45,7 @@ export function ChatPanel(): JSX.Element {
   const hydrateComposer = useStore(s => s.hydrateComposer)
   const discardPendingDelivery = useStore(s => s.discardPendingDelivery)
   const [dismissed, setDismissed] = useState<string | null>(null)
+  const [inputHint, setInputHint] = useState('')
   const [listening, setListening] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const followLatest = useRef(true)
@@ -50,7 +53,7 @@ export function ChatPanel(): JSX.Element {
   const recRef = useRef<any>(null)
   const supportsSpeech = typeof window !== 'undefined' && ((window as any).webkitSpeechRecognition || (window as any).SpeechRecognition)
 
-  // 图片与要求一起进入持久发送；异步读取完成时仍绑定选择文件的会话。
+  // 选图只附到当前会话草稿；发送时若文本仍空，再用默认读图提示。
   const onPickImage = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const f = e.target.files?.[0]
     e.target.value = ''
@@ -61,12 +64,10 @@ export function ChatPanel(): JSX.Element {
     }
     const sessionId = activeSessionId
     const reader = new FileReader()
-    reader.onload = async () => {
+    reader.onload = () => {
       const dataUrl = String(reader.result || '')
       if (!dataUrl.startsWith('data:image')) return
-      const request = useStore.getState().drafts[sessionId]?.text.trim() || '请读取这张图片中的文字、地点和价格，保留图片来源，并注明无法实时核验的信息。'
-      setDraft({ text: request, image: dataUrl }, sessionId)
-      if (useStore.getState().activeSessionId === sessionId) void send(request, dataUrl)
+      setDraft({ image: dataUrl }, sessionId)
     }
     reader.onerror = () => useStore.setState({ backendError: '图片读取失败，请重新选择文件。' })
     reader.readAsDataURL(f)
@@ -80,6 +81,7 @@ export function ChatPanel(): JSX.Element {
   }, [activeSessionId, conversationChange, steps.length, pending?.status])
 
   useEffect(() => {
+    void window.plango.desktopReady().then(info => { if (info?.inputHint) setInputHint(info.inputHint) }).catch(() => {})
     return () => {
       try {
         recRef.current?.stop?.()
@@ -90,7 +92,7 @@ export function ChatPanel(): JSX.Element {
   }, [])
 
   const submit = () => {
-    const t = text.trim()
+    const t = text.trim() || (draft?.image ? IMAGE_READ : '')
     if (!t || busy || pending || !composerReady) return
     void send(t, draft?.image)
   }
@@ -234,13 +236,14 @@ export function ChatPanel(): JSX.Element {
         {draft?.image && <div className="mb-2 flex items-center gap-2 text-xs text-[var(--muted)]"><img src={draft.image} alt="待发送图片" className="h-12 w-12 rounded-lg object-cover" /><span>图片随本次要求一起发送</span><button aria-label="移除草稿图片" className="plango-icon-button ml-auto" onClick={() => setDraft({ image: undefined })}><X size={14} /></button></div>}
         <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-soft)] p-3 shadow-card focus-within:border-brand-strong transition-colors">
           <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={onPickImage} />
-          <textarea disabled={!composerReady} value={text} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit() } }} rows={2} aria-label="任务输入" placeholder="说说你的安排，或粘贴网页链接…" className="w-full bg-transparent outline-none text-[13px] leading-6 resize-none max-h-36 text-brand-ink placeholder:text-neutral-400" />
+          <textarea disabled={!composerReady} value={text} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !isImeComposing(event)) { event.preventDefault(); submit() } }} rows={2} aria-label="任务输入" placeholder="说说你的安排，或粘贴网页链接…" className="w-full bg-transparent outline-none text-[13px] leading-6 resize-none max-h-36 text-brand-ink placeholder:text-neutral-400" />
+          {inputHint && <p className="mt-1 text-[10px] leading-4 text-[var(--muted)]">{inputHint}</p>}
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-1"><button onClick={() => fileRef.current?.click()} disabled={busy || !!pending || !composerReady} title="上传图片（可先输入要求）" aria-label="上传图片" className="plango-icon-button disabled:opacity-40"><ImagePlus size={17} /></button>
               {supportsSpeech && <button onClick={toggleMic} disabled={busy} title={listening ? '停止语音' : '语音输入'} className={`plango-icon-button disabled:opacity-40 ${listening ? 'bg-red-50 text-red-600 animate-pulse' : ''}`}>{listening ? <MicOff size={17} /> : <Mic size={17} />}</button>}
-              <span className="text-[10px] text-[var(--muted)] ml-1">Shift + Enter 换行</span>
+              <span className="text-[10px] text-[var(--muted)] ml-1">Shift + Enter 换行 · 可粘贴中文</span>
             </div>
-            <button onClick={submit} disabled={busy || !!pending || !composerReady || !text.trim()} aria-label="发送消息" title="发送消息" className="h-9 w-9 flex items-center justify-center rounded-xl bg-brand text-brand-ink disabled:opacity-40 hover:bg-brand-hover transition-colors"><Send size={16} /></button>
+            <button onClick={submit} disabled={busy || !!pending || !composerReady || (!text.trim() && !draft?.image)} aria-label="发送消息" title="发送消息" className="h-9 w-9 flex items-center justify-center rounded-xl bg-brand text-brand-ink disabled:opacity-40 hover:bg-brand-hover transition-colors"><Send size={16} /></button>
           </div>
         </div>
         <p className="text-center text-[10px] text-[var(--muted)] mt-2.5">重要操作需你确认，任务可随时停止</p>

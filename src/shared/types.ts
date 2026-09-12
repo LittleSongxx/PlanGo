@@ -34,14 +34,6 @@ export interface PreferenceChunk {
   provenance?: string
 }
 
-// 周末足迹（越懂你的可视化素材：PlanGo陪你去过哪些地方）
-export interface Footprint {
-  date: string // 展示用日期，如 "6/21 周六"
-  place: string
-  scene: string // 带娃/约会/减脂/家庭聚餐…
-  note?: string
-}
-
 export interface UserProfile {
   user_id: string
   summary: string
@@ -49,10 +41,8 @@ export interface UserProfile {
   preferences: PreferenceChunk[]
   favorite_shops: string[]
   favorite_provenance?: Record<string, { explicit: boolean; source: string }>
-  avoid_shops: string[]
   home_city: string
   since?: number // 首次使用时间戳（"陪你 N 天"）
-  footprints?: Footprint[] // 周末足迹时间线
 }
 
 // 供给层：统一商家对象
@@ -103,6 +93,12 @@ export interface RouteInfo {
   desc: string
 }
 
+export interface RoutePathSegment {
+  mode: 'walking' | 'transit' | 'driving'
+  name?: string
+  path: [number, number][]
+}
+
 export interface PlanNode {
   node_id: string
   time_start: string
@@ -115,6 +111,7 @@ export interface PlanNode {
   transit_from_prev_min: number | null
   transport_cost?: number | null
   transport_summary?: string
+  route_paths?: RoutePathSegment[]
   distance_km?: number | null
   distance_kind?: 'route' | 'straight_line_lower_bound'
   wait_min?: number | null
@@ -310,7 +307,10 @@ export interface HarnessFeedback {
   text: string
   created_at: string
 }
-export type HarnessFeedbackInput = Pick<HarnessFeedback, 'feedback_id' | 'turn_id' | 'rating'> & { text?: string }
+export type HarnessFeedbackInput = Pick<HarnessFeedback, 'feedback_id' | 'turn_id' | 'rating'> & {
+  text?: string
+  preference?: { text: string; polarity: 'positive' | 'negative' }
+}
 export interface HarnessFeedbackReply { accepted: true; replayed: boolean; feedback: HarnessFeedback }
 
 export interface HarnessDraftReview {
@@ -405,12 +405,10 @@ export interface HarnessApi {
   decideDraft: (runId: string, interruptId: string, planId: string, planVersion: number, decision: 'save' | 'prepare') => Promise<HarnessSnapshot>
   feedback: (runId: string, value: HarnessFeedbackInput) => Promise<HarnessFeedbackReply>
   resolveAction: (runId: string, actionId: string, status: 'SUCCEEDED' | 'FAILED', note: string, reference?: string) => Promise<HarnessSnapshot>
-  createRun: (text: string, image?: string, selectedPoi?: SelectedPoi) => Promise<HarnessSnapshot>
   getRun: (runId: string) => Promise<HarnessSnapshot>
-  sendMessage: (runId: string, text: string, image?: string) => Promise<HarnessSnapshot>
   selectPlan: (runId: string, planId: string, planVersion: number) => Promise<HarnessSnapshot>
-  replan: (runId: string, reason: string) => Promise<HarnessSnapshot>
   cancel: (runId: string) => Promise<HarnessSnapshot>
+  releaseRun: (runId: string) => Promise<{ ok: true }>
   resume: (runId: string, interruptId: string, decision: 'approve' | 'reject' | 'edit' | 'resume', text?: string) => Promise<HarnessSnapshot>
   listRuns: () => Promise<HarnessSnapshot[]>
   status: (checkModel?: boolean) => Promise<HarnessStatus>
@@ -453,6 +451,11 @@ export interface ReminderApi {
   list: () => Promise<ReminderList>
   create: (text: string, at: string) => Promise<ReminderList>
   remove: (id: string) => Promise<ReminderList>
+}
+
+export interface CarryOutApi {
+  saveIcs: (plan: Plan) => Promise<{ ok: boolean; canceled?: boolean; path?: string; error?: string }>
+  saveImage: (plan: Plan) => Promise<{ ok: boolean; canceled?: boolean; path?: string; error?: string }>
 }
 
 
