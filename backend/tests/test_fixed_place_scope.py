@@ -17,7 +17,7 @@ from plango_harness.agent.state import initial_state
 from plango_harness.providers.world import Supply
 from plango_harness.tools.registry import ToolRegistry
 
-FROZEN = Path(__file__).resolve().parents[2] / "eval/plango-live-preparation/four-person-ready-to-review.json"
+FROZEN = Path(__file__).resolve().parent / "frozen_four_person_state.json"
 
 
 def frozen_state():

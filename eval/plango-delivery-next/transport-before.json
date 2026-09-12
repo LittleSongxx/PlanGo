@@ -1,1 +1,0 @@
-{"controlled":true,"baseline":true,"observations":[{"fault":"before","accepted_runs":0,"caller_received_run_id":false},{"fault":"response","accepted_runs":1,"caller_received_run_id":false},{"fault":"snapshot","accepted_runs":1,"caller_received_run_id":false}],"posts":3}
