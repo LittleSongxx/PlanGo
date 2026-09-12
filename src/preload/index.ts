@@ -2,7 +2,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
 import type { HarnessFeedbackInput, RequirementEdit, HarnessDeliveryRequest, OfferSourceRef, OfferSelection } from '../shared/types'
-import type { LocationInfo, SelectedPoi } from '../shared/location'
+import type { LocationInfo } from '../shared/location'
 import type { BrowserIntent, BrowserLayout, BrowserViewState, BrowserActivity } from '../shared/browserView'
 
 const api = {
@@ -21,13 +21,11 @@ const api = {
     resumePreparation: (runId: string, planId: string, planVersion: number, approvalId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'resumePreparation', { runId, planId, planVersion, approvalId }),
     decideDraft: (runId: string, interruptId: string, planId: string, planVersion: number, decision: 'save' | 'prepare') => ipcRenderer.invoke(IPC.harnessRequest, 'decideDraft', { runId, interruptId, planId, planVersion, decision }),
     feedback: (runId: string, value: HarnessFeedbackInput) => ipcRenderer.invoke(IPC.harnessRequest, 'feedback', { runId, value }),
-    createRun: (text: string, image?: string, selectedPoi?: SelectedPoi) => ipcRenderer.invoke(IPC.harnessRequest, 'createRun', { text, image, selectedPoi }),
     getRun: (runId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'getRun', { runId }),
-    sendMessage: (runId: string, text: string, image?: string) => ipcRenderer.invoke(IPC.harnessRequest, 'sendMessage', { runId, text, image }),
-    replan: (runId: string, reason: string) => ipcRenderer.invoke(IPC.harnessRequest, 'replan', { runId, reason }),
     selectPlan: (runId: string, planId: string, planVersion: number) => ipcRenderer.invoke(IPC.harnessRequest, 'selectPlan', { runId, planId, planVersion }),
     resolveAction: (runId: string, actionId: string, status: string, note: string, reference?: string) => ipcRenderer.invoke(IPC.harnessRequest, 'resolveAction', { runId, actionId, status, note, reference }),
     cancel: (runId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'cancel', { runId }),
+    releaseRun: (runId: string) => ipcRenderer.invoke(IPC.harnessRequest, 'releaseRun', { runId }),
     resume: (runId: string, interruptId: string, decision: string, text?: string) => ipcRenderer.invoke(IPC.harnessRequest, 'resume', { runId, interruptId, decision, text }),
     listRuns: () => ipcRenderer.invoke(IPC.harnessRequest, 'listRuns', {}),
     status: (checkModel = false) => ipcRenderer.invoke(IPC.harnessRequest, 'status', { checkModel })
@@ -61,9 +59,10 @@ const api = {
   // 分享协作
   shareCreate: (payload: { plan?: unknown; city?: string }) => ipcRenderer.invoke(IPC.shareCreate, payload),
   shareFeedback: (id: string) => ipcRenderer.invoke(IPC.shareFeedback, id),
-
-  // 攻略导入
-  guideSetImage: (dataUrl: string) => ipcRenderer.invoke(IPC.guideSetImage, dataUrl),
+  carryOut: {
+    saveIcs: (plan: unknown) => ipcRenderer.invoke(IPC.carryOutSaveIcs, plan),
+    saveImage: (plan: unknown) => ipcRenderer.invoke(IPC.carryOutSaveImage, plan)
+  },
 
   // 附近发现 / 优惠发现
   discoverFetch: (request?: { city?: string; refresh?: boolean }) => ipcRenderer.invoke(IPC.discoverFetch, request),

@@ -83,7 +83,6 @@ const selectorSource = `(() => {
     return s;
   }
   function target(s,index){
-    if(document.visibilityState!=='visible')throw Error('browser_not_visible');
     const el=s.refs[index];if(!el||!el.isConnected)throw Error('stale_snapshot');
     if(s.meanings[index]===null)throw Error('element_too_complex');
     if(s.meanings[index]!==meaning(el))throw Error('stale_snapshot');
@@ -101,12 +100,56 @@ const selectorSource = `(() => {
     let gate=controls.some(el=>el.tagName==='INPUT'&&el.type==='password')?'login':null;
     if(controls.some(el=>(['INPUT','TEXTAREA'].includes(el.tagName)||el.isContentEditable)&&(/captcha|验证码|验证代码|安全验证/i.test([el.getAttribute('aria-label'),el.getAttribute('name'),el.getAttribute('placeholder'),...(el.labels?Array.from(el.labels,label=>label.innerText):[])].join(' '))||el.getAttribute('autocomplete')==='one-time-code')))gate='captcha';
     const text=(document.body?document.body.innerText:'').trim().slice(0,1000);
-    if(location.hostname==='account.dianping.com'&&location.pathname==='/pclogin'&&/扫描二维码登录|扫码[，,\\s]*享.{0,10}免登录|扫码登录/.test(text))gate='login';
-    if(location.hostname==='verify.meituan.com'&&location.pathname==='/v2/app/general_page')gate='captcha';
+    const heading=document.title.trim()+' '+(document.querySelector('h1')?.innerText||'');
+    if(/扫描二维码登录|扫码登录/.test(text)&&/登录/.test(heading+' '+text.slice(0,80)))gate='login';
+    if(/验证中心/.test(document.title)&&/安全验证/.test(text))gate='captcha';
     if(/^(安全验证|人机验证|验证码|Just a moment[.]*|Checking your browser|Verify (you are|you're) human)(\\s*[|–-].*)?$/i.test(document.title.trim())||/^(请完成(人机|安全|身份)验证|请验证您是真人)/.test(text))gate='captcha';
     return gate;
   }
   function visible(el){const r=el.getBoundingClientRect();return r.width>=3&&r.height>=3&&el.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});}
+  function compactControl(el){
+    const r=el.getBoundingClientRect();
+    return r.width<=80&&r.height<=64&&r.width*r.height<=4000;
+  }
+  function fieldGroup(input){
+    const ir=input.getBoundingClientRect();
+    let box=input.parentElement;
+    for(let hop=0;hop<2&&box&&box.nodeType===1;hop++){
+      const br=box.getBoundingClientRect();
+      if(br.width>Math.max(ir.width*2.5,ir.width+160)||br.height>Math.max(ir.height*3,96))break;
+      const extras=[];
+      for(const el of box.querySelectorAll('*')){
+        if(el===input||input.contains(el)||el.contains(input)||!visible(el)||!compactControl(el))continue;
+        extras.push(el);
+      }
+      if(extras.length)return extras;
+      box=box.parentElement;
+    }
+    return [];
+  }
+  function nearbyForms(rs,refs){
+    const out=[];
+    let ordinal=0;
+    for(const root of rs){
+      for(const input of root.querySelectorAll(formSelector)){
+        if(out.length>=10)break;
+        if(!['INPUT','TEXTAREA'].includes(input.tagName)||input.closest('form'))continue;
+        if(!visible(input)||['password','file','hidden','checkbox','radio','submit','button','image'].includes(input.type))continue;
+        const extras=fieldGroup(input);
+        const idx=refs.indexOf(input);
+        if(idx<0||!extras.length)continue;
+        const submit_indices=[];
+        for(const el of extras){const i=refs.indexOf(el);if(i>=0)submit_indices.push(i);}
+        if(!submit_indices.length)continue;
+        const label=nameOf(input);
+        let value=input.isContentEditable?input.innerText:input.value;
+        if(typeof value==='string'&&value.length>2000)value=value.slice(0,2000);
+        out.push({form_id:'nearby-'+ordinal,action_url:'',context_text:label.slice(0,600),controls:[{idx,input_type:input.type||'text',name:(input.getAttribute('name')||'').slice(0,200),label:label.slice(0,500),value,disabled:!!input.disabled}],submit_indices,truncated:false});
+        ordinal++;
+      }
+    }
+    return out;
+  }
   function formData(rs,refs){
     const found=rs.flatMap(root=>Array.from(root.querySelectorAll('form'))),out=[];
     for(let ordinal=0;ordinal<Math.min(20,found.length);ordinal++){
@@ -156,6 +199,7 @@ const selectorSource = `(() => {
         if(r.width<3||r.height<3||style.visibility==='hidden'||style.display==='none'||style.opacity==='0')continue;
         const name=nameOf(el);
         const item={idx:refs.length,tag:el.tagName.toLowerCase(),role:el.getAttribute('role')||'',name:name.slice(0,200),text:(el.innerText||'').replace(/\\s+/g,' ').trim().slice(0,80),input_type:el.type||'',editable:!!(el.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(el.tagName)),disabled:!!el.disabled};
+        if(item.editable){const raw=el.isContentEditable?el.innerText:el.value;if(typeof raw==='string'&&raw)item.value=raw.slice(0,200);}
         const href=hrefOf(el);if(href)item.href=href;
         refs.push(el);elements.push(item);
       }
@@ -164,6 +208,22 @@ const selectorSource = `(() => {
         const rows=Array.from(table.querySelectorAll('tr'));if(!rows.length)continue;
         const cells=row=>Array.from(row.querySelectorAll('th,td'),c=>(c.innerText||'').trim().slice(0,1000)).slice(0,30);
         tables.push({headers:cells(rows[0]),rows:rows.slice(1,20).map(cells)});
+      }
+    }
+    const seen=new Set(refs);
+    for(const root of rs){
+      for(const input of root.querySelectorAll(formSelector)){
+        if(refs.length>=180)break;
+        if(!visible(input)||['password','file','hidden'].includes(input.type))continue;
+        const label=nameOf(input);
+        for(const el of fieldGroup(input)){
+          if(refs.length>=180||seen.has(el))continue;
+          seen.add(el);
+          const name=nameOf(el)||(label?label.slice(0,180)+' 旁':'');
+          const item={idx:refs.length,tag:el.tagName.toLowerCase(),role:el.getAttribute('role')||'',name:name.slice(0,200),text:(el.innerText||'').replace(/\\s+/g,' ').trim().slice(0,80),input_type:el.type||'',editable:false,disabled:!!el.disabled};
+          const href=hrefOf(el);if(href)item.href=href;
+          refs.push(el);elements.push(item);
+        }
       }
     }
     let text=(document.body?document.body.innerText:'').slice(0,9000);
@@ -176,7 +236,7 @@ const selectorSource = `(() => {
       const label=id=>{const matches=Array.from(document.querySelectorAll('[data-testid]')).filter(el=>el.getAttribute('data-testid')===id&&visible(el));return matches.length===1?(matches[0].innerText||'').trim().slice(0,120):'';};
       booking_preview={adapter:'szuo_tealounge_v1',merchant_label:label('Landing Venue Panel Opener Button'),party_label:label('Landing Pax Panel Opener Button'),date_label:label('Landing Date Panel Opener Button'),time_label:label('Landing Time Panel Opener Button')};
     }
-    return metadata({url:s.url,title:document.title,text,elements,tables,forms:formData(rs,refs),booking_preview,version:s.version,manual_gate:manualGate(rs),canvas_count:rs.reduce((count,root)=>count+root.querySelectorAll('canvas').length,0)});
+    return metadata({url:s.url,title:document.title,text,elements,tables,forms:[...formData(rs,refs),...nearbyForms(rs,refs)],booking_preview,version:s.version,manual_gate:manualGate(rs),canvas_count:rs.reduce((count,root)=>count+root.querySelectorAll('canvas').length,0)});
   }
   // This guard also catches mutations during Playwright's actionability waits.
   // Once an input event has begun, any uncertainty is reported as UNKNOWN upstream.
@@ -283,21 +343,26 @@ async function connected(signal: AbortSignal): Promise<Browser> {
 }
 async function pageFor(contents: WebContents, signal: AbortSignal, check: () => void): Promise<Page> {
   const client = await connected(signal)
-  check()
-  for (const context of client.contexts()) for (const page of context.pages()) {
+  const deadline = Date.now() + 2500
+  while (!signal.aborted) {
     check()
-    if (page.isClosed()) continue
-    let session: CDPSession | undefined
-    try {
-      session = await readBeforeDeadline(context.newCDPSession(page), signal)
-      const { targetInfo } = await readBeforeDeadline(session.send('Target.getTargetInfo'), signal)
+    for (const context of client.contexts()) for (const page of context.pages()) {
       check()
-      if (webContents.fromDevToolsTargetId(targetInfo.targetId) === contents) return page
-    } catch (error) {
-      check()
-      // pages() is a snapshot: an unrelated tab can close before CDP attaches.
-      if (!page.isClosed() && !/(Target .*closed|Target closed|Session closed|No (target|session) with given id)/i.test(String(error))) throw error
-    } finally { if (session) await readBeforeDeadline(session.detach(), AbortSignal.timeout(1000)).catch(() => {}) }
+      if (page.isClosed()) continue
+      let session: CDPSession | undefined
+      try {
+        session = await readBeforeDeadline(context.newCDPSession(page), signal)
+        const { targetInfo } = await readBeforeDeadline(session.send('Target.getTargetInfo'), signal)
+        check()
+        if (webContents.fromDevToolsTargetId(targetInfo.targetId) === contents) return page
+      } catch (error) {
+        check()
+        // pages() is a snapshot: an unrelated tab can close before CDP attaches.
+        if (!page.isClosed() && !/(Target .*closed|Target closed|Session closed|No (target|session) with given id)/i.test(String(error))) throw error
+      } finally { if (session) await readBeforeDeadline(session.detach(), AbortSignal.timeout(1000)).catch(() => {}) }
+    }
+    if (Date.now() >= deadline) break
+    await new Promise(resolve => setTimeout(resolve, 50))
   }
   throw new Error('browser_target_unavailable')
 }

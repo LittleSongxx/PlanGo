@@ -4,7 +4,7 @@ import { useStore } from '../store'
 import type { ReminderList } from '@shared/types'
 import { DialogShell } from './DialogShell'
 import { ExecutionServiceCard } from './ExecutionServiceCard'
-import { X, Cpu, Puzzle, Brain, Check, Loader2, Plug, Heart, Lock, MapPin, Bell } from 'lucide-react'
+import { X, Cpu, Puzzle, Brain, Check, Loader2, Plug, Heart, Lock, Bell } from 'lucide-react'
 
 // 当前可用的模型配置、技能、记忆与提醒。
 type Tab = 'model' | 'skills' | 'memory' | 'reminders'
@@ -214,7 +214,6 @@ function MemorySection(): JSX.Element {
     if (!confirm('清空PlanGo保存的偏好、收藏和任务记忆？原始任务仍保留，此操作不可撤销。')) return
     await mutate(() => window.plango.memoryClear())
   }
-  const footprints = prof?.footprints || []
   const episodes: { id: string; text: string; scope?: string; createdAt?: string }[] = prof?.episodes || []
   return (
     <div className="space-y-3">
@@ -280,24 +279,6 @@ function MemorySection(): JSX.Element {
       )}
 
       {episodes.length > 0 && <section className="space-y-2"><h3 className="text-xs font-semibold">任务记忆与反馈</h3><p className="text-[11px] text-[var(--muted)]">用于后续任务参考，历史记录不证明当前营业、价格或业务完成。</p>{episodes.map(item => <div key={item.id} className="plango-card p-3 text-xs flex items-start gap-3"><div className="flex-1 min-w-0"><div className="text-[10px] text-[var(--muted)] mb-1">{({ user_feedback: '明确反馈', read_only: '页面读取', image_text: '图片读取', ready_to_review: '准备待核对', price_comparison: '价格比较', plan_draft: '规划草案' } as Record<string, string>)[item.scope || ''] || '历史任务记录'}{item.createdAt ? ' · ' + new Date(item.createdAt).toLocaleString('zh-CN') : ''}</div><p className="whitespace-pre-wrap break-words leading-5">{item.text}</p></div><button disabled={saving} onClick={() => void del('episode', item.id)} className="plango-icon-button" aria-label="删除这条任务记忆"><X size={13} /></button></div>)}</section>}
-      {footprints.length > 0 && (
-        <div>
-          <div className="text-xs text-neutral-500 mb-1.5 flex items-center gap-1">
-            <MapPin size={12} className="text-brand-ink" /> 已保存的地点记录
-          </div>
-          <div className="relative pl-3.5">
-            <div className="absolute left-1 top-1 bottom-1 w-px bg-neutral-200" />
-            {footprints.map((f: { date: string; place: string; scene: string; note?: string }, i: number) => (
-              <div key={i} className="relative mb-2.5 last:mb-0">
-                <span className="absolute -left-[9px] top-1 w-1.5 h-1.5 rounded-full bg-brand" />
-                <div className="text-[11px] text-neutral-400">{f.date} · {f.scene}</div>
-                <div className="text-xs text-neutral-700 font-medium">{f.place}</div>
-                {f.note && <div className="text-[11px] text-neutral-500">{f.note}</div>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

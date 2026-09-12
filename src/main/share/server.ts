@@ -36,15 +36,22 @@ let storagePath: string | undefined
 let server: Server | null = null
 let port = 0
 
+export function pickLanAddress(addresses: string[]): string {
+  const lan = addresses.find(ip => {
+    const [a, b] = ip.split('.').map(Number)
+    return a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168)
+  })
+  return lan || addresses[0] || '127.0.0.1'
+}
+
 function lanIp(): string {
-  const nets = networkInterfaces()
-  for (const name of Object.keys(nets)) {
-    for (const ni of nets[name] || []) {
-      // 只要 IPv4、非回环、非内部
-      if (ni.family === 'IPv4' && !ni.internal) return ni.address
+  const addresses: string[] = []
+  for (const list of Object.values(networkInterfaces())) {
+    for (const ni of list || []) {
+      if ((ni.family === 'IPv4' || String(ni.family) === '4') && !ni.internal) addresses.push(ni.address)
     }
   }
-  return '127.0.0.1'
+  return pickLanAddress(addresses)
 }
 
 export function startShareServer(preferredPort = 8799, storageDir?: string): Promise<number> {

@@ -1,10 +1,11 @@
 import { useStore } from '../store'
+import { projectEvents } from '../lib/harnessProjection'
 import { Globe, Hand } from 'lucide-react'
 
 // 顶部浮条：AI 操控浏览器时显示"PlanGo正在浏览 X…"+ 当前动作 + 人可"接管"（Manus/Fellou 式 human-in-the-loop）。
 export function AiBrowsingBar(): JSX.Element | null {
   const ai = useStore((s) => s.aiBrowsing)
-  const steps = useStore((s) => s.steps)
+  const steps = projectEvents(useStore((s) => s.events))
   const setAiBrowsing = useStore((s) => s.setAiBrowsing)
   if (!ai.active) return null
   const action = ({ snapshot: '查看页面', read_page: '查看页面', extract: '读取资料', extract_tables: '读取表格', screenshot: '理解画面', click: '操作页面', type: '填写信息', navigate: '打开网页', open_tab: '打开网页', scroll: '浏览页面', highlight: '定位内容', current: '查看页面' } as Record<string, string>)[ai.action] || ai.action

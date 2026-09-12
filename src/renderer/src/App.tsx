@@ -15,6 +15,7 @@ import { RouteSheet } from './components/RouteSheet'
 import { AiBrowsingBar } from './components/AiBrowsingBar'
 import { detectViaAMap } from './lib/amap'
 import { locationPriority, type LocationInfo } from '@shared/location'
+import { CHAT_DEFAULT, CHAT_MAX, CHAT_MIN, MAIN_MIN } from './lib/layout'
 import { ArrowRight, Circle, Globe2, LayoutDashboard } from 'lucide-react'
 
 export default function App(): JSX.Element {
@@ -27,7 +28,7 @@ export default function App(): JSX.Element {
   const dragging = useRef(false)
   const workspace = useRef<HTMLDivElement>(null)
   const [resizing, setResizing] = useState(false)
-  const [chatMax, setChatMax] = useState(760)
+  const [chatMax, setChatMax] = useState(CHAT_MAX)
   const backendReady = useStore(state => state.backendReady)
   const backendError = useStore(state => state.backendError)
   const routeTarget = useStore(state => state.routeTarget)
@@ -91,22 +92,26 @@ export default function App(): JSX.Element {
   useEffect(() => {
     if (!workspace.current) return
     const observe = new ResizeObserver(([entry]) => {
-      const maximum = Math.max(320, Math.min(760, entry.contentRect.width - 456))
+      const width = entry.contentRect.width
+      const maximum = Math.max(CHAT_MIN, Math.min(CHAT_MAX, width - MAIN_MIN))
       setChatMax(maximum)
-      if (useStore.getState().chatWidth > maximum) setChatWidth(maximum)
+      const current = useStore.getState().chatWidth
+      const preferred = Math.min(maximum, Math.max(CHAT_DEFAULT, Math.round(width * 0.3)))
+      if (current > maximum) setChatWidth(maximum)
+      else if (current === CHAT_DEFAULT) setChatWidth(preferred)
     })
     observe.observe(workspace.current)
     return () => observe.disconnect()
   }, [setChatWidth])
 
   return (
-    <div className="h-full flex flex-col gap-4 p-4 bg-[var(--canvas)]">
+    <div className="h-full flex flex-col gap-5 p-5 bg-[var(--canvas)]">
       <header className="h-11 shrink-0 flex items-center justify-between gap-5 px-2 select-none" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white border border-[var(--line)] text-brand-strong"><LayoutDashboard size={16} /></span><div><p className="plango-kicker">PLANGO WORKSPACE</p><p className="text-[13px] font-semibold mt-0.5">把想法，安排好。</p></div></div>
         <div className="hidden xl:flex items-center gap-3 text-[11px] text-[var(--muted)]" aria-label="工作流程">需求<ArrowRight size={12} />查资料<ArrowRight size={12} />方案与结果<ArrowRight size={12} />确认继续</div>
         <div role="status" className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] ${backendReady ? 'border-emerald-200 bg-white text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-800'}`}><Circle size={7} fill="currentColor" />{backendReady ? '运行服务已连接' : backendError ? '运行服务未连接' : '正在连接运行服务'}</div>
       </header>
-      <div className="flex-1 flex min-h-0 gap-4">
+      <div className="flex-1 flex min-h-0 gap-5">
         <IconRail />
         <div ref={workspace} className="flex-1 flex min-w-0 min-h-0">
           <main className="plango-surface flex-1 flex flex-col min-w-0 overflow-hidden relative" aria-label="主工作区">
@@ -120,8 +125,8 @@ export default function App(): JSX.Element {
             </div>
             {view === 'outcome' && <div className="flex-1 min-h-0"><OutcomeCanvas /></div>}
           </main>
-          <div role="separator" aria-label="调整对话面板宽度" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={chatMax} aria-valuenow={Math.round(chatWidth)} tabIndex={0}
-            onKeyDown={event => { const next = event.key === 'ArrowLeft' ? chatWidth + 20 : event.key === 'ArrowRight' ? chatWidth - 20 : event.key === 'Home' ? 320 : event.key === 'End' ? chatMax : null; if (next !== null) { event.preventDefault(); setChatWidth(Math.min(chatMax, next)) } }}
+          <div role="separator" aria-label="调整对话面板宽度" aria-orientation="vertical" aria-valuemin={CHAT_MIN} aria-valuemax={chatMax} aria-valuenow={Math.round(chatWidth)} tabIndex={0}
+            onKeyDown={event => { const next = event.key === 'ArrowLeft' ? chatWidth + 20 : event.key === 'ArrowRight' ? chatWidth - 20 : event.key === 'Home' ? CHAT_MIN : event.key === 'End' ? chatMax : null; if (next !== null) { event.preventDefault(); setChatWidth(Math.min(chatMax, next)) } }}
             onMouseDown={() => { dragging.current = true; setResizing(true); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none' }}
             className="group w-4 shrink-0 cursor-col-resize flex items-center justify-center rounded-lg outline-offset-0" title="拖动调整宽度"><div className="h-10 w-1 rounded-full bg-[#d8d4ca] group-hover:bg-brand transition-colors" /></div>
           <aside className="plango-surface shrink-0 flex flex-col min-w-0 overflow-hidden" style={{ width: chatWidth }} aria-label="对话助手"><ChatPanel /></aside>

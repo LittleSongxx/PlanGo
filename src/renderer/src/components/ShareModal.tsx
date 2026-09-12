@@ -1,3 +1,4 @@
+import { formatCarryOutText, carryOutFromPlan } from '@shared/carryOut'
 import { userMessage } from '@shared/userMessages'
 import { DialogShell } from './DialogShell'
 import { useEffect, useRef, useState } from 'react'
@@ -18,11 +19,15 @@ export function ShareModal(): JSX.Element | null {
   const close = useStore((s) => s.closeShare)
   const city = useStore((s) => s.city)
   const send = useStore((s) => s.send)
+  const run = useStore((s) => s.run)
+  const editRequirements = useStore((s) => s.editRequirements)
   const [state, setState] = useState<{ id: string; url: string; qr: string } | null>(null)
   const [error, setError] = useState('')
   const [fb, setFb] = useState<Feedback | null>(null)
   const [copied, setCopied] = useState(false)
+  const [copiedPlan, setCopiedPlan] = useState(false)
   const [feedbackError, setFeedbackError] = useState('')
+  const [merging, setMerging] = useState(false)
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -59,10 +64,41 @@ export function ShareModal(): JSX.Element | null {
   if (!plan) return null
 
   const total = fb ? fb.tally.up + fb.tally.meh + fb.tally.down : 0
-  const merge = (): void => {
-    if (!fb?.mergeInstruction) return
-    void send(`【并入朋友意见】${fb.mergeInstruction}`)
-    close()
+  const merge = async (): Promise<void> => {
+    if (!fb?.mergeInstruction || merging) return
+    const current = useStore.getState()
+    if (current.busy || current.pendingDelivery || !current.backendReady) return
+    const budgets = fb.prefs.map((item) => item.budget).filter((value): value is number => typeof value === 'number' && value > 0)
+    const ideas = fb.prefs.map((item) => item.idea.trim()).filter(Boolean)
+    const voteNote = fb.tally.down > fb.tally.up ? '多数朋友对当前方案有保留。' : ''
+    const note = [...ideas.slice(0, 5), voteNote].filter(Boolean).join('；')
+    setMerging(true)
+    try {
+      if (budgets.length) {
+        if (!run?.version) {
+          useStore.setState({ backendError: '当前任务无法写入人均预算，请先打开对应方案后再并入。' })
+          return
+        }
+        await editRequirements({ expected_version: run.version, fields: { per_person_budget: Math.min(...budgets) } })
+      }
+      if (note) {
+        const started = Date.now()
+        let sent = false
+        while (Date.now() - started < 180000) {
+          const idle = useStore.getState()
+          if (!idle.busy && !idle.pendingDelivery && idle.backendReady && idle.composerReady) {
+            await send(`朋友想法：${note}`)
+            sent = true
+            break
+          }
+          await new Promise(resolve => setTimeout(resolve, 400))
+        }
+        if (!sent) useStore.setState({ backendError: '人均预算已写入；朋友想法请等当前任务空闲后再发，或直接在对话里补充。' })
+      }
+      close()
+    } finally {
+      setMerging(false)
+    }
   }
   const copy = (): void => {
     if (!state) return
@@ -70,6 +106,13 @@ export function ShareModal(): JSX.Element | null {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     }).catch(() => setFeedbackError('链接复制失败，可选中链接手动复制。'))
+  }
+  const copyPlan = (): void => {
+    navigator.clipboard.writeText(formatCarryOutText(carryOutFromPlan(plan))).then(() => {
+      setCopiedPlan(true)
+      setFeedbackError('')
+      setTimeout(() => setCopiedPlan(false), 1600)
+    }).catch(() => setFeedbackError('出行长文复制失败，请重试。'))
   }
 
   return (
@@ -105,6 +148,9 @@ export function ShareModal(): JSX.Element | null {
                 </div>
               </>
             )}
+            <button type="button" onClick={copyPlan} className="mt-2 w-full text-[11px] py-1.5 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50">
+              {copiedPlan ? '出行长文已复制' : '复制出行长文（不依赖同一 WiFi）'}
+            </button>
           </div>
 
           {/* 右：实时反馈 */}
@@ -139,8 +185,8 @@ export function ShareModal(): JSX.Element | null {
             </div>
 
             <button
-              onClick={merge}
-              disabled={!fb?.mergeInstruction}
+              onClick={() => void merge()}
+              disabled={!fb?.mergeInstruction || merging}
               className="mt-3 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-brand text-brand-ink font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Wand2 size={14} /> 把朋友意见并入方案

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { loadAMap } from '../lib/amap'
 import { cityCenter } from '../lib/cityCenter'
 import type { RouteTarget } from '../store'
+import { addRouteOverlays } from '../lib/routePath'
 import { X, Car, Bus, Footprints, Navigation } from 'lucide-react'
 
 type Mode = 'driving' | 'transit' | 'walking'
@@ -24,9 +25,11 @@ export function RouteSheet({ target, onClose }: { target: RouteTarget; onClose: 
   const mapEl = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
   const routerRef = useRef<any>(null)
+  const plannedRef = useRef<any[]>([])
   const [mode, setMode] = useState<Mode>(target.initialMode || 'driving')
   const [stats, setStats] = useState<Stats | null>(null)
   const [err, setErr] = useState('')
+  const [fromPlan, setFromPlan] = useState(!!target.paths?.length)
 
   // 照抄 weplan originFallback：起点缺失时用城市中心兜底，永远能画路线（诚实标注估算）
   const hasRealOrigin = !!(target.origin && target.origin.includes(','))
@@ -54,6 +57,26 @@ export function RouteSheet({ target, onClose }: { target: RouteTarget; onClose: 
         } catch {
           /* ignore */
         }
+        plannedRef.current.forEach((overlay) => {
+          try { map.remove(overlay) } catch { /* ignore */ }
+        })
+        plannedRef.current = []
+        const plannedMode = target.initialMode || 'driving'
+        if (mode === plannedMode && (target.paths || []).length) {
+          plannedRef.current = addRouteOverlays(AMap, map, target.paths || [])
+          plannedRef.current.push(new AMap.Marker({ position: o, map, title: target.originName || '起点' }))
+          plannedRef.current.push(new AMap.Marker({ position: d, map, title: target.destName }))
+          try { map.setFitView(null, false, [40, 40, 40, 40]) } catch { /* ignore */ }
+          const planned = target.planned
+          setFromPlan(true)
+          setStats({
+            distanceText: planned?.distanceKm != null ? `${planned.distanceKm}km` : '—',
+            durationText: planned?.durationMin != null ? `${planned.durationMin}分钟` : '—',
+            extra: planned?.extra || (mode === 'transit' ? '公交地铁' : mode === 'walking' ? '步行' : '驾车'),
+          })
+          return
+        }
+        setFromPlan(false)
         const opt = { map, hideMarkers: false, autoFitView: true, panel: false }
         let router: any
         if (mode === 'walking' && AMap.Walking) router = new AMap.Walking(opt)
@@ -78,7 +101,7 @@ export function RouteSheet({ target, onClose }: { target: RouteTarget; onClose: 
         /* ignore */
       }
     }
-  }, [mode, target.dest, effectiveOrigin, target.city, hasDest])
+  }, [mode, target.dest, effectiveOrigin, target.city, hasDest, target.paths, target.initialMode, target.planned, target.originName, target.destName])
 
   useEffect(() => {
     return () => {
@@ -146,6 +169,9 @@ export function RouteSheet({ target, onClose }: { target: RouteTarget; onClose: 
           {target.originName ? <div className="text-[11px] text-neutral-500">使用计划记录的起点：{target.originName}，不代表设备当前位置。</div> : coarseOrigin && (
             <div className="text-[11px] text-amber-600">起点按「{target.city}」地区参考点估算；可在设置中指定出发地址。</div>
           )}
+          {fromPlan ? <div className="text-[11px] text-neutral-500">图上轨迹与草案同一条高德算路，不是地图插件另算的结果。</div>
+            : <div className="text-[11px] text-amber-700" aria-live="polite">当前模式由地图另算，可能与草案文案不一致；切回草案交通方式可看同一条路线。</div>}
+          {fromPlan && target.planned?.summary ? <p className="text-[11px] leading-5 text-neutral-600 whitespace-pre-wrap">{target.planned.summary.replace(/；/g, '\n')}</p> : null}
           <div className="text-[11px] text-neutral-400">路线结果来自高德，实际路况和费用以出发时为准。</div>
           <div className="flex gap-2">
             <button onClick={openExternalNav} className="flex-1 text-xs py-1.5 rounded-lg bg-brand text-brand-ink font-medium">🧭 高德实时导航</button>

@@ -1,8 +1,9 @@
 import { userMessage } from '../../shared/userMessages'
 import { create } from 'zustand'
-import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent, RequirementEdit, HarnessDeliveryRequest, HarnessDeliveryResult, OfferSelection } from '@shared/types'
+import type { AgentStep, ChatMessage, OutcomeCard, Plan, HarnessSnapshot, HarnessEvent, RequirementEdit, HarnessDeliveryRequest, HarnessDeliveryResult, OfferSelection, RoutePathSegment } from '@shared/types'
 import { projectHarness, projectEvents, runBusy, canResolveAction, canSelectOffer, row } from './lib/harnessProjection'
 import { originFallback as computeOrigin } from './lib/cityCenter'
+import { CHAT_MAX, CHAT_MIN } from './lib/layout'
 import { migrateLocalStorage } from './lib/storageMigration'
 import { loadDraftImage, saveDraftImage } from './lib/draftImages'
 import type { BrowserIntent, BrowserViewState, BrowserTabState } from '@shared/browserView'
@@ -96,6 +97,8 @@ export interface RouteTarget {
   dest: string // "lng,lat"
   destName: string
   city: string
+  paths?: RoutePathSegment[]
+  planned?: { distanceKm?: number; durationMin?: number; extra?: string; summary?: string }
 }
 
 interface State {
@@ -213,7 +216,7 @@ export const useStore = create<State>((set, get) => ({
   proactive: [],
   settingsOpen: false,
   view: 'browser',
-  chatWidth: 440,
+  chatWidth: 560,
   city: '定位中…',
   citySource: 'config',
   district: '',
@@ -564,7 +567,7 @@ export const useStore = create<State>((set, get) => ({
   addProactive: (p) => set((s) => ({ proactive: [p, ...s.proactive].slice(0, 20) })),
   setSettings: (open) => set({ settingsOpen: open }),
   setView: (v) => set({ view: v }),
-  setChatWidth: (w) => set({ chatWidth: Math.max(320, Math.min(760, w)) }),
+  setChatWidth: (w) => set({ chatWidth: Math.max(CHAT_MIN, Math.min(CHAT_MAX, w)) }),
   setCity: (city, source) => set((s) => ({ city, citySource: source ?? s.citySource })),
   setCoords: (coords) => set({ coords }),
   originFallback: () => computeOrigin(get().coords, get().city),
@@ -593,6 +596,8 @@ export const useStore = create<State>((set, get) => ({
   setDiscoverOpen: (v) => set({ discoverOpen: v }),
   setAiBrowsing: (v) => set((s) => ({ aiBrowsing: { active: v.active, site: v.site ?? s.aiBrowsing.site, action: v.action ?? s.aiBrowsing.action } })),
   newSession: () => {
+    const previous = get().run?.run_id
+    if (previous) void window.plango.harness.releaseRun(previous)
     set((s) => ({ sessions: upsertSession(s), activeSessionId: 'sess_' + crypto.randomUUID(),
       messages: [{ role: 'assistant', content: '开始新的安排吧。告诉我地点、人数和预算。' }], cards: [], steps: [], events: [], run: null,
       busy: false, requestBusy: false, backendError: '', historyOpen: false }))
@@ -603,6 +608,8 @@ export const useStore = create<State>((set, get) => ({
     const list = upsertSession(get())
     const target = list.find(x => x.id === id)
     if (!target) return
+    const previous = get().run?.run_id
+    if (previous && previous !== target.runId) void window.plango.harness.releaseRun(previous)
     set({ sessions: list, activeSessionId: id, messages: target.messages, cards: [], steps: [], events: [], run: null,
       busy: !!target.runId, requestBusy: !!target.runId, backendError: target.runId || get().drafts[id] || get().pendingDelivery?.sessionId === id ? '' : '这是旧版会话的只读记录。发送消息会建立新的后端任务。', historyOpen: false })
     get().persistComposer()

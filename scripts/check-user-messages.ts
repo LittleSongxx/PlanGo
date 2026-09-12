@@ -9,7 +9,7 @@ import { HarnessClient } from '../src/main/harnessClient'
 import type { HarnessSnapshot } from '../src/shared/types'
 
 const internal = "1 validation error for Reference\nfield\nString should match pattern '^SECRET_PATTERN$' [type=string_pattern_mismatch, input_value='PRIVATE_INPUT'] https://errors.pydantic.dev/2/v/string_pattern_mismatch"
-for (const context of ['task', 'offer', 'browser', 'settings', 'storage', 'share', 'discover', 'action', 'reminder'] as MessageContext[]) {
+for (const context of ['task', 'offer', 'browser', 'settings', 'storage', 'share', 'discover', 'action', 'reminder', 'carry'] as MessageContext[]) {
   const shown = userMessage(new Error(internal), context)
   assert(!/PRIVATE_INPUT|SECRET_PATTERN|pydantic|input_value|validation|https?:/.test(shown))
   assert(/[\u3400-\u9fff]/.test(shown))

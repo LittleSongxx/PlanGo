@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Plan } from '@shared/types'
 import { useStore } from '../store'
 import { loadAMap } from '../lib/amap'
+import { addRouteOverlays, pathMidpoint } from '../lib/routePath'
 
 interface Pt {
   lng: number
@@ -18,7 +19,7 @@ function haversine(lng1: number, lat1: number, lng2: number, lat2: number): numb
   return 2 * R * Math.asin(Math.sqrt(a))
 }
 
-// 行程地图：编号 Marker + 按计划标注的直线连接；不二次调用高德算路。
+// 行程地图：编号 Marker + 同一条高德算路折线；没有轨迹时才用直线占位。
 export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
   const ref = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
@@ -89,9 +90,11 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
             const b = pts[i + 1]
             const dest = stopNodes[hasOrigin ? i : i + 1] || stopNodes[i]
             const verified = dest?.distance_kind === 'route'
-            if (!verified) pending = true
+            const routed = (dest?.route_paths || []).length > 0
+            if (!verified || !routed) pending = true
             const color = segColors[i % segColors.length]
-            new AMap.Polyline({
+            if (routed) addRouteOverlays(AMap, map, dest!.route_paths!)
+            else new AMap.Polyline({
               path: [[a.lng, a.lat], [b.lng, b.lat]],
               map,
               strokeColor: color,
@@ -99,15 +102,18 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
               strokeWeight: verified ? 5 : 4,
               strokeOpacity: verified ? 0.85 : 0.7,
             })
-            const label = dest?.transport_summary || (dest?.distance_kind === 'straight_line_lower_bound'
-              ? '直线下界 · 待核验'
-              : dest?.distance_km != null
-                ? `${dest.distance_km}km · 待核验`
-                : '路线待核验')
-            new AMap.Marker({
-              position: [(a.lng + b.lng) / 2, (a.lat + b.lat) / 2],
+            const shortLabel = dest?.transport_summary
+              ? dest.transport_summary.split('；').slice(1, 3).join(' · ') || dest.transport_summary
+              : dest?.distance_kind === 'straight_line_lower_bound'
+                ? '直线下界 · 待核验'
+                : dest?.distance_km != null
+                  ? `${dest.distance_km}km · 待核验`
+                  : '路线待核验'
+            const mid = routed ? pathMidpoint(dest!.route_paths!) : [(a.lng + b.lng) / 2, (a.lat + b.lat) / 2]
+            if (mid) new AMap.Marker({
+              position: mid,
               offset: new AMap.Pixel(-24, -10),
-              content: `<div style="background:${color};color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:9px;white-space:nowrap">${label}</div>`,
+              content: `<div style="background:${color};color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:9px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${shortLabel}</div>`,
               zIndex: 70,
             }).setMap(map)
           }
@@ -163,5 +169,5 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
       </div>
     )
   }
-  return <div className="mb-4"><div ref={ref} aria-label="行程地图" className="w-full h-56 rounded-2xl overflow-hidden border border-[var(--line)] bg-[var(--surface-soft)]" />{estimated && <p className="text-[11px] text-amber-700 mt-2">虚线仅连接地点，实际道路与通行时间待核验。</p>}</div>
+  return <div className="mb-4"><div ref={ref} aria-label="行程地图" className="w-full h-56 rounded-2xl overflow-hidden border border-[var(--line)] bg-[var(--surface-soft)]" />{estimated && <p className="text-[11px] text-amber-700 mt-2">虚线仅连接地点；实线来自本次高德算路，与文案同一条结果。</p>}</div>
 }

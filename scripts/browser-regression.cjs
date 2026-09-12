@@ -25,6 +25,11 @@ const server = createServer((req,res) => {
     return
   }
   if (req.url === '/slow') { slowRequests++; setTimeout(() => { res.setHeader('Content-Type','text/html'); res.end(fixture) },1800); return }
+  if (req.url === '/icon-search') {
+    res.setHeader('Content-Type','text/html; charset=utf-8')
+    res.end('<div style="display:flex;width:360px;height:36px;align-items:center"><input placeholder="找店" style="width:320px;height:30px"><span id="go" style="display:inline-block;width:24px;height:24px"></span></div><script>document.getElementById("go").addEventListener("click",()=>{document.title="searched"})</script>')
+    return
+  }
   if (req.url === '/frame') { res.setHeader('Content-Type','text/html; charset=utf-8'); res.end('<input placeholder="框架输入"><script>parent.postMessage("frame-ready","*")</script>'); return }
   if (req.url === '/redirect') { res.writeHead(302, { Location: '/redirected' }); res.end(); return }
   res.setHeader('Content-Type','text/html; charset=utf-8'); res.end(fixture)
@@ -94,6 +99,7 @@ async function main() {
   assert(injectedCode.error_kind === 'invalid_command' && !(await a.page('window.injected')), 'model-supplied JavaScript is rejected')
   const page = await execute(command('snapshot'))
   assert(page.ok && page.tab_id === a.id && page.snapshot_id && page.elements.length === 2, 'snapshot creates stable refs: ' + JSON.stringify(page))
+  assert(!(page.fields.dom.forms || []).some(form => String(form.form_id).includes('nearby')), 'a loose page button is not invented as a field-group submit')
   assert(page.text.includes('128 元'), 'real page text extracted')
   assert(page.tables?.[0]?.rows?.[0]?.[1] === '128 元', 'snapshot keeps DOM tables for listing assembly')
   const pin = { tab_id: page.tab_id, expected_snapshot_id: page.snapshot_id }
@@ -107,6 +113,13 @@ async function main() {
   assert(await a.page("typeof window.__plangoSnapshot === 'undefined' && typeof require === 'undefined'"), 'remote page cannot access isolated snapshot or Node')
   const conflict = await execute(command('snapshot', {}, { run_id: 'run-b', tab_id: a.id }))
   assert(conflict.error_kind === 'tab_session_mismatch', 'other run cannot steal tab')
+  const handed = await makeTab('handed')
+  activateBrowserTab(handed.id)
+  assert((await execute(command('snapshot', {}, { run_id: 'run-old', tab_id: handed.id }))).ok, 'previous conversation can own a fresh tab')
+  assert((await execute(command('snapshot', {}, { run_id: 'run-new', tab_id: handed.id }))).error_kind === 'tab_session_mismatch', 'a later run cannot take a live conversation tab')
+  releaseBrowserRun('run-old')
+  assert((await execute(command('snapshot', {}, { run_id: 'run-new', tab_id: handed.id }))).ok, 'the current conversation can read the same page after the previous run is released')
+  activateBrowserTab(a.id)
   await a.page("window.__plangoSnapshot={dirty:false,refs:[document.querySelector('#search')],observer:{disconnect(){},takeRecords(){return []}}};window.__plangoSnapshot.observer.disconnect();document.querySelector('#submit').textContent = '支付';window.__plangoSnapshot.dirty=false")
   await Promise.resolve()
   const stale = await execute(command('click', { idx: 0 }, { ...pin, expected_snapshot_id: readPinned.snapshot_id, approved_action_id: 'approved' }))
@@ -305,6 +318,13 @@ async function main() {
   assert(booking.controls.find(control => control.name === 'accepted').value === true && JSON.stringify(booking.controls.find(control => control.name === 'choice').value) === '["a","b"]', 'checkbox and multiselect values keep their native types')
   assert(booking.submit_indices.length === 1 && formRead.elements[booking.submit_indices[0]].input_type === 'submit' && !formRead.elements[booking.submit_indices[0]].disabled, 'only a visible native submit matching the form action can be reviewed')
   assert(forms.every(form => form.controls.every(control => formRead.elements[control.idx])), 'form indexes map to the flattened visible-frame elements')
+  const iconTab = await createBrowserTab(url + 'icon-search')
+  await waitFor(() => !iconTab.contents.isLoading())
+  const iconRead = await execute(command('snapshot', {}, { run_id: 'icon-run', tab_id: iconTab.id }))
+  assert(iconRead.ok && iconRead.elements.some(el => el.tag === 'input' && el.name === '找店'), 'search field remains visible')
+  assert(iconRead.elements.some(el => el.tag === 'span' && String(el.name || '').includes('旁')), 'compact control beside an input is captured without a semantic role: ' + JSON.stringify(iconRead.elements))
+  const nearby = (iconRead.fields.dom.forms || []).find(form => String(form.form_id).includes('nearby'))
+  assert(nearby && nearby.submit_indices.length >= 1 && iconRead.elements[nearby.submit_indices[0]].tag === 'span', 'an input without a form still exposes its nearby activator')
   await formsTab.contents.executeJavaScript("const field=document.createElement('textarea');field.name='long';field.value='x'.repeat(2001);document.querySelector('#booking').appendChild(field);true")
   const truncatedForm = await execute(command('snapshot', {}, { run_id: 'forms-run', tab_id: formsTab.id }))
   assert(truncatedForm.fields.dom.forms.find(form => form.action_url === url + 'book').truncated === true, 'bounded form truncation remains explicit rather than pretending a complete check')
@@ -320,10 +340,10 @@ async function main() {
   await waitFor(() => !securityTab.contents.isLoading())
   const securityRead = await execute(command('extract', {}, { run_id: 'security-run', tab_id: securityTab.id }))
   assert(securityRead.ok && securityRead.fields.dom.manual_gate === 'captcha', 'the observed Meituan verification-center route requires manual handling without a password/OTP control')
-  const publicTab = await createBrowserTab(url + 'pclogin')
+  const publicTab = await createBrowserTab(url + 'merchant-preview')
   await waitFor(() => !publicTab.contents.isLoading())
   const publicRead = await execute(command('extract', {}, { run_id: 'public-run', tab_id: publicTab.id }))
-  assert(publicRead.ok && publicRead.fields.dom.manual_gate === null, 'QR login text on an unrelated public page does not impersonate the site-specific login route')
+  assert(publicRead.ok && publicRead.fields.dom.manual_gate === null, 'a restaurant page is not a login gate')
   // The document is a local protocol fixture. Restore real HTTPS transport
   // before testing requests, which target only our loopback listener.
   const previewSession = publicTab.contents.session

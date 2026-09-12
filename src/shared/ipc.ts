@@ -31,9 +31,8 @@ export const IPC = {
   // 分享协作（局域网 + 二维码）
   shareCreate: 'share:create',
   shareFeedback: 'share:feedback',
-
-  // 攻略导入（截图暂存）
-  guideSetImage: 'guide:set-image',
+  carryOutSaveIcs: 'carryOut:saveIcs',
+  carryOutSaveImage: 'carryOut:saveImage',
 
   // 附近发现 / 优惠发现（独立窗口直连）
   discoverFetch: 'discover:fetch',

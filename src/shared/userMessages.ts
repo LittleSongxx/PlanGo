@@ -1,5 +1,5 @@
 /** Presentation only. Protocol errors and delivery states remain unchanged. */
-export type MessageContext = 'task' | 'offer' | 'browser' | 'settings' | 'storage' | 'share' | 'discover' | 'action' | 'reminder'
+export type MessageContext = 'task' | 'offer' | 'browser' | 'settings' | 'storage' | 'share' | 'discover' | 'action' | 'reminder' | 'carry'
 
 const fallback: Record<MessageContext, string> = {
   task: '暂时无法查看任务结果。请重新连接后查看原任务。',
@@ -10,7 +10,8 @@ const fallback: Record<MessageContext, string> = {
   share: '暂时无法生成分享内容。请先查看原行程，再重新打开分享。',
   discover: '暂时无法查找附近地点。请先确认位置，再刷新列表。',
   action: '暂时无法确认这次操作的结果。请先核对当前页面或实际记录，不要重复提交。',
-  reminder: '暂时无法确认提醒的最新状态。请重新打开提醒列表核对。'
+  reminder: '暂时无法确认提醒的最新状态。请重新打开提醒列表核对。',
+  carry: '暂时无法导出这次安排。请先查看原行程，再重新复制或保存。'
 }
 const technical = /traceback|validation.?error|pydantic|zoderror|input_value|input_type|(?:string|literal|value)_\w+|should match pattern|\bregex\b|https?:\/\/|\b(?:HTTP|ECONN\w*|ENOENT|ENOSPC|ERR_\w+|TypeError|ReferenceError)\b|(?:^|\s)at \S+\(|Error invoking remote method|\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b|[\[{]\s*["'](?:detail|code|error|type|loc)["']|\\[dspw]|api.?key|bearer\s|password|secret|authorization/i
 const known: { code: string; pattern: RegExp; message: string }[] = [

@@ -1,12 +1,13 @@
 /// <reference types="vite/client" />
-import type { HarnessApi, HarnessEvent, ReminderApi } from '@shared/types'
+import type { CarryOutApi, HarnessApi, HarnessEvent, ReminderApi } from '@shared/types'
 import type { LocationInfo, GeoLocationResult } from '@shared/location'
 import type { BrowserIntent, BrowserLayout, BrowserViewState, BrowserActivity } from '@shared/browserView'
 
 interface PlangoApi {
-  desktopReady: () => Promise<void>
+  desktopReady: () => Promise<{ inputHint?: string } | void>
   harness: HarnessApi
   reminders: ReminderApi
+  carryOut: CarryOutApi
   onHarnessEvent: (cb: (event: HarnessEvent) => void) => () => void
   onProactive: (cb: (p: { id: string; ts: number; text: string; kind: string }) => void) => () => void
   browser: { request: (intent: BrowserIntent) => Promise<BrowserViewState>; layout: (value: BrowserLayout) => Promise<void>;
@@ -23,7 +24,6 @@ interface PlangoApi {
   memoryClear: () => Promise<any>
   shareCreate: (payload: { plan?: any; city?: string }) => Promise<{ ok: boolean; error?: string; id?: string; url?: string; qr?: string }>
   shareFeedback: (id: string) => Promise<{ found: boolean; views: number; tally: { up: number; meh: number; down: number }; prefs: { member: string; idea: string; budget?: number; ts: number }[]; mergeInstruction: string }>
-  guideSetImage: (dataUrl: string) => Promise<{ ok: boolean }>
   discoverFetch: (request?: { city?: string; refresh?: boolean }) => Promise<{ city: string; groups: import('@shared/types').DiscoverGroup[]; source: import('@shared/types').SourceTag; scope: 'around' | 'city'; observed_at: string; expires_at: string; cache_hit: boolean }>
   dealsFetch: (city?: string) => Promise<{ city: string; items: { poi: import('@shared/types').POISummary; deal: import('@shared/types').DealRow }[]; source: import('@shared/types').SourceTag }>
   getLocation: () => Promise<LocationInfo>

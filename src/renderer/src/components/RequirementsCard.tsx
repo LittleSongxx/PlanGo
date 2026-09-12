@@ -37,8 +37,8 @@ function RequirementForm({ run }: { run: HarnessSnapshot }): JSX.Element {
   const spec = row(run.state.trip_spec || run.state.previous_spec || run.offer_comparison?.constraints)
   const plan = row(run.state.selected_plan || run.state.previous_plan)
   const setValue = (key: keyof RequirementFields, value: string): void => setValues(current => ({ ...current, [key]: value }))
-  return <section aria-label="行程需求" className="max-w-4xl mx-auto plango-card p-5 mb-5">
-    <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold text-base text-brand-ink">{planning ? '行程需求' : '优惠比较条件'}</h2><p className="text-xs text-[var(--muted)] mt-1">{planning ? '修改后在当前任务中重新规划，原方案和确认记录保留。' : '按同行人数、日期与预算重新核对当前门店优惠，保留原始资料。'}</p></div><span className="text-[11px] text-[var(--muted)]">{spec.timezone === 'Asia/Shanghai' ? '北京时间' : String(spec.timezone || '')}</span></div>
+  return <section aria-label="行程需求" className="plango-workspace-col plango-card p-5 mb-5">
+    <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold text-base text-brand-ink">{planning ? '行程需求' : '优惠比较条件'}</h2><p className="text-xs text-[var(--muted)] mt-1">{planning ? '改人数、日期、预算、地点请在此提交；对话里的补充不会自动覆盖已确认字段。' : '按同行人数、日期与预算重新核对当前门店优惠，保留原始资料。'}</p></div><span className="text-[11px] text-[var(--muted)]">{spec.timezone === 'Asia/Shanghai' ? '北京时间' : String(spec.timezone || '')}</span></div>
     <form onSubmit={event => {
       event.preventDefault()
       if (disabled || !changed.length) return
