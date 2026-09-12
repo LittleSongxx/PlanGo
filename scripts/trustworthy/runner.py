@@ -230,6 +230,9 @@ class IsolatedRunner:
         self._structured = structured
         self._seed_spec: dict[str, Any] | None = None
         self._seed_world: dict[str, Any] | None = None
+        # Captured before the first task: an edit made while the batch runs must
+        # not be recorded as the code that produced it.
+        self.identity = run_identity(live, live_model_config() if live else None)
 
     @contextmanager
     def _client(self):
@@ -392,7 +395,7 @@ class IsolatedRunner:
             "schema_version": 1,
             "evaluation_kind": actor["protocol"].get("evaluation_kind"),
             "actor_sha": actor["actor_sha"],
-            "actor": run_identity(self.live, live_model_config() if self.live else None),
+            "actor": self.identity,
             "oracles_opened": False,
             "attempts": attempts,
         }
