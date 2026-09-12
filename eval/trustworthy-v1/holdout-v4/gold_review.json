@@ -27,7 +27,7 @@
     "unknown": 34,
     "boundary": 34
   },
-  "verdict": "rejected",
+  "verdict": "accepted_with_errata",
   "issues": [
     {
       "task_id": "hv4-persist-030",
