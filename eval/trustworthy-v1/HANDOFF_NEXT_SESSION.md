@@ -36,6 +36,23 @@
 
 ---
 
+## 0.1 2026-09-12 第三轮：产品侧结构化改造与 v3 复测
+
+本轮先做拆分、再改共享路径，过程和数字都写在
+[PRODUCT_FIXES_2026-09-12.md](PRODUCT_FIXES_2026-09-12.md)（含逐层表、方差说明、未解决项）。
+要点：
+
+1. **结论**：holdout-v3 的族间差异（calculate 沿用词表 1.000 vs 新问法 0.350）是词表覆盖，
+   不是能力；`_REOPEN_TURN` 与 `_COMPUTE_ASK` 已删除，改成结构化判据（占位/来源/用户话语）。
+2. **runner 第二个同源缺陷**：`frozen_page_state` 的 artifact 缺 `snapshot_id/url`，
+   整批页在 `task_context` 里都是 stale（`_page_in_hand()` 恒假）。已修（`65a54a4`）；
+   **本轮之前的 r1–r4 都跑在这个缺陷下**，跨轮比较要说明这一点。
+3. **评分器 v1.4**：页缺口句（未包含/未提供/…，且同句出现观测指称词）按非事实处理，
+   否则 unknown 层回答正确也拿 0；见 [SCORER_V1_4_NOTES.md](SCORER_V1_4_NOTES.md)。
+4. r1/r2 已用同一评分器重评（`*-llm-v1.4.json`），v3 逐族配对比较见 RESULTS-r5.md。
+5. 仍未做：calculate 层「页文写了合计、oracle 要求走计算器」的合同冲突需要用户决定改题还是改口径；
+   v3 金标独立审阅仍未进行。
+
 ## 0. 给新会话的开场指令（可直接粘贴）
 
 你接手 PlanGo 的 **trustworthy-v1** 公开评测，不是旧的 `quality-v*`。先读本文件和冻结合同，再动代码。
