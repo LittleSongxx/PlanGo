@@ -68,7 +68,7 @@ class BrowserPlanEngine(PlanEngine):
             plan=enriched.model_copy(
                 update={
                     "robustness": None,
-                    "risk": "真实供给可能变化；未测算履约成功概率",
+                    "risk": "真实供给可能变化；未测算实际履约概率",
                     "plan_b": "变化后重新观测并核验",
                     "checks": verifier.hard_violations
                     + verifier.soft_warnings
