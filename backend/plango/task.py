@@ -562,7 +562,10 @@ RECORDED_VS_CURRENT = (
 _UNCERTAIN_SPEECH = re.compile(r"无法确定|资料未写明|没有写明|未写明|无法给出|未提供|未公布")
 _SOURCE_GAP = re.compile(r"未写明|没有写明|未公布|未核对")
 _STATED_NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
-_SENTENCE_END = set("。！？!?；;，,、：:")
+_SENTENCE_END = set("。！？!?；;，,、：:）)")
+# A figure followed by one of these is that record's value, not part of a larger
+# number: "日场 45 元", "全程 35 分钟", "余票 5 张".
+_UNIT = re.compile(r"^(?:元|块|角|分|分钟|小时|天|人|位|张|个|次|公里|千米|米|点|岁|份|间|场)")
 # List markup, not a figure: `1.` / `2、` / `（3）` / `• 4)`. The scorer strips the
 # same shapes before reading an assertion, so the delivery side must agree with it.
 _LIST_ORDINAL = re.compile(r"(?m)^[ \t]*(?:[（(]?\d+[)）]?[.、)）]|[•·・*][ \t]*\d*)[ \t]*")
@@ -594,25 +597,27 @@ def _answer_numbers(text: str) -> set[str]:
     return set(_STATED_NUMBER.findall(_LIST_ORDINAL.sub(" ", str(text or ""))))
 
 
-def _stated_by_user(context: dict[str, Any]) -> set[str]:
+def _stated_by_user(context: dict[str, Any], recorded: set[str]) -> set[str]:
     """Figures the user's own turns wrote, whatever surface form they used.
 
     A user-supplied budget is not something the page has to record, and the turn
     that answers a clarification is not the turn that stated it, so every user
-    turn counts.
+    turn counts. A figure the observation states is the page's rather than the
+    user's, even though the composed turn carries the page text in a user message.
     """
     texts = [
-        str(context.get("original_request") or ""),
         str(context.get("current_request") or ""),
+        str(context.get("original_request") or ""),
         str(context.get("question_being_answered") or ""),
         *[str(edit) for edit in context.get("edits") or []],
+        *[
+            str(item.get("content") or "")
+            for item in context.get("messages") or []
+            if isinstance(item, dict)
+            and str(item.get("type") or item.get("role") or "") in {"human", "user"}
+        ],
     ]
-    texts += [
-        str(item.get("content") or "")
-        for item in context.get("messages") or []
-        if isinstance(item, dict) and str(item.get("type") or item.get("role") or "") in {"human", "user"}
-    ]
-    return set(_STATED_NUMBER.findall("\n".join(texts)))
+    return set(_STATED_NUMBER.findall("\n".join(texts))) - recorded
 
 
 def _decimal(token: str) -> Decimal | None:
@@ -630,8 +635,8 @@ def _states_own_value(observation: str, value: Decimal) -> bool:
                 continue
         except InvalidOperation:
             continue
-        following = observation[match.end() : match.end() + 1]
-        if not following or following in _SENTENCE_END:
+        rest = observation[match.end() :].lstrip()
+        if not rest or rest[0] in _SENTENCE_END or _UNIT.match(rest):
             return True
     return False
 
@@ -641,14 +646,40 @@ def _record_sentences(observation: str) -> list[str]:
     return [part.strip() for part in re.split(r"[。！？!?；;\n]", observation) if part.strip()]
 
 
+def _sentence_numbers(sentence: str) -> list[Decimal]:
+    return [
+        number
+        for number in (_decimal(item) for item in _STATED_NUMBER.findall(sentence))
+        if number is not None
+    ]
+
+
+def _combinations(recorded: list[Decimal]) -> set[Decimal]:
+    """What a record's own figures produce with one operation."""
+    produced: set[Decimal] = set()
+    for left in recorded:
+        for right in recorded:
+            if left == right:
+                continue
+            produced.update({left + right, left - right, left * right})
+            if right != 0:
+                produced.add(left / right)
+    return produced
+
+
 def _arithmetic_derivation(stated: set[str], observation: str) -> bool:
     """A stated figure is what one record's figures produce arithmetically.
 
-    A record that only lists the parts cannot state their total, so a delivery
-    that reports the total from that record owes it to the calculator. The record
-    that does state the figure as its own value settles the turn instead: the
-    delivery is then reading it back, which is what the lookup branch covers.
-    This reads numbers and the four operations, never the question.
+    A record that lists the parts and never writes the total is the case this
+    exists for: the delivery that reports the total owes it to the calculator.
+    A figure no record writes at all is already covered by the branch above, and
+    a page that only states the figure is a lookup. This reads numbers and the
+    four operations, never the question.
+
+    Reach is deliberately narrow: the parts have to share one sentence with each
+    other. A page that gives each part its own sentence and does not write the
+    total is indistinguishable here from a page that states two unrelated facts,
+    and reading the question to tell them apart is what this replaced.
     """
     if not observation:
         return False
@@ -657,23 +688,12 @@ def _arithmetic_derivation(stated: set[str], observation: str) -> bool:
         value = _decimal(token)
         if value is None:
             continue
-        # The record the figure came from. A figure that no record states as its
-        # own value is not a lookup, whatever else the page contains.
-        if any(_states_own_value(sentence, value) for sentence in sentences):
-            continue
         for sentence in sentences:
-            recorded = [number for number in (_decimal(item) for item in _STATED_NUMBER.findall(sentence)) if number is not None]
-            if value in recorded or len(recorded) < 2:
+            recorded = _sentence_numbers(sentence)
+            if len(recorded) < 2 or value in recorded:
                 continue
-            for left in recorded:
-                for right in recorded:
-                    if left == right:
-                        continue
-                    produced = {left + right, left - right, left * right}
-                    if right != 0:
-                        produced.add(left / right)
-                    if value in produced:
-                        return True
+            if value in _combinations(recorded):
+                return True
     return False
 
 
@@ -698,7 +718,7 @@ def _derived_answer(answer: str, context: dict[str, Any]) -> bool:
     recorded = set(_STATED_NUMBER.findall(_sources_text(context)))
     if not recorded:
         return False
-    if stated & _stated_by_user(context):
+    if stated & _stated_by_user(context, recorded):
         return False
     off_page = {number for number in stated if number not in recorded}
     if off_page:
