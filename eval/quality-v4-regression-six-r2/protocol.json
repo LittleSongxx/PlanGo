@@ -1,0 +1,22 @@
+{
+  "version": "plango.controlled-bounded.v1",
+  "name": "PlanGo-regression-six-v3-source-binding",
+  "evaluation_kind": "regression",
+  "planned_case_ids": [
+    "NEW-01",
+    "NEW-07",
+    "NEW-14",
+    "NEW-18",
+    "NEW-21",
+    "NEW-29"
+  ],
+  "primary_source_groups": 6,
+  "case_authoring": "已揭示quality-v2-30原案例与gold原样子集，每家族1例，预先选定；不能声称未见泛化",
+  "execution_scope": "4 raw-observation reads, 1 real Electron edit, 1 real Electron accepted-response-loss recovery; controlled sources only",
+  "limits": {
+    "calls": 80,
+    "case_calls": 12,
+    "reported_tokens_stop": 120000
+  },
+  "budget_ledger": "output/tightening-F9A9ea/model-budget.jsonl"
+}

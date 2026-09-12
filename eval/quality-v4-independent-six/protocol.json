@@ -1,0 +1,40 @@
+{
+  "version": "plango.controlled-bounded.v1",
+  "name": "PlanGo v4 independent six: distinct everyday supplied facts and state continuity",
+  "evaluation_kind": "independent_controlled",
+  "planned_case_ids": [
+    "v4-new-reading",
+    "v4-new-offers",
+    "v4-new-routes",
+    "v4-new-edits",
+    "v4-new-recovery",
+    "v4-new-boundaries"
+  ],
+  "primary_source_groups": 6,
+  "case_authoring": {
+    "author": "/root/independent_v4_author",
+    "method": "冻结后由独立编题上下文原创六个来源组及虚构实体；只获知任务接口和冻结元数据，未读实现、旧题、输出或评分。",
+    "gold_status": "draft_pending_independent_ai_review",
+    "approval": "另一个独立上下文必须在执行Actor之前审核source/gold；作者没有自批。"
+  },
+  "execution_scope": {
+    "supplied_observations": 4,
+    "actual_electron_state_workflows": 2,
+    "description": "4题经正常浏览器观察路径接收合成资料；1题真实Electron两轮编辑到可见未保存草案；1题实际UI保存一次后，重建拥有的后端/API/DB和Electron，恢复同一运行/profile。全部为独立受控测试，不构成真实商家完整准备、履约或独立使用验收。",
+    "runtime_initialization": "仅采用已声明共同环境；root通过既有适配器生成runtime-fixtures.json。作者未编写隐藏fixture、未预存结果；恢复期间无新消息、无二次保存、无新运行。"
+  },
+  "limits": {
+    "calls": 80,
+    "case_calls": 12,
+    "reported_tokens_stop": 120000
+  },
+  "budget_ledger": "output/tightening-F9A9ea/model-budget.jsonl",
+  "budget_scope": "与本轮回归批次共享既有全阶段预算；不是新增80调用或120000 token的额度。",
+  "source_as_of": "2026-09-10T09:15:00+08:00",
+  "frozen_product": {
+    "frozen_at": "2026-09-10T01:08:01.392217+00:00",
+    "product_commit": "8dcf2d3b12d809bbe2227d204c00196f323f2b87"
+  },
+  "authored_at": "2026-09-10T01:24:19.241686+00:00",
+  "post_publication_policy": "作者写完五个数据文件后不再修改，不读取Actor结果；实际oracle错误须由独立审核记录，低产品得分不得导致改gold。"
+}

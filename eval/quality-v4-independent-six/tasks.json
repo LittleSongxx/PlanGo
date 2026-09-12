@@ -1,0 +1,209 @@
+[
+  {
+    "case_id": "v4-new-reading",
+    "family": "reading",
+    "case_class": "delivery",
+    "group_ids": [
+      "v4-group-zhouqi-workshops",
+      "v4-entity-zhouqi"
+    ],
+    "source_ids": [
+      "v4-src-zhouqi-workshops"
+    ],
+    "as_of": "2026-09-10T09:15:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "仅使用本题明确提供的虚构受控资料；不是实时网页、真实商家事实或真实履约验收。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我们3个成年人打算9月19日去舟栖手作站，13:50才能到，16:10必须走。每个人都想完整做两个不同项目，三人一直一起参加，项目费一共最多330元。看这张活动单帮我们选组合，排出开始、结束和中间空档，再算三人的费用和剩余预算；如果能排出来就给我一个具体安排。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "v4-new-offers",
+    "family": "offers",
+    "case_class": "delivery",
+    "group_ids": [
+      "v4-group-heting-bento",
+      "v4-entity-heting"
+    ],
+    "source_ids": [
+      "v4-src-heting-bento"
+    ],
+    "as_of": "2026-09-10T09:15:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "仅使用本题明确提供的虚构受控资料；不是实时网页、真实商家事实或真实履约验收。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "9月19日18点排练结束，我们7个人要在河汀便当档自取，每人恰好一份田蔬鸡腿饭，不加别的。手里没有券。请比较原价、买代金券再补差、七人组合这几种买法，选实际新付钱最少的一种，列清买几张券、券花多少钱、还补多少以及最终总额。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "v4-new-routes",
+    "family": "routes",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "v4-group-yunsuo-transfer",
+      "v4-entity-yunsuo"
+    ],
+    "source_ids": [
+      "v4-src-yunsuo-transfer"
+    ],
+    "as_of": "2026-09-10T09:15:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "仅使用本题明确提供的虚构受控资料；不是实时网页、真实商家事实或真实履约验收。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我们两名成年人9月20日在云梭小剧场听音乐会，20:15才能从剧场门口出发，要赶桥南客运站21点的大巴。资料里有步行和27路两种走法，哪种能赶上？请把到检票口的时间、和截止检票差几分钟、两人的接驳交通费分别算出来，再告诉我能不能据此定下来。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  },
+  {
+    "case_id": "v4-new-edits",
+    "family": "edits",
+    "case_class": "delivery",
+    "group_ids": [
+      "v4-group-moli-draft",
+      "v4-entity-moli"
+    ],
+    "source_ids": [
+      "v4-src-moli-draft"
+    ],
+    "as_of": "2026-09-10T09:15:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "仅使用本题明确提供的虚构受控资料；不是实时网页、真实商家事实或真实履约验收。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "茶室这场人数改成7人，人均最多80元，其他先按原来的。"
+        },
+        {
+          "message": "再把活动挪到9月20日15:10开始，留两个小时。总预算上限还是600元，给我看更新后的草案，先不要保存。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "edit",
+      "expected_stop": "draft_review",
+      "initial_state": {
+        "run_id": "fixture:moli-edit-v4",
+        "plan_version": 3,
+        "spec": {
+          "party_size": 5,
+          "visit_date": "2026-09-19",
+          "time_window_start": "14:30",
+          "duration_minutes": 90,
+          "budget": 600,
+          "per_person_budget": 110,
+          "search_radius_km": 3.2,
+          "route_distance_km": 2.4,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:moli-room-v4",
+            "name": "墨篱共创茶室",
+            "address": "虚构地址：澄川市纸鸢路18号"
+          },
+          "selected_offer": {
+            "source_id": "v4-src-moli-draft",
+            "offer_id": "fixture:moli-tea-v4",
+            "price": 39.5,
+            "face_value": 50,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "v4-new-recovery",
+    "family": "recovery",
+    "case_class": "delivery",
+    "group_ids": [
+      "v4-group-bailu-recovery",
+      "v4-entity-bailu"
+    ],
+    "source_ids": [
+      "v4-src-bailu-recovery"
+    ],
+    "as_of": "2026-09-10T09:15:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "仅使用本题明确提供的虚构受控资料；不是实时网页、真实商家事实或真实履约验收。",
+    "agent_input": {},
+    "environment": {
+      "driver": "save_restart",
+      "expected_stop": "saved_restored",
+      "initial_state": {
+        "run_id": "fixture:bailu-recovery-v4",
+        "plan_version": 5,
+        "spec": {
+          "party_size": 4,
+          "visit_date": "2026-09-21",
+          "time_window_start": "18:20",
+          "duration_minutes": 80,
+          "budget": null,
+          "per_person_budget": 95,
+          "search_radius_km": 1.6,
+          "route_distance_km": 1.8,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:bailu-games-v4",
+            "name": "白鹭灯塔桌游屋",
+            "address": "虚构地址：映湾市苇舟街27号"
+          },
+          "selected_offer": {
+            "source_id": "v4-src-bailu-recovery",
+            "offer_id": "fixture:bailu-evening-v4",
+            "price": 76,
+            "face_value": 100,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case_id": "v4-new-boundaries",
+    "family": "boundaries",
+    "case_class": "bounded_answer",
+    "group_ids": [
+      "v4-group-yadeng-policy",
+      "v4-entity-yadeng"
+    ],
+    "source_ids": [
+      "v4-src-yadeng-policy"
+    ],
+    "as_of": "2026-09-10T09:15:00+08:00",
+    "scenario_origin": "synthetic_controlled",
+    "scope": "仅使用本题明确提供的虚构受控资料；不是实时网页、真实商家事实或真实履约验收。",
+    "agent_input": {
+      "user_turns": [
+        {
+          "message": "我们两个成年人想9月20日周日19:00到21:00去芽灯夜读屋。我看到了68元双人套餐宣传页，也看到了后面的通知，有点拿不准。帮我判断这次能否按68元来安排，现有资料能算出多少费用、还缺什么信息；也说明这个时间是否在营业范围内，以及能不能确认有位置。"
+        }
+      ]
+    },
+    "environment": {
+      "driver": "read",
+      "expected_stop": "terminal"
+    }
+  }
+]

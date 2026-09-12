@@ -1,0 +1,14 @@
+{
+  "authors": [
+    "implementation-stream-holdout-v2"
+  ],
+  "created_at": "2026-09-12",
+  "read_files": [
+    "eval/trustworthy-v1/AUTHORING.md",
+    "eval/trustworthy-v1/PRODUCT_INVENTORY.md",
+    "eval/trustworthy-v1/ATTEMPT_CONTRACT.md",
+    "eval/trustworthy-v1/protocol.json"
+  ],
+  "independence": "New inventory and surface forms, written after v1 holdout was used to iterate the product. Do not treat this as the same contaminated v1 item set. Gold still needs an independent review session before official scores.",
+  "supersedes": "eval/trustworthy-v1/holdout is retained as a historical contaminated set and was not overwritten."
+}

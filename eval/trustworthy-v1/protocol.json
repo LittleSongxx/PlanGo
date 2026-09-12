@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "name": "trustworthy-v1",
+  "evaluation_kind": "dev_seed",
+  "report_kind": "provisional_dev",
+  "holdout_planned": 200,
+  "layers": ["calculate", "conflict", "sparse_edit", "persist", "unknown", "boundary"],
+  "min_tasks_per_layer": 2,
+  "notice": "This directory is a development seed. It is not a hidden holdout and must not be reported as an unseen official score."
+}

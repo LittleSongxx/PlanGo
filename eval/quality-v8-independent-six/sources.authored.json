@@ -1,0 +1,312 @@
+[
+  {
+    "source_id": "src-v8-moss-paper-workshop",
+    "group_id": "grp-v8-moss-paper",
+    "title": "苔痕纸工坊公开课观察包",
+    "text": "【虚构受控观察】以下文本由评测方提供，不是现场抓取的真实网页。\n\n（一）苔痕纸工坊公开课告示\n地点：重庆市南岸区（虚构）芦丝巷 3 号。\n本周日（2026-09-13）14:30 开设一次水纹纸公开课，约 90 分钟。告示写明：场地使用费已含在体验票内。是否另收茶水：当日视余量免费提供杯水，不标价。停车与周边餐饮未写。\n\n（二）费用表\n成人体验票 68 元/人\n12岁以下儿童体验票 36 元/人\n公开课材料费：每人另收 18 元（成人儿童同价）\n未列出团体折扣、会员价或交通费。\n\n（三）材料说明\n材料费覆盖一张水纹纸底纸和矿物颜料小碟。工具由工坊提供，不另标价。余量不足时是否改用替代纸，本份观察没有写。",
+    "observed_at": "2026-09-10T11:00:00+08:00",
+    "origin": "synthetic_controlled",
+    "scope": {
+      "kind": "synthetic_controlled_observation",
+      "locale": "zh-CN",
+      "city_frame": "Chongqing Nanan fictional",
+      "live_merchant": false,
+      "disallowed_actions": [
+        "login",
+        "inventory",
+        "order",
+        "booking",
+        "messaging"
+      ]
+    }
+  },
+  {
+    "source_id": "ent-v8-moss-paper-card",
+    "group_id": "ent-v8-moss-paper",
+    "title": "实体卡 苔痕纸工坊",
+    "text": "【虚构】实体卡：苔痕纸工坊。手工纸公开课场地。地址：重庆市南岸区（虚构）芦丝巷 3 号。不是真实商户。",
+    "observed_at": "2026-09-10T11:00:00+08:00",
+    "origin": "synthetic_controlled",
+    "scope": {
+      "kind": "synthetic_controlled_observation",
+      "locale": "zh-CN",
+      "city_frame": "Chongqing Nanan fictional",
+      "live_merchant": false,
+      "disallowed_actions": [
+        "login",
+        "inventory",
+        "order",
+        "booking",
+        "messaging"
+      ]
+    }
+  },
+  {
+    "source_id": "src-v8-stringwood-cafe-offers",
+    "group_id": "grp-v8-stringwood",
+    "title": "弦木桌游茶社三套餐观察包",
+    "text": "【虚构受控观察】以下三张套餐说明来自同一份提供给评测的纸页，不是实时商家库存。\n\n弦木桌游茶社，地址：重庆市南岸区（虚构）琴坞街 12 号。观察时刻未见座位余量、未见可下单按钮。\n\n套餐甲「双人入门盘」：标价 128 元，面值写「含两杯手冲+一副2小时桌台」。使用规则：仅工作日 14:00-17:00。周末是否另有版本，本页未写。\n\n套餐乙「四人长桌」：标价 216 元，面值写明可抵 280 元台费与饮品。使用规则：需满 3 人到店，周末可用。是否含超时台费，本页未写。\n\n套餐丙「单人静坐」：标价 42 元/人，无面值。使用规则：不含桌台延时，仅含一杯茶。可按人点多份。",
+    "observed_at": "2026-09-10T11:20:00+08:00",
+    "origin": "synthetic_controlled",
+    "scope": {
+      "kind": "synthetic_controlled_observation",
+      "locale": "zh-CN",
+      "city_frame": "Chongqing Nanan fictional",
+      "live_merchant": false,
+      "disallowed_actions": [
+        "login",
+        "inventory",
+        "order",
+        "booking",
+        "messaging"
+      ]
+    }
+  },
+  {
+    "source_id": "ent-v8-stringwood-card",
+    "group_id": "ent-v8-stringwood",
+    "title": "实体卡 弦木桌游茶社",
+    "text": "【虚构】实体卡：弦木桌游茶社。下午茶与桌台套餐说明对象。地址：重庆市南岸区（虚构）琴坞街 12 号。不是真实商户。",
+    "observed_at": "2026-09-10T11:20:00+08:00",
+    "origin": "synthetic_controlled",
+    "scope": {
+      "kind": "synthetic_controlled_observation",
+      "locale": "zh-CN",
+      "city_frame": "Chongqing Nanan fictional",
+      "live_merchant": false,
+      "disallowed_actions": [
+        "login",
+        "inventory",
+        "order",
+        "booking",
+        "messaging"
+      ]
+    }
+  },
+  {
+    "source_id": "src-v8-cypress-ridge-walks",
+    "group_id": "grp-v8-cypress-ridge",
+    "title": "柏岭药圃两份步行手记",
+    "text": "【虚构受控观察】两份步行手记，不是导航软件实时路况。\n\n地点：柏岭药圃，重庆市南岸区（虚构）柏岭步道南门一带。\n\n手记甲（2026-09-08，晴，观察者自称从南门走完）：\n南门石阶到药圃棚 0.9 公里，步行约 14 分钟。途中未见封闭。另记东门平路到药圃棚 1.2 公里，步行约 18 分钟。东门记录只有这一次。\n\n手记乙（2026-09-09，雨后，观察者自称从南门走完）：\n南门石阶到药圃棚 1.6 公里，步行约 28 分钟。观察者写：中段土路因雨水改道多走了约 700 米。未走东门，也未写南门此刻是否仍改道。",
+    "observed_at": "2026-09-10T11:40:00+08:00",
+    "origin": "synthetic_controlled",
+    "scope": {
+      "kind": "synthetic_controlled_observation",
+      "locale": "zh-CN",
+      "city_frame": "Chongqing Nanan fictional",
+      "live_merchant": false,
+      "disallowed_actions": [
+        "login",
+        "inventory",
+        "order",
+        "booking",
+        "messaging"
+      ]
+    }
+  },
+  {
+    "source_id": "ent-v8-cypress-ridge-card",
+    "group_id": "ent-v8-cypress-ridge",
+    "title": "实体卡 柏岭药圃",
+    "text": "【虚构】实体卡：柏岭药圃。步行手记中的药圃棚与南门。地址：重庆市南岸区（虚构）柏岭步道南门一带。不是真实地点。",
+    "observed_at": "2026-09-10T11:40:00+08:00",
+    "origin": "synthetic_controlled",
+    "scope": {
+      "kind": "synthetic_controlled_observation",
+      "locale": "zh-CN",
+      "city_frame": "Chongqing Nanan fictional",
+      "live_merchant": false,
+      "disallowed_actions": [
+        "login",
+        "inventory",
+        "order",
+        "booking",
+        "messaging"
+      ]
+    }
+  },
+  {
+    "source_id": "src-v8-copper-button-post-draft",
+    "group_id": "grp-v8-copper-button",
+    "title": "铜钮邮政陈列室未保存草案说明",
+    "text": "【虚构受控观察】这是一份尚未保存的单点参观草案说明，不是预约回执。\n\n当前草案初始状态如下（由评测运行时导入，不代表助手已经完成过规划）：\nrun 别名 fixture:v8-copper-button，plan_version 1。\n人数 2 人。\n到访日 2026-09-14。\n开始时间 10:30。\n停留 90 分钟。\n总预算 200 元。\n每人预算未设。\n搜索半径 3 公里。\n路线距离 0.2 公里，出行方式 walking。\n选中地点为铜钮邮政陈列室，虚构地址：重庆市南岸区（虚构）苔花里 8 号铜钮巷。\n选中优惠 source_id=src-v8-copper-button-post-draft，offer_id=fixture:v8-copper-button-offer，标价 15 元，无面值，规则状态 unknown。\n\n未知：现场余票、天气、完整餐饮价格。本观察不证明可以预约、支付或占位。",
+    "observed_at": "2026-09-10T12:00:00+08:00",
+    "origin": "synthetic_controlled",
+    "scope": {
+      "kind": "synthetic_controlled_observation",
+      "locale": "zh-CN",
+      "city_frame": "Chongqing Nanan fictional",
+      "live_merchant": false,
+      "disallowed_actions": [
+        "login",
+        "inventory",
+        "order",
+        "booking",
+        "messaging"
+      ]
+    },
+    "structured_initial_state": {
+      "v8-edit-copper-button-draft": {
+        "run_id": "fixture:v8-copper-button",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 2,
+          "visit_date": "2026-09-14",
+          "time_window_start": "10:30",
+          "duration_minutes": 90,
+          "budget": 200,
+          "per_person_budget": null,
+          "search_radius_km": 3.0,
+          "route_distance_km": 0.2,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:v8-copper-button-place",
+            "name": "铜钮邮政陈列室",
+            "address": "重庆市南岸区（虚构）苔花里 8 号铜钮巷"
+          },
+          "selected_offer": {
+            "source_id": "src-v8-copper-button-post-draft",
+            "offer_id": "fixture:v8-copper-button-offer",
+            "price": 15,
+            "face_value": null,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "source_id": "ent-v8-copper-button-card",
+    "group_id": "ent-v8-copper-button",
+    "title": "实体卡 铜钮邮政陈列室",
+    "text": "【虚构】实体卡：铜钮邮政陈列室。草案中的选中参观点。地址：重庆市南岸区（虚构）苔花里 8 号铜钮巷。不是真实场馆。",
+    "observed_at": "2026-09-10T12:00:00+08:00",
+    "origin": "synthetic_controlled",
+    "scope": {
+      "kind": "synthetic_controlled_observation",
+      "locale": "zh-CN",
+      "city_frame": "Chongqing Nanan fictional",
+      "live_merchant": false,
+      "disallowed_actions": [
+        "login",
+        "inventory",
+        "order",
+        "booking",
+        "messaging"
+      ]
+    }
+  },
+  {
+    "source_id": "src-v8-glass-gallery-draft",
+    "group_id": "grp-v8-glass-gallery",
+    "title": "吹玻观廊待保存恢复草案说明",
+    "text": "【虚构受控观察】这是一份将用于保存再打开的单点参观草案说明，不是已成交凭证。\n\n当前草案初始状态如下（由评测运行时导入，不代表助手已经完成过规划）：\nrun 别名 fixture:v8-glass-gallery，plan_version 1。\n人数 3 人。\n到访日 2026-09-15。\n开始时间 16:20。\n停留 75 分钟。\n总预算 360 元，每人预算 120 元。\n搜索半径 2.5 公里。\n路线距离 0.2 公里，出行方式 walking。\n选中地点为吹玻观廊，虚构地址：重庆市南岸区（虚构）青焰路 19 号观廊。\n选中优惠 source_id=src-v8-glass-gallery-draft，offer_id=fixture:v8-glass-gallery-offer，标价 88 元，面值 100 元，规则状态 unknown。\n\n未知：现场余票、天气、完整餐饮价格。本观察不证明可以预约、支付或占位，也不要求整机重启。",
+    "observed_at": "2026-09-10T12:20:00+08:00",
+    "origin": "synthetic_controlled",
+    "scope": {
+      "kind": "synthetic_controlled_observation",
+      "locale": "zh-CN",
+      "city_frame": "Chongqing Nanan fictional",
+      "live_merchant": false,
+      "disallowed_actions": [
+        "login",
+        "inventory",
+        "order",
+        "booking",
+        "messaging"
+      ]
+    },
+    "structured_initial_state": {
+      "v8-recover-glass-gallery": {
+        "run_id": "fixture:v8-glass-gallery",
+        "plan_version": 1,
+        "spec": {
+          "party_size": 3,
+          "visit_date": "2026-09-15",
+          "time_window_start": "16:20",
+          "duration_minutes": 75,
+          "budget": 360,
+          "per_person_budget": 120,
+          "search_radius_km": 2.5,
+          "route_distance_km": 0.2,
+          "travel_mode": "walking",
+          "selected_poi": {
+            "id": "fixture:v8-glass-gallery-place",
+            "name": "吹玻观廊",
+            "address": "重庆市南岸区（虚构）青焰路 19 号观廊"
+          },
+          "selected_offer": {
+            "source_id": "src-v8-glass-gallery-draft",
+            "offer_id": "fixture:v8-glass-gallery-offer",
+            "price": 88,
+            "face_value": 100,
+            "rules_status": "unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "source_id": "ent-v8-glass-gallery-card",
+    "group_id": "ent-v8-glass-gallery",
+    "title": "实体卡 吹玻观廊",
+    "text": "【虚构】实体卡：吹玻观廊。保存恢复草案中的选中参观点。地址：重庆市南岸区（虚构）青焰路 19 号观廊。不是真实场馆。",
+    "observed_at": "2026-09-10T12:20:00+08:00",
+    "origin": "synthetic_controlled",
+    "scope": {
+      "kind": "synthetic_controlled_observation",
+      "locale": "zh-CN",
+      "city_frame": "Chongqing Nanan fictional",
+      "live_merchant": false,
+      "disallowed_actions": [
+        "login",
+        "inventory",
+        "order",
+        "booking",
+        "messaging"
+      ]
+    }
+  },
+  {
+    "source_id": "src-v8-ebb-tide-platform",
+    "group_id": "grp-v8-ebb-tide",
+    "title": "退潮观台告示与手记观察包",
+    "text": "【虚构受控观察】三则分栏记录，不是潮汐预报服务。\n\n退潮观台，地址：重庆市南岸区（虚构）折芦滩观台。\n\n（一）街道办告示（记录于 2026-09-10 08:00）\n观台栈道 2026-09-10 至 2026-09-12 因潮位检修关闭。告示未写西侧便道是否属于官方入口。\n\n（二）志愿者手记（记录于 2026-09-10 14:20）\n下午看见有人从西侧便道走上观台，栏杆口未上锁。手记未写这些人是否得到许可，也未写 16:30 以后是否仍可走。\n\n（三）开放时间脚注\n开放时间 09:00-18:00。另写：大潮日以现场封闭为准。本份观察没有给出 2026-09-10 是否大潮的数据。",
+    "observed_at": "2026-09-10T14:25:00+08:00",
+    "origin": "synthetic_controlled",
+    "scope": {
+      "kind": "synthetic_controlled_observation",
+      "locale": "zh-CN",
+      "city_frame": "Chongqing Nanan fictional",
+      "live_merchant": false,
+      "disallowed_actions": [
+        "login",
+        "inventory",
+        "order",
+        "booking",
+        "messaging"
+      ]
+    }
+  },
+  {
+    "source_id": "ent-v8-ebb-tide-card",
+    "group_id": "ent-v8-ebb-tide",
+    "title": "实体卡 退潮观台",
+    "text": "【虚构】实体卡：退潮观台。告示与手记中的观台栈道。地址：重庆市南岸区（虚构）折芦滩观台。不是真实景点。",
+    "observed_at": "2026-09-10T14:25:00+08:00",
+    "origin": "synthetic_controlled",
+    "scope": {
+      "kind": "synthetic_controlled_observation",
+      "locale": "zh-CN",
+      "city_frame": "Chongqing Nanan fictional",
+      "live_merchant": false,
+      "disallowed_actions": [
+        "login",
+        "inventory",
+        "order",
+        "booking",
+        "messaging"
+      ]
+    }
+  }
+]

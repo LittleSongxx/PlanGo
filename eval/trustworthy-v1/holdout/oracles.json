@@ -1,0 +1,4942 @@
+[
+  {
+    "task_id": "ho-calc-001",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "步行加摆渡全程 22 分钟"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 22
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-002",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两辆全日合计 192 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 192
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-003",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "5人合计 255 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 255
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-004",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "剩余 160 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 160
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-005",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "2人同行合计 90 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 90
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-006",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "步行加摆渡全程 32 分钟"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 32
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-007",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两辆全日合计 222 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 222
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-008",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "2人合计 112 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 112
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-009",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "剩余 195 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 195
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-010",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "2人同行合计 110 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 110
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-011",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "步行加摆渡全程 33 分钟"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 33
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-012",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两辆全日合计 252 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 252
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-013",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "3人合计 183 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 183
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-014",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "剩余 230 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 230
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-015",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "2人同行合计 130 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 130
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-016",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "步行加摆渡全程 43 分钟"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 43
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-017",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两辆全日合计 282 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 282
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-018",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "4人合计 264 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 264
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-019",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "剩余 230 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 230
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-020",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "2人同行合计 150 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 150
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-021",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "步行加摆渡全程 44 分钟"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 44
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-022",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两辆全日合计 312 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 312
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-023",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "5人合计 355 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 355
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-024",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "剩余 265 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 265
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-025",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "2人同行合计 170 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 170
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-026",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "步行加摆渡全程 54 分钟"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 54
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-027",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两辆全日合计 342 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 342
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-028",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "2人合计 152 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 152
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-029",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "剩余 300 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 300
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-030",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "2人同行合计 190 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 190
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-031",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "步行加摆渡全程 55 分钟"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 55
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-032",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两辆全日合计 372 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 372
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-033",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "3人合计 243 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 243
+      }
+    ]
+  },
+  {
+    "task_id": "ho-calc-034",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "剩余 300 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 300
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-001",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着开门时间 9 点",
+      "另一份写着开门时间 13 点"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-002",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着排队时长 12 分钟",
+      "另一份写着排队时长 37 分钟"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-003",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着余座 9 个",
+      "另一份写着余座 23 个"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-004",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着人均 54 元",
+      "另一份写着人均 82 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-005",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着当前价格 85 元",
+      "另一份写着当前价格 122 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-006",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着开门时间 10 点",
+      "另一份写着开门时间 14 点"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-007",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着排队时长 17 分钟",
+      "另一份写着排队时长 42 分钟"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-008",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着余座 6 个",
+      "另一份写着余座 20 个"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-009",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着人均 59 元",
+      "另一份写着人均 87 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-010",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着当前价格 90 元",
+      "另一份写着当前价格 127 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-011",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着开门时间 11 点",
+      "另一份写着开门时间 15 点"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-012",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着排队时长 22 分钟",
+      "另一份写着排队时长 47 分钟"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-013",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着余座 11 个",
+      "另一份写着余座 25 个"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-014",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着人均 64 元",
+      "另一份写着人均 92 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-015",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着当前价格 95 元",
+      "另一份写着当前价格 132 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-016",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着开门时间 8 点",
+      "另一份写着开门时间 12 点"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-017",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着排队时长 27 分钟",
+      "另一份写着排队时长 52 分钟"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-018",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着余座 8 个",
+      "另一份写着余座 22 个"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-019",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着人均 69 元",
+      "另一份写着人均 97 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-020",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着当前价格 100 元",
+      "另一份写着当前价格 137 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-021",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着开门时间 9 点",
+      "另一份写着开门时间 13 点"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-022",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着排队时长 32 分钟",
+      "另一份写着排队时长 57 分钟"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-023",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着余座 13 个",
+      "另一份写着余座 27 个"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-024",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着人均 74 元",
+      "另一份写着人均 102 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-025",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着当前价格 105 元",
+      "另一份写着当前价格 142 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-026",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着开门时间 10 点",
+      "另一份写着开门时间 14 点"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-027",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着排队时长 37 分钟",
+      "另一份写着排队时长 62 分钟"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-028",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着余座 10 个",
+      "另一份写着余座 24 个"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-029",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着人均 79 元",
+      "另一份写着人均 107 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-030",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着当前价格 110 元",
+      "另一份写着当前价格 147 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-031",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着开门时间 11 点",
+      "另一份写着开门时间 15 点"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-032",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着排队时长 42 分钟",
+      "另一份写着排队时长 67 分钟"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-033",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着余座 7 个",
+      "另一份写着余座 21 个"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-conf-034",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "一份写着人均 84 元",
+      "另一份写着人均 112 元"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-001",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-11-11"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 415
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 74
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-002",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 550
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 78
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "10:00"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-003",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 112
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "11:00"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "driving"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-004",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "16:30"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-005",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "driving"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 7
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.5
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-006",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 11
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 4.0
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 2
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-007",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 6.0
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 3
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-17"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-008",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 7
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-18"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 520
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-009",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-11-19"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 535
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 106
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-010",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 670
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 110
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "18:00"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-011",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 144
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "08:00"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "transit"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-012",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "13:30"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "driving"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-013",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "transit"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 7
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.0
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-014",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 11
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.5
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 4
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-015",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 5.5
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 5
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-25"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-016",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 9
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-26"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 640
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-017",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-11-27"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 655
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 138
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-018",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 790
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 142
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "15:00"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-019",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 176
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "16:00"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-020",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "10:30"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "transit"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-021",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 7
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 2.5
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-022",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 11
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.0
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-023",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 5.0
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 7
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-15"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-024",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 5
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-16"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 760
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-025",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-11-17"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 775
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 170
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-026",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 910
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 174
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "12:00"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-027",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 208
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "13:00"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "driving"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-028",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "18:30"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-029",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "driving"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 7
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 2.0
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-030",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 11
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 2.5
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 2
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-031",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 4.5
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 3
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-23"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-032",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 7
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-24"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 880
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-033",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-11-25"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 895
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 202
+      }
+    ]
+  },
+  {
+    "task_id": "ho-spar-034",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 1030
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 206
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "09:00"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-001",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 460
+      },
+      {
+        "id": "still_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.prior_trip_spec.time_window_start"
+      },
+      {
+        "id": "value_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "12:00"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-002",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "transit"
+      },
+      {
+        "id": "still_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.prior_trip_spec.max_distance_km"
+      },
+      {
+        "id": "value_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 7
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-003",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "equals_path": "end_state.prior_trip_spec.location.name"
+      },
+      {
+        "id": "value_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "expected": "渡口码头"
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 2
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-004",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "equals_path": "end_state.prior_trip_spec.hard_constraints"
+      },
+      {
+        "id": "value_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "expected": [
+          "需要电梯07"
+        ]
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-17"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-005",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.prior_trip_spec.per_person_budget"
+      },
+      {
+        "id": "value_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 102
+      },
+      {
+        "id": "still_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.prior_trip_spec.search_radius_km"
+      },
+      {
+        "id": "value_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 5.0
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-006",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.prior_trip_spec.duration_minutes"
+      },
+      {
+        "id": "value_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 150
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 5
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-007",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 6
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-20"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-008",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 565
+      },
+      {
+        "id": "still_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.prior_trip_spec.time_window_start"
+      },
+      {
+        "id": "value_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "08:00"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-009",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "driving"
+      },
+      {
+        "id": "still_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.prior_trip_spec.max_distance_km"
+      },
+      {
+        "id": "value_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-010",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "equals_path": "end_state.prior_trip_spec.location.name"
+      },
+      {
+        "id": "value_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "expected": "云阶码头"
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 3
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-011",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "equals_path": "end_state.prior_trip_spec.hard_constraints"
+      },
+      {
+        "id": "value_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "expected": [
+          "需要电梯14"
+        ]
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-24"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-012",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.prior_trip_spec.per_person_budget"
+      },
+      {
+        "id": "value_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 130
+      },
+      {
+        "id": "still_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.prior_trip_spec.search_radius_km"
+      },
+      {
+        "id": "value_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 4.0
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-013",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.prior_trip_spec.duration_minutes"
+      },
+      {
+        "id": "value_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 120
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-014",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 7
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-015",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 670
+      },
+      {
+        "id": "still_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.prior_trip_spec.time_window_start"
+      },
+      {
+        "id": "value_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "15:00"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-016",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "still_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.prior_trip_spec.max_distance_km"
+      },
+      {
+        "id": "value_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 5
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-017",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "equals_path": "end_state.prior_trip_spec.location.name"
+      },
+      {
+        "id": "value_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "expected": "青石书亭"
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 4
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-018",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "equals_path": "end_state.prior_trip_spec.hard_constraints"
+      },
+      {
+        "id": "value_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "expected": [
+          "需要电梯21"
+        ]
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-13"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-019",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.prior_trip_spec.per_person_budget"
+      },
+      {
+        "id": "value_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 158
+      },
+      {
+        "id": "still_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.prior_trip_spec.search_radius_km"
+      },
+      {
+        "id": "value_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.0
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-020",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.prior_trip_spec.duration_minutes"
+      },
+      {
+        "id": "value_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 330
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 7
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-021",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 2
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-16"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-022",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 775
+      },
+      {
+        "id": "still_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.prior_trip_spec.time_window_start"
+      },
+      {
+        "id": "value_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "11:00"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-023",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "transit"
+      },
+      {
+        "id": "still_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.prior_trip_spec.max_distance_km"
+      },
+      {
+        "id": "value_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 4
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-024",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "equals_path": "end_state.prior_trip_spec.location.name"
+      },
+      {
+        "id": "value_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "expected": "北门书亭"
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 5
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-025",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "equals_path": "end_state.prior_trip_spec.hard_constraints"
+      },
+      {
+        "id": "value_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "expected": [
+          "需要电梯28"
+        ]
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-20"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-026",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.prior_trip_spec.per_person_budget"
+      },
+      {
+        "id": "value_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 186
+      },
+      {
+        "id": "still_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.prior_trip_spec.search_radius_km"
+      },
+      {
+        "id": "value_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 2.0
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-027",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.prior_trip_spec.duration_minutes"
+      },
+      {
+        "id": "value_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 300
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 2
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-028",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 3
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-23"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-029",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 880
+      },
+      {
+        "id": "still_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.prior_trip_spec.time_window_start"
+      },
+      {
+        "id": "value_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "18:00"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-030",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "driving"
+      },
+      {
+        "id": "still_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.prior_trip_spec.max_distance_km"
+      },
+      {
+        "id": "value_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 3
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-031",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "equals_path": "end_state.prior_trip_spec.location.name"
+      },
+      {
+        "id": "value_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "expected": "芦汀书亭"
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-032",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "equals_path": "end_state.prior_trip_spec.hard_constraints"
+      },
+      {
+        "id": "value_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "expected": [
+          "需要电梯35"
+        ]
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-033",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.prior_trip_spec.per_person_budget"
+      },
+      {
+        "id": "value_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 214
+      },
+      {
+        "id": "still_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.prior_trip_spec.search_radius_km"
+      },
+      {
+        "id": "value_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 1.0
+      }
+    ]
+  },
+  {
+    "task_id": "ho-pers-034",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.prior_trip_spec.duration_minutes"
+      },
+      {
+        "id": "value_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 270
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 3
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-001",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-002",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-003",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-004",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-005",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-006",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-007",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-008",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-009",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-010",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-011",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-012",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-013",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-014",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-015",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-016",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-017",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-018",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-019",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-020",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-021",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-022",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-023",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-024",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-025",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-026",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-027",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-028",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-029",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-030",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-031",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-032",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-033",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-unkn-034",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-001",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "全日 61 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-002",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "草稿列了松风小馆和茶室两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-003",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核对参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-004",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着需本人到场"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-005",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "青瓷小馆开放至 18:00"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-006",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "全日 66 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-007",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "草稿列了北门小馆和茶室两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-008",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核对参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-009",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着需本人到场"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-010",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "霜桥小馆开放至 17:00"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-011",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "全日 71 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-012",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "草稿列了竹坞小馆和茶室两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-013",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核对参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-014",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着需本人到场"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-015",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "桐荫小馆开放至 16:00"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-016",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "全日 76 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-017",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "草稿列了鸥波小馆和茶室两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-018",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核对参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-019",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着需本人到场"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-020",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "青石码头开放至 18:00"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-021",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "全日 81 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-022",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "草稿列了松风码头和茶室两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-023",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核对参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-024",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着需本人到场"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-025",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "青瓷码头开放至 17:00"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-026",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "全日 86 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-027",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "草稿列了北门码头和茶室两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-028",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核对参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-029",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着需本人到场"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-030",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "霜桥码头开放至 16:00"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-031",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "全日 91 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-032",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "草稿列了竹坞码头和茶室两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-033",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核对参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "ho-boun-034",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着需本人到场"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  }
+]

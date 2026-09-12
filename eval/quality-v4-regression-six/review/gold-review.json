@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "origin": "independent_ai",
+  "reviewer_type": "AI",
+  "human_reviewed": false,
+  "human_verified": false,
+  "gold_human_verified": false,
+  "reviewer": "/root/regression_judge",
+  "decision": "approve",
+  "reviewed_at": "2026-09-10T00:47:02.580439+00:00",
+  "scope": "6 disclosed controlled regression cases; independent-context AI review; human reviewers 0; not unseen generalization, real merchant fulfillment, human-calibrated or independent model-family review",
+  "dataset_sha": "53565ca3d7c4076d4f78f17e7186166af72ed945a7a6f3e027cb41bb5c432971",
+  "product_sha": "dbb7d794051243dcf2d75ded5ef524d5b7e480a03d50926e487aa3c00796e03f",
+  "cases": [
+    {
+      "case_id": "NEW-01",
+      "gold_sha": "1741041e018a447d464f3ab82fc94a1b65e1c89fb16fee08483f5d69ad3f5998",
+      "decision": "approve",
+      "reason": "逐项核对 C1–C4、F1–F3 与 NEW-S01：176元每套、220元门市标价不同；176÷2=88元。独立日历核验2026-09-11为周五，19:00处于营业17:00–21:30和套餐17:00–20:00的交集。茶位费和预约规则未载，不能把套餐价当无附加费用的最终账单。河盐小馆、2人及目标时刻与任务一致；只交付虚构资料核对卡，禁止外部操作完成声明合理。",
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_source_ids": [
+        "NEW-S01"
+      ]
+    },
+    {
+      "case_id": "NEW-07",
+      "gold_sha": "0daccab206815a65ed121ad8bb134cacf9f9260f3817dbf09c08547d7e952732",
+      "decision": "approve",
+      "reason": "逐项核对 C1–C4、F1–F3 与 NEW-S04：A售价79元、抵拍摄费100元、每单1张；B售价168元每套，双人合照与2张电子片是内容和数量，不能混成两次拍摄。资料没有A适用拍摄原价，也未证明A可用于B，因此79元不能作为完成拍摄总成本，147元也不能作为确定叠加价。修片加价和周五可用性均未知，gold准确保留费用和适用范围。",
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_source_ids": [
+        "NEW-S04"
+      ]
+    },
+    {
+      "case_id": "NEW-14",
+      "gold_sha": "dd54350dde7ca72628af6aef9b6f44811524432313400cd94ba49a8834ac1eb7",
+      "decision": "approve",
+      "reason": "逐项核对 C1–C4、F1–F3 与 NEW-S07：18:40加步行18分钟为18:58，距19:00仅2分钟；900米/18分钟是受控资料固定估计。公交8分钟仅车上时间，候车未知，18:48不是可确定的到达时刻。gold允许不列18:48或注明假设，允许基于资料完整性建议步行而不保证准点；纸桥站至银禾展厅的实体、日期和比较范围一致。",
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_source_ids": [
+        "NEW-S07"
+      ]
+    },
+    {
+      "case_id": "NEW-18",
+      "gold_sha": "723bf9bf8c8e31fdd3d3462215673357483e96c6e144d696bf000f0f2a390024",
+      "decision": "approve",
+      "reason": "逐项核对 C1–C4、F1–F3、NEW-S09结构初态与ENV-NEW-S09：初始run为fixture:new-18、版本1，18:30/120分钟；用户仅授权开始改19:20，保持120分钟得到21:20。人数2、日期、总预算260、人均空、地点地址套餐标识158元/208元及未知规则、搜索半径和路线约束均须保留。真实HTTP 202后丢响应、同请求lookup、原run及单次语义编辑是本题明确测试前提，需后续独立传输和状态证据，不能从文字批准。ENV单段0.2公里3分钟是路线观测，原spec路线距离3公里是需保留字段，不混为一项。未保存Electron草稿及无商家预约付款声明的停点合理。",
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_source_ids": [
+        "NEW-S09",
+        "ENV-NEW-S09"
+      ]
+    },
+    {
+      "case_id": "NEW-21",
+      "gold_sha": "f0babc5daaaf7d3eb96a304cde9a447c89ee45a9917a6f1c799c8b0880a3c3c4",
+      "decision": "approve",
+      "reason": "逐项核对 C1–C4、F1–F3 与 NEW-S11：月栈桌游室地址虚构环月巷6号；2026-09-11为周五，19:00起2小时即21:00，全段在18:00–23:00营业内。168元按四人桌两小时收费，168÷4=42元；资料缺余位和超时单价，不能扩展到已留位、任意时长或已付款。用户只要求整理待确认到店卡，gold范围和禁止联系商家的要求一致。",
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_source_ids": [
+        "NEW-S11"
+      ]
+    },
+    {
+      "case_id": "NEW-29",
+      "gold_sha": "d8a49aaf89e3a752426ba529b7d2a6437131702551ef2abd0873dca7d176da65",
+      "decision": "approve",
+      "reason": "逐项核对 C1–C4、F1–F3、NEW-S15结构初态与ENV-NEW-S15：用户明确授权人数2改4，但180的总额/人均口径未决，原总预算240和人均空应保留，不能写入180或清空预算。应实际编辑人数同时澄清预算，而非完全不执行或误报全部完成。原斑榕砂锅铺、地址、178元售价218元面值及双人套餐标识/未知规则均保留；双人套餐不由人数变更自动证明适合4人。日期时间地理字段保留且未保存的要求与初态、用户限定和澄清停点一致。",
+      "reviewed_check_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "reviewed_forbidden_ids": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "reviewed_source_ids": [
+        "NEW-S15",
+        "ENV-NEW-S15"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "version": "plango.controlled-bounded.v1",
+  "name": "PlanGo-independent-six-v7",
+  "evaluation_kind": "independent_controlled",
+  "planned_case_ids": [
+    "v7-reading-yanhu-handcraft",
+    "v7-offers-wujing-diner",
+    "v7-routes-qinghuai-walk",
+    "v7-edits-luting-teahouse",
+    "v7-recovery-mianyu-studio",
+    "v7-boundaries-taoke-workshop"
+  ],
+  "primary_source_groups": 6,
+  "case_authoring": {
+    "authored_by": "independent case author, fresh context, no product code / no past cases / no past outputs or scores",
+    "authored_after_freeze": true,
+    "product_freeze": {
+      "manifest": "eval/quality-v7-independent-six/product-freeze.json",
+      "frozen_at": "2026-09-10T09:29:28.750140+00:00",
+      "product_commit": "03673618c4bdf823971bc5b857427689cbdef4e9"
+    },
+    "authored_at": "2026-09-10T17:50:00+08:00",
+    "only_spec_source": "eval/quality-v4-authoring-contract.md",
+    "entities_and_numbers": "全部商家、地名、人物、条款、价格与时刻均由作者新造并在正文标注虚构；不是对任何既有案例的改写。",
+    "independence_limit": "独立性 = 冻结之后编题、且未接触实现代码、历史题目、历史输出与评分；不等于上下文里没有任何关于被测系统的信息。环境自动注入的指令文件与其影响已逐项记录在 authoring.json 的 injected_context_disclosure 中。",
+    "self_approval": "none — 每条 gold 的 status 均为 draft_pending_independent_ai_review，human_reviewers 为空，须由另一个独立上下文在执行前复核。",
+    "must_pass_discipline": "每题 4 至 6 条，全部为合取；只收「缺了就不可能算正确交付」且由用户本人请求所隐含的条目，其余期望放 accepted_variations 或不写。must_pass 条数在不同批次之间不同，通过率不可跨数据集比较。"
+  },
+  "execution_scope": {
+    "supplied_observations": 4,
+    "electron_state_workflows": 2,
+    "supplied_observation_cases": [
+      "v7-reading-yanhu-handcraft",
+      "v7-offers-wujing-diner",
+      "v7-routes-qinghuai-walk",
+      "v7-boundaries-taoke-workshop"
+    ],
+    "electron_state_cases": [
+      "v7-edits-luting-teahouse",
+      "v7-recovery-mianyu-studio"
+    ],
+    "notes": "四道 driver=read 的题通过应用正常的浏览器观察通路取得同一个资料包；提供的事实不保证被理解。两道状态题的初始草稿由运行环境预先导入，属受控初始条件而非执行方的成果；恢复题只保存一次，随后关闭并重开自有 API/DB 与 Electron、读取原 run/profile，期间不允许新的用户消息、重新保存或新建运行；后端生命周期被重建，不要求也不声称测试了整机重启。全部题目只做分析与草稿，不涉及登录、真实库存、写入、下单、支付或发消息；不允许出现已预订或已支付的证据性声明。",
+    "runtime_fixtures": "runtime-fixtures.json 由 root 依据既有环境适配层生成；作者未编写也未覆盖任何隐藏 fixture。"
+  },
+  "limits": {
+    "calls": 80,
+    "case_calls": 12,
+    "reported_tokens_stop": 120000
+  },
+  "budget_ledger": "output/tightening-F9A9ea/model-budget.jsonl",
+  "budget_note": "该账本与回归批次共享，不是新增额度。"
+}

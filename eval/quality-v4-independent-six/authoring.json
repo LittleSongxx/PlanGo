@@ -1,0 +1,62 @@
+{
+  "author_identity": "/root/independent_v4_author (Codex independent author context)",
+  "created_at": "2026-09-10T01:24:19.241686+00:00",
+  "product_frozen_at": "2026-09-10T01:08:01.392217+00:00",
+  "product_commit": "8dcf2d3b12d809bbe2227d204c00196f323f2b87",
+  "files_read": [
+    {
+      "path": "eval/quality-v4-authoring-contract.md",
+      "scope": "complete interface contract only"
+    },
+    {
+      "path": "eval/quality-v4-regression-six-r2/product-freeze.json",
+      "scope": "仅通过JSON读取输出 frozen_at 和 product_commit 两字段；未查看manifest清单或其所指文件"
+    }
+  ],
+  "independence_statement": "本上下文是在产品冻结后受派的独立资料作者。没有读取产品源码、旧数据集、旧输出、评分、私有.env、profile、其它eval或scripts；没有运行Actor、调用其他模型、访问外网或联系商家。六个资料包的名称、数字、叙述和任务均在本上下文原创；没有通过实现支持情况筛选题目。仅对自己拟定内容作stdlib JSON、引用、日期及算术校验。此前题目不可见，因此不声称已与旧题作全库内容去重。",
+  "coverage_rationale": [
+    {
+      "case_id": "v4-new-reading",
+      "family": "reading",
+      "case_class": "delivery",
+      "rationale": "单日活动单中的时间排程、三人两项目费用与项目费范围。"
+    },
+    {
+      "case_id": "v4-new-offers",
+      "family": "offers",
+      "case_class": "delivery",
+      "rationale": "菜单/优惠三文档比较，区分券售价、面值、补差及最终实付。"
+    },
+    {
+      "case_id": "v4-new-routes",
+      "family": "routes",
+      "case_class": "bounded_answer",
+      "rationale": "旧时刻表与后发临调冲突，仍交付到站时间、余量和两人费用的条件计算。"
+    },
+    {
+      "case_id": "v4-new-edits",
+      "family": "edits",
+      "case_class": "delivery",
+      "rationale": "两轮稀疏修改的累积语义、双预算的有效约束及可见未保存草案。"
+    },
+    {
+      "case_id": "v4-new-recovery",
+      "family": "recovery",
+      "case_class": "delivery",
+      "rationale": "从明确未保存初态走真实一次保存/后端与Electron重开，核验同运行恢复与null总额预算。"
+    },
+    {
+      "case_id": "v4-new-boundaries",
+      "family": "boundaries",
+      "case_class": "bounded_answer",
+      "rationale": "套餐宣传与后发适用日变更，区分营业时段、未知余位与不能确认的周日费用。"
+    }
+  ],
+  "oracle_review": {
+    "status": "draft_pending_independent_ai_review",
+    "self_approved": false,
+    "human_reviewers": []
+  },
+  "immutability": "完成首次写入后作者不再修改五份发布数据，也不检查执行结果。",
+  "validation": "首次写入前用stdlib检查文件接口、ID唯一性、6家族/4read+edit+save_restart/4delivery+2bounded_answer、初态一致性、精确source quote、ISO时区、日期星期与所有核心算式；无Actor执行。"
+}

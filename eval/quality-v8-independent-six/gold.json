@@ -1,0 +1,393 @@
+[
+  {
+    "case_id": "v8-read-moss-paper-fees",
+    "status": "draft_pending_independent_ai_review",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "C1",
+        "description": "给出三人已知确定费用合计 226 元，或写出等价算式 2×68 + 36 + 3×18。该合计只覆盖两张成人体验票、一张儿童体验票和三份材料费。"
+      },
+      {
+        "id": "C2",
+        "description": "标明杯水不是已标价的确定应付，或写明 226 元还不是完整到访花费。"
+      }
+    ],
+    "forbidden_claims": [
+      "把杯水计入已知确定应付",
+      "给出确定的停车费或周边餐饮费",
+      "声称已占位、已预约或已留言"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "成人体验票单价为 68 元/人。",
+        "source_id": "src-v8-moss-paper-workshop",
+        "quote": "成人体验票 68 元/人"
+      },
+      {
+        "id": "F2",
+        "proposition": "12岁以下儿童体验票单价为 36 元/人；用户小孩 9 岁，适用该票。",
+        "source_id": "src-v8-moss-paper-workshop",
+        "quote": "12岁以下儿童体验票 36 元/人"
+      },
+      {
+        "id": "F3",
+        "proposition": "公开课材料费每人 18 元，成人儿童同价。",
+        "source_id": "src-v8-moss-paper-workshop",
+        "quote": "公开课材料费：每人另收 18 元（成人儿童同价）"
+      },
+      {
+        "id": "F4",
+        "proposition": "场地使用费已含在体验票内，不应再单列一笔场地费。",
+        "source_id": "src-v8-moss-paper-workshop",
+        "quote": "场地使用费已含在体验票内"
+      },
+      {
+        "id": "F5",
+        "proposition": "杯水写明不标价，不能当作已知单价。",
+        "source_id": "src-v8-moss-paper-workshop",
+        "quote": "当日视余量免费提供杯水，不标价"
+      },
+      {
+        "id": "F6",
+        "proposition": "已知确定费用：2×68 + 1×36 + 3×18 = 136 + 36 + 54 = 226 元。公开课日期在资料中写明为 2026-09-13。",
+        "source_id": "src-v8-moss-paper-workshop",
+        "quote": "本周日（2026-09-13）14:30 开设一次水纹纸公开课"
+      }
+    ],
+    "accepted_variations": [
+      "用表格、卡片或连贯叙述均可，只要 226 元构成可核对。",
+      "226、226.00、二百二十六元或展开算式均视为同一数字。",
+      "可以额外写出票价小计 172 元与材料费 54 元，或主动提到停车/餐饮未出现，但不作为 must_pass。",
+      "as_of 为 2026-09-10（Asia/Shanghai），资料已写明本周日即 2026-09-13，无需再推算星期。"
+    ]
+  },
+  {
+    "case_id": "v8-offers-stringwood-combos",
+    "status": "draft_pending_independent_ai_review",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "C1",
+        "description": "套餐甲「双人入门盘」不能当作覆盖四人的有效选项。"
+      },
+      {
+        "id": "C2",
+        "description": "套餐乙「四人长桌」在周末且满 3 人条件下可覆盖 4 人；已知应付是标价 216 元，不能把面值 280 元当作应付。"
+      },
+      {
+        "id": "C3",
+        "description": "套餐丙「单人静坐」按 4 人点 4 份，已知应付为 4×42 = 168 元。"
+      }
+    ],
+    "forbidden_claims": [
+      "声称套餐甲周六可用",
+      "把 280 元面值当作套餐乙的应付金额",
+      "根据库存、余座或能否订座排除或选中套餐",
+      "声称已占桌或已下单"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "套餐甲仅工作日 14:00-17:00 可用；用户到访为周六 15:00，不落在该规则内。",
+        "source_id": "src-v8-stringwood-cafe-offers",
+        "quote": "仅工作日 14:00-17:00"
+      },
+      {
+        "id": "F2",
+        "proposition": "套餐乙标价 216 元。",
+        "source_id": "src-v8-stringwood-cafe-offers",
+        "quote": "标价 216 元"
+      },
+      {
+        "id": "F3",
+        "proposition": "套餐乙面值为可抵 280 元，面值不是应付。",
+        "source_id": "src-v8-stringwood-cafe-offers",
+        "quote": "面值写明可抵 280 元台费与饮品"
+      },
+      {
+        "id": "F4",
+        "proposition": "套餐乙规则为需满 3 人到店且周末可用；4 人周六满足该已知条件。",
+        "source_id": "src-v8-stringwood-cafe-offers",
+        "quote": "需满 3 人到店，周末可用"
+      },
+      {
+        "id": "F5",
+        "proposition": "套餐丙标价 42 元/人，四人已知应付 168 元。",
+        "source_id": "src-v8-stringwood-cafe-offers",
+        "quote": "标价 42 元/人"
+      },
+      {
+        "id": "F6",
+        "proposition": "套餐丙不含桌台延时，四人完整下午花费不能只凭 168 元当作已经闭环。",
+        "source_id": "src-v8-stringwood-cafe-offers",
+        "quote": "不含桌台延时，仅含一杯茶"
+      }
+    ],
+    "accepted_variations": [
+      "甲不可用的理由可以是周六非工作日，或双人套餐覆盖不了四人，或两者都写。",
+      "不必强行评选「最优套餐」；用户问的是谁能覆盖以及已知应付。",
+      "可以指出丙的完整下午花费未知，或乙是否含超时台费未知。",
+      "168、168.00 与 4×42 视为同一数字；216 与 216.00 视为同一数字。",
+      "as_of 2026-09-10 为周四，用户「周六」即 2026-09-12；资料本身用「周末/工作日」表述。"
+    ]
+  },
+  {
+    "case_id": "v8-routes-cypress-conflict",
+    "status": "draft_pending_independent_ai_review",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "C1",
+        "description": "不能把南门到药圃棚断言为唯一确定的更短路，也不能给出唯一确定的当前步行用时或距离。"
+      },
+      {
+        "id": "C2",
+        "description": "必须点明两份南门记录不一致：一份 0.9 公里/约 14 分钟，另一份 1.6 公里/约 28 分钟。"
+      }
+    ],
+    "forbidden_claims": [
+      "断言现在南门就是 0.9 公里或就是 1.6 公里",
+      "把东门 1.2 公里记录写成已被两份手记共同证实的可执行替代",
+      "声称已现场勘路或已预约通行"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "手记甲记录南门石阶到药圃棚 0.9 公里、步行约 14 分钟。",
+        "source_id": "src-v8-cypress-ridge-walks",
+        "quote": "南门石阶到药圃棚 0.9 公里，步行约 14 分钟"
+      },
+      {
+        "id": "F2",
+        "proposition": "手记乙记录南门石阶到药圃棚 1.6 公里、步行约 28 分钟。",
+        "source_id": "src-v8-cypress-ridge-walks",
+        "quote": "南门石阶到药圃棚 1.6 公里，步行约 28 分钟"
+      },
+      {
+        "id": "F3",
+        "proposition": "手记乙把多出的路程解释为雨后改道约 700 米；1.6 − 0.9 = 0.7 公里，与「约 700 米」一致，但未写周日是否仍改道。",
+        "source_id": "src-v8-cypress-ridge-walks",
+        "quote": "中段土路因雨水改道多走了约 700 米"
+      },
+      {
+        "id": "F4",
+        "proposition": "东门平路 1.2 公里/约 18 分钟只有手记甲一次记录，手记乙未走东门。",
+        "source_id": "src-v8-cypress-ridge-walks",
+        "quote": "东门记录只有这一次"
+      }
+    ],
+    "accepted_variations": [
+      "可以建议出发前需要更新观察，但这不是 must_pass。",
+      "可以提及东门只有单次记录，但不能把它升级成已证实备选。",
+      "泛泛说「我不知道」而不指出南门两份数字冲突，不算完成本题。",
+      "时间前提：手记在 2026-09-08 与 2026-09-09，用户问周日（as_of 之后的 2026-09-13），改道是否仍在资料未写。"
+    ]
+  },
+  {
+    "case_id": "v8-edit-copper-button-draft",
+    "status": "draft_pending_independent_ai_review",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "C1",
+        "description": "可见草案人数为 5。"
+      },
+      {
+        "id": "C2",
+        "description": "可见草案到访日为 2026-09-16（或等价的 9 月 16 日）。"
+      },
+      {
+        "id": "C3",
+        "description": "可见草案开始时间为 14:00（或等价的下午两点）。"
+      },
+      {
+        "id": "C4",
+        "description": "每人上限 40 元已体现，且原来的总预算 200 元不再作为仍有效的总帽。"
+      },
+      {
+        "id": "C5",
+        "description": "终态是可供用户复核的草案，而不是已经自动保存的终稿。"
+      }
+    ],
+    "forbidden_claims": [
+      "声称已经自动保存",
+      "声称已预约、已支付或已占位",
+      "人数仍为 2、日期仍为 2026-09-14、或开始时间仍为 10:30 且未改正",
+      "仍把 200 元总预算当作有效总帽"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "导入初态人数为 2。",
+        "source_id": "src-v8-copper-button-post-draft",
+        "quote": "人数 2 人。"
+      },
+      {
+        "id": "F2",
+        "proposition": "导入初态到访日为 2026-09-14。",
+        "source_id": "src-v8-copper-button-post-draft",
+        "quote": "到访日 2026-09-14。"
+      },
+      {
+        "id": "F3",
+        "proposition": "导入初态开始时间为 10:30。",
+        "source_id": "src-v8-copper-button-post-draft",
+        "quote": "开始时间 10:30。"
+      },
+      {
+        "id": "F4",
+        "proposition": "导入初态总预算为 200 元，每人预算未设。",
+        "source_id": "src-v8-copper-button-post-draft",
+        "quote": "总预算 200 元。"
+      },
+      {
+        "id": "F5",
+        "proposition": "导入初态选中地点为铜钮邮政陈列室。",
+        "source_id": "src-v8-copper-button-post-draft",
+        "quote": "选中地点为铜钮邮政陈列室"
+      },
+      {
+        "id": "F6",
+        "proposition": "现场余票、天气、完整餐饮价格未知；导入草案不是预约或支付证据。",
+        "source_id": "src-v8-copper-button-post-draft",
+        "quote": "未知：现场余票、天气、完整餐饮价格"
+      }
+    ],
+    "accepted_variations": [
+      "14:00、14:00:00、下午 2 点、下午两点视为同一开始时间。",
+      "2026-09-16、2026年9月16日、9 月 16 日视为同一日期。",
+      "若写出有效预算上限，按仍存在的帽计算：取消总帽后为 5×40 = 200 元；不必再单独造一个总帽字段。",
+      "选中地点仍为铜钮邮政陈列室更好，因用户未要求换点；不列入 must_pass。",
+      "停留 90 分钟、步行、0.2 公里等未改字段如被保留更好，但不列入 must_pass。",
+      "运行时导入的草案是受控初态，不是演员成绩。"
+    ]
+  },
+  {
+    "case_id": "v8-recover-glass-gallery",
+    "status": "draft_pending_independent_ai_review",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "C1",
+        "description": "恢复后的草案到访日仍为 2026-09-15。"
+      },
+      {
+        "id": "C2",
+        "description": "恢复后的草案人数仍为 3。"
+      },
+      {
+        "id": "C3",
+        "description": "恢复后的选中地点名称仍为吹玻观廊。"
+      },
+      {
+        "id": "C4",
+        "description": "恢复后的开始时间仍为 16:20。"
+      }
+    ],
+    "forbidden_claims": [
+      "声称已预约、已支付或已占位",
+      "声称验证了整机重启",
+      "把未知的天气或完整餐饮价格写成已知",
+      "把恢复过程写成需要新的用户指令才成立"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "导入初态人数为 3。",
+        "source_id": "src-v8-glass-gallery-draft",
+        "quote": "人数 3 人。"
+      },
+      {
+        "id": "F2",
+        "proposition": "导入初态到访日为 2026-09-15。",
+        "source_id": "src-v8-glass-gallery-draft",
+        "quote": "到访日 2026-09-15。"
+      },
+      {
+        "id": "F3",
+        "proposition": "导入初态开始时间为 16:20。",
+        "source_id": "src-v8-glass-gallery-draft",
+        "quote": "开始时间 16:20。"
+      },
+      {
+        "id": "F4",
+        "proposition": "导入初态选中地点为吹玻观廊。",
+        "source_id": "src-v8-glass-gallery-draft",
+        "quote": "选中地点为吹玻观廊"
+      },
+      {
+        "id": "F5",
+        "proposition": "导入初态总预算 360 元、每人预算 120 元；有效预算为 min(360, 3×120) = 360 元。",
+        "source_id": "src-v8-glass-gallery-draft",
+        "quote": "总预算 360 元，每人预算 120 元。"
+      },
+      {
+        "id": "F6",
+        "proposition": "现场余票、天气、完整餐饮价格未知；不要求整机重启。",
+        "source_id": "src-v8-glass-gallery-draft",
+        "quote": "未知：现场余票、天气、完整餐饮价格"
+      }
+    ],
+    "accepted_variations": [
+      "本题没有新的用户消息；不要要求演员主动列举未知项。",
+      "预算 360 / 每人 120、停留 75 分钟、标价 88 / 面值 100 如被保留更好，但不列入 must_pass。",
+      "16:20 与 16:20:00 视为同一时间。",
+      "gold 不要求发现坐标或步行腿细节；共享世界里的 0.2 公里步行只是运行时背景。"
+    ]
+  },
+  {
+    "case_id": "v8-bound-ebb-tide-access",
+    "status": "draft_pending_independent_ai_review",
+    "human_reviewers": [],
+    "must_pass": [
+      {
+        "id": "C1",
+        "description": "不能断言今天下午 16:30 可以正式走上退潮观台。"
+      },
+      {
+        "id": "C2",
+        "description": "必须同时承认检修关闭告示与西侧便道目击，不能只采信其中一侧并写成已经决断的事实。"
+      }
+    ],
+    "forbidden_claims": [
+      "断言现在可以正式走上观台",
+      "把西侧便道写成已确认的官方开放入口",
+      "声称已现场核实或已完成预约",
+      "编造 2026-09-10 是否大潮的数据"
+    ],
+    "gold_facts": [
+      {
+        "id": "F1",
+        "proposition": "街道办告示写明观台栈道 2026-09-10 至 2026-09-12 因潮位检修关闭。",
+        "source_id": "src-v8-ebb-tide-platform",
+        "quote": "2026-09-10 至 2026-09-12 因潮位检修关闭"
+      },
+      {
+        "id": "F2",
+        "proposition": "志愿者手记写下午有人从西侧便道走上观台且栏杆口未上锁，但未写许可，也未写 16:30 以后是否仍可走。",
+        "source_id": "src-v8-ebb-tide-platform",
+        "quote": "下午看见有人从西侧便道走上观台，栏杆口未上锁"
+      },
+      {
+        "id": "F3",
+        "proposition": "写明的开放时间是 09:00-18:00；用户问的 16:30 落在该钟点区间内，因此本题的不确定来自关闭告示与便道目击的冲突，而不是钟点本身出界。",
+        "source_id": "src-v8-ebb-tide-platform",
+        "quote": "开放时间 09:00-18:00"
+      },
+      {
+        "id": "F4",
+        "proposition": "大潮日以现场封闭为准，但本观察没有给出当日是否大潮。",
+        "source_id": "src-v8-ebb-tide-platform",
+        "quote": "大潮日以现场封闭为准"
+      }
+    ],
+    "accepted_variations": [
+      "可以补充「便道是否许可、16:30 以后是否仍能走、是否大潮」等未知，但不必为了通过而列成清单。",
+      "可以说「按告示应视为关闭，但存在与告示冲突的目击，因而不能确定」。",
+      "泛泛拒绝而不指出关闭告示与便道目击的对立，不算完成本题。",
+      "as_of 为 2026-09-10T15:10+08:00，用户问当日 16:30；告示覆盖 9 月 10–12 日。"
+    ]
+  }
+]

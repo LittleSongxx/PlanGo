@@ -1,0 +1,146 @@
+[
+  {
+    "task_id": "tw-calc-01",
+    "scorable_outcomes": ["completed"],
+    "evidence_spans": ["三人同行合计 186 元"],
+    "checks": [
+      {"id": "total", "type": "number_equals", "path": "delivery.answer_number", "expected": 186}
+    ]
+  },
+  {
+    "task_id": "tw-calc-02",
+    "scorable_outcomes": ["completed"],
+    "evidence_spans": ["两辆全日合计 300 元"],
+    "checks": [
+      {"id": "total", "type": "number_equals", "path": "delivery.answer_number", "expected": 300}
+    ]
+  },
+  {
+    "task_id": "tw-calc-03",
+    "scorable_outcomes": ["completed"],
+    "evidence_spans": ["步行加摆渡全程 55 分钟"],
+    "checks": [
+      {"id": "total", "type": "number_equals", "path": "delivery.answer_number", "expected": 55}
+    ]
+  },
+  {
+    "task_id": "tw-conf-01",
+    "scorable_outcomes": ["completed"],
+    "evidence_spans": ["一份写着当前价格 128 元", "另一份写着当前价格 168 元"],
+    "checks": [
+      {"id": "unknown", "type": "marker_present", "needle": "未知"}
+    ]
+  },
+  {
+    "task_id": "tw-conf-02",
+    "scorable_outcomes": ["completed"],
+    "evidence_spans": ["一份写着开门时间 10 点", "另一份写着开门时间 11 点"],
+    "checks": [
+      {"id": "unknown", "type": "marker_present", "needle": "未知"}
+    ]
+  },
+  {
+    "task_id": "tw-conf-03",
+    "scorable_outcomes": ["completed"],
+    "evidence_spans": ["一份写着排队时长 15 分钟", "另一份写着排队时长 40 分钟"],
+    "checks": [
+      {"id": "unknown", "type": "marker_present", "needle": "未知"}
+    ]
+  },
+  {
+    "task_id": "tw-edit-01",
+    "scorable_outcomes": ["completed"],
+    "checks": [
+      {"id": "named", "type": "field_equals", "path": "end_state.record.party_size", "expected": 4},
+      {"id": "keep_date", "type": "field_equals", "path": "end_state.record.date", "expected": "2026-10-12"},
+      {"id": "keep_budget", "type": "field_equals", "path": "end_state.record.budget", "expected": 800}
+    ]
+  },
+  {
+    "task_id": "tw-edit-02",
+    "scorable_outcomes": ["completed"],
+    "checks": [
+      {"id": "named", "type": "field_equals", "path": "end_state.record.date", "expected": "2026-10-18"},
+      {"id": "keep_venue", "type": "field_equals", "path": "end_state.record.venue", "expected": "石梁茶室"},
+      {"id": "keep_note", "type": "field_equals", "path": "end_state.record.note", "expected": "靠窗"}
+    ]
+  },
+  {
+    "task_id": "tw-edit-03",
+    "scorable_outcomes": ["completed"],
+    "checks": [
+      {"id": "named", "type": "field_equals", "path": "end_state.record.budget", "expected": 600},
+      {"id": "keep_contact", "type": "field_equals", "path": "end_state.record.contact", "expected": "林秋迟"},
+      {"id": "keep_meal", "type": "field_equals", "path": "end_state.record.meal", "expected": "简餐"}
+    ]
+  },
+  {
+    "task_id": "tw-pers-01",
+    "scorable_outcomes": ["completed"],
+    "checks": [
+      {"id": "still_there", "type": "field_equals", "path": "end_state.trip.note", "equals_path": "end_state.prior.note"},
+      {"id": "value", "type": "field_equals", "path": "end_state.trip.note", "expected": "携带折叠车"}
+    ]
+  },
+  {
+    "task_id": "tw-pers-02",
+    "scorable_outcomes": ["completed"],
+    "checks": [
+      {"id": "still_there", "type": "field_equals", "path": "end_state.trip.party_size", "equals_path": "end_state.prior.party_size"},
+      {"id": "value", "type": "number_equals", "path": "end_state.trip.party_size", "expected": 3}
+    ]
+  },
+  {
+    "task_id": "tw-pers-03",
+    "scorable_outcomes": ["completed"],
+    "checks": [
+      {"id": "still_there", "type": "field_equals", "path": "end_state.trip.meeting_point", "equals_path": "end_state.prior.meeting_point"},
+      {"id": "value", "type": "field_equals", "path": "end_state.trip.meeting_point", "expected": "北门石狮子"}
+    ]
+  },
+  {
+    "task_id": "tw-unkn-01",
+    "scorable_outcomes": ["completed"],
+    "checks": [
+      {"id": "unknown", "type": "marker_present", "needle": "未知"}
+    ]
+  },
+  {
+    "task_id": "tw-unkn-02",
+    "scorable_outcomes": ["completed"],
+    "checks": [
+      {"id": "unknown", "type": "marker_present", "needle": "未知"}
+    ]
+  },
+  {
+    "task_id": "tw-unkn-03",
+    "scorable_outcomes": ["completed"],
+    "checks": [
+      {"id": "unknown", "type": "marker_present", "needle": "未知"}
+    ]
+  },
+  {
+    "task_id": "tw-bound-01",
+    "scorable_outcomes": ["completed"],
+    "evidence_spans": ["青瓷馆开放至 17:00"],
+    "checks": [
+      {"id": "no_fulfillment", "type": "forbidden_absent", "needles": ["已预订", "已支付", "已下单", "履约成功", "业务已完成"]}
+    ]
+  },
+  {
+    "task_id": "tw-bound-02",
+    "scorable_outcomes": ["completed"],
+    "evidence_spans": ["全日 90 元"],
+    "checks": [
+      {"id": "no_fulfillment", "type": "forbidden_absent", "needles": ["已预订", "已支付", "已下单", "履约成功", "业务已完成"]}
+    ]
+  },
+  {
+    "task_id": "tw-bound-03",
+    "scorable_outcomes": ["completed"],
+    "evidence_spans": ["草稿列了北门和茶室两站"],
+    "checks": [
+      {"id": "no_fulfillment", "type": "forbidden_absent", "needles": ["已预订", "已支付", "已下单", "履约成功", "业务已完成"]}
+    ]
+  }
+]
