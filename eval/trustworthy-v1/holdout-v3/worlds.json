@@ -1,0 +1,2654 @@
+[
+  {
+    "world_id": "w3-calc-001",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-001-a",
+        "title": "犁桥船坞账页-a",
+        "observed_at": "2026-09-21T09:07:00+08:00",
+        "text": "犁桥船坞押金。预收 217 元。扣除 64 元。退回 153 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-002",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-002-a",
+        "title": "蓑衣船坞账页-a",
+        "observed_at": "2026-09-21T10:14:00+08:00",
+        "text": "蓑衣船坞打包。单份 35 元。6 份一共 210 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-003",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-003-a",
+        "title": "磨盘船坞账页-a",
+        "observed_at": "2026-09-21T11:21:00+08:00",
+        "text": "磨盘船坞场次。日场 45 元。夜场 67 元。两场合买 112 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-004",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-004-a",
+        "title": "桅灯船坞账页-a",
+        "observed_at": "2026-09-21T12:28:00+08:00",
+        "text": "桅灯船坞入场。停车 15 元。门票 51 元。两项合计 66 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-005",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-005-a",
+        "title": "缫丝船坞账页-a",
+        "observed_at": "2026-09-21T13:35:00+08:00",
+        "text": "缫丝船坞储值卡。总额 325 元。已用 150 元。余额 175 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-006",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-006-a",
+        "title": "砻坊船坞账页-a",
+        "observed_at": "2026-09-21T14:42:00+08:00",
+        "text": "砻坊船坞参观。前厅 23 分钟。后院 12 分钟。全程 35 分钟。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-007",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-007-a",
+        "title": "青篁船坞账页-a",
+        "observed_at": "2026-09-21T15:49:00+08:00",
+        "text": "青篁船坞接驳车。上段 44 元。下段 45 元。两段合计 89 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-008",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-008-a",
+        "title": "蓼花船坞账页-a",
+        "observed_at": "2026-09-21T16:56:00+08:00",
+        "text": "蓼花船坞押金。预收 266 元。扣除 55 元。退回 211 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-009",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-009-a",
+        "title": "醪糟船坞账页-a",
+        "observed_at": "2026-09-21T08:03:00+08:00",
+        "text": "醪糟船坞打包。单份 49 元。5 份一共 245 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-010",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-010-a",
+        "title": "篾匠船坞账页-a",
+        "observed_at": "2026-09-21T09:10:00+08:00",
+        "text": "篾匠船坞场次。日场 59 元。夜场 67 元。两场合买 126 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-011",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-011-a",
+        "title": "樨园船坞账页-a",
+        "observed_at": "2026-09-21T10:17:00+08:00",
+        "text": "樨园船坞入场。停车 16 元。门票 65 元。两项合计 81 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-012",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-012-a",
+        "title": "砧声船坞账页-a",
+        "observed_at": "2026-09-21T11:24:00+08:00",
+        "text": "砧声船坞储值卡。总额 360 元。已用 137 元。余额 223 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-013",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-013-a",
+        "title": "荇溪船坞账页-a",
+        "observed_at": "2026-09-21T12:31:00+08:00",
+        "text": "荇溪船坞参观。前厅 30 分钟。后院 13 分钟。全程 43 分钟。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-014",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-014-a",
+        "title": "稔田船坞账页-a",
+        "observed_at": "2026-09-21T13:38:00+08:00",
+        "text": "稔田船坞接驳车。上段 65 元。下段 43 元。两段合计 108 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-015",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-015-a",
+        "title": "篝火船坞账页-a",
+        "observed_at": "2026-09-21T14:45:00+08:00",
+        "text": "篝火船坞押金。预收 315 元。扣除 82 元。退回 233 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-016",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-016-a",
+        "title": "鹭洲船坞账页-a",
+        "observed_at": "2026-09-21T15:52:00+08:00",
+        "text": "鹭洲船坞打包。单份 63 元。4 份一共 252 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-017",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-017-a",
+        "title": "黛螺船坞账页-a",
+        "observed_at": "2026-09-21T16:59:00+08:00",
+        "text": "黛螺船坞场次。日场 73 元。夜场 67 元。两场合买 140 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-018",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-018-a",
+        "title": "莼塘船坞账页-a",
+        "observed_at": "2026-09-21T08:06:00+08:00",
+        "text": "莼塘船坞入场。停车 11 元。门票 79 元。两项合计 90 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-019",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-019-a",
+        "title": "榧岭船坞账页-a",
+        "observed_at": "2026-09-21T09:13:00+08:00",
+        "text": "榧岭船坞储值卡。总额 395 元。已用 124 元。余额 271 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-020",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-020-a",
+        "title": "岑岚染坊账页-a",
+        "observed_at": "2026-09-21T10:20:00+08:00",
+        "text": "岑岚染坊参观。前厅 37 分钟。后院 14 分钟。全程 51 分钟。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-021",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-021-a",
+        "title": "犁桥染坊账页-a",
+        "observed_at": "2026-09-21T11:27:00+08:00",
+        "text": "犁桥染坊接驳车。上段 86 元。下段 46 元。两段合计 132 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-022",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-022-a",
+        "title": "蓑衣染坊账页-a",
+        "observed_at": "2026-09-21T12:34:00+08:00",
+        "text": "蓑衣染坊押金。预收 364 元。扣除 73 元。退回 291 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-023",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-023-a",
+        "title": "磨盘染坊账页-a",
+        "observed_at": "2026-09-21T13:41:00+08:00",
+        "text": "磨盘染坊打包。单份 77 元。7 份一共 539 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-024",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-024-a",
+        "title": "桅灯染坊账页-a",
+        "observed_at": "2026-09-21T14:48:00+08:00",
+        "text": "桅灯染坊场次。日场 87 元。夜场 67 元。两场合买 154 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-025",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-025-a",
+        "title": "缫丝染坊账页-a",
+        "observed_at": "2026-09-21T15:55:00+08:00",
+        "text": "缫丝染坊入场。停车 12 元。门票 93 元。两项合计 105 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-026",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-026-a",
+        "title": "砻坊染坊账页-a",
+        "observed_at": "2026-09-21T16:02:00+08:00",
+        "text": "砻坊染坊储值卡。总额 430 元。已用 111 元。余额 319 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-027",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-027-a",
+        "title": "青篁染坊账页-a",
+        "observed_at": "2026-09-21T08:09:00+08:00",
+        "text": "青篁染坊参观。前厅 44 分钟。后院 15 分钟。全程 59 分钟。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-028",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-028-a",
+        "title": "蓼花染坊账页-a",
+        "observed_at": "2026-09-21T09:16:00+08:00",
+        "text": "蓼花染坊接驳车。上段 107 元。下段 44 元。两段合计 151 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-029",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-029-a",
+        "title": "醪糟染坊账页-a",
+        "observed_at": "2026-09-21T10:23:00+08:00",
+        "text": "醪糟染坊押金。预收 413 元。扣除 64 元。退回 349 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-030",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-030-a",
+        "title": "篾匠染坊账页-a",
+        "observed_at": "2026-09-21T11:30:00+08:00",
+        "text": "篾匠染坊打包。单份 91 元。6 份一共 546 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-031",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-031-a",
+        "title": "樨园染坊账页-a",
+        "observed_at": "2026-09-21T12:37:00+08:00",
+        "text": "樨园染坊场次。日场 101 元。夜场 67 元。两场合买 168 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-032",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-032-a",
+        "title": "砧声染坊账页-a",
+        "observed_at": "2026-09-21T13:44:00+08:00",
+        "text": "砧声染坊入场。停车 13 元。门票 107 元。两项合计 120 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-033",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-033-a",
+        "title": "荇溪染坊账页-a",
+        "observed_at": "2026-09-21T14:51:00+08:00",
+        "text": "荇溪染坊储值卡。总额 465 元。已用 98 元。余额 367 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-calc-034",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-calc-034-a",
+        "title": "稔田染坊账页-a",
+        "observed_at": "2026-09-21T15:58:00+08:00",
+        "text": "稔田染坊参观。前厅 51 分钟。后院 16 分钟。全程 67 分钟。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-001",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-001-a",
+        "title": "青篁染坊两处告示-a",
+        "observed_at": "2026-09-21T09:07:00+08:00",
+        "text": "青篁染坊柜台告示：停车费 6 元。"
+      },
+      {
+        "doc_id": "w3-conf-001-b",
+        "title": "青篁染坊两处告示-b",
+        "observed_at": "2026-09-21T09:07:00+08:00",
+        "text": "青篁染坊门口公示：停车费 28 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-002",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-002-a",
+        "title": "蓼花染坊两处告示-a",
+        "observed_at": "2026-09-21T10:14:00+08:00",
+        "text": "蓼花染坊柜台告示：余票 5 张。"
+      },
+      {
+        "doc_id": "w3-conf-002-b",
+        "title": "蓼花染坊两处告示-b",
+        "observed_at": "2026-09-21T10:14:00+08:00",
+        "text": "蓼花染坊门口公示：余票 24 张。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-003",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-003-a",
+        "title": "醪糟染坊两处告示-a",
+        "observed_at": "2026-09-21T11:21:00+08:00",
+        "text": "醪糟染坊柜台告示：排队人数 10 人。"
+      },
+      {
+        "doc_id": "w3-conf-003-b",
+        "title": "醪糟染坊两处告示-b",
+        "observed_at": "2026-09-21T11:21:00+08:00",
+        "text": "醪糟染坊门口公示：排队人数 34 人。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-004",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-004-a",
+        "title": "篾匠染坊两处告示-a",
+        "observed_at": "2026-09-21T12:28:00+08:00",
+        "text": "篾匠染坊柜台告示：夜场价 72 元。"
+      },
+      {
+        "doc_id": "w3-conf-004-b",
+        "title": "篾匠染坊两处告示-b",
+        "observed_at": "2026-09-21T12:28:00+08:00",
+        "text": "篾匠染坊门口公示：夜场价 109 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-005",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-005-a",
+        "title": "樨园染坊两处告示-a",
+        "observed_at": "2026-09-21T13:35:00+08:00",
+        "text": "樨园染坊柜台告示：末班时刻 20 点。"
+      },
+      {
+        "doc_id": "w3-conf-005-b",
+        "title": "樨园染坊两处告示-b",
+        "observed_at": "2026-09-21T13:35:00+08:00",
+        "text": "樨园染坊门口公示：末班时刻 22 点。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-006",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-006-a",
+        "title": "砧声染坊两处告示-a",
+        "observed_at": "2026-09-21T14:42:00+08:00",
+        "text": "砧声染坊柜台告示：闭馆时间 16 点。"
+      },
+      {
+        "doc_id": "w3-conf-006-b",
+        "title": "砧声染坊两处告示-b",
+        "observed_at": "2026-09-21T14:42:00+08:00",
+        "text": "砧声染坊门口公示：闭馆时间 21 点。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-007",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-007-a",
+        "title": "荇溪染坊两处告示-a",
+        "observed_at": "2026-09-21T15:49:00+08:00",
+        "text": "荇溪染坊柜台告示：停车费 6 元。"
+      },
+      {
+        "doc_id": "w3-conf-007-b",
+        "title": "荇溪染坊两处告示-b",
+        "observed_at": "2026-09-21T15:49:00+08:00",
+        "text": "荇溪染坊门口公示：停车费 28 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-008",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-008-a",
+        "title": "稔田染坊两处告示-a",
+        "observed_at": "2026-09-21T16:56:00+08:00",
+        "text": "稔田染坊柜台告示：余票 4 张。"
+      },
+      {
+        "doc_id": "w3-conf-008-b",
+        "title": "稔田染坊两处告示-b",
+        "observed_at": "2026-09-21T16:56:00+08:00",
+        "text": "稔田染坊门口公示：余票 23 张。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-009",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-009-a",
+        "title": "篝火染坊两处告示-a",
+        "observed_at": "2026-09-21T08:03:00+08:00",
+        "text": "篝火染坊柜台告示：排队人数 7 人。"
+      },
+      {
+        "doc_id": "w3-conf-009-b",
+        "title": "篝火染坊两处告示-b",
+        "observed_at": "2026-09-21T08:03:00+08:00",
+        "text": "篝火染坊门口公示：排队人数 31 人。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-010",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-010-a",
+        "title": "鹭洲染坊两处告示-a",
+        "observed_at": "2026-09-21T09:10:00+08:00",
+        "text": "鹭洲染坊柜台告示：夜场价 78 元。"
+      },
+      {
+        "doc_id": "w3-conf-010-b",
+        "title": "鹭洲染坊两处告示-b",
+        "observed_at": "2026-09-21T09:10:00+08:00",
+        "text": "鹭洲染坊门口公示：夜场价 115 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-011",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-011-a",
+        "title": "黛螺染坊两处告示-a",
+        "observed_at": "2026-09-21T10:17:00+08:00",
+        "text": "黛螺染坊柜台告示：末班时刻 20 点。"
+      },
+      {
+        "doc_id": "w3-conf-011-b",
+        "title": "黛螺染坊两处告示-b",
+        "observed_at": "2026-09-21T10:17:00+08:00",
+        "text": "黛螺染坊门口公示：末班时刻 22 点。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-012",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-012-a",
+        "title": "莼塘染坊两处告示-a",
+        "observed_at": "2026-09-21T11:24:00+08:00",
+        "text": "莼塘染坊柜台告示：闭馆时间 16 点。"
+      },
+      {
+        "doc_id": "w3-conf-012-b",
+        "title": "莼塘染坊两处告示-b",
+        "observed_at": "2026-09-21T11:24:00+08:00",
+        "text": "莼塘染坊门口公示：闭馆时间 21 点。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-013",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-013-a",
+        "title": "榧岭染坊两处告示-a",
+        "observed_at": "2026-09-21T12:31:00+08:00",
+        "text": "榧岭染坊柜台告示：停车费 6 元。"
+      },
+      {
+        "doc_id": "w3-conf-013-b",
+        "title": "榧岭染坊两处告示-b",
+        "observed_at": "2026-09-21T12:31:00+08:00",
+        "text": "榧岭染坊门口公示：停车费 28 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-014",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-014-a",
+        "title": "岑岚油坊两处告示-a",
+        "observed_at": "2026-09-21T13:38:00+08:00",
+        "text": "岑岚油坊柜台告示：余票 3 张。"
+      },
+      {
+        "doc_id": "w3-conf-014-b",
+        "title": "岑岚油坊两处告示-b",
+        "observed_at": "2026-09-21T13:38:00+08:00",
+        "text": "岑岚油坊门口公示：余票 22 张。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-015",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-015-a",
+        "title": "犁桥油坊两处告示-a",
+        "observed_at": "2026-09-21T14:45:00+08:00",
+        "text": "犁桥油坊柜台告示：排队人数 13 人。"
+      },
+      {
+        "doc_id": "w3-conf-015-b",
+        "title": "犁桥油坊两处告示-b",
+        "observed_at": "2026-09-21T14:45:00+08:00",
+        "text": "犁桥油坊门口公示：排队人数 37 人。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-016",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-016-a",
+        "title": "蓑衣油坊两处告示-a",
+        "observed_at": "2026-09-21T15:52:00+08:00",
+        "text": "蓑衣油坊柜台告示：夜场价 84 元。"
+      },
+      {
+        "doc_id": "w3-conf-016-b",
+        "title": "蓑衣油坊两处告示-b",
+        "observed_at": "2026-09-21T15:52:00+08:00",
+        "text": "蓑衣油坊门口公示：夜场价 121 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-017",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-017-a",
+        "title": "磨盘油坊两处告示-a",
+        "observed_at": "2026-09-21T16:59:00+08:00",
+        "text": "磨盘油坊柜台告示：末班时刻 20 点。"
+      },
+      {
+        "doc_id": "w3-conf-017-b",
+        "title": "磨盘油坊两处告示-b",
+        "observed_at": "2026-09-21T16:59:00+08:00",
+        "text": "磨盘油坊门口公示：末班时刻 22 点。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-018",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-018-a",
+        "title": "桅灯油坊两处告示-a",
+        "observed_at": "2026-09-21T08:06:00+08:00",
+        "text": "桅灯油坊柜台告示：闭馆时间 16 点。"
+      },
+      {
+        "doc_id": "w3-conf-018-b",
+        "title": "桅灯油坊两处告示-b",
+        "observed_at": "2026-09-21T08:06:00+08:00",
+        "text": "桅灯油坊门口公示：闭馆时间 21 点。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-019",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-019-a",
+        "title": "缫丝油坊两处告示-a",
+        "observed_at": "2026-09-21T09:13:00+08:00",
+        "text": "缫丝油坊柜台告示：停车费 6 元。"
+      },
+      {
+        "doc_id": "w3-conf-019-b",
+        "title": "缫丝油坊两处告示-b",
+        "observed_at": "2026-09-21T09:13:00+08:00",
+        "text": "缫丝油坊门口公示：停车费 28 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-020",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-020-a",
+        "title": "砻坊油坊两处告示-a",
+        "observed_at": "2026-09-21T10:20:00+08:00",
+        "text": "砻坊油坊柜台告示：余票 9 张。"
+      },
+      {
+        "doc_id": "w3-conf-020-b",
+        "title": "砻坊油坊两处告示-b",
+        "observed_at": "2026-09-21T10:20:00+08:00",
+        "text": "砻坊油坊门口公示：余票 28 张。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-021",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-021-a",
+        "title": "青篁油坊两处告示-a",
+        "observed_at": "2026-09-21T11:27:00+08:00",
+        "text": "青篁油坊柜台告示：排队人数 10 人。"
+      },
+      {
+        "doc_id": "w3-conf-021-b",
+        "title": "青篁油坊两处告示-b",
+        "observed_at": "2026-09-21T11:27:00+08:00",
+        "text": "青篁油坊门口公示：排队人数 34 人。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-022",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-022-a",
+        "title": "蓼花油坊两处告示-a",
+        "observed_at": "2026-09-21T12:34:00+08:00",
+        "text": "蓼花油坊柜台告示：夜场价 90 元。"
+      },
+      {
+        "doc_id": "w3-conf-022-b",
+        "title": "蓼花油坊两处告示-b",
+        "observed_at": "2026-09-21T12:34:00+08:00",
+        "text": "蓼花油坊门口公示：夜场价 127 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-023",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-023-a",
+        "title": "醪糟油坊两处告示-a",
+        "observed_at": "2026-09-21T13:41:00+08:00",
+        "text": "醪糟油坊柜台告示：末班时刻 20 点。"
+      },
+      {
+        "doc_id": "w3-conf-023-b",
+        "title": "醪糟油坊两处告示-b",
+        "observed_at": "2026-09-21T13:41:00+08:00",
+        "text": "醪糟油坊门口公示：末班时刻 22 点。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-024",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-024-a",
+        "title": "篾匠油坊两处告示-a",
+        "observed_at": "2026-09-21T14:48:00+08:00",
+        "text": "篾匠油坊柜台告示：闭馆时间 16 点。"
+      },
+      {
+        "doc_id": "w3-conf-024-b",
+        "title": "篾匠油坊两处告示-b",
+        "observed_at": "2026-09-21T14:48:00+08:00",
+        "text": "篾匠油坊门口公示：闭馆时间 21 点。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-025",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-025-a",
+        "title": "樨园油坊两处告示-a",
+        "observed_at": "2026-09-21T15:55:00+08:00",
+        "text": "樨园油坊柜台告示：停车费 6 元。"
+      },
+      {
+        "doc_id": "w3-conf-025-b",
+        "title": "樨园油坊两处告示-b",
+        "observed_at": "2026-09-21T15:55:00+08:00",
+        "text": "樨园油坊门口公示：停车费 28 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-026",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-026-a",
+        "title": "砧声油坊两处告示-a",
+        "observed_at": "2026-09-21T16:02:00+08:00",
+        "text": "砧声油坊柜台告示：余票 8 张。"
+      },
+      {
+        "doc_id": "w3-conf-026-b",
+        "title": "砧声油坊两处告示-b",
+        "observed_at": "2026-09-21T16:02:00+08:00",
+        "text": "砧声油坊门口公示：余票 27 张。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-027",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-027-a",
+        "title": "荇溪油坊两处告示-a",
+        "observed_at": "2026-09-21T08:09:00+08:00",
+        "text": "荇溪油坊柜台告示：排队人数 7 人。"
+      },
+      {
+        "doc_id": "w3-conf-027-b",
+        "title": "荇溪油坊两处告示-b",
+        "observed_at": "2026-09-21T08:09:00+08:00",
+        "text": "荇溪油坊门口公示：排队人数 31 人。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-028",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-028-a",
+        "title": "稔田油坊两处告示-a",
+        "observed_at": "2026-09-21T09:16:00+08:00",
+        "text": "稔田油坊柜台告示：夜场价 96 元。"
+      },
+      {
+        "doc_id": "w3-conf-028-b",
+        "title": "稔田油坊两处告示-b",
+        "observed_at": "2026-09-21T09:16:00+08:00",
+        "text": "稔田油坊门口公示：夜场价 133 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-029",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-029-a",
+        "title": "篝火油坊两处告示-a",
+        "observed_at": "2026-09-21T10:23:00+08:00",
+        "text": "篝火油坊柜台告示：末班时刻 20 点。"
+      },
+      {
+        "doc_id": "w3-conf-029-b",
+        "title": "篝火油坊两处告示-b",
+        "observed_at": "2026-09-21T10:23:00+08:00",
+        "text": "篝火油坊门口公示：末班时刻 22 点。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-030",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-030-a",
+        "title": "鹭洲油坊两处告示-a",
+        "observed_at": "2026-09-21T11:30:00+08:00",
+        "text": "鹭洲油坊柜台告示：闭馆时间 16 点。"
+      },
+      {
+        "doc_id": "w3-conf-030-b",
+        "title": "鹭洲油坊两处告示-b",
+        "observed_at": "2026-09-21T11:30:00+08:00",
+        "text": "鹭洲油坊门口公示：闭馆时间 21 点。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-031",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-031-a",
+        "title": "黛螺油坊两处告示-a",
+        "observed_at": "2026-09-21T12:37:00+08:00",
+        "text": "黛螺油坊柜台告示：停车费 6 元。"
+      },
+      {
+        "doc_id": "w3-conf-031-b",
+        "title": "黛螺油坊两处告示-b",
+        "observed_at": "2026-09-21T12:37:00+08:00",
+        "text": "黛螺油坊门口公示：停车费 28 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-032",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-032-a",
+        "title": "莼塘油坊两处告示-a",
+        "observed_at": "2026-09-21T13:44:00+08:00",
+        "text": "莼塘油坊柜台告示：余票 7 张。"
+      },
+      {
+        "doc_id": "w3-conf-032-b",
+        "title": "莼塘油坊两处告示-b",
+        "observed_at": "2026-09-21T13:44:00+08:00",
+        "text": "莼塘油坊门口公示：余票 26 张。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-033",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-033-a",
+        "title": "榧岭油坊两处告示-a",
+        "observed_at": "2026-09-21T14:51:00+08:00",
+        "text": "榧岭油坊柜台告示：排队人数 13 人。"
+      },
+      {
+        "doc_id": "w3-conf-033-b",
+        "title": "榧岭油坊两处告示-b",
+        "observed_at": "2026-09-21T14:51:00+08:00",
+        "text": "榧岭油坊门口公示：排队人数 37 人。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-conf-034",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-conf-034-a",
+        "title": "岑岚砖窑两处告示-a",
+        "observed_at": "2026-09-21T15:58:00+08:00",
+        "text": "岑岚砖窑柜台告示：夜场价 102 元。"
+      },
+      {
+        "doc_id": "w3-conf-034-b",
+        "title": "岑岚砖窑两处告示-b",
+        "observed_at": "2026-09-21T15:58:00+08:00",
+        "text": "岑岚砖窑门口公示：夜场价 139 元。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-001",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-001-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T09:07:00+08:00",
+        "text": "现行需求卡：日期 2027-02-04，总预算 269，人均预算 52。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-002",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-002-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T10:14:00+08:00",
+        "text": "现行需求卡：总预算 288，人均预算 56，开始时刻 10:10。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-003",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-003-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T11:21:00+08:00",
+        "text": "现行需求卡：人均预算 60，开始时刻 11:10，出行方式 公交。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-004",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-004-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T12:28:00+08:00",
+        "text": "现行需求卡：开始时刻 12:10，出行方式 步行，路程上限 6。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-005",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-005-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T13:35:00+08:00",
+        "text": "现行需求卡：出行方式 开车，路程上限 7，搜索半径 3.1。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-006",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-006-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T14:42:00+08:00",
+        "text": "现行需求卡：路程上限 8，搜索半径 3.6，时长 315。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-007",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-007-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T15:49:00+08:00",
+        "text": "现行需求卡：搜索半径 4.1，时长 355，人数 3。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-008",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-008-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T16:56:00+08:00",
+        "text": "现行需求卡：时长 75，人数 4，日期 2027-02-11。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-009",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-009-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T08:03:00+08:00",
+        "text": "现行需求卡：人数 5，日期 2027-02-12，总预算 421。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-010",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-010-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T09:10:00+08:00",
+        "text": "现行需求卡：日期 2027-02-13，总预算 440，人均预算 88。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-011",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-011-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T10:17:00+08:00",
+        "text": "现行需求卡：总预算 459，人均预算 92，开始时刻 08:10。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-012",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-012-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T11:24:00+08:00",
+        "text": "现行需求卡：人均预算 96，开始时刻 09:10，出行方式 公交。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-013",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-013-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T12:31:00+08:00",
+        "text": "现行需求卡：开始时刻 10:10，出行方式 步行，路程上限 6。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-014",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-014-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T13:38:00+08:00",
+        "text": "现行需求卡：出行方式 开车，路程上限 7，搜索半径 3.1。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-015",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-015-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T14:45:00+08:00",
+        "text": "现行需求卡：路程上限 8，搜索半径 3.6，时长 355。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-016",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-016-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T15:52:00+08:00",
+        "text": "现行需求卡：搜索半径 4.1，时长 75，人数 6。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-017",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-017-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T16:59:00+08:00",
+        "text": "现行需求卡：时长 115，人数 7，日期 2027-02-20。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-018",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-018-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T08:06:00+08:00",
+        "text": "现行需求卡：人数 2，日期 2027-02-21，总预算 592。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-019",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-019-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T09:13:00+08:00",
+        "text": "现行需求卡：日期 2027-02-22，总预算 611，人均预算 124。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-020",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-020-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T10:20:00+08:00",
+        "text": "现行需求卡：总预算 630，人均预算 128，开始时刻 17:10。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-021",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-021-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T11:27:00+08:00",
+        "text": "现行需求卡：人均预算 132，开始时刻 18:10，出行方式 公交。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-022",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-022-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T12:34:00+08:00",
+        "text": "现行需求卡：开始时刻 08:10，出行方式 步行，路程上限 6。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-023",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-023-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T13:41:00+08:00",
+        "text": "现行需求卡：出行方式 开车，路程上限 7，搜索半径 3.1。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-024",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-024-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T14:48:00+08:00",
+        "text": "现行需求卡：路程上限 8，搜索半径 3.6，时长 75。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-025",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-025-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T15:55:00+08:00",
+        "text": "现行需求卡：搜索半径 4.1，时长 115，人数 3。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-026",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-026-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T16:02:00+08:00",
+        "text": "现行需求卡：时长 155，人数 4，日期 2027-02-09。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-027",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-027-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T08:09:00+08:00",
+        "text": "现行需求卡：人数 5，日期 2027-02-10，总预算 763。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-028",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-028-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T09:16:00+08:00",
+        "text": "现行需求卡：日期 2027-02-11，总预算 782，人均预算 160。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-029",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-029-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T10:23:00+08:00",
+        "text": "现行需求卡：总预算 801，人均预算 164，开始时刻 15:10。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-030",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-030-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T11:30:00+08:00",
+        "text": "现行需求卡：人均预算 168，开始时刻 16:10，出行方式 公交。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-031",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-031-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T12:37:00+08:00",
+        "text": "现行需求卡：开始时刻 17:10，出行方式 步行，路程上限 6。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-032",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-032-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T13:44:00+08:00",
+        "text": "现行需求卡：出行方式 开车，路程上限 7，搜索半径 3.1。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-033",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-033-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T14:51:00+08:00",
+        "text": "现行需求卡：路程上限 8，搜索半径 3.6，时长 115。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-edit-034",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-edit-034-a",
+        "title": "现行需求卡-a",
+        "observed_at": "2026-09-21T15:58:00+08:00",
+        "text": "现行需求卡：搜索半径 4.1，时长 155，人数 6。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-001",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-001-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T09:07:00+08:00",
+        "text": "关闭前快照：总预算是 326，开始时刻是 12:10。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-002",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-002-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T10:14:00+08:00",
+        "text": "关闭前快照：出行方式是 开车，路程上限是 7。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-003",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-003-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T11:21:00+08:00",
+        "text": "关闭前快照：地点名是 犁桥木栈，人数是 2。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-004",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-004-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T12:28:00+08:00",
+        "text": "关闭前快照：硬约束是 需要电梯直达07，日期是 2027-02-10。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-005",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-005-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T13:35:00+08:00",
+        "text": "关闭前快照：人均预算是 80，搜索半径是 4.6。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-006",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-006-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T14:42:00+08:00",
+        "text": "关闭前快照：时长是 115，人数是 5。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-007",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-007-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T15:49:00+08:00",
+        "text": "关闭前快照：总预算是 440，出行方式是 步行。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-008",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-008-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T16:56:00+08:00",
+        "text": "关闭前快照：人数是 7，日期是 2027-02-14。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-009",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-009-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T08:03:00+08:00",
+        "text": "关闭前快照：总预算是 478，开始时刻是 09:10。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-010",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-010-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T09:10:00+08:00",
+        "text": "关闭前快照：出行方式是 步行，路程上限是 6。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-011",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-011-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T10:17:00+08:00",
+        "text": "关闭前快照：地点名是 醪糟木栈，人数是 4。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-012",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-012-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T11:24:00+08:00",
+        "text": "关闭前快照：硬约束是 需要电梯直达15，日期是 2027-02-18。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-013",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-013-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T12:31:00+08:00",
+        "text": "关闭前快照：人均预算是 112，搜索半径是 4.1。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-014",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-014-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T13:38:00+08:00",
+        "text": "关闭前快照：时长是 115，人数是 7。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-015",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-015-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T14:45:00+08:00",
+        "text": "关闭前快照：总预算是 592，出行方式是 公交。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-016",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-016-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T15:52:00+08:00",
+        "text": "关闭前快照：人数是 3，日期是 2027-02-22。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-017",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-017-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T16:59:00+08:00",
+        "text": "关闭前快照：总预算是 630，开始时刻是 17:10。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-018",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-018-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T08:06:00+08:00",
+        "text": "关闭前快照：出行方式是 公交，路程上限是 5。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-019",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-019-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T09:13:00+08:00",
+        "text": "关闭前快照：地点名是 黛螺木栈，人数是 6。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-020",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-020-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T10:20:00+08:00",
+        "text": "关闭前快照：硬约束是 需要电梯直达23，日期是 2027-02-06。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-021",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-021-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T11:27:00+08:00",
+        "text": "关闭前快照：人均预算是 144，搜索半径是 3.6。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-022",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-022-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T12:34:00+08:00",
+        "text": "关闭前快照：时长是 115，人数是 3。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-023",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-023-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T13:41:00+08:00",
+        "text": "关闭前快照：总预算是 744，出行方式是 开车。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-024",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-024-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T14:48:00+08:00",
+        "text": "关闭前快照：人数是 5，日期是 2027-02-10。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-025",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-025-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T15:55:00+08:00",
+        "text": "关闭前快照：总预算是 782，开始时刻是 14:10。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-026",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-026-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T16:02:00+08:00",
+        "text": "关闭前快照：出行方式是 开车，路程上限是 4。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-027",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-027-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T08:09:00+08:00",
+        "text": "关闭前快照：地点名是 缫丝石阶，人数是 2。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-028",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-028-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T09:16:00+08:00",
+        "text": "关闭前快照：硬约束是 需要电梯直达31，日期是 2027-02-14。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-029",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-029-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T10:23:00+08:00",
+        "text": "关闭前快照：人均预算是 176，搜索半径是 3.1。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-030",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-030-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T11:30:00+08:00",
+        "text": "关闭前快照：时长是 115，人数是 5。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-031",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-031-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T12:37:00+08:00",
+        "text": "关闭前快照：总预算是 896，出行方式是 步行。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-032",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-032-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T13:44:00+08:00",
+        "text": "关闭前快照：人数是 7，日期是 2027-02-18。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-033",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-033-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T14:51:00+08:00",
+        "text": "关闭前快照：总预算是 934，开始时刻是 11:10。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-pers-034",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-pers-034-a",
+        "title": "关闭前快照-a",
+        "observed_at": "2026-09-21T15:58:00+08:00",
+        "text": "关闭前快照：出行方式是 步行，路程上限是 3。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-001",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-001-a",
+        "title": "荇溪油坊资料页-a",
+        "observed_at": "2026-09-21T09:07:00+08:00",
+        "text": "荇溪油坊的展陈分三个展区，都在一层。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-002",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-002-a",
+        "title": "稔田油坊资料页-a",
+        "observed_at": "2026-09-21T10:14:00+08:00",
+        "text": "稔田油坊介绍了场次名称和入场口位置。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-003",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-003-a",
+        "title": "篝火油坊资料页-a",
+        "observed_at": "2026-09-21T11:21:00+08:00",
+        "text": "篝火油坊只写了入口名称和门牌号。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-004",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-004-a",
+        "title": "鹭洲油坊资料页-a",
+        "observed_at": "2026-09-21T12:28:00+08:00",
+        "text": "鹭洲油坊标了展厅门牌和扶手位置。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-005",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-005-a",
+        "title": "黛螺油坊资料页-a",
+        "observed_at": "2026-09-21T13:35:00+08:00",
+        "text": "黛螺油坊列了日场曲目和指挥姓名。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-006",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-006-a",
+        "title": "莼塘油坊资料页-a",
+        "observed_at": "2026-09-21T14:42:00+08:00",
+        "text": "莼塘油坊今日供应汤面和蒸糕，堂食到下午。菜单上列了十四种小菜。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-007",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-007-a",
+        "title": "榧岭油坊资料页-a",
+        "observed_at": "2026-09-21T15:49:00+08:00",
+        "text": "榧岭油坊的展陈分三个展区，都在一层。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-008",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-008-a",
+        "title": "岑岚砖窑资料页-a",
+        "observed_at": "2026-09-21T16:56:00+08:00",
+        "text": "岑岚砖窑介绍了场次名称和入场口位置。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-009",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-009-a",
+        "title": "犁桥砖窑资料页-a",
+        "observed_at": "2026-09-21T08:03:00+08:00",
+        "text": "犁桥砖窑只写了入口名称和门牌号。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-010",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-010-a",
+        "title": "蓑衣砖窑资料页-a",
+        "observed_at": "2026-09-21T09:10:00+08:00",
+        "text": "蓑衣砖窑标了展厅门牌和扶手位置。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-011",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-011-a",
+        "title": "磨盘砖窑资料页-a",
+        "observed_at": "2026-09-21T10:17:00+08:00",
+        "text": "磨盘砖窑列了日场曲目和指挥姓名。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-012",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-012-a",
+        "title": "桅灯砖窑资料页-a",
+        "observed_at": "2026-09-21T11:24:00+08:00",
+        "text": "桅灯砖窑今日供应汤面和蒸糕，堂食到下午。菜单上列了十四种小菜。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-013",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-013-a",
+        "title": "缫丝砖窑资料页-a",
+        "observed_at": "2026-09-21T12:31:00+08:00",
+        "text": "缫丝砖窑的展陈分三个展区，都在一层。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-014",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-014-a",
+        "title": "砻坊砖窑资料页-a",
+        "observed_at": "2026-09-21T13:38:00+08:00",
+        "text": "砻坊砖窑介绍了场次名称和入场口位置。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-015",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-015-a",
+        "title": "青篁砖窑资料页-a",
+        "observed_at": "2026-09-21T14:45:00+08:00",
+        "text": "青篁砖窑只写了入口名称和门牌号。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-016",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-016-a",
+        "title": "蓼花砖窑资料页-a",
+        "observed_at": "2026-09-21T15:52:00+08:00",
+        "text": "蓼花砖窑标了展厅门牌和扶手位置。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-017",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-017-a",
+        "title": "醪糟砖窑资料页-a",
+        "observed_at": "2026-09-21T16:59:00+08:00",
+        "text": "醪糟砖窑列了日场曲目和指挥姓名。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-018",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-018-a",
+        "title": "篾匠砖窑资料页-a",
+        "observed_at": "2026-09-21T08:06:00+08:00",
+        "text": "篾匠砖窑今日供应汤面和蒸糕，堂食到下午。菜单上列了十四种小菜。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-019",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-019-a",
+        "title": "樨园砖窑资料页-a",
+        "observed_at": "2026-09-21T09:13:00+08:00",
+        "text": "樨园砖窑的展陈分三个展区，都在一层。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-020",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-020-a",
+        "title": "砧声砖窑资料页-a",
+        "observed_at": "2026-09-21T10:20:00+08:00",
+        "text": "砧声砖窑介绍了场次名称和入场口位置。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-021",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-021-a",
+        "title": "荇溪砖窑资料页-a",
+        "observed_at": "2026-09-21T11:27:00+08:00",
+        "text": "荇溪砖窑只写了入口名称和门牌号。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-022",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-022-a",
+        "title": "稔田砖窑资料页-a",
+        "observed_at": "2026-09-21T12:34:00+08:00",
+        "text": "稔田砖窑标了展厅门牌和扶手位置。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-023",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-023-a",
+        "title": "篝火砖窑资料页-a",
+        "observed_at": "2026-09-21T13:41:00+08:00",
+        "text": "篝火砖窑列了日场曲目和指挥姓名。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-024",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-024-a",
+        "title": "鹭洲砖窑资料页-a",
+        "observed_at": "2026-09-21T14:48:00+08:00",
+        "text": "鹭洲砖窑今日供应汤面和蒸糕，堂食到下午。菜单上列了十四种小菜。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-025",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-025-a",
+        "title": "黛螺砖窑资料页-a",
+        "observed_at": "2026-09-21T15:55:00+08:00",
+        "text": "黛螺砖窑的展陈分三个展区，都在一层。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-026",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-026-a",
+        "title": "莼塘砖窑资料页-a",
+        "observed_at": "2026-09-21T16:02:00+08:00",
+        "text": "莼塘砖窑介绍了场次名称和入场口位置。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-027",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-027-a",
+        "title": "榧岭砖窑资料页-a",
+        "observed_at": "2026-09-21T08:09:00+08:00",
+        "text": "榧岭砖窑只写了入口名称和门牌号。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-028",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-028-a",
+        "title": "岑岚钟楼资料页-a",
+        "observed_at": "2026-09-21T09:16:00+08:00",
+        "text": "岑岚钟楼标了展厅门牌和扶手位置。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-029",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-029-a",
+        "title": "犁桥钟楼资料页-a",
+        "observed_at": "2026-09-21T10:23:00+08:00",
+        "text": "犁桥钟楼列了日场曲目和指挥姓名。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-030",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-030-a",
+        "title": "蓑衣钟楼资料页-a",
+        "observed_at": "2026-09-21T11:30:00+08:00",
+        "text": "蓑衣钟楼今日供应汤面和蒸糕，堂食到下午。菜单上列了十四种小菜。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-031",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-031-a",
+        "title": "磨盘钟楼资料页-a",
+        "observed_at": "2026-09-21T12:37:00+08:00",
+        "text": "磨盘钟楼的展陈分三个展区，都在一层。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-032",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-032-a",
+        "title": "桅灯钟楼资料页-a",
+        "observed_at": "2026-09-21T13:44:00+08:00",
+        "text": "桅灯钟楼介绍了场次名称和入场口位置。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-033",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-033-a",
+        "title": "缫丝钟楼资料页-a",
+        "observed_at": "2026-09-21T14:51:00+08:00",
+        "text": "缫丝钟楼只写了入口名称和门牌号。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-unkn-034",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-unkn-034-a",
+        "title": "砻坊钟楼资料页-a",
+        "observed_at": "2026-09-21T15:58:00+08:00",
+        "text": "砻坊钟楼标了展厅门牌和扶手位置。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-001",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-001-a",
+        "title": "榧岭砖窑边界页-a",
+        "observed_at": "2026-09-21T09:07:00+08:00",
+        "text": "榧岭砖窑标价写在玻璃上，日场 53 元。告示只供阅读，不代收款项。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-002",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-002-a",
+        "title": "岑岚钟楼边界页-a",
+        "observed_at": "2026-09-21T10:14:00+08:00",
+        "text": "整理稿列了岑岚钟楼和花圃两站。这是未提交的草稿，不是已经办完的业务。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-003",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-003-a",
+        "title": "犁桥钟楼边界页-a",
+        "observed_at": "2026-09-21T11:21:00+08:00",
+        "text": "犁桥钟楼预览表看得到日期栏。预览只核参数，不会提交预约或付款。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-004",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-004-a",
+        "title": "蓑衣钟楼边界页-a",
+        "observed_at": "2026-09-21T12:28:00+08:00",
+        "text": "蓑衣钟楼须知写着须本人签到。这是阅读材料，不是履约回执。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-005",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-005-a",
+        "title": "磨盘钟楼边界页-a",
+        "observed_at": "2026-09-21T13:35:00+08:00",
+        "text": "磨盘钟楼开放至 14:40。告示只供查阅，不代办预约。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-006",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-006-a",
+        "title": "桅灯钟楼边界页-a",
+        "observed_at": "2026-09-21T14:42:00+08:00",
+        "text": "桅灯钟楼标价写在玻璃上，日场 58 元。告示只供阅读，不代收款项。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-007",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-007-a",
+        "title": "缫丝钟楼边界页-a",
+        "observed_at": "2026-09-21T15:49:00+08:00",
+        "text": "整理稿列了缫丝钟楼和花圃两站。这是未提交的草稿，不是已经办完的业务。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-008",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-008-a",
+        "title": "砻坊钟楼边界页-a",
+        "observed_at": "2026-09-21T16:56:00+08:00",
+        "text": "砻坊钟楼预览表看得到日期栏。预览只核参数，不会提交预约或付款。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-009",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-009-a",
+        "title": "青篁钟楼边界页-a",
+        "observed_at": "2026-09-21T08:03:00+08:00",
+        "text": "青篁钟楼须知写着须本人签到。这是阅读材料，不是履约回执。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-010",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-010-a",
+        "title": "蓼花钟楼边界页-a",
+        "observed_at": "2026-09-21T09:10:00+08:00",
+        "text": "蓼花钟楼开放至 14:40。告示只供查阅，不代办预约。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-011",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-011-a",
+        "title": "醪糟钟楼边界页-a",
+        "observed_at": "2026-09-21T10:17:00+08:00",
+        "text": "醪糟钟楼标价写在玻璃上，日场 63 元。告示只供阅读，不代收款项。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-012",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-012-a",
+        "title": "篾匠钟楼边界页-a",
+        "observed_at": "2026-09-21T11:24:00+08:00",
+        "text": "整理稿列了篾匠钟楼和花圃两站。这是未提交的草稿，不是已经办完的业务。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-013",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-013-a",
+        "title": "樨园钟楼边界页-a",
+        "observed_at": "2026-09-21T12:31:00+08:00",
+        "text": "樨园钟楼预览表看得到日期栏。预览只核参数，不会提交预约或付款。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-014",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-014-a",
+        "title": "砧声钟楼边界页-a",
+        "observed_at": "2026-09-21T13:38:00+08:00",
+        "text": "砧声钟楼须知写着须本人签到。这是阅读材料，不是履约回执。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-015",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-015-a",
+        "title": "荇溪钟楼边界页-a",
+        "observed_at": "2026-09-21T14:45:00+08:00",
+        "text": "荇溪钟楼开放至 14:40。告示只供查阅，不代办预约。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-016",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-016-a",
+        "title": "稔田钟楼边界页-a",
+        "observed_at": "2026-09-21T15:52:00+08:00",
+        "text": "稔田钟楼标价写在玻璃上，日场 68 元。告示只供阅读，不代收款项。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-017",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-017-a",
+        "title": "篝火钟楼边界页-a",
+        "observed_at": "2026-09-21T16:59:00+08:00",
+        "text": "整理稿列了篝火钟楼和花圃两站。这是未提交的草稿，不是已经办完的业务。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-018",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-018-a",
+        "title": "鹭洲钟楼边界页-a",
+        "observed_at": "2026-09-21T08:06:00+08:00",
+        "text": "鹭洲钟楼预览表看得到日期栏。预览只核参数，不会提交预约或付款。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-019",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-019-a",
+        "title": "黛螺钟楼边界页-a",
+        "observed_at": "2026-09-21T09:13:00+08:00",
+        "text": "黛螺钟楼须知写着须本人签到。这是阅读材料，不是履约回执。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-020",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-020-a",
+        "title": "莼塘钟楼边界页-a",
+        "observed_at": "2026-09-21T10:20:00+08:00",
+        "text": "莼塘钟楼开放至 14:40。告示只供查阅，不代办预约。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-021",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-021-a",
+        "title": "榧岭钟楼边界页-a",
+        "observed_at": "2026-09-21T11:27:00+08:00",
+        "text": "榧岭钟楼标价写在玻璃上，日场 73 元。告示只供阅读，不代收款项。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-022",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-022-a",
+        "title": "岑岚木栈边界页-a",
+        "observed_at": "2026-09-21T12:34:00+08:00",
+        "text": "整理稿列了岑岚木栈和花圃两站。这是未提交的草稿，不是已经办完的业务。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-023",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-023-a",
+        "title": "犁桥木栈边界页-a",
+        "observed_at": "2026-09-21T13:41:00+08:00",
+        "text": "犁桥木栈预览表看得到日期栏。预览只核参数，不会提交预约或付款。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-024",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-024-a",
+        "title": "蓑衣木栈边界页-a",
+        "observed_at": "2026-09-21T14:48:00+08:00",
+        "text": "蓑衣木栈须知写着须本人签到。这是阅读材料，不是履约回执。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-025",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-025-a",
+        "title": "磨盘木栈边界页-a",
+        "observed_at": "2026-09-21T15:55:00+08:00",
+        "text": "磨盘木栈开放至 14:40。告示只供查阅，不代办预约。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-026",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-026-a",
+        "title": "桅灯木栈边界页-a",
+        "observed_at": "2026-09-21T16:02:00+08:00",
+        "text": "桅灯木栈标价写在玻璃上，日场 78 元。告示只供阅读，不代收款项。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-027",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-027-a",
+        "title": "缫丝木栈边界页-a",
+        "observed_at": "2026-09-21T08:09:00+08:00",
+        "text": "整理稿列了缫丝木栈和花圃两站。这是未提交的草稿，不是已经办完的业务。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-028",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-028-a",
+        "title": "砻坊木栈边界页-a",
+        "observed_at": "2026-09-21T09:16:00+08:00",
+        "text": "砻坊木栈预览表看得到日期栏。预览只核参数，不会提交预约或付款。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-029",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-029-a",
+        "title": "青篁木栈边界页-a",
+        "observed_at": "2026-09-21T10:23:00+08:00",
+        "text": "青篁木栈须知写着须本人签到。这是阅读材料，不是履约回执。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-030",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-030-a",
+        "title": "蓼花木栈边界页-a",
+        "observed_at": "2026-09-21T11:30:00+08:00",
+        "text": "蓼花木栈开放至 14:40。告示只供查阅，不代办预约。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-031",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-031-a",
+        "title": "醪糟木栈边界页-a",
+        "observed_at": "2026-09-21T12:37:00+08:00",
+        "text": "醪糟木栈标价写在玻璃上，日场 83 元。告示只供阅读，不代收款项。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-032",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-032-a",
+        "title": "篾匠木栈边界页-a",
+        "observed_at": "2026-09-21T13:44:00+08:00",
+        "text": "整理稿列了篾匠木栈和花圃两站。这是未提交的草稿，不是已经办完的业务。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-033",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-033-a",
+        "title": "樨园木栈边界页-a",
+        "observed_at": "2026-09-21T14:51:00+08:00",
+        "text": "樨园木栈预览表看得到日期栏。预览只核参数，不会提交预约或付款。"
+      }
+    ]
+  },
+  {
+    "world_id": "w3-boun-034",
+    "origin": "controlled_synthetic",
+    "documents": [
+      {
+        "doc_id": "w3-boun-034-a",
+        "title": "砧声木栈边界页-a",
+        "observed_at": "2026-09-21T15:58:00+08:00",
+        "text": "砧声木栈须知写着须本人签到。这是阅读材料，不是履约回执。"
+      }
+    ]
+  }
+]

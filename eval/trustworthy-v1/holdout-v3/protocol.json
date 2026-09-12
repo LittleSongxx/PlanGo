@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "name": "trustworthy-v1-holdout-v3",
+  "evaluation_kind": "holdout_unreviewed",
+  "report_kind": "provisional_holdout",
+  "gold_review": "pending",
+  "holdout_planned": 200,
+  "layers": [
+    "calculate",
+    "conflict",
+    "sparse_edit",
+    "persist",
+    "unknown",
+    "boundary"
+  ],
+  "min_tasks_per_layer": 25,
+  "notice": "Third set. New inventory, new numbers and new surface forms; conflict and unknown no longer announce the gap in the page text, and both require substance beyond the uncertainty token. Authored inside the implementation stream, so it is not an independently authored set; gold has not been independently reviewed. Do not report official holdout TSR or Faithfulness."
+}

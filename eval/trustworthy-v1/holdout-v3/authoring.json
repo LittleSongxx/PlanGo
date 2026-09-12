@@ -1,0 +1,15 @@
+{
+  "authors": [
+    "implementation-stream-holdout-v3"
+  ],
+  "created_at": "2026-09-12",
+  "read_files": [
+    "eval/trustworthy-v1/AUTHORING.md",
+    "eval/trustworthy-v1/ATTEMPT_CONTRACT.md",
+    "eval/trustworthy-v1/PRODUCT_INVENTORY.md",
+    "eval/trustworthy-v1/holdout-v2/README.md"
+  ],
+  "independence": "Authored inside the implementation session that also edits the scorer and reads run results. New inventory, new number formulas and new surface forms, and the conflict/unknown cue sentences were removed on purpose, but this is NOT an independently authored set: the author knew the product's trigger tables and the v1/v2 results. Treat every score on it as a controlled development measurement, not as unseen generalisation, even after gold review.",
+  "supersedes": "holdout/ and holdout-v2/ are retained unchanged and were not overwritten.",
+  "review": "pending: run a separate session with GOLD_REVIEW_PROMPT.md before any official claim."
+}

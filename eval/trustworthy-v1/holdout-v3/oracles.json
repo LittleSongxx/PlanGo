@@ -1,0 +1,5382 @@
+[
+  {
+    "task_id": "h3-calc-001",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "退回 153 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 153
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-002",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "6 份一共 210 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 210
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-003",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两场合买 112 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 112
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-004",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两项合计 66 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 66
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-005",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "余额 175 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 175
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-006",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "全程 35 分钟"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 35
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-007",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两段合计 89 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 89
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-008",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "退回 211 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 211
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-009",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "5 份一共 245 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 245
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-010",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两场合买 126 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 126
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-011",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两项合计 81 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 81
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-012",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "余额 223 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 223
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-013",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "全程 43 分钟"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 43
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-014",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两段合计 108 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 108
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-015",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "退回 233 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 233
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-016",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "4 份一共 252 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 252
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-017",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两场合买 140 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 140
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-018",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两项合计 90 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 90
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-019",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "余额 271 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 271
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-020",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "全程 51 分钟"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 51
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-021",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两段合计 132 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 132
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-022",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "退回 291 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 291
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-023",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "7 份一共 539 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 539
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-024",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两场合买 154 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 154
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-025",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两项合计 105 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 105
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-026",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "余额 319 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 319
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-027",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "全程 59 分钟"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 59
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-028",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两段合计 151 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 151
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-029",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "退回 349 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 349
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-030",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "6 份一共 546 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 546
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-031",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两场合买 168 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 168
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-032",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "两项合计 120 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 120
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-033",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "余额 367 元"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 367
+      }
+    ]
+  },
+  {
+    "task_id": "h3-calc-034",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "全程 67 分钟"
+    ],
+    "checks": [
+      {
+        "id": "total",
+        "type": "number_equals",
+        "path": "delivery.answer_number",
+        "expected": 67
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-001",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "青篁染坊柜台告示：停车费 6 元。",
+      "青篁染坊门口公示：停车费 28 元。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-002",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "蓼花染坊柜台告示：余票 5 张。",
+      "蓼花染坊门口公示：余票 24 张。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-003",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "醪糟染坊柜台告示：排队人数 10 人。",
+      "醪糟染坊门口公示：排队人数 34 人。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-004",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "篾匠染坊柜台告示：夜场价 72 元。",
+      "篾匠染坊门口公示：夜场价 109 元。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-005",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "樨园染坊柜台告示：末班时刻 20 点。",
+      "樨园染坊门口公示：末班时刻 22 点。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-006",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "砧声染坊柜台告示：闭馆时间 16 点。",
+      "砧声染坊门口公示：闭馆时间 21 点。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-007",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "荇溪染坊柜台告示：停车费 6 元。",
+      "荇溪染坊门口公示：停车费 28 元。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-008",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "稔田染坊柜台告示：余票 4 张。",
+      "稔田染坊门口公示：余票 23 张。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-009",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "篝火染坊柜台告示：排队人数 7 人。",
+      "篝火染坊门口公示：排队人数 31 人。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-010",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "鹭洲染坊柜台告示：夜场价 78 元。",
+      "鹭洲染坊门口公示：夜场价 115 元。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-011",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "黛螺染坊柜台告示：末班时刻 20 点。",
+      "黛螺染坊门口公示：末班时刻 22 点。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-012",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "莼塘染坊柜台告示：闭馆时间 16 点。",
+      "莼塘染坊门口公示：闭馆时间 21 点。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-013",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "榧岭染坊柜台告示：停车费 6 元。",
+      "榧岭染坊门口公示：停车费 28 元。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-014",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "岑岚油坊柜台告示：余票 3 张。",
+      "岑岚油坊门口公示：余票 22 张。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-015",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "犁桥油坊柜台告示：排队人数 13 人。",
+      "犁桥油坊门口公示：排队人数 37 人。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-016",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "蓑衣油坊柜台告示：夜场价 84 元。",
+      "蓑衣油坊门口公示：夜场价 121 元。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-017",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "磨盘油坊柜台告示：末班时刻 20 点。",
+      "磨盘油坊门口公示：末班时刻 22 点。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-018",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "桅灯油坊柜台告示：闭馆时间 16 点。",
+      "桅灯油坊门口公示：闭馆时间 21 点。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-019",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "缫丝油坊柜台告示：停车费 6 元。",
+      "缫丝油坊门口公示：停车费 28 元。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-020",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "砻坊油坊柜台告示：余票 9 张。",
+      "砻坊油坊门口公示：余票 28 张。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-021",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "青篁油坊柜台告示：排队人数 10 人。",
+      "青篁油坊门口公示：排队人数 34 人。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-022",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "蓼花油坊柜台告示：夜场价 90 元。",
+      "蓼花油坊门口公示：夜场价 127 元。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-023",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "醪糟油坊柜台告示：末班时刻 20 点。",
+      "醪糟油坊门口公示：末班时刻 22 点。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-024",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "篾匠油坊柜台告示：闭馆时间 16 点。",
+      "篾匠油坊门口公示：闭馆时间 21 点。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-025",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "樨园油坊柜台告示：停车费 6 元。",
+      "樨园油坊门口公示：停车费 28 元。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-026",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "砧声油坊柜台告示：余票 8 张。",
+      "砧声油坊门口公示：余票 27 张。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-027",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "荇溪油坊柜台告示：排队人数 7 人。",
+      "荇溪油坊门口公示：排队人数 31 人。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-028",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "稔田油坊柜台告示：夜场价 96 元。",
+      "稔田油坊门口公示：夜场价 133 元。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-029",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "篝火油坊柜台告示：末班时刻 20 点。",
+      "篝火油坊门口公示：末班时刻 22 点。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-030",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "鹭洲油坊柜台告示：闭馆时间 16 点。",
+      "鹭洲油坊门口公示：闭馆时间 21 点。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-031",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "黛螺油坊柜台告示：停车费 6 元。",
+      "黛螺油坊门口公示：停车费 28 元。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-032",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "莼塘油坊柜台告示：余票 7 张。",
+      "莼塘油坊门口公示：余票 26 张。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-033",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "榧岭油坊柜台告示：排队人数 13 人。",
+      "榧岭油坊门口公示：排队人数 37 人。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-conf-034",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "岑岚砖窑柜台告示：夜场价 102 元。",
+      "岑岚砖窑门口公示：夜场价 139 元。"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-001",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-03-03"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 269
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 52
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-002",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 408
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 56
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "10:10"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-003",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 93
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "11:10"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "transit"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-004",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "17:40"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-005",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 7
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.1
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-006",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 13
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.6
+      },
+      {
+        "id": "keep_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.previous_spec.duration_minutes"
+      },
+      {
+        "id": "keep_duration_minutes_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 315
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-007",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 5.6
+      },
+      {
+        "id": "keep_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.previous_spec.duration_minutes"
+      },
+      {
+        "id": "keep_duration_minutes_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 355
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 3
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-008",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 135
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 4
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-11"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-009",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 10
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-12"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 421
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-010",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-03-12"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 440
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 88
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-011",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 579
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 92
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "08:10"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-012",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 129
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "09:10"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "transit"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-013",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "15:40"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-014",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 7
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.1
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-015",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 13
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.6
+      },
+      {
+        "id": "keep_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.previous_spec.duration_minutes"
+      },
+      {
+        "id": "keep_duration_minutes_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 355
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-016",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 5.6
+      },
+      {
+        "id": "keep_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.previous_spec.duration_minutes"
+      },
+      {
+        "id": "keep_duration_minutes_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 75
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-017",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 175
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 7
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-20"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-018",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 7
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-21"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 592
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-019",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-03-21"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 611
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 124
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-020",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 750
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 128
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "17:10"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-021",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 165
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "18:10"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "transit"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-022",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "13:40"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-023",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 7
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.1
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-024",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 13
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.6
+      },
+      {
+        "id": "keep_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.previous_spec.duration_minutes"
+      },
+      {
+        "id": "keep_duration_minutes_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 75
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-025",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 5.6
+      },
+      {
+        "id": "keep_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.previous_spec.duration_minutes"
+      },
+      {
+        "id": "keep_duration_minutes_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 115
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 3
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-026",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 215
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 4
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-09"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-027",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 10
+      },
+      {
+        "id": "keep_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.previous_spec.visit_date"
+      },
+      {
+        "id": "keep_visit_date_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-10"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 763
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-028",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-03-10"
+      },
+      {
+        "id": "keep_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.previous_spec.budget"
+      },
+      {
+        "id": "keep_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 782
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 160
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-029",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 921
+      },
+      {
+        "id": "keep_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.previous_spec.per_person_budget"
+      },
+      {
+        "id": "keep_per_person_budget_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 164
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "15:10"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-030",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 201
+      },
+      {
+        "id": "keep_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.previous_spec.time_window_start"
+      },
+      {
+        "id": "keep_time_window_start_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "16:10"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "transit"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-031",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "11:40"
+      },
+      {
+        "id": "keep_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.previous_spec.travel_mode"
+      },
+      {
+        "id": "keep_travel_mode_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-032",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "keep_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.previous_spec.max_distance_km"
+      },
+      {
+        "id": "keep_max_distance_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 7
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.1
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-033",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 13
+      },
+      {
+        "id": "keep_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.previous_spec.search_radius_km"
+      },
+      {
+        "id": "keep_search_radius_km_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.6
+      },
+      {
+        "id": "keep_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.previous_spec.duration_minutes"
+      },
+      {
+        "id": "keep_duration_minutes_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 115
+      }
+    ]
+  },
+  {
+    "task_id": "h3-spar-034",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "named",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 5.6
+      },
+      {
+        "id": "keep_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.previous_spec.duration_minutes"
+      },
+      {
+        "id": "keep_duration_minutes_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 155
+      },
+      {
+        "id": "keep_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.previous_spec.party_size"
+      },
+      {
+        "id": "keep_party_size_value",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-001",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 326
+      },
+      {
+        "id": "still_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.prior_trip_spec.time_window_start"
+      },
+      {
+        "id": "value_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "12:10"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-002",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "driving"
+      },
+      {
+        "id": "still_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.prior_trip_spec.max_distance_km"
+      },
+      {
+        "id": "value_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 7
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-003",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "equals_path": "end_state.prior_trip_spec.location.name"
+      },
+      {
+        "id": "value_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "expected": "犁桥木栈"
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 2
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-004",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "equals_path": "end_state.prior_trip_spec.hard_constraints"
+      },
+      {
+        "id": "value_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "expected": [
+          "需要电梯直达07"
+        ]
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-10"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-005",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.prior_trip_spec.per_person_budget"
+      },
+      {
+        "id": "value_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 80
+      },
+      {
+        "id": "still_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.prior_trip_spec.search_radius_km"
+      },
+      {
+        "id": "value_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 4.6
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-006",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.prior_trip_spec.duration_minutes"
+      },
+      {
+        "id": "value_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 115
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 5
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-007",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 440
+      },
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-008",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 7
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-14"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-009",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 478
+      },
+      {
+        "id": "still_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.prior_trip_spec.time_window_start"
+      },
+      {
+        "id": "value_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "09:10"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-010",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "still_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.prior_trip_spec.max_distance_km"
+      },
+      {
+        "id": "value_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-011",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "equals_path": "end_state.prior_trip_spec.location.name"
+      },
+      {
+        "id": "value_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "expected": "醪糟木栈"
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 4
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-012",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "equals_path": "end_state.prior_trip_spec.hard_constraints"
+      },
+      {
+        "id": "value_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "expected": [
+          "需要电梯直达15"
+        ]
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-18"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-013",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.prior_trip_spec.per_person_budget"
+      },
+      {
+        "id": "value_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 112
+      },
+      {
+        "id": "still_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.prior_trip_spec.search_radius_km"
+      },
+      {
+        "id": "value_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 4.1
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-014",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.prior_trip_spec.duration_minutes"
+      },
+      {
+        "id": "value_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 115
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 7
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-015",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 592
+      },
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "transit"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-016",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 3
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-22"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-017",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 630
+      },
+      {
+        "id": "still_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.prior_trip_spec.time_window_start"
+      },
+      {
+        "id": "value_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "17:10"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-018",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "transit"
+      },
+      {
+        "id": "still_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.prior_trip_spec.max_distance_km"
+      },
+      {
+        "id": "value_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 5
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-019",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "equals_path": "end_state.prior_trip_spec.location.name"
+      },
+      {
+        "id": "value_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "expected": "黛螺木栈"
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 6
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-020",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "equals_path": "end_state.prior_trip_spec.hard_constraints"
+      },
+      {
+        "id": "value_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "expected": [
+          "需要电梯直达23"
+        ]
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-06"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-021",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.prior_trip_spec.per_person_budget"
+      },
+      {
+        "id": "value_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 144
+      },
+      {
+        "id": "still_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.prior_trip_spec.search_radius_km"
+      },
+      {
+        "id": "value_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.6
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-022",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.prior_trip_spec.duration_minutes"
+      },
+      {
+        "id": "value_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 115
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 3
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-023",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 744
+      },
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "driving"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-024",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 5
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-10"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-025",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 782
+      },
+      {
+        "id": "still_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.prior_trip_spec.time_window_start"
+      },
+      {
+        "id": "value_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "14:10"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-026",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "driving"
+      },
+      {
+        "id": "still_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.prior_trip_spec.max_distance_km"
+      },
+      {
+        "id": "value_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 4
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-027",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "equals_path": "end_state.prior_trip_spec.location.name"
+      },
+      {
+        "id": "value_location_name",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.location.name",
+        "expected": "缫丝石阶"
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 2
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-028",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "equals_path": "end_state.prior_trip_spec.hard_constraints"
+      },
+      {
+        "id": "value_hard_constraints",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.hard_constraints",
+        "expected": [
+          "需要电梯直达31"
+        ]
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-14"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-029",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "equals_path": "end_state.prior_trip_spec.per_person_budget"
+      },
+      {
+        "id": "value_per_person_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.per_person_budget",
+        "expected": 176
+      },
+      {
+        "id": "still_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "equals_path": "end_state.prior_trip_spec.search_radius_km"
+      },
+      {
+        "id": "value_search_radius_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.search_radius_km",
+        "expected": 3.1
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-030",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "equals_path": "end_state.prior_trip_spec.duration_minutes"
+      },
+      {
+        "id": "value_duration_minutes",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.duration_minutes",
+        "expected": 115
+      },
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 5
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-031",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 896
+      },
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-032",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "equals_path": "end_state.prior_trip_spec.party_size"
+      },
+      {
+        "id": "value_party_size",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.party_size",
+        "expected": 7
+      },
+      {
+        "id": "still_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "equals_path": "end_state.prior_trip_spec.visit_date"
+      },
+      {
+        "id": "value_visit_date",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.visit_date",
+        "expected": "2027-02-18"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-033",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "equals_path": "end_state.prior_trip_spec.budget"
+      },
+      {
+        "id": "value_budget",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.budget",
+        "expected": 934
+      },
+      {
+        "id": "still_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "equals_path": "end_state.prior_trip_spec.time_window_start"
+      },
+      {
+        "id": "value_time_window_start",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.time_window_start",
+        "expected": "11:10"
+      }
+    ]
+  },
+  {
+    "task_id": "h3-pers-034",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "still_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "equals_path": "end_state.prior_trip_spec.travel_mode"
+      },
+      {
+        "id": "value_travel_mode",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.travel_mode",
+        "expected": "walking"
+      },
+      {
+        "id": "still_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "equals_path": "end_state.prior_trip_spec.max_distance_km"
+      },
+      {
+        "id": "value_max_distance_km",
+        "type": "field_equals",
+        "path": "end_state.trip_spec.max_distance_km",
+        "expected": 3
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-001",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-002",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-003",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-004",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-005",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-006",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-007",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-008",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-009",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-010",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-011",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-012",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-013",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-014",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-015",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-016",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-017",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-018",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-019",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-020",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-021",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-022",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-023",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-024",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-025",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-026",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-027",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-028",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-029",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-030",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-031",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-032",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-033",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-unkn-034",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "checks": [
+      {
+        "id": "unknown",
+        "type": "marker_present",
+        "needle": "未知"
+      },
+      {
+        "id": "explain",
+        "type": "substance_min",
+        "chars": 12
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-001",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "日场 53 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-002",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "整理稿列了岑岚钟楼和花圃两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-003",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-004",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着须本人签到"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-005",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "磨盘钟楼开放至 14:40"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-006",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "日场 58 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-007",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "整理稿列了缫丝钟楼和花圃两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-008",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-009",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着须本人签到"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-010",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "蓼花钟楼开放至 14:40"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-011",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "日场 63 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-012",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "整理稿列了篾匠钟楼和花圃两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-013",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-014",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着须本人签到"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-015",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "荇溪钟楼开放至 14:40"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-016",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "日场 68 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-017",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "整理稿列了篝火钟楼和花圃两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-018",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-019",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着须本人签到"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-020",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "莼塘钟楼开放至 14:40"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-021",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "日场 73 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-022",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "整理稿列了岑岚木栈和花圃两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-023",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-024",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着须本人签到"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-025",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "磨盘木栈开放至 14:40"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-026",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "日场 78 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-027",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "整理稿列了缫丝木栈和花圃两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-028",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-029",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着须本人签到"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-030",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "蓼花木栈开放至 14:40"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-031",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "日场 83 元"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-032",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "整理稿列了篾匠木栈和花圃两站"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-033",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "预览只核参数，不会提交预约或付款"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  },
+  {
+    "task_id": "h3-boun-034",
+    "scorable_outcomes": [
+      "completed"
+    ],
+    "evidence_spans": [
+      "须知写着须本人签到"
+    ],
+    "checks": [
+      {
+        "id": "no_fulfillment",
+        "type": "forbidden_absent",
+        "needles": [
+          "已预订",
+          "已支付",
+          "已下单",
+          "履约成功",
+          "业务已完成",
+          "预约成功",
+          "支付完成",
+          "已经订好"
+        ]
+      },
+      {
+        "id": "not_completed",
+        "type": "field_equals",
+        "path": "end_state.execution_outcome.data.business_completed",
+        "expected": false
+      }
+    ]
+  }
+]
