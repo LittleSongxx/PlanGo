@@ -400,8 +400,11 @@ class ActionAndPlanningCheck(unittest.TestCase):
                 import json
                 if schema in {TaskDecision, DeliveryDecision} and json.loads(kwargs["user"]).get("execution_goal"):
                     return TaskDecision(operation="answer", answer="页面是帮助中心，尚未准备好表单。", answer_status="partial")
+                # The origin must resolve without a geocoder: the desktop client
+                # sends its device city below, and a same-city name takes those
+                # coordinates (plango.location.select_origin).
                 return TaskDecision(operation="plan", requirements=RequirementOutput(
-                    party_size=2, budget=400, location_name="望京", time_window_start="14:00", duration_minutes=240,
+                    party_size=2, budget=400, location_name="北京", time_window_start="14:00", duration_minutes=240,
                     required_activities=["展览", "餐厅"], activity_order=["展览", "餐厅"])) if schema in {TaskDecision, DeliveryDecision} else fallback
             app.state.runtime.model.structured = planning_actor
             with TestClient(
@@ -413,6 +416,14 @@ class ActionAndPlanningCheck(unittest.TestCase):
                     json={
                         "input_text": "我们2人，在望京先看展再吃饭，总预算400元，下午2点开始，行程4小时",
                         "browser_session_id": "fixture-desktop",
+                        "location_context": {
+                            "city": "北京",
+                            "latitude": 39.997,
+                            "longitude": 116.482,
+                            "source": "device",
+                            "granularity": "point",
+                            "detail_source": "gps",
+                        },
                     },
                 ).json()["run_id"]
                 wait_for(client, run_id, lambda v: bool(v["state"].get("browser_wait")))

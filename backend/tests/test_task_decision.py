@@ -194,7 +194,10 @@ def test_a_page_just_read_still_fits_the_next_decision():
     The run then ended without a second model call, so the page never entered
     a delivery decision. Fitting the prompt is what lets assembly start.
     """
-    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 40
+    # The page is sized against a fixed 12000 cap on purpose: the delivery
+    # instruction grew with the unknown-explanation requirement, so the fixture
+    # is trimmed to keep the same cap tight instead of moving the cap.
+    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 34
             + "周六开放 13:00 至 18:00。材料费未公布。")
     context = task_context(_page_just_read(text))
     assert _page_in_hand(context)
@@ -443,6 +446,7 @@ def test_both_decision_prompts_keep_recorded_comparison_off_the_current_value():
     assert "字面「未知」" in RECORDED_VS_CURRENT
     assert "字面「未知」" in TASK_INSTRUCTIONS
     assert "字面「未知」" in DELIVERY_INSTRUCTIONS
+    assert "并说明是资料缺该值还是记录互相冲突" in RECORDED_VS_CURRENT
 
 
 def test_uncertain_answer_must_carry_the_unknown_mark():
@@ -453,29 +457,48 @@ def test_uncertain_answer_must_carry_the_unknown_mark():
 
 
 @pytest.mark.parametrize(
-    "request_text,answer",
+    "request_text",
     [
-        ("还剩多少额度？", "还剩 160 元。"),
-        ("退还后还能拿回多少？", "还能拿回 190 元。"),
-        ("两段导览加起来要多久？", "两段加起来要 41 分钟。"),
+        "还剩多少额度？",
+        "退还后还能拿回多少？",
+        "两段导览加起来要多久？",
+        # The gate used to be a request-word list; this wording was never in it.
+        "扣完之后退回来多少？",
+        "卡里还能用多少？",
     ],
 )
-def test_quantity_answer_without_arithmetic_is_unusable(request_text, answer):
-    task = TaskDecision(operation="answer", answer=answer)
+def test_quantity_answer_without_arithmetic_is_unusable(request_text):
+    """The page holds the parts and not the total, so the answer is a derivation."""
+    task = TaskDecision(operation="answer", answer="还能拿回 190 元，其中预收 240 元。")
+    page = [{"records": [{"text": "预收 240 元。扣留 50 元。"}]}]
     with pytest.raises(DecisionNotUsable, match="quantity_requires_calculate"):
         enforce_delivery_contract(
             task,
-            {"current_request": request_text, "sources": [], "tool_results": []},
+            {"current_request": request_text, "sources": page, "tool_results": []},
         )
 
 
+def test_quantity_answer_stated_on_the_page_needs_no_arithmetic():
+    """A figure the page already prints is a lookup, whatever the request says."""
+    task = TaskDecision(operation="answer", answer="卡里还能用 175 元。")
+    out = enforce_delivery_contract(
+        task,
+        {
+            "current_request": "卡里还能用多少？",
+            "sources": [{"records": [{"text": "总额 325 元。已用 150 元。余额 175 元。"}]}],
+            "tool_results": [],
+        },
+    )
+    assert out.answer.startswith("卡里还能用")
+
+
 def test_quantity_answer_is_allowed_after_arithmetic():
-    task = TaskDecision(operation="answer", answer="还能拿回 160 元。")
+    task = TaskDecision(operation="answer", answer="还能拿回 160 元，其中预收 240 元。")
     out = enforce_delivery_contract(
         task,
         {
             "current_request": "退还后还能拿回多少？",
-            "sources": [],
+            "sources": [{"records": [{"text": "预收 240 元。扣留 80 元。"}]}],
             "tool_results": [{"scope": "arithmetic_only", "ok": True, "value": "160"}],
         },
     )
@@ -537,7 +560,11 @@ def test_unknown_quantity_answer_does_not_require_calculate():
     task = TaskDecision(operation="answer", answer="两份记录分别是 10 和 14，当前确定值未知。")
     out = enforce_delivery_contract(
         task,
-        {"current_request": "现在要排多久？", "sources": [], "tool_results": []},
+        {
+            "current_request": "现在要排多久？",
+            "sources": [{"records": [{"text": "柜台告示：排队 10 人。"}]}],
+            "tool_results": [],
+        },
     )
     assert out.operation == "answer"
     assert "未知" in out.answer
@@ -547,7 +574,11 @@ def test_posted_price_lookup_does_not_require_calculate():
     task = TaskDecision(operation="answer", answer="票价写了 88 元。")
     out = enforce_delivery_contract(
         task,
-        {"current_request": "标价写了多少？不要代我付款。", "sources": [], "tool_results": []},
+        {
+            "current_request": "标价写了多少？不要代我付款。",
+            "sources": [{"records": [{"text": "玻璃上标价 88 元。"}]}],
+            "tool_results": [],
+        },
     )
     assert out.answer.startswith("票价")
 

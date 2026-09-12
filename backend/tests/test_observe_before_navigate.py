@@ -388,14 +388,27 @@ def test_confirming_card_ignores_refresh_and_read():
         party_size=3,
         location={"name": "云阶码头", "latitude": 31.2, "longitude": 121.4},
     )
+    # The turn reads the card back, so the sparse proposal states no new value.
+    # The list is wording on purpose: `_REOPEN_TURN` used to decide this, and its
+    # last two entries never appeared in it.
     for text in (
         "关掉再打开后，地点名和人数还在吗？",
         "重启之后人数还保存着吗？",
         "重新打开后核对一下日期。",
         "关了再开，地点名有没有丢？",
+        "退出程序再进来后，硬约束和日期还在吗？",
+        "重新进入程序，出行方式和路程上限有没有丢？",
     ):
-        assert _asks_if_current_card_holds({"trip_spec": spec, "input_text": text}), text
-    assert not _asks_if_current_card_holds({"trip_spec": spec, "input_text": "把人数改成 5，其余保持原样。"})
+        state = {"trip_spec": spec, "input_text": text}
+        assert _asks_if_current_card_holds(state, RequirementOutput()), text
+        assert _asks_if_current_card_holds(
+            state, RequirementOutput(party_size_unknown=True, visit_date_unknown=True)
+        ), text
+    for mutating in ("把人数改成 5，其余保持原样。", "只改日期。"):
+        state = {"trip_spec": spec, "input_text": mutating}
+        assert not _asks_if_current_card_holds(state, RequirementOutput(party_size=5)), mutating
+        assert not _asks_if_current_card_holds(state, RequirementOutput(visit_date=date(2026, 11, 11))), mutating
+        assert not _asks_if_current_card_holds(state, RequirementOutput(clear_budget=True)), mutating
     task = TaskDecision(operation="plan", requirements=RequirementOutput(refresh_sources=True, location_name="云阶码头"))
     settled = _settle_existing_card(task, {"trip_spec": spec, "input_text": "重新打开后核对一下人数。"})
     assert settled is not None
@@ -482,7 +495,7 @@ def _quantity_page_state(**extra):
         "source": "browser",
         "url": "https://fixture.invalid/ledger",
         "snapshot_id": "seen",
-        "data": {"text": "预收 240 元。扣留 50 元。退还后剩余 190 元。"},
+        "data": {"text": "预收 240 元。扣留 50 元。退还金额按两数相减。"},
     }
     context = read_state()["browser_task_context"]
     return read_state(
@@ -506,7 +519,9 @@ async def test_quantity_answer_is_retried_until_calculate(tmp_path, monkeypatch)
     async def structured(schema, *, system, user, fallback):
         calls.append(json.loads(user))
         if len(calls) < 3:
-            return TaskDecision(operation="answer", answer="还能拿回 190 元。")
+            # Two stated figures, one of which the page never prints: the answer is
+            # a derivation, so the calculator is what has to produce it.
+            return TaskDecision(operation="answer", answer="预收 240 元扣掉 50 元，还能拿回 190 元。")
         return TaskDecision(
             operation="calculate",
             calculations=[Calculation(id="remain", operation="subtract", operands=["240", "50"])],
@@ -526,7 +541,7 @@ async def test_quantity_answer_gives_up_after_calculate_retries(tmp_path, monkey
 
     async def structured(schema, *, system, user, fallback):
         calls.append(user)
-        return TaskDecision(operation="answer", answer="还能拿回 190 元。")
+        return TaskDecision(operation="answer", answer="预收 240 元扣掉 50 元，还能拿回 190 元。")
 
     node = decide_node(tmp_path, monkeypatch, structured)
     update = await node.ainvoke(_quantity_page_state())

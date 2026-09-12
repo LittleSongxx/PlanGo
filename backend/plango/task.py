@@ -555,21 +555,25 @@ def validate_citations(decision: TaskDecision, sources: list[dict[str, Any]]) ->
 RECORDED_VS_CURRENT = (
     "比较各份记录写下的值，不等于已经得到当前可执行值；"
     "同对象同属性出现未解决的不同观测时，当前确定值未知，用户要求给一个结论也不授权任选一份；"
-    "当前值未知时不要再补一个可执行的首选；答复须含字面「未知」。"
+    "当前值未知时不要再补一个可执行的首选；答复须含字面「未知」，并说明是资料缺该值还是记录互相冲突。"
 )
 
-# 问页上量级：聚合词，以及「多」+ 量纲（少/久/远/长…）。不是单条问法清单。
-_QUANTITY_ASK = re.compile(r"一共|还剩|合计|多[少久远大长高深宽]")
-# 问推导量才强制计算器。「写了多少」只是照抄页值，走量级未知路径，不走这一支。
-_COMPUTE_ASK = re.compile(r"一共|还剩|合计|加起来|拿回|要多久")
-_STATED_NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
 _UNCERTAIN_SPEECH = re.compile(r"无法确定|资料未写明|没有写明|未写明|无法给出|未提供|未公布")
 _SOURCE_GAP = re.compile(r"未写明|没有写明|未公布|未核对")
+_STATED_NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+# List markup, not a figure: `1.` / `2、` / `（3）` / `• 4)`. The scorer strips the
+# same shapes before reading an assertion, so the delivery side must agree with it.
+_LIST_ORDINAL = re.compile(r"(?m)^[ \t]*(?:[（(]?\d+[)）]?[.、)）]|[•·・*][ \t]*\d*)[ \t]*")
 
 
 def _latest_user_turn(text: str) -> str:
     value = str(text or "").strip()
     return value.rsplit("\n", 1)[-1].strip() if "\n" in value else value
+
+
+def _is_question(text: str) -> bool:
+    """The turn asks for a value rather than instructing what to do with it."""
+    return "？" in text or "?" in text
 
 
 def _sources_text(context: dict[str, Any]) -> str:
@@ -581,6 +585,29 @@ def _sources_text(context: dict[str, Any]) -> str:
             if isinstance(record, dict) and record.get("text"):
                 parts.append(str(record["text"]))
     return "\n".join(parts)
+
+
+def _answer_numbers(text: str) -> set[str]:
+    """The values an answer states, ignoring list numbering."""
+    return set(_STATED_NUMBER.findall(_LIST_ORDINAL.sub(" ", str(text or ""))))
+
+
+def _derived_answer(answer: str, context: dict[str, Any]) -> bool:
+    """The answer states more figures than the current sources contain.
+
+    This replaces the request-word list: whether a delivery needed the
+    calculator is a fact about the answer and the page, not about which verb the
+    user chose. One unlocated figure can still be the page value restated, so a
+    single number stays a plain delivery; two or more distinct figures that no
+    record states is a derivation, and the calculator is what produces one.
+    """
+    stated = _answer_numbers(answer)
+    if len(stated) < 2:
+        return False
+    recorded = set(_STATED_NUMBER.findall(_sources_text(context)))
+    if not recorded:
+        return False
+    return any(number not in recorded for number in stated)
 
 
 def _with_unknown_mark(answer: str) -> str:
@@ -603,17 +630,12 @@ def enforce_delivery_contract(task: TaskDecision, context: dict[str, Any]) -> Ta
             return task
         if (
             task.answer_status == "complete"
-            and _COMPUTE_ASK.search(request)
-            and _STATED_NUMBER.search(task.answer)
+            and _derived_answer(task.answer, context)
             and not _has_arithmetic(context)
         ):
             raise DecisionNotUsable("quantity_requires_calculate")
         return task
-    if (
-        task.operation == "ask"
-        and _SOURCE_GAP.search(sources)
-        and _QUANTITY_ASK.search(request)
-    ):
+    if task.operation == "ask" and _SOURCE_GAP.search(sources) and _is_question(request):
         return TaskDecision(operation="answer", answer="当前值未知。", answer_status="complete", citations=task.citations)
     return task
 
