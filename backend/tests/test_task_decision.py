@@ -443,10 +443,10 @@ def test_both_decision_prompts_keep_recorded_comparison_off_the_current_value():
     assert RECORDED_VS_CURRENT in TASK_INSTRUCTIONS
     assert RECORDED_VS_CURRENT in DELIVERY_INSTRUCTIONS
     assert "数字差不能用来选定其中一份作为当前适用值" in TASK_INSTRUCTIONS
-    assert "字面「未知」" in RECORDED_VS_CURRENT
-    assert "字面「未知」" in TASK_INSTRUCTIONS
-    assert "字面「未知」" in DELIVERY_INSTRUCTIONS
-    assert "并说明是资料缺该值还是记录互相冲突" in RECORDED_VS_CURRENT
+    assert "句中出现「未知」二字" in RECORDED_VS_CURRENT
+    assert "句中出现「未知」二字" in TASK_INSTRUCTIONS
+    assert "句中出现「未知」二字" in DELIVERY_INSTRUCTIONS
+    assert "再写清是资料缺该值还是记录互相冲突" in RECORDED_VS_CURRENT
 
 
 def test_uncertain_answer_must_carry_the_unknown_mark():
