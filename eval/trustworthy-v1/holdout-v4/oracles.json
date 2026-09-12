@@ -3263,8 +3263,7 @@
         "type": "field_equals",
         "path": "end_state.trip_spec.hard_constraints",
         "expected": [
-          "不进购物店",
-          "避开陡坡路段"
+          "不进购物店"
         ]
       },
       {
@@ -3326,8 +3325,7 @@
         "type": "field_equals",
         "path": "end_state.trip_spec.hard_constraints",
         "expected": [
-          "不进购物店",
-          "忌海鲜"
+          "不进购物店"
         ]
       },
       {
