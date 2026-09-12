@@ -722,7 +722,16 @@ def build_graph(
             "clarification": (
                 {"question": output.clarification_question, "fields": output.clarification_fields}
                 if output.clarification_needed and output.clarification_question
-                else None
+                else (
+                    # A needed clarification with no question text parks the run
+                    # on a prompt the user never sees; name the fields instead.
+                    {
+                        "question": "请补充：" + "、".join(str(f) for f in (output.clarification_fields or [])) + "。",
+                        "fields": output.clarification_fields,
+                    }
+                    if output.clarification_needed
+                    else None
+                )
             ),
             "trace": _trace(state, "requirements_ready", constraints=spec.hard_constraints),
             "artifacts": [

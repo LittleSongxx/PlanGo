@@ -198,9 +198,9 @@ def test_a_page_just_read_still_fits_the_next_decision():
     # The page is sized against a fixed 12000 cap on purpose: the delivery
     # instruction grew with the unknown-explanation requirement, so the fixture
     # is trimmed to keep the same cap tight instead of moving the cap. Trimmed
-    # again after the r5 instruction growth (65a54a4) and the v1.5 uncertainty
-    # field pushed compaction past its floor on a tree that shipped red.
-    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 23
+    # again after the r5 instruction growth (65a54a4), the v1.5 uncertainty
+    # field, and the no-claim-literals / clear-only-on-request rules.
+    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 16
             + "周六开放 13:00 至 18:00。材料费未公布。")
     context = task_context(_page_just_read(text))
     assert _page_in_hand(context)
@@ -690,3 +690,31 @@ def test_delivery_decision_carries_uncertainty_to_task():
     )
     task = decision.to_task()
     assert task.uncertainty is not None and task.uncertainty.subject == "关门时间"
+
+
+def test_venue_echo_activity_does_not_start_an_itinerary():
+    """A page venue echoed as an activity must not turn a card write into planning."""
+    from plango.graph import _settle_existing_card
+
+    state = {"trip_spec": {"goal": "记一下", "location": {"name": "半月坞帆船俱乐部", "latitude": 31.2, "longitude": 121.4}, "travel_mode": "driving"}}
+    req = RequirementOutput(
+        duration_minutes=90,
+        time_window_start="09:00",
+        budget=3700,
+        location_name="半月坞帆船俱乐部",
+        required_activities=["半月坞帆船俱乐部"],
+    )
+    task = TaskDecision(operation="plan", requirements=req)
+    settled = _settle_existing_card(task, state)
+    assert settled is not None
+    assert settled.time_window_start == "09:00" and settled.budget == 3700
+    assert "半月坞帆船俱乐部" not in (settled.required_activities or [])
+
+
+def test_real_new_activity_still_starts_an_itinerary():
+    from plango.graph import _settle_existing_card
+
+    state = {"trip_spec": {"goal": "记一下", "location": {"name": "半月坞帆船俱乐部", "latitude": 31.2, "longitude": 121.4}}}
+    req = RequirementOutput(required_activities=["餐厅"])
+    task = TaskDecision(operation="plan", requirements=req)
+    assert _settle_existing_card(task, state) is None

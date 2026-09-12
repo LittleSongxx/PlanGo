@@ -373,6 +373,14 @@ class IsolatedRunner:
             snapshot = wait_settled(client, run_id, session_id, world, timeout=self._settle_timeout())
             prior = dict((snapshot.get("state") or {}).get("trip_spec") or spec)
             if task.get("layer") != "persist":
+                # A sparse edit may arrive as several consecutive turns; the
+                # second patch is user input too, not decoration to drop.
+                for extra in (task.get("user_turns") or [])[1:]:
+                    text = str(extra.get("text") or "") if isinstance(extra, dict) else str(extra or "")
+                    if not text.strip():
+                        continue
+                    self._message(client, run_id, compose_user_text(task, world, text))
+                    snapshot = wait_settled(client, run_id, session_id, world, timeout=self._settle_timeout())
                 return snapshot, prior
         with self._client() as client:
             restored = client.get(f"/api/v1/runs/{run_id}")
