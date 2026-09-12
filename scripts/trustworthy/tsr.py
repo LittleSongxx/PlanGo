@@ -38,8 +38,10 @@ def _haystack(attempt: dict[str, Any]) -> str:
     return delivery_text(attempt)
 
 
-UNCERTAINTY = re.compile(r"未知|无法确定|资料未写明|当前值未知|没有写明|未公布|未核对")
-PUNCT = set("。！？!?；;，,、：: \t\n—…·-()（）[]【】\"'“”‘’")
+# Only the bare uncertainty marking is discounted. Explanations such as
+# 未核对 / 未写明 are substance: they tell the user why the value is unknown.
+UNCERTAINTY = re.compile(r"未知|无法确定|无法给出确定结论")
+PUNCT = set("。！？!?；;，,、：: \t\n—…·-()（）[]【】「」《》\"'“”‘’")
 
 
 def _as_decimal(value: Any) -> Decimal:
