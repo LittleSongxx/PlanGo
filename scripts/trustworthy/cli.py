@@ -13,7 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.trustworthy import PROTOCOL_KINDS, SCORER_VERSION
-from scripts.trustworthy.faithfulness import JUDGES, score_delivery
+from scripts.trustworthy.faithfulness import JUDGES, score_delivery, with_calculator_evidence
 from scripts.trustworthy.faithfulness_judge import JudgeError, judge_meta as llm_judge_meta
 from scripts.trustworthy.report import summarize
 from scripts.trustworthy.actor import load_actor_dataset
@@ -45,6 +45,7 @@ def _score_rows(
         oracle = dataset["oracles"][task_id]
         world = dataset["worlds"][task["world_id"]]
         pack = attempt.get("observation_pack") or world_pack(world)
+        pack = with_calculator_evidence(pack, attempt)
         tsr = score_attempt(attempt, oracle)
         faith = score_delivery(attempt.get("delivery"), pack, judge=judge, complete=complete)
         text = delivery_text(attempt)
