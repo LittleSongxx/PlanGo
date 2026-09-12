@@ -456,9 +456,18 @@ def test_substance_min_rejects_a_bare_uncertainty_answer():
         "delivery": {"text": "末班时间未知：柜台告示写 21 点，门口告示写 23 点，两份记录未核对。"},
         "end_state": {},
     }
+    terse = {
+        "valid_attempt": True,
+        "outcome": "completed",
+        "delivery": {"text": "停车费未知，柜台5元门口27元。"},
+        "end_state": {},
+    }
     assert delivery_substance(bare) == 0
     assert score_attempt(bare, oracle)["task_success"] == 0
     assert score_attempt(thin, oracle)["task_success"] == 0
+    # A short answer that still reports both records keeps its content.
+    assert delivery_substance(terse) == 12
+    assert score_attempt(terse, oracle)["task_success"] == 1
     assert score_attempt(full, oracle)["task_success"] == 1
 
 

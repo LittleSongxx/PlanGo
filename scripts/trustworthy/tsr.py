@@ -70,13 +70,14 @@ def _field_equals(attempt: dict[str, Any], check: dict[str, Any]) -> bool:
 
 
 def delivery_substance(attempt: dict[str, Any]) -> int:
-    """Substantive characters the user can read, beyond the uncertainty marking.
+    """Characters the user can read, beyond the bare uncertainty marking.
 
-    Counts characters that are not punctuation, not digits and not part of an
-    uncertainty phrase, so "未知" alone scores 0.
+    Everything except punctuation and the marking itself counts, so a terse but
+    complete answer keeps its content ("停车费未知，柜台5元门口27元" scores 12)
+    while "未知" alone scores 0.
     """
     text = UNCERTAINTY.sub("", delivery_text(attempt))
-    return sum(1 for char in text if char not in PUNCT and not char.isdigit())
+    return sum(1 for char in text if char not in PUNCT)
 
 
 def _substance_min(attempt: dict[str, Any], check: dict[str, Any]) -> bool:
