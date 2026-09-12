@@ -55,7 +55,9 @@ v1.2 里这两层 68 题的唯一检查是 `marker_present: "未知"`，且含�
 原因是身份当时仍按「跑完时」计算（15:29 开跑，15:52 落盘），中途的提交被算了进去；
 修法见 commit `ce9ed94`（身份改为构造时快照），**之后的跑不会再出现**。
 
-可自行复核（跑前代码的产品哈希 = `9281f8c1ffcf1609…`）：
+注意：`9281f8c1ffcf1609` 是 `a7ccd0b` 这棵**干净树**的哈希，并不等于那份 attempts 记录的
+`f26d5017bd3b`——r1 开跑时工作树是脏的（上一轮的产品改动尚未提交），所以本趟分数只能绑到
+`f26d5017bd3b` 这份树，不能写成「跑的是 a7ccd0b」。可自行复核两个干净提交的哈希：
 
 ```bash
 git worktree add /tmp/plango-at-a7ccd0b a7ccd0b
@@ -67,6 +69,7 @@ git diff a7ccd0b a1c711b --stat -- backend/plango vendor/plango_harness skills  
 
 两个 revision 之间产品文件只差两处：`graph.py` 删掉一个未使用的 import、`task.py` 调整两行 import 顺序——
 都是 ruff 的 CI 门禁修复，不改变行为。原始 attempts 不作改写，以此处记录为准。
+实测哈希：`a7ccd0b` → `9281f8c1ffcf1609`，`a1c711b` → `93004313a3ac5ed6`，r1 记录的 → `f26d5017bd3b`。
 
 ## 3. 重评与结论
 

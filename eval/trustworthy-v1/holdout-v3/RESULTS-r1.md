@@ -5,9 +5,12 @@
 - 评分器：`trustworthy.v1.3-llm`；评委模型 `qwen3.7-plus-2026-05-26`
 - **性质：受控开发集测量。** 本套在实现流里生成（见 `authoring.json`），金标未独立审，
   不得称为未见泛化成绩；`report_kind=provisional_holdout`。
-- 溯源注记：该趟 attempts 的 `actor.product_sha`/`git.commit` 是**跑完时**的树（身份机制当时仍按跑完计算），
-  实际执行的是 `a7ccd0b`；两者产品文件只差两处 import 增删与排序。详见
-  [SCORER_V1_3_NOTES.md](../SCORER_V1_3_NOTES.md) §2.4。
+- 溯源注记：该趟 attempts 的 `actor` 块是**跑完时**那份工作树**当场计算**的快照，不是一个提交：
+  `product_sha=f26d5017bd3b…`、`git.commit=a1c711b`（机制见 commit `ce9ed94`，之后的跑改为构造时快照）。
+  那时工作树并不干净（上一轮的产品改动还没提交），所以这个 hash 无法用任何一次 `git checkout` 复现；
+  能复现的只有已提交状态：`a7ccd0b` → `9281f8c1ffcf1609`、`a1c711b` → `93004313a3ac5ed6`（两者产品文件
+  只差两处 import 增删与排序）。本趟分数只能绑到 attempts 里记录的 `f26d5017bd3b` 这份树，不要写成
+  「跑的是 a7ccd0b」。详见 [SCORER_V1_3_NOTES.md](../SCORER_V1_3_NOTES.md) §2.4。
 
 ## 总体
 
