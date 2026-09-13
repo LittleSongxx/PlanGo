@@ -238,9 +238,17 @@ class RequirementOutput(ContractModel):
             values["search_radius_km"] = self.search_radius_km
         if self.route_distance_km is not None:
             values["max_distance_km"] = self.route_distance_km
-        if self.clear_search_radius:
+        # The distance fields are one group, like the budget pair above: a
+        # clear flag that arrives beside the group's own statement is the
+        # extract conflating "user named a distance" with "the other limit is
+        # cleared"; an explicit user clear arrives without one.
+        if self.clear_search_radius and all(
+            value is None for value in (self.search_radius_km, self.max_distance_km, self.route_distance_km)
+        ):
             values["search_radius_km"] = None
-        if self.clear_route_distance:
+        if self.clear_route_distance and all(
+            value is None for value in (self.route_distance_km, self.max_distance_km, self.search_radius_km)
+        ):
             values["max_distance_km"] = None
         if self.clear_max_queue:
             values["max_queue_minutes"] = None

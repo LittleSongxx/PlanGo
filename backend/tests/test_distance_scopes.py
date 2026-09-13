@@ -32,6 +32,16 @@ def test_legacy_limits_and_independent_set_clear_are_preserved():
     assert TripSpec(goal="旧大范围", max_distance_km=100).search_radius_km == 50
 
 
+def test_a_clear_beside_the_groups_statement_keeps_the_other_limit():
+    # The extract naming one distance field while "clearing" another is the
+    # same conflation the budget pair guards against, not a user cancel.
+    spec = TripSpec.model_validate({"goal": "范围卡", "search_radius_km": .5, "max_distance_km": 5})
+    noisy = RequirementOutput(search_radius_km=6, clear_route_distance=True).to_trip_spec("6 公里内找", spec)
+    assert noisy.search_radius_km == 6 and noisy.max_distance_km == 5
+    noisy = RequirementOutput(route_distance_km=9, clear_search_radius=True).to_trip_spec("路程最多 9 公里", spec)
+    assert noisy.search_radius_km == .5 and noisy.max_distance_km == 9
+
+
 async def test_separate_limits_reach_search_and_actual_route_verification():
     spec = TripSpec(goal="半径小于道路绕行距离", location=Location(name="重庆", latitude=29.56, longitude=106.57), search_radius_km=.5, max_distance_km=2)
     world = BrowserWorld(DesktopSettings(amap_webservice_key="controlled-no-http"), None, None)

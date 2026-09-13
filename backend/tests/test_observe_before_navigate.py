@@ -379,6 +379,36 @@ def test_destination_echo_in_the_goal_does_not_block_a_card_write():
     assert _settle_existing_card(addition, {"trip_spec": spec, "input_text": "人数改 12，再加一项参观博物馆"}) is None
 
 
+def test_a_clarification_on_an_assigned_field_does_not_hold_the_write():
+    # The dictation named both budget fields outright; the extract's
+    # second-guess ("per-person times party is not the total") is a
+    # clarification on fields it already assigned, not a pending value.
+    spec = TripSpec(goal="去雾柳社的行程听我说，要改这几处：预算字段更新为 6300 元；人均预算改成 120 元。",
+                    party_size=9, budget=3400)
+    task = TaskDecision(
+        operation="plan",
+        requirements=RequirementOutput(
+            budget=6300, per_person_budget=120,
+            clarification_needed=True,
+            clarification_fields=["budget", "per_person_budget"],
+            clarification_question="总预算与人均不一致，请确认。",
+        ),
+    )
+    settled = _settle_existing_card(task, {"trip_spec": spec, "input_text": spec.goal})
+    assert settled is not None
+    assert settled.budget == 6300
+    assert settled.per_person_budget == 120
+    # A clarification on a field with no assigned value still asks.
+    pending = TaskDecision(
+        operation="plan",
+        requirements=RequirementOutput(
+            budget=6300, clarification_needed=True,
+            clarification_fields=["party_size"], clarification_question="几位出行？",
+        ),
+    )
+    assert _settle_existing_card(pending, {"trip_spec": spec, "input_text": spec.goal}) is None
+
+
 def test_confirming_an_existing_card_does_not_replan():
     spec = TripSpec(goal="已有需求卡", party_size=2, location={"name": "渡口码头", "latitude": 31.2, "longitude": 121.4})
     task = TaskDecision(operation="plan", requirements=RequirementOutput(location_name="渡口码头"))

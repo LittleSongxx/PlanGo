@@ -202,9 +202,10 @@ def test_a_page_just_read_still_fits_the_next_decision():
     # instruction grew with the unknown-explanation requirement, so the fixture
     # is trimmed to keep the same cap tight instead of moving the cap. Trimmed
     # again after the r5 instruction growth (65a54a4), the v1.5 uncertainty
-    # field, the no-claim-literals / clear-only-on-request rules, and the
-    # neighbouring-facts recital for a declared gap.
-    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 11
+    # field, the no-claim-literals / clear-only-on-request rules, the
+    # neighbouring-facts recital for a declared gap, and the fee-scope rule
+    # for totals.
+    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 5
             + "周六开放 13:00 至 18:00。材料费未公布。")
     context = task_context(_page_just_read(text))
     assert _page_in_hand(context)
@@ -460,6 +461,10 @@ def test_both_decision_prompts_keep_recorded_comparison_off_the_current_value():
     # the page's neighbouring facts are what show the user what was checked.
     assert "复述页上与所问属性相关的" in RECORDED_VS_CURRENT
     assert "不要只以「未知」或「资料缺该值」收束" in RECORDED_VS_CURRENT
+    # A total owes every fee the page lists; a self-chosen dine-in/takeout
+    # scope must not drop a line item the page states.
+    assert "求和与合计把页文逐项列出的费用全部计入" in TASK_INSTRUCTIONS
+    assert "合计与加总计入页文列出的全部费用项" in DELIVERY_INSTRUCTIONS
 
 
 def test_uncertain_answer_must_carry_the_unknown_mark():
