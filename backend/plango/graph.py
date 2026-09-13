@@ -1222,7 +1222,9 @@ def build_desktop_graph(runtime, deps, checkpointer):
                 except ValueError as error:
                     last_error = str(error)
                     results.append({"tool": "decision_validation", "ok": False, "error": last_error})
-                    if last_error == "quantity_requires_calculate":
+                    if last_error in {"quantity_requires_calculate", "uncertainty_declaration_required"}:
+                        # Admission errors teach the requirement on retry; they
+                        # are the contract's way of asking, not failing.
                         max_attempts = 4
                     if attempt + 1 < max_attempts:
                         continue

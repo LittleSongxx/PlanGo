@@ -89,7 +89,8 @@ async def test_one_semantic_call_preserves_request_sources_and_real_tool_results
         seen.append(json.loads(user))
         assert schema is TaskDecision
         return TaskDecision(operation="answer", answer="按每人28.5元，3人共85.5元。预约条件未知，需另核对。",
-                            citations=[Citation(artifact_id="page:previous", quote=source_text, record_ref="/records/0/text")])
+                            citations=[Citation(artifact_id="page:previous", quote=source_text, record_ref="/records/0/text")],
+                            uncertainty=UncertaintyClaim(kind="missing_value"))
 
     answer = await decide_task(SimpleNamespace(structured=structured), state, tool_results)
     assert len(seen) == 1 and answer.answer.startswith("按每人")
@@ -106,6 +107,7 @@ async def test_one_semantic_call_preserves_request_sources_and_real_tool_results
     assert {"ref": "/offers/0/price", "text": "28.5"} in context["sources"][0]["records"]
     decision = TaskDecision(
         operation="answer", answer="按每人28.5元；预约条件未知。",
+        uncertainty=UncertaintyClaim(kind="missing_value"),
         citations=[
             Citation(artifact_id="missing", quote=source_text),
             Citation(artifact_id="page:previous", quote="预约成功"),
@@ -224,6 +226,7 @@ async def test_decide_task_is_admitted_after_the_page_arrives():
         operation="answer",
         answer="周六 13:00–18:00 开放；轮椅可到一层；材料费未公布。",
         citations=[Citation(artifact_id="page:obs-1", quote="周六开放 13:00 至 18:00。")],
+        uncertainty=UncertaintyClaim(kind="missing_value"),
     )
 
     class Provider:
@@ -377,6 +380,7 @@ async def test_runtime_prefix_does_not_block_the_page_just_read():
         operation="answer",
         answer="周六 13:00–18:00 开放；轮椅可到一层；材料费未公布。",
         citations=[Citation(artifact_id="page:obs-1", quote="周六开放 13:00 至 18:00。")],
+        uncertainty=UncertaintyClaim(kind="missing_value"),
     )
 
     class Provider:
@@ -454,7 +458,11 @@ def test_both_decision_prompts_keep_recorded_comparison_off_the_current_value():
 
 
 def test_uncertain_answer_must_carry_the_unknown_mark():
-    task = TaskDecision(operation="answer", answer="当前无法确定开门时间，不能任选其一。")
+    task = TaskDecision(
+        operation="answer",
+        answer="当前无法确定开门时间，不能任选其一。",
+        uncertainty=UncertaintyClaim(kind="conflicting_records", records=["告示甲", "告示乙"]),
+    )
     out = enforce_delivery_contract(task, {"current_request": "现在开门吗？", "sources": [], "tool_results": []})
     assert "未知" in out.answer
     assert "无法确定" in out.answer
@@ -612,7 +620,11 @@ def test_ask_without_a_source_gap_stays_an_ask():
 
 
 def test_unknown_quantity_answer_does_not_require_calculate():
-    task = TaskDecision(operation="answer", answer="两份记录分别是 10 和 14，当前确定值未知。")
+    task = TaskDecision(
+        operation="answer",
+        answer="两份记录分别是 10 和 14，当前确定值未知。",
+        uncertainty=UncertaintyClaim(kind="conflicting_records", records=["柜台 10", "门口 14"]),
+    )
     out = enforce_delivery_contract(
         task,
         {
@@ -721,31 +733,30 @@ def test_real_new_activity_still_starts_an_itinerary():
     assert _settle_existing_card(task, state) is None
 
 
-def test_unknown_answer_gets_a_structural_declaration():
-    task = TaskDecision(operation="answer", answer="包间最低消费未知：柜台记录 24 分钟，门口公示 18 分钟。")
+def test_unknown_answer_without_declaration_is_an_admission_error():
+    """The contract names the missing declaration; it never infers the gap's
+    semantics from text — the model that read the records owns that."""
+    task = TaskDecision(operation="answer", answer="包间最低消费未知：两份记录不一致。")
     context = {
         "current_request": "包间最低消费多少？",
-        "sources": [
-            {"records": [{"text": "柜台告示：时长 24 分钟。"}]},
-            {"records": [{"text": "门口公示：时长 18 分钟。"}]},
-        ],
+        "sources": [{"records": [{"text": "柜台告示：时长 24 分钟。"}]}],
         "tool_results": [],
     }
-    out = enforce_delivery_contract(task, context)
-    assert out.uncertainty is not None
-    assert out.uncertainty.kind == "conflicting_records"
-    assert len([r for r in out.uncertainty.records if r.strip()]) >= 2
+    with pytest.raises(DecisionNotUsable, match="uncertainty_declaration_required"):
+        enforce_delivery_contract(task, context)
 
 
-def test_missing_value_answer_declares_missing_value():
-    task = TaskDecision(operation="answer", answer="儿童票价未知，页面未提供该值。")
-    context = {
-        "current_request": "儿童票多少钱？",
-        "sources": [{"records": [{"text": "营业时间 09:00-17:00。"}]}],
-        "tool_results": [],
-    }
-    out = enforce_delivery_contract(task, context)
-    assert out.uncertainty is not None and out.uncertainty.kind == "missing_value"
+def test_unknown_answer_with_declaration_passes_through():
+    task = TaskDecision(
+        operation="answer",
+        answer="包间最低消费未知，两份记录互相冲突。",
+        uncertainty=UncertaintyClaim(
+            kind="conflicting_records",
+            records=["柜台告示 24 分钟", "门口公示 18 分钟"],
+        ),
+    )
+    out = enforce_delivery_contract(task, {"current_request": "多少？", "sources": [], "tool_results": []})
+    assert out.uncertainty is not None and out.uncertainty.kind == "conflicting_records"
 
 
 def test_calculated_answer_carries_the_worked_trail():
@@ -775,27 +786,19 @@ def test_clear_flag_alone_clears_but_not_beside_the_other_budget():
     assert cleared.budget is None
 
 
-def test_merged_single_record_conflict_still_declares():
-    task = TaskDecision(operation="answer", answer="包间最低消费未知：公告页显示250元/位而指南页显示100元/位。")
+def test_trail_labels_prefer_the_rows_own_citations():
+    task = TaskDecision(operation="answer", answer="合计是 1186 元。")
     context = {
-        "current_request": "包间最低消费多少？",
-        "sources": [{"records": [{"text": "门店公告页显示250元/位；岚册指南页显示100元/位。"}]}],
-        "tool_results": [],
+        "current_request": "合计多少？",
+        "sources": [{"records": [{"text": "无关页文 999 元。茶位212 元、例汤256 元。"}]}],
+        "tool_results": [
+            {"tool": "calculate", "scope": "arithmetic_only", "ok": True, "id": "t", "operation": "sum",
+             "operands": ["212", "256"], "value": "1186",
+             "citations": [{"quote": "茶位212 元、例汤一盅256 元。"}]}
+        ],
     }
     out = enforce_delivery_contract(task, context)
-    assert out.uncertainty.kind == "conflicting_records"
-    assert len([r for r in out.uncertainty.records if r.strip()]) >= 2
-
-
-def test_two_unrelated_facts_of_one_page_stay_missing():
-    task = TaskDecision(operation="answer", answer="是否有夜场未知：页面只写了 09:00-17:00 与每周二闭馆。")
-    context = {
-        "current_request": "晚上有夜场吗？",
-        "sources": [{"records": [{"text": "营业时间 09:00-17:00，每周二闭馆。"}]}],
-        "tool_results": [],
-    }
-    out = enforce_delivery_contract(task, context)
-    assert out.uncertainty.kind == "missing_value"
+    assert "例汤一盅256" in out.answer and "999" not in out.answer
 
 
 def test_trail_numbers_never_bleed_between_digits():

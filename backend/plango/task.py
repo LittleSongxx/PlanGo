@@ -765,60 +765,6 @@ def _with_unknown_mark(answer: str) -> str:
     return text + "，当前值未知。"
 
 
-def _record_texts(context: dict[str, Any]) -> list[str]:
-    texts: list[str] = []
-    for source in context.get("sources") or []:
-        if not isinstance(source, dict):
-            continue
-        for record in source.get("records") or []:
-            text = str(record.get("text") or "") if isinstance(record, dict) else ""
-            if text:
-                texts.append(text)
-    return texts or ([sources] if (sources := _sources_text(context)) else [])
-
-
-_UNIT_CHARS = "元块角分钟小时天张位人次次公里千米米间场岁份"
-
-
-def _number_at(text: str, number: str) -> int:
-    """A whole-number occurrence, never digits inside a longer number."""
-    match = re.search(rf"(?<!\d){re.escape(number)}(?!\d)", text)
-    return match.start() if match else -1
-
-
-def _infer_uncertainty(answer: str, context: dict[str, Any]) -> UncertaintyClaim:
-    """Declare the gap an unknown-answer carries, from what the run observed.
-
-    Two different figures for the asked value, each living in its own record,
-    is a record conflict; anything else the answer cannot resolve is a missing
-    value. The answer's own citations decide — no wording of the request is
-    consulted. A merged single record still counts when the two figures carry
-    the same unit, which is what one value quoted two ways looks like; two
-    unrelated facts of one page (times, counts of different things) do not.
-    """
-    stated = [number for number in dict.fromkeys(_STATED_NUMBER.findall(answer))]
-    located = [
-        (text, number)
-        for text in _record_texts(context)
-        for number in stated
-        if _number_at(text, number) >= 0
-    ]
-    numbers_located = {number for _, number in located}
-    records_with_any = {text for text, _ in located}
-
-    def snippet(text: str, number: str) -> str:
-        at = _number_at(text, number)
-        return text[max(0, at - 12):at + len(number) + 2].strip("：:，,。 \n")
-
-    if len(numbers_located) >= 2 and (
-        len(records_with_any) >= 2
-        or all(re.search(rf"(?<!\d){re.escape(number)}(?!\d)[{_UNIT_CHARS}]", answer) for number in numbers_located)
-    ):
-        records = [snippet(text, number) for text, number in located[:8]]
-        return UncertaintyClaim(kind="conflicting_records", records=[r for r in dict.fromkeys(records) if r][:8])
-    return UncertaintyClaim(kind="missing_value")
-
-
 def _label_for_number(number: str, sources: str) -> str:
     for match in re.finditer(rf"(?<!\d){re.escape(number)}(?!\d)", sources):
         left = sources[max(0, match.start() - 6):match.start()]
@@ -833,6 +779,8 @@ def _calculation_trail(answer: str, context: dict[str, Any]) -> str | None:
 
     A bare total is correct but unexplained; the delivery recites the
     arithmetic with the labels the sources use, so the user can check it.
+    Labels come from the row's own citations when it has them — the provenance
+    the calculator was given — and only fall back to the joined sources.
     """
     rows = [
         row for row in context.get("tool_results") or []
@@ -843,9 +791,15 @@ def _calculation_trail(answer: str, context: dict[str, Any]) -> str | None:
         value = str(row.get("value"))
         if value not in answer:
             continue
+        quotes = " ".join(
+            str(citation.get("quote") or "")
+            for citation in (row.get("citations") or [])
+            if isinstance(citation, dict)
+        )
+        scope = quotes or sources
         parts = []
         for operand in [str(item) for item in (row.get("operands") or [])]:
-            label = _label_for_number(operand, sources)
+            label = _label_for_number(operand, scope)
             parts.append(f"{label}{operand}" if label else operand)
         if len(parts) < 2 or all(part in answer for part in parts[:2]):
             return None
@@ -864,7 +818,12 @@ def enforce_delivery_contract(task: TaskDecision, context: dict[str, Any]) -> Ta
             task = task.model_copy(update={"answer": _with_unknown_mark(task.answer)})
         if "未知" in task.answer:
             if task.uncertainty is None:
-                task = task.model_copy(update={"uncertainty": _infer_uncertainty(task.answer, context)})
+                # The model that read the records owns the gap's semantics —
+                # whether the value is missing or two records disagree. The
+                # contract refuses to guess that from text: it names the
+                # requirement and lets the admission retry settle it, the same
+                # mechanism that made calculator provenance measurable.
+                raise DecisionNotUsable("uncertainty_declaration_required")
             return task
         if (
             task.answer_status == "complete"
@@ -877,13 +836,7 @@ def enforce_delivery_contract(task: TaskDecision, context: dict[str, Any]) -> Ta
             task = task.model_copy(update={"answer": task.answer.rstrip("。") + "。" + trail if not task.answer.endswith("。") else task.answer + trail})
         return task
     if task.operation == "ask" and _SOURCE_GAP.search(sources) and _is_question(request):
-        return TaskDecision(
-            operation="answer",
-            answer="当前值未知。",
-            answer_status="complete",
-            citations=task.citations,
-            uncertainty=UncertaintyClaim(kind=_infer_uncertainty(sources, context).kind),
-        )
+        return TaskDecision(operation="answer", answer="当前值未知。", answer_status="complete", citations=task.citations)
     return task
 
 
