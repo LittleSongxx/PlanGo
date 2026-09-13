@@ -1,8 +1,8 @@
 """Read reports and print the comparison a reviewer needs. Read-only.
 
     conda run --no-capture-output -n plango python scripts/trustworthy/analyze.py \
-      output/trustworthy-v1/holdout-v2-report-r3-llm-v1.3.json \
-      output/trustworthy-v1/holdout-v3-report-r1-llm.json
+      output/trustworthy-v1/holdout-v5-report-r6-llm.json \
+      output/trustworthy-v1/holdout-v5-report-r7-llm.json
 
 Prints one row per report (scorer, TSR, F, coverage, actor identity) and, for
 holdout-v3 reports, the same numbers split by layer and by wording family.

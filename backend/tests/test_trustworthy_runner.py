@@ -21,7 +21,7 @@ from scripts.trustworthy.runner import (  # noqa: E402
 )
 from scripts.trustworthy.schema import world_pack  # noqa: E402
 
-HOLDOUT = ROOT / "eval" / "trustworthy-v1" / "holdout"
+HOLDOUT = ROOT / "eval" / "trustworthy-v1" / "holdout-v5"
 
 
 def test_actor_loader_does_not_open_oracles(monkeypatch):
@@ -36,8 +36,8 @@ def test_actor_loader_does_not_open_oracles(monkeypatch):
     actor = load_actor_dataset(HOLDOUT)
     assert actor["oracles_opened"] is False
     assert "oracles.json" not in opened
-    assert "ho-calc-001" in actor["tasks"]
-    assert actor["tasks"]["ho-calc-001"]["world_id"] in actor["worlds"]
+    assert "hv5-calc-01" in actor["tasks"]
+    assert actor["tasks"]["hv5-calc-01"]["world_id"] in actor["worlds"]
 
 
 def test_project_attempt_maps_snapshot_contract():
@@ -65,7 +65,7 @@ def test_project_attempt_maps_snapshot_contract():
         },
     }
     attempt = project_attempt(
-        task={"task_id": "ho-calc-001"},
+        task={"task_id": "hv5-calc-01"},
         world=world,
         snapshot=snapshot,
         trial_id="t1",
@@ -99,7 +99,7 @@ def test_isolated_runner_with_stub_model_does_not_open_oracles(tmp_path, monkeyp
     from plango.task import DeliveryDecision, TaskDecision
 
     actor = load_actor_dataset(HOLDOUT)
-    task = actor["tasks"]["ho-calc-001"]
+    task = actor["tasks"]["hv5-calc-01"]
     world = actor["worlds"][task["world_id"]]
     opened: list[str] = []
     original = Path.read_text
@@ -118,7 +118,7 @@ def test_isolated_runner_with_stub_model_does_not_open_oracles(tmp_path, monkeyp
     runner = IsolatedRunner(tmp_path / "work", live=False, timeout=90, structured=choose)
     attempt = runner.run_task(task, world)
     assert "oracles.json" not in opened
-    assert attempt["task_id"] == "ho-calc-001"
+    assert attempt["task_id"] == "hv5-calc-01"
     assert attempt["observation_pack"]["text"]
     assert attempt["valid_attempt"], attempt.get("invalid_reason")
     assert attempt["delivery"]["text"]
@@ -159,7 +159,7 @@ def test_provider_timeout_is_invalid_and_retries_until_usable(tmp_path):
     from plango_harness.agent.model_adapter import ModelProviderUnavailable
 
     actor = load_actor_dataset(HOLDOUT)
-    task = actor["tasks"]["ho-calc-001"]
+    task = actor["tasks"]["hv5-calc-01"]
     world = actor["worlds"][task["world_id"]]
     calls = {"n": 0}
 
@@ -189,7 +189,7 @@ def test_exhausted_provider_timeout_stays_invalid(tmp_path):
     from plango_harness.agent.model_adapter import ModelProviderUnavailable
 
     actor = load_actor_dataset(HOLDOUT)
-    task = actor["tasks"]["ho-calc-001"]
+    task = actor["tasks"]["hv5-calc-01"]
     world = actor["worlds"][task["world_id"]]
 
     async def choose(schema, *, fallback, **kwargs):
