@@ -232,6 +232,40 @@ def _card_has_itinerary(spec: TripSpec) -> bool:
     return bool(spec.required_activities or spec.must_visit_place_ids or spec.selected_offer)
 
 
+def _stated_card_fields(req: RequirementOutput) -> set[str]:
+    """Card fields this proposal already assigned a value to."""
+    fields = (
+        "visit_date", "time_window_start", "duration_minutes", "budget",
+        "per_person_budget", "party_size", "party_counts", "party", "timezone",
+        "travel_mode", "indoor_required", "outdoor_required", "max_queue_minutes",
+        "max_distance_km", "search_radius_km", "route_distance_km",
+    )
+    return {name for name in fields if getattr(req, name, None) is not None}
+
+
+def _without_answered_clarifications(req: RequirementOutput) -> RequirementOutput:
+    """Drop clarification fields the same proposal already assigned.
+
+    A field the model stated a value for is not pending a value: that
+    clarification is second-guessing an assignment, not an unresolved
+    attribution. Fields left without a value keep their clarification, and
+    the turn still asks about them.
+    """
+    if not (req.clarification_needed and req.clarification_fields):
+        return req
+    stated = _stated_card_fields(req)
+    kept = [name for name in req.clarification_fields if name not in stated]
+    if len(kept) == len(req.clarification_fields):
+        return req
+    if kept:
+        return req.model_copy(update={"clarification_fields": kept})
+    return req.model_copy(update={
+        "clarification_needed": False,
+        "clarification_fields": [],
+        "clarification_question": "",
+    })
+
+
 def _settle_existing_card(task, state) -> TripSpec | None:
     """Apply a sparse card edit. First-plan origin/discovery stays on plan."""
     if task.operation != "plan" or task.requirements is None:
@@ -240,6 +274,7 @@ def _settle_existing_card(task, state) -> TripSpec | None:
     if base is None:
         return None
     req = task.requirements
+    req = _without_answered_clarifications(req)
     if req.clarification_needed and req.clarification_fields:
         return None
     if _asks_if_current_card_holds(state, req):
