@@ -43,15 +43,15 @@
 | holdout-v2 | 未审 | 0.985 / 0.858（v1.4） | 已被迭代过，只作历史 |
 | holdout-v3 | accepted | 0.926–0.931 / 0.99 | 同码方差 ±1 题；calculate 旧合同矛盾已由 v4 设计消除 |
 | holdout-v4 | accepted_with_errata | 0.662 / 0.505（r3+v1.8）；去针反事实 0.917 | 「两/没」针保留并声明为测量偏差 |
-| holdout-v5 | **未审** | **0.799 / 0.432（r4）** | 见 §1.1 的 r1–r4 对照 |
+| holdout-v5 | **未审** | **0.951 / 0.517（r7）** | 见 `holdout-v5/RESULTS-r6-r7.md` 的 r4→r7 对照 |
 
-### v5 四轮对照（`holdout-v5/RESULTS-r2-r4.md`）
+### v5 轮次对照（`holdout-v5/RESULTS-r6-r7.md`）
 
-基线 0.588 → 文本推断回填 0.745（修出两个自制缺陷）→ 推断修补 0.799 →
-**架构版（准入重试）0.799，保留实现（`6eafe17`）**。架构版：未知答复缺 `uncertainty`
-声明 → 抬 `uncertainty_declaration_required` → 适配器带错误对 schema 重试（与
-`quantity_requires_calculate` 同机制同额度，`graph.py` 约 1225 行）。
-**conflict 34/34 满分**；unknown 8/34 是当前主缺口。
+基线 0.588 → 准入重试 0.799（r4）→ 缺值复述合同 + goal 回声剔除 0.912（r6）→
+**+合计口径/澄清剔除/清除护栏 0.951（r7，`89adacb`）**。分层：conflict 34/34、
+sparse 34/34、unknown 33/34、calculate 32/34、persist 31/34、boundary 30/34。
+剩余 10 失败全部落在金标裁决点（boundary 检查形状 4、substance 阈值 4）或单轮方差 2，
+产品侧无系统性缺口。
 
 ### 已验证并固化的机制（新会话应沿用，勿回退）
 
@@ -69,21 +69,21 @@
 
 ## 2. 后续计划（按优先级）
 
-1. **v5 金标独立审**（另开会话）：先照 `holdout-v4/GOLD_REVIEW_PROMPT.md` 的模式为 v5 写
-   一份（路径换 holdout-v5；task_id 前缀 `hv5-`，层缩写 bnd/calc/cflt/sprs/prst/unk）。
-   裁决点：①无 outcome 轮的 `business_completed=None` 被 `field_equals false` 双重惩罚的
-   检查形状；②calculate/persist 的 substance_min=30 阈值（新加的可解释性要求）；
-   ③`structure_declared` 的 kind/min_records 形状。审后 accepted 才改
-   `evaluation_kind=holdout_reviewed`。
-2. **unknown 层产品工作（8/34，主缺口）**：准入重试后仍失败的主因是答复实义 <30 与
-   重试后仍未声明。方向：让缺值场景的答复路径像 conflict 一样成句说明（复述页上有什么、
-   缺什么），声明由模型在重试中完成——不要再回到合同侧推断。
-3. **persist 残余（28/34）**：口述多字段时偶发字段丢失（约 5–8 题/轮）。已知护栏：
-   人均/总预算伪清除已修（`to_trip_spec` 只在清除标志单独出现时生效）。
-4. **F 覆盖**（v5 计分 84/204）：sparse 空交付是设计使然；boundary F 低是拒答句被判
-   unsupported，与 substance 要求相关，属合同语义的已知限制，改动需版本化讨论。
-5. **official 前置**（不急）：已审金标 + 已审 runner。runner 本轮改了多轮发送与浏览器
-   命令，若要走 official 需一次独立 runner 审计。
+1. **v5 金标独立审**（另开会话）：prompt 已备好——`holdout-v5/GOLD_REVIEW_PROMPT.md`，
+   四个裁决点：①`business_completed=None` 被 `field_equals false` 双重惩罚的检查形状；
+   ②substance_min=30 扩到 calculate/persist/boundary 的阈值语义；③`structure_declared`
+   的 kind/min_records 形状；④boundary 禁词与拒答复述的相互作用。审后 accepted 才改
+   `evaluation_kind=holdout_reviewed`。剩余 10 失败大多落在 ①② 的裁决区，审阅结论
+   可能改变它们的计分。
+2. **简历证据清单**（数字定稿前做）：每条简历声明 → 仓库证据（文件:行）→ 可引用数字
+   （含 CI 与 provisional 限定）→ 前提条件。TSR 提升曲线（v5：0.588→0.799→0.912→0.951）
+   与 F（0.432→0.517）已可引用，但金标未审，表述须带 provisional_holdout。
+3. **persist/unknown 残余方差**（各 1–2 题/轮）：提取端噪声（凭空 clear、偶发不声明），
+   无同族聚集时不再单独修，记录在 RESULTS。
+4. **F 覆盖**（r7 计分 99/204）：sparse 空交付是设计使然；boundary F 低是拒答句被判
+   unsupported，属合同语义已知限制，改动需版本化讨论。
+5. **official 前置**（不急）：已审金标 + 已审 runner。runner 多轮发送与浏览器命令
+   若要走 official 需一次独立 runner 审计。
 
 ## 3. 常用命令
 
