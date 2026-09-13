@@ -777,33 +777,50 @@ def _record_texts(context: dict[str, Any]) -> list[str]:
     return texts or ([sources] if (sources := _sources_text(context)) else [])
 
 
+_UNIT_CHARS = "元块角分钟小时天张位人次次公里千米米间场岁份"
+
+
+def _number_at(text: str, number: str) -> int:
+    """A whole-number occurrence, never digits inside a longer number."""
+    match = re.search(rf"(?<!\d){re.escape(number)}(?!\d)", text)
+    return match.start() if match else -1
+
+
 def _infer_uncertainty(answer: str, context: dict[str, Any]) -> UncertaintyClaim:
     """Declare the gap an unknown-answer carries, from what the run observed.
 
     Two different figures for the asked value, each living in its own record,
     is a record conflict; anything else the answer cannot resolve is a missing
     value. The answer's own citations decide — no wording of the request is
-    consulted.
+    consulted. A merged single record still counts when the two figures carry
+    the same unit, which is what one value quoted two ways looks like; two
+    unrelated facts of one page (times, counts of different things) do not.
     """
     stated = [number for number in dict.fromkeys(_STATED_NUMBER.findall(answer))]
-    per_record: list[tuple[str, str]] = []
-    for text in _record_texts(context):
-        for number in stated:
-            if number in text:
-                per_record.append((text, number))
-                break
-    distinct = {number for _, number in per_record}
-    if len(per_record) >= 2 and len(distinct) >= 2:
-        records = []
-        for text, number in per_record[:8]:
-            at = text.find(number)
-            records.append(text[max(0, at - 12):at + len(number) + 2].strip("：:，,。 \n"))
-        return UncertaintyClaim(kind="conflicting_records", records=list(dict.fromkeys(records))[:8])
+    located = [
+        (text, number)
+        for text in _record_texts(context)
+        for number in stated
+        if _number_at(text, number) >= 0
+    ]
+    numbers_located = {number for _, number in located}
+    records_with_any = {text for text, _ in located}
+
+    def snippet(text: str, number: str) -> str:
+        at = _number_at(text, number)
+        return text[max(0, at - 12):at + len(number) + 2].strip("：:，,。 \n")
+
+    if len(numbers_located) >= 2 and (
+        len(records_with_any) >= 2
+        or all(re.search(rf"(?<!\d){re.escape(number)}(?!\d)[{_UNIT_CHARS}]", answer) for number in numbers_located)
+    ):
+        records = [snippet(text, number) for text, number in located[:8]]
+        return UncertaintyClaim(kind="conflicting_records", records=[r for r in dict.fromkeys(records) if r][:8])
     return UncertaintyClaim(kind="missing_value")
 
 
 def _label_for_number(number: str, sources: str) -> str:
-    for match in re.finditer(re.escape(number), sources):
+    for match in re.finditer(rf"(?<!\d){re.escape(number)}(?!\d)", sources):
         left = sources[max(0, match.start() - 6):match.start()]
         found = re.search(r"[\u4e00-\u9fff]{1,6}$", left)
         if found:

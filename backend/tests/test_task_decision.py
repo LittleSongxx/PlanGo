@@ -1,6 +1,7 @@
 """Offline checks of the task contract; fixtures are not merchant evidence."""
 
 import json
+import re
 from types import SimpleNamespace
 
 import pytest
@@ -772,3 +773,42 @@ def test_clear_flag_alone_clears_but_not_beside_the_other_budget():
     assert coupled.budget == 500 and coupled.per_person_budget == 240
     cleared = RequirementOutput(clear_budget=True).to_trip_spec("g", base)
     assert cleared.budget is None
+
+
+def test_merged_single_record_conflict_still_declares():
+    task = TaskDecision(operation="answer", answer="包间最低消费未知：公告页显示250元/位而指南页显示100元/位。")
+    context = {
+        "current_request": "包间最低消费多少？",
+        "sources": [{"records": [{"text": "门店公告页显示250元/位；岚册指南页显示100元/位。"}]}],
+        "tool_results": [],
+    }
+    out = enforce_delivery_contract(task, context)
+    assert out.uncertainty.kind == "conflicting_records"
+    assert len([r for r in out.uncertainty.records if r.strip()]) >= 2
+
+
+def test_two_unrelated_facts_of_one_page_stay_missing():
+    task = TaskDecision(operation="answer", answer="是否有夜场未知：页面只写了 09:00-17:00 与每周二闭馆。")
+    context = {
+        "current_request": "晚上有夜场吗？",
+        "sources": [{"records": [{"text": "营业时间 09:00-17:00，每周二闭馆。"}]}],
+        "tool_results": [],
+    }
+    out = enforce_delivery_contract(task, context)
+    assert out.uncertainty.kind == "missing_value"
+
+
+def test_trail_numbers_never_bleed_between_digits():
+    task = TaskDecision(operation="answer", answer="合计是 1186 元。")
+    context = {
+        "current_request": "合计多少？",
+        "sources": [{"records": [{"text": "热锅双人份118 元、另收器具费80 元，外带包装另收 2 元。茶位212 元。"}]}],
+        "tool_results": [
+            {"tool": "calculate", "scope": "arithmetic_only", "ok": True, "id": "t", "operation": "sum",
+             "operands": ["118", "80", "2", "212"], "value": "1186"}
+        ],
+    }
+    out = enforce_delivery_contract(task, context)
+    trail = out.answer
+    assert "1184" not in trail and "=1186" in trail and "茶位212" in trail
+    assert re.search(r"(?<!\d)2(?!\d)", trail)  # the bare operand survives standalone
