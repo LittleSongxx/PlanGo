@@ -352,6 +352,33 @@ def test_first_plan_and_itinerary_request_do_not_settle_the_card():
     assert _settle_existing_card(task, {"trip_spec": spec, "input_text": "按当前卡再排一版"}) is None
 
 
+def test_destination_echo_in_the_goal_does_not_block_a_card_write():
+    # The card was seeded from the dictation turn, so the goal carries the
+    # destination the user named and no location was ever resolved. The model
+    # restating that destination as an "activity" must not turn the sparse
+    # write into an itinerary that then needs an origin.
+    spec = TripSpec(goal="去南屿灶的行程听我说，要改这几处：到时我们一行 12 人；预算口袋就 1700 元；满打满算 18 小时。",
+                    time_window_start="20:00", duration_minutes=840)
+    task = TaskDecision(
+        operation="plan",
+        requirements=RequirementOutput(
+            party_size=12, budget=1700, duration_minutes=1080,
+            clear_per_person_budget=True, required_activities=["去南屿灶"],
+        ),
+    )
+    settled = _settle_existing_card(task, {"trip_spec": spec, "input_text": spec.goal})
+    assert settled is not None
+    assert settled.party_size == 12
+    assert settled.budget == 1700
+    assert settled.duration_minutes == 1080
+    # An activity the goal does not carry is a real addition and still plans.
+    addition = TaskDecision(
+        operation="plan",
+        requirements=RequirementOutput(party_size=12, required_activities=["参观博物馆"]),
+    )
+    assert _settle_existing_card(addition, {"trip_spec": spec, "input_text": "人数改 12，再加一项参观博物馆"}) is None
+
+
 def test_confirming_an_existing_card_does_not_replan():
     spec = TripSpec(goal="已有需求卡", party_size=2, location={"name": "渡口码头", "latitude": 31.2, "longitude": 121.4})
     task = TaskDecision(operation="plan", requirements=RequirementOutput(location_name="渡口码头"))
