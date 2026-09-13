@@ -202,8 +202,9 @@ def test_a_page_just_read_still_fits_the_next_decision():
     # instruction grew with the unknown-explanation requirement, so the fixture
     # is trimmed to keep the same cap tight instead of moving the cap. Trimmed
     # again after the r5 instruction growth (65a54a4), the v1.5 uncertainty
-    # field, and the no-claim-literals / clear-only-on-request rules.
-    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 16
+    # field, the no-claim-literals / clear-only-on-request rules, and the
+    # neighbouring-facts recital for a declared gap.
+    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 11
             + "周六开放 13:00 至 18:00。材料费未公布。")
     context = task_context(_page_just_read(text))
     assert _page_in_hand(context)
@@ -455,6 +456,10 @@ def test_both_decision_prompts_keep_recorded_comparison_off_the_current_value():
     assert "句中出现「未知」二字" in TASK_INSTRUCTIONS
     assert "句中出现「未知」二字" in DELIVERY_INSTRUCTIONS
     assert "再写清是资料缺该值还是记录互相冲突" in RECORDED_VS_CURRENT
+    # A bare gap statement is a complete answer in kind but not in substance:
+    # the page's neighbouring facts are what show the user what was checked.
+    assert "复述页上与所问属性相关的" in RECORDED_VS_CURRENT
+    assert "不要只以「未知」或「资料缺该值」收束" in RECORDED_VS_CURRENT
 
 
 def test_uncertain_answer_must_carry_the_unknown_mark():
