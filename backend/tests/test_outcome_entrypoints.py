@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from plango.app import create_app
 from plango.graph import ImageReading
-from plango.task import Calculation, Citation, DeliveryDecision, TaskDecision
+from plango.task import Calculation, Citation, DeliveryDecision, TaskDecision, UncertaintyClaim
 from plango_harness.agent.decisions import RequirementOutput
 from test_browser_harness import TOKEN, fixture, settings, wait_for
 
@@ -37,7 +37,8 @@ def test_sources_calculation_answer_and_sparse_followup_share_one_task(tmp_path,
                 calculations=[Calculation(id='subtotal', operation='multiply', operands=['28.5', '3'], citations=[citation])])
         assert context['tool_results'][0]['value'] == '85.5'
         assert context['original_request'] == original
-        return TaskDecision(operation='answer', answer='3人的已知材料费为85.5元；配送费未知，因此不是最终总价。', citations=[citation])
+        return TaskDecision(operation='answer', answer='3人的已知材料费为85.5元；配送费未知，因此不是最终总价。', citations=[citation],
+                            uncertainty=UncertaintyClaim(kind='missing_value'))
 
     app.state.runtime.model.structured = actor
     with TestClient(app, headers={'Authorization': 'Bearer ' + TOKEN}) as client:
