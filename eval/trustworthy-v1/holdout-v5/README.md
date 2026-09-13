@@ -1,8 +1,11 @@
 # holdout-v5（trustworthy-v1 第五套 holdout）
 
 - 生成器：`scripts/trustworthy/build_holdout_v5.py`（seed 20260913，重跑可复现）
-- 规模：204 题 = 6 层 × 34，`split=holdout`，`evaluation_kind=holdout_unreviewed`
-- 金标审阅未做；分数只能称 provisional，正式报告在独立审会话之后。
+- 规模：204 题 = 6 层 × 34，`split=holdout`
+- 金标独立审阅已完成（2026-09-13，另开会话）：**accepted，无勘误**。见 `gold_review.json`；
+  四个裁决点均结论「不改题」。204 题本体未动，`dataset_sha` 变化仅来自 protocol 状态字段。
+- 分数仍是 `provisional_holdout`（评委与被测同模型）：最新 TSR 0.951 / F 0.508–0.517
+  （r7/r7b，见 `RESULTS-r6-r7.md`）。
 
 ## 核心设计（相对 v4）
 

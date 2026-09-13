@@ -50,3 +50,18 @@ r6 引入两类新失败，r7 对症：
 
 产品侧无剩余系统性缺口；全部 provisional_holdout，金标待独立会话审
 （`GOLD_REVIEW_PROMPT.md` 已备，四个裁决点）。
+
+## 金标独立审阅（后记，2026-09-13）
+
+独立会话完成审阅（每层精读 8 题 + 全量程序化核查：角色隔离、时间锚、calculate 34 题
+复算、conflict 自报词、unknown 提示语与页长、口述新值不出现在页文、口述子句数=检查数、
+evidence_spans 子串）：**verdict=accepted，无勘误**，四个裁决点均结论「不改题」
+（None 形状判为 attempt 侧问题非 oracle 错误；substance 30 判为最低交付实质未误杀；
+min_records 条数检查由 F 兜底；禁词为明文禁针名实相符）。唯一 note：求和题无条件计入
+外带包装费，因页文以「再无其他收费说明」收口而仍是唯一封闭读法。
+
+审后以同 attempts 重评（r7b，`holdout-v5-report-r7b-llm.json`）：TSR 0.951 不变
+（程序化判定确定性），F 0.508（评委方差内）。`protocol.json` 已置
+`evaluation_kind=holdout_reviewed`、`gold_review=accepted`；204 题本体未动，
+`dataset_sha` 变化（8126d15→bb61c4a）仅来自 protocol 状态字段。分数表述仍是
+provisional_holdout（评委与被测同模型），official 还差独立 runner 审计。
