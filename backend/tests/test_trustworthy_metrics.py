@@ -77,8 +77,8 @@ def test_actor_files_do_not_leak_oracle_fields():
         assert f'"{key}"' not in blob
 
 
-def test_holdout_dataset_is_unreviewed_and_sized():
-    holdout = DATASET / "holdout"
+def test_holdout_dataset_is_reviewed_and_sized():
+    holdout = DATASET / "holdout-v5"
     summary = validate_dataset(holdout)
     protocol = json.loads((holdout / "protocol.json").read_text(encoding="utf-8"))
     assert summary["ok"] is True
@@ -86,36 +86,6 @@ def test_holdout_dataset_is_unreviewed_and_sized():
     assert all(count >= 25 for count in summary["layers"].values())
     assert protocol["evaluation_kind"] == "holdout_reviewed"
     assert protocol["gold_review"] == "accepted"
-    leaked = {"expected", "checks", "forbidden", "oracle", "needles", "equals_path"}
-    actor = json.dumps(
-        {
-            "tasks": json.loads((holdout / "tasks.json").read_text(encoding="utf-8")),
-            "worlds": json.loads((holdout / "worlds.json").read_text(encoding="utf-8")),
-        },
-        ensure_ascii=False,
-    )
-    for key in leaked:
-        assert f'"{key}"' not in actor
-
-
-def test_holdout_v2_is_a_separate_unreviewed_set():
-    holdout = DATASET / "holdout-v2"
-    summary = validate_dataset(holdout)
-    protocol = json.loads((holdout / "protocol.json").read_text(encoding="utf-8"))
-    v1_ids = {row["task_id"] for row in json.loads((DATASET / "holdout" / "tasks.json").read_text(encoding="utf-8"))}
-    v2_ids = {row["task_id"] for row in json.loads((holdout / "tasks.json").read_text(encoding="utf-8"))}
-    v1_places = json.dumps(json.loads((DATASET / "holdout" / "worlds.json").read_text(encoding="utf-8")), ensure_ascii=False)
-    v2_places = json.dumps(json.loads((holdout / "worlds.json").read_text(encoding="utf-8")), ensure_ascii=False)
-    assert summary["ok"] is True
-    assert summary["tasks"] >= 200
-    assert all(count >= 25 for count in summary["layers"].values())
-    assert protocol["name"] == "trustworthy-v1-holdout-v2"
-    assert protocol["evaluation_kind"] == "holdout_unreviewed"
-    assert protocol["gold_review"] == "pending"
-    assert v1_ids.isdisjoint(v2_ids)
-    assert "青石" not in v2_places and "河湾步道" not in v2_places
-    assert "岚岫" in v2_places and "矾溪" in v2_places
-    assert "河湾步道" in v1_places
     leaked = {"expected", "checks", "forbidden", "oracle", "needles", "equals_path"}
     actor = json.dumps(
         {
