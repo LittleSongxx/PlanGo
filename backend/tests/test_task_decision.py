@@ -718,3 +718,57 @@ def test_real_new_activity_still_starts_an_itinerary():
     req = RequirementOutput(required_activities=["餐厅"])
     task = TaskDecision(operation="plan", requirements=req)
     assert _settle_existing_card(task, state) is None
+
+
+def test_unknown_answer_gets_a_structural_declaration():
+    task = TaskDecision(operation="answer", answer="包间最低消费未知：柜台记录 24 分钟，门口公示 18 分钟。")
+    context = {
+        "current_request": "包间最低消费多少？",
+        "sources": [
+            {"records": [{"text": "柜台告示：时长 24 分钟。"}]},
+            {"records": [{"text": "门口公示：时长 18 分钟。"}]},
+        ],
+        "tool_results": [],
+    }
+    out = enforce_delivery_contract(task, context)
+    assert out.uncertainty is not None
+    assert out.uncertainty.kind == "conflicting_records"
+    assert len([r for r in out.uncertainty.records if r.strip()]) >= 2
+
+
+def test_missing_value_answer_declares_missing_value():
+    task = TaskDecision(operation="answer", answer="儿童票价未知，页面未提供该值。")
+    context = {
+        "current_request": "儿童票多少钱？",
+        "sources": [{"records": [{"text": "营业时间 09:00-17:00。"}]}],
+        "tool_results": [],
+    }
+    out = enforce_delivery_contract(task, context)
+    assert out.uncertainty is not None and out.uncertainty.kind == "missing_value"
+
+
+def test_calculated_answer_carries_the_worked_trail():
+    task = TaskDecision(operation="answer", answer="这次聚会套餐的合计金额是 1186 元。")
+    context = {
+        "current_request": "合计多少元？",
+        "sources": [{"records": [{"text": "茶位212 元、例汤一盅256 元、时令沙拉238 元。"}]}],
+        "tool_results": [
+            {"tool": "calculate", "scope": "arithmetic_only", "ok": True, "id": "t", "operation": "sum",
+             "operands": ["212", "256", "238"], "value": "1186"}
+        ],
+    }
+    out = enforce_delivery_contract(task, context)
+    assert "计算过程" in out.answer and "茶位212" in out.answer and "=1186" in out.answer
+    again = enforce_delivery_contract(out, context)
+    assert again.answer.count("计算过程") == 1
+
+
+def test_clear_flag_alone_clears_but_not_beside_the_other_budget():
+    from plango_harness.agent.contracts import TripSpec
+    from plango_harness.agent.decisions import RequirementOutput
+
+    base = TripSpec(goal="g", budget=500)
+    coupled = RequirementOutput(per_person_budget=240, clear_budget=True).to_trip_spec("g", base)
+    assert coupled.budget == 500 and coupled.per_person_budget == 240
+    cleared = RequirementOutput(clear_budget=True).to_trip_spec("g", base)
+    assert cleared.budget is None
