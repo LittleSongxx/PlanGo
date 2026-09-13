@@ -43,7 +43,7 @@
 | holdout-v2 | 未审 | 0.985 / 0.858（v1.4） | 已被迭代过，只作历史 |
 | holdout-v3 | accepted | 0.926–0.931 / 0.99 | 同码方差 ±1 题；calculate 旧合同矛盾已由 v4 设计消除 |
 | holdout-v4 | accepted_with_errata | 0.662 / 0.505（r3+v1.8）；去针反事实 0.917 | 「两/没」针保留并声明为测量偏差 |
-| holdout-v5 | **未审** | **0.951 / 0.517（r7）** | 见 `holdout-v5/RESULTS-r6-r7.md` 的 r4→r7 对照 |
+| holdout-v5 | **accepted**（2026-09-13 独立审，无勘误） | **0.951 / 0.508–0.517（r7/r7b）** | 见 `holdout-v5/RESULTS-r6-r7.md` 的 r4→r7 对照与审阅后记 |
 
 ### v5 轮次对照（`holdout-v5/RESULTS-r6-r7.md`）
 
@@ -69,15 +69,12 @@ sparse 34/34、unknown 33/34、calculate 32/34、persist 31/34、boundary 30/34�
 
 ## 2. 后续计划（按优先级）
 
-1. **v5 金标独立审**（另开会话）：prompt 已备好——`holdout-v5/GOLD_REVIEW_PROMPT.md`，
-   四个裁决点：①`business_completed=None` 被 `field_equals false` 双重惩罚的检查形状；
-   ②substance_min=30 扩到 calculate/persist/boundary 的阈值语义；③`structure_declared`
-   的 kind/min_records 形状；④boundary 禁词与拒答复述的相互作用。审后 accepted 才改
-   `evaluation_kind=holdout_reviewed`。剩余 10 失败大多落在 ①② 的裁决区，审阅结论
-   可能改变它们的计分。
-2. **简历证据清单**（数字定稿前做）：每条简历声明 → 仓库证据（文件:行）→ 可引用数字
+1. **简历证据清单**（数字定稿前做）：每条简历声明 → 仓库证据（文件:行）→ 可引用数字
    （含 CI 与 provisional 限定）→ 前提条件。TSR 提升曲线（v5：0.588→0.799→0.912→0.951）
-   与 F（0.432→0.517）已可引用，但金标未审，表述须带 provisional_holdout。
+   与 F（0.432→0.51）已可引用，金标已审（accepted），表述仍须带 provisional_holdout
+   （评委与被测同模型）。
+2. **boundary 拒答复述（30/34）**：金标裁决点 ① 已确认 None 形状不改题，4 题失败
+   是拒答复述实义不足——下一个产品优化目标（让拒答句成句复述所拒事项与依据）。
 3. **persist/unknown 残余方差**（各 1–2 题/轮）：提取端噪声（凭空 clear、偶发不声明），
    无同族聚集时不再单独修，记录在 RESULTS。
 4. **F 覆盖**（r7 计分 99/204）：sparse 空交付是设计使然；boundary F 低是拒答句被判
