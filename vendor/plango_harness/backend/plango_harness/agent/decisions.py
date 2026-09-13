@@ -210,11 +210,15 @@ class RequirementOutput(ContractModel):
             values["duration_minutes"] = self.duration_minutes
         if self.budget is not None:
             values["budget"] = self.budget
-        if self.clear_budget:
+        # The two budget fields are independent card values. A clear flag that
+        # arrives beside the other field's statement is the extract conflating
+        # "user named the per-person budget" with "total is cleared"; an
+        # explicit user clear arrives alone, so only that shape clears.
+        if self.clear_budget and self.budget is None and self.per_person_budget is None:
             values["budget"] = None
         if self.per_person_budget is not None:
             values["per_person_budget"] = self.per_person_budget
-        if self.clear_per_person_budget:
+        if self.clear_per_person_budget and self.per_person_budget is None and self.budget is None:
             values["per_person_budget"] = None
         for field in ("indoor_required", "outdoor_required", "max_queue_minutes", "max_distance_km"):
             value = getattr(self, field)

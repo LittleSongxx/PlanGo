@@ -765,6 +765,78 @@ def _with_unknown_mark(answer: str) -> str:
     return text + "，当前值未知。"
 
 
+def _record_texts(context: dict[str, Any]) -> list[str]:
+    texts: list[str] = []
+    for source in context.get("sources") or []:
+        if not isinstance(source, dict):
+            continue
+        for record in source.get("records") or []:
+            text = str(record.get("text") or "") if isinstance(record, dict) else ""
+            if text:
+                texts.append(text)
+    return texts or ([sources] if (sources := _sources_text(context)) else [])
+
+
+def _infer_uncertainty(answer: str, context: dict[str, Any]) -> UncertaintyClaim:
+    """Declare the gap an unknown-answer carries, from what the run observed.
+
+    Two different figures for the asked value, each living in its own record,
+    is a record conflict; anything else the answer cannot resolve is a missing
+    value. The answer's own citations decide — no wording of the request is
+    consulted.
+    """
+    stated = [number for number in dict.fromkeys(_STATED_NUMBER.findall(answer))]
+    per_record: list[tuple[str, str]] = []
+    for text in _record_texts(context):
+        for number in stated:
+            if number in text:
+                per_record.append((text, number))
+                break
+    distinct = {number for _, number in per_record}
+    if len(per_record) >= 2 and len(distinct) >= 2:
+        records = []
+        for text, number in per_record[:8]:
+            at = text.find(number)
+            records.append(text[max(0, at - 12):at + len(number) + 2].strip("：:，,。 \n"))
+        return UncertaintyClaim(kind="conflicting_records", records=list(dict.fromkeys(records))[:8])
+    return UncertaintyClaim(kind="missing_value")
+
+
+def _label_for_number(number: str, sources: str) -> str:
+    for match in re.finditer(re.escape(number), sources):
+        left = sources[max(0, match.start() - 6):match.start()]
+        found = re.search(r"[\u4e00-\u9fff]{1,6}$", left)
+        if found:
+            return found.group(0)
+    return ""
+
+
+def _calculation_trail(answer: str, context: dict[str, Any]) -> str | None:
+    """The worked sum behind a delivered figure, named as the page names it.
+
+    A bare total is correct but unexplained; the delivery recites the
+    arithmetic with the labels the sources use, so the user can check it.
+    """
+    rows = [
+        row for row in context.get("tool_results") or []
+        if isinstance(row, dict) and row.get("scope") == "arithmetic_only" and row.get("ok") and row.get("value") is not None
+    ]
+    sources = _sources_text(context)
+    for row in rows:
+        value = str(row.get("value"))
+        if value not in answer:
+            continue
+        parts = []
+        for operand in [str(item) for item in (row.get("operands") or [])]:
+            label = _label_for_number(operand, sources)
+            parts.append(f"{label}{operand}" if label else operand)
+        if len(parts) < 2 or all(part in answer for part in parts[:2]):
+            return None
+        joiner = "×" if row.get("operation") == "multiply" else "+"
+        return f"计算过程：{joiner.join(parts)}={value}。"
+    return None
+
+
 def enforce_delivery_contract(task: TaskDecision, context: dict[str, Any]) -> TaskDecision:
     """Keep delivery marks on the shared path: 未知, no ask-for-page-gaps, calculate first."""
     request = _latest_user_turn(str(context.get("current_request") or context.get("original_request") or ""))
@@ -774,6 +846,8 @@ def enforce_delivery_contract(task: TaskDecision, context: dict[str, Any]) -> Ta
         if declares_gap and "未知" not in task.answer:
             task = task.model_copy(update={"answer": _with_unknown_mark(task.answer)})
         if "未知" in task.answer:
+            if task.uncertainty is None:
+                task = task.model_copy(update={"uncertainty": _infer_uncertainty(task.answer, context)})
             return task
         if (
             task.answer_status == "complete"
@@ -781,9 +855,18 @@ def enforce_delivery_contract(task: TaskDecision, context: dict[str, Any]) -> Ta
             and not _has_arithmetic(context)
         ):
             raise DecisionNotUsable("quantity_requires_calculate")
+        trail = _calculation_trail(task.answer, context)
+        if trail and "计算过程" not in task.answer:
+            task = task.model_copy(update={"answer": task.answer.rstrip("。") + "。" + trail if not task.answer.endswith("。") else task.answer + trail})
         return task
     if task.operation == "ask" and _SOURCE_GAP.search(sources) and _is_question(request):
-        return TaskDecision(operation="answer", answer="当前值未知。", answer_status="complete", citations=task.citations)
+        return TaskDecision(
+            operation="answer",
+            answer="当前值未知。",
+            answer_status="complete",
+            citations=task.citations,
+            uncertainty=UncertaintyClaim(kind=_infer_uncertainty(sources, context).kind),
+        )
     return task
 
 
