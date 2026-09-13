@@ -325,6 +325,9 @@ def _without_card_echo(req: RequirementOutput, base: TripSpec | None) -> Require
     origin, but it is also not a card value, so it must not decide the turn.
     The venue can also come back as an "activity" — a page the user never
     asked to plan — which would otherwise turn a card write into an itinerary.
+    A card seeded before any location was known has no place name to match
+    against, so the goal — the user's own words the card carries — is the
+    other surface the echo is recognised from.
     """
     if base is None:
         return req
@@ -332,12 +335,17 @@ def _without_card_echo(req: RequirementOutput, base: TripSpec | None) -> Require
     if req.location_name and _same_card_name(req.location_name, base.location.name if base.location else ""):
         updates["location_name"] = None
     place = str(base.location.name or "").strip() if base.location else ""
-    if place:
-        for field in ("required_activities", "optional_activities"):
-            items = [str(item).strip() for item in (getattr(req, field) or [])]
-            kept = [item for item in items if item and not _same_card_name(item, place)]
-            if len(kept) != len(items):
-                updates[field] = kept
+    goal = str(base.goal or "").strip()
+    for field in ("required_activities", "optional_activities"):
+        items = [str(item).strip() for item in (getattr(req, field) or [])]
+        kept = [
+            item for item in items
+            if item
+            and not (place and _same_card_name(item, place))
+            and item not in goal
+        ]
+        if len(kept) != len(items):
+            updates[field] = kept
     return req.model_copy(update=updates) if updates else req
 
 
