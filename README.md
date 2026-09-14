@@ -14,17 +14,17 @@ PlanGo 是可恢复的本地生活规划 Agent：基于门店资料比较优惠�
 - 可恢复任务：发送中断可"核对送达并取回"原任务，不复制成新任务；重启后接续同一任务与累计预算。
 - 独立质量评测体系：TSR / Faithfulness 双指标，出题、金标审阅、评分器演进全留痕（见 [eval/trustworthy-v1/](eval/trustworthy-v1/README.md)）。
 
-**质量评测摘要**（权威入口：[eval/trustworthy-v1/README.md](eval/trustworthy-v1/README.md)，三套 204 题金标均经独立会话评审接受，评分器 `trustworthy.v1.9`）
+**质量评测摘要**（权威入口：[eval/trustworthy-v1/README.md](eval/trustworthy-v1/README.md)，三套 204 题金标均经独立会话评审接受，评分器 `trustworthy.v1.10`，Faithfulness 为作答层口径）
 
 | holdout | 金标 | 最新 TSR / Faithfulness |
 | --- | --- | --- |
-| v5（现行线） | accepted | **0.966 / 0.901** |
+| v5（现行线） | accepted | **0.966 / 0.954** |
 | v3 | accepted | 0.926 / 0.981 |
 | v4（含已声明测量偏差） | accepted_with_errata | 0.662 / 0.575 |
 
 **体验方式**：① Linux/WSLg [试用包](docs/试用安装.md)，下载即用，不需要 Node/conda；② 源码运行，见下文「安装与启动」；③ [云端 noVNC 在线演示](deploy/aliyun/README.md)，一台 ECS 十分钟拉起的按需演示形态。
 
-> **English summary** — PlanGo is a resumable local-life planning agent built as an Electron desktop app with a Python harness backend (PostgreSQL/Redis/FastAPI/worker). It drives a real embedded browser to read merchant pages and offers, keeps every claim source-linked with explicit unknowns, supports in-task edits of party size/date/budget, and resumes interrupted tasks after restart. Quality is measured by an independent eval suite (`eval/trustworthy-v1/`, 3×204 reviewed holdout tasks): current line TSR 0.966 / Faithfulness 0.90. Screenshots above were captured from the current build.
+> **English summary** — PlanGo is a resumable local-life planning agent built as an Electron desktop app with a Python harness backend (PostgreSQL/Redis/FastAPI/worker). It drives a real embedded browser to read merchant pages and offers, keeps every claim source-linked with explicit unknowns, supports in-task edits of party size/date/budget, and resumes interrupted tasks after restart. Quality is measured by an independent eval suite (`eval/trustworthy-v1/`, 3×204 reviewed holdout tasks): current line TSR 0.966 / Faithfulness 0.95. Screenshots above were captured from the current build.
 
 运行和构建只使用本仓库源码、配置及依赖锁，不需要外部 Planora 仓库或服务。宿主机与容器内的 Python 均使用名为 `plango` 的 conda 环境；原 `planora` 环境保留，不作更名或修改。
 
@@ -34,7 +34,7 @@ PlanGo 是可恢复的本地生活规划 Agent：基于门店资料比较优惠�
 
 功能暂不可用时，界面会说明当前情况和下一步，不直接展示内部异常。优惠读取失败可重新打开来源页核对；消息显示“送达待核实”或“已接收待取回”时，使用“核对送达并取回”继续原请求。不要用新建任务代替核对。
 
-质量评测体系是 `eval/trustworthy-v1/` 加 `scripts/trustworthy/`（CLI、执行器、TSR/Faithfulness 评分器），唯一权威入口与现行分数表见 `eval/trustworthy-v1/README.md`：TSR 为程序化 0/1 判定（附 Wilson 95% CI），Faithfulness 为规则层 + LLM-as-Judge 双层，两者定义见 `eval/trustworthy-v1/ATTEMPT_CONTRACT.md`。现行评分器 `trustworthy.v1.9`（观测面与原子子句口径，演进见各 `SCORER_V*_NOTES.md`）；三套已审 holdout v3/v4/v5（各 204 题）金标均 accepted（v4 带勘误），当前线为 holdout-v5 r10：TSR 0.966 / Faithfulness 0.901（v3 为 0.926 / 0.981），统一口径归因链见 `eval/trustworthy-v1/holdout-v5/RESULTS.md`。批次分数仍全部为 provisional_holdout——原因是评委与被测同模型，official 还差一次独立 runner 审计；**每批实际分数以 `output/trustworthy-v1/` 报告原件为准，重评不重跑**。旧 `quality-v*` 体系已于 2026-09-12 从工作树清理，历史在 git 中。
+质量评测体系是 `eval/trustworthy-v1/` 加 `scripts/trustworthy/`（CLI、执行器、TSR/Faithfulness 评分器），唯一权威入口与现行分数表见 `eval/trustworthy-v1/README.md`：TSR 为程序化 0/1 判定（附 Wilson 95% CI），Faithfulness 为规则层 + LLM-as-Judge 双层，两者定义见 `eval/trustworthy-v1/ATTEMPT_CONTRACT.md`。现行评分器 `trustworthy.v1.10`（v1.9 修观测面与原子子句，v1.10 起 Faithfulness 只计作答层——拒答文句属产品政策陈述、由 TSR 行为检查度量；演进见各 `SCORER_V*_NOTES.md`）；三套已审 holdout v3/v4/v5（各 204 题）金标均 accepted（v4 带勘误），当前线为 holdout-v5 r10：TSR 0.966 / Faithfulness 0.954（作答层口径，bootstrap [0.934, 0.972]；v3 为 0.926 / 0.981），双口径归因链见 `eval/trustworthy-v1/holdout-v5/RESULTS.md`。批次分数仍全部为 provisional_holdout——原因是评委与被测同模型，official 还差一次独立 runner 审计；**每批实际分数以 `output/trustworthy-v1/` 报告原件为准，重评不重跑**。旧 `quality-v*` 体系已于 2026-09-12 从工作树清理，历史在 git 中。
 
 真实门店已有局部开发验收；独立使用验收仍未完成。
 

@@ -4,7 +4,7 @@ PlanGo 的质量评测与产品优化主线。双指标：**TSR**（任务成功
 与 **Faithfulness**（事实支持率，规则层 + LLM-as-Judge 双层，幻觉数字在规则层即判不支持）。
 本文是这条线的唯一权威入口；被清理的早期文档与 v1/v2 数据集在 git 历史中（`1b17cc0` 及更早）。
 
-- 评分器：`trustworthy.v1.9`（`scripts/trustworthy/`），演进实录见 `SCORER_V1_3_NOTES.md` … `SCORER_V1_9_NOTES.md`
+- 评分器：`trustworthy.v1.10`（`scripts/trustworthy/`），演进实录见 `SCORER_V1_3_NOTES.md` … `SCORER_V1_10_NOTES.md`
 - 合同：`ATTEMPT_CONTRACT.md`（七种 check、uncertainty 投影、F 只评 completed）
 - 出题与审阅纪律：`AUTHORING.md`（出题另开会话）、`PRODUCT_INVENTORY.md`（字段白名单）
 - 最高原则：见仓库根 `AGENTS.md`——功能与任务完成优先，避免过拟合；不能为抬分改金标/加词表。
@@ -15,26 +15,28 @@ PlanGo 的质量评测与产品优化主线。双指标：**TSR**（任务成功
 | --- | --- | --- | --- |
 | holdout-v3 | accepted | 0.926 / 0.981（v1.9 重评） | `holdout-v3/RESULTS-*.md`（产品叙事见各轮记录） |
 | holdout-v4 | accepted_with_errata | 0.662 / 0.575（r3，v1.9 重评） | `holdout-v4/RESULTS-*.md`；「两/没」针为已声明测量偏差 |
-| holdout-v5 | accepted（2026-09-13，无勘误） | **0.966 / 0.901**（r10，评分器 v1.9） | `holdout-v5/RESULTS.md`（统一 v1.9 口径归因链） |
+| holdout-v5 | accepted（2026-09-13，无勘误） | **0.966 / 0.954**（r10，评分器 v1.10 作答层口径） | `holdout-v5/RESULTS.md`（双口径归因链） |
 
 全部 provisional_holdout（评委与被测同模型）；official 还差一次独立 runner 审计。
 分数出处：`output/trustworthy-v1/holdout-v{3,4,5}-*.json`（attempts 内嵌 product_sha /
 scorer_sha / prompt_sha 溯源；报告重评不重跑）。
 
-## v5 优化主线（统一 v1.9 口径：TSR 0.588 → 0.966、F 0.832 → 0.901）
+## v5 优化主线（TSR 0.588 → 0.966；F 作答层 0.909 → 0.954，v1.10 口径）
 
 | 轮 | 产品 commit | TSR | F | 修复 |
 | --- | --- | --- | --- | --- |
-| r1 | `01af6c0` 基线 | 0.588 | 0.832 | 结构声明仅靠 schema 说明 |
-| r4 | `6eafe17` | 0.799 | 0.808 | 准入重试（`uncertainty_declaration_required`），conflict 34/34 |
-| r6 | `7f63c82` | 0.912 | 0.843 | ①缺值答复复述页上相邻事实；②goal 回声剔除（口述落卡不再被 plan 卡死） |
-| r7 | `89adacb` | 0.951 | 0.846 | ③合计口径合同；④已赋值澄清不扣卡；⑤距离组清除护栏 |
-| r8 | `5db7127` | 0.931 | 0.861 | ⑥算式附注符号与变量解析（正确性优先；2 题 substance 阈值边缘交互） |
-| r9 | `f06f0c9` | 0.951 | 0.876 | ⑦冲突声明逐条引证重试；⑧读卡摘要带单位；⑨提取数字逐字；⑩uncertainty 家族补「无法确认」 |
-| **r10** | `1202491` | **0.966** | **0.901** | ⑪合计主数=全项之和，分场景口径作附注 |
+| r1 | `01af6c0` 基线 | 0.588 | 0.909 | 结构声明仅靠 schema 说明 |
+| r4 | `6eafe17` | 0.799 | 0.896 | 准入重试（`uncertainty_declaration_required`），conflict 34/34 |
+| r6 | `5426f6c`+`7f63c82` | 0.912 | 0.899 | ①缺值答复复述页上相邻事实；②goal 回声剔除（口述落卡不再被 plan 卡死） |
+| r7 | `89adacb` | 0.951 | 0.920 | ③合计口径合同；④已赋值澄清不扣卡；⑤距离组清除护栏 |
+| r8 | `5db7127` | 0.931 | 0.946 | ⑥算式附注符号与变量解析（正确性优先；2 题 substance 阈值边缘交互） |
+| r9 | `f06f0c9` | 0.951 | 0.951 | ⑦冲突声明逐条引证重试；⑧读卡摘要带单位；⑨提取数字逐字；⑩uncertainty 家族补「无法确认」 |
+| **r10** | `1202491` | **0.966** | **0.954** | ⑪合计主数=全项之和，分场景口径作附注 |
 
 评分器 v1.8 时代的 F 数字（0.43–0.52）是观测面缺陷误判，已随旧报告清除；
 同一 attempts 换 v1.9 重评的隔离验证见 RESULTS（F 0.517→0.846、TSR 不变）。
+v1.10（2026-09-14）把 boundary 拒答层移出 F 分母（abstention 不适用 observation-grounded
+faithfulness，行为由 TSR 三件套度量），F 列为作答层口径（bootstrap [0.934, 0.972]）。
 r10 分层：calculate/conflict/sparse 三层 34/34 满分，unknown 33/34、persist 31/34、boundary 31/34。
 
 ## 常用命令
