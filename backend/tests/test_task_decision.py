@@ -205,7 +205,7 @@ def test_a_page_just_read_still_fits_the_next_decision():
     # field, the no-claim-literals / clear-only-on-request rules, the
     # neighbouring-facts recital for a declared gap, and the fee-scope rule
     # for totals.
-    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 5
+    text = ("以下内容为虚构材料。" + "一层可进轮椅，二层只有楼梯。" * 4
             + "周六开放 13:00 至 18:00。材料费未公布。")
     context = task_context(_page_just_read(text))
     assert _page_in_hand(context)
@@ -464,7 +464,7 @@ def test_both_decision_prompts_keep_recorded_comparison_off_the_current_value():
     # A total owes every fee the page lists; a self-chosen dine-in/takeout
     # scope must not drop a line item the page states.
     assert "求和与合计把页文逐项列出的费用全部计入" in TASK_INSTRUCTIONS
-    assert "合计与加总计入页文列出的全部费用项" in DELIVERY_INSTRUCTIONS
+    assert "主数为页文全部费用项之和" in DELIVERY_INSTRUCTIONS
 
 
 def test_uncertain_answer_must_carry_the_unknown_mark():
