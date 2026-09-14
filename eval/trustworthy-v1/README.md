@@ -15,13 +15,13 @@ PlanGo 的质量评测与产品优化主线。双指标：**TSR**（任务成功
 | --- | --- | --- | --- |
 | holdout-v3 | accepted | 0.926 / 0.981（v1.9 重评） | `holdout-v3/RESULTS-*.md`（产品叙事见各轮记录） |
 | holdout-v4 | accepted_with_errata | 0.662 / 0.575（r3，v1.9 重评） | `holdout-v4/RESULTS-*.md`；「两/没」针为已声明测量偏差 |
-| holdout-v5 | accepted（2026-09-13，无勘误） | **0.966 / 0.954**（r10，评分器 v1.10 作答层口径） | `holdout-v5/RESULTS.md`（双口径归因链） |
+| holdout-v5 | accepted（2026-09-13，无勘误） | **0.966 / 0.957**（r10，评分器 v1.10 作答层口径） | `holdout-v5/RESULTS.md`（双口径归因链） |
 
 全部 provisional_holdout（评委与被测同模型）；official 还差一次独立 runner 审计。
 分数出处：`output/trustworthy-v1/holdout-v{3,4,5}-*.json`（attempts 内嵌 product_sha /
 scorer_sha / prompt_sha 溯源；报告重评不重跑）。
 
-## v5 优化主线（TSR 0.588 → 0.966；F 作答层 0.909 → 0.954，v1.10 口径）
+## v5 优化主线（TSR 0.588 → 0.966；F 作答层 0.909 → 0.957，v1.10 口径）
 
 | 轮 | 产品 commit | TSR | F | 修复 |
 | --- | --- | --- | --- | --- |
@@ -31,12 +31,12 @@ scorer_sha / prompt_sha 溯源；报告重评不重跑）。
 | r7 | `89adacb` | 0.951 | 0.920 | ③合计口径合同；④已赋值澄清不扣卡；⑤距离组清除护栏 |
 | r8 | `5db7127` | 0.931 | 0.946 | ⑥算式附注符号与变量解析（正确性优先；2 题 substance 阈值边缘交互） |
 | r9 | `f06f0c9` | 0.951 | 0.951 | ⑦冲突声明逐条引证重试；⑧读卡摘要带单位；⑨提取数字逐字；⑩uncertainty 家族补「无法确认」 |
-| **r10** | `1202491` | **0.966** | **0.954** | ⑪合计主数=全项之和，分场景口径作附注 |
+| **r10** | `1202491` | **0.966** | **0.957** | ⑪合计主数=全项之和，分场景口径作附注 |
 
 评分器 v1.8 时代的 F 数字（0.43–0.52）是观测面缺陷误判，已随旧报告清除；
 同一 attempts 换 v1.9 重评的隔离验证见 RESULTS（F 0.517→0.846、TSR 不变）。
 v1.10（2026-09-14）把 boundary 拒答层移出 F 分母（abstention 不适用 observation-grounded
-faithfulness，行为由 TSR 三件套度量），F 列为作答层口径（bootstrap [0.934, 0.972]）。
+faithfulness，行为由 TSR 三件套度量），F 列为作答层口径（r10 正式报告 bootstrap [0.937, 0.974]）。
 r10 分层：calculate/conflict/sparse 三层 34/34 满分，unknown 33/34、persist 31/34、boundary 31/34。
 
 ## 常用命令
