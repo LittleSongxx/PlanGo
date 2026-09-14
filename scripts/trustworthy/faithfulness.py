@@ -8,6 +8,10 @@ from typing import Any, Callable
 from .schema import world_pack
 
 SENTENCE = re.compile(r"(?<=[。！？!?;；\n])\s*")
+# A clause split for atomic claims; the sentence split above stays the unit a
+# structure exemption is recognised on, so a gap statement keeps the context
+# clause it was written with.
+CLAUSE = re.compile(r"(?<=[，])\s*")
 NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
 # "1. ", "2、", "(3)", "（4）" and friends enumerate a list; they are not
 # asserted quantities, so they must not be read as invented numbers.
@@ -82,7 +86,30 @@ def with_user_turns(pack: dict[str, Any], task: dict[str, Any]) -> dict[str, Any
         return pack
     augmented = dict(pack)
     base = observation_text(pack)
-    lines = ["用户本轮原话（用户自述数字视为给定）：\n" + "\n".join(texts)]
+    lines = ["用户全部输入（用户自述数字视为给定）：\n" + "\n".join(texts)]
+    augmented["text"] = (base + "\n" if base else "") + "\n".join(lines)
+    return augmented
+
+
+def with_contract_values(pack: dict[str, Any], task: dict[str, Any]) -> dict[str, Any]:
+    """Add the task's seeded card to the observation the judge may use.
+
+    A persist read-back recites the card the run was seeded with — preset
+    fields the user never typed this run and no page states. Those values are
+    the contract the task itself handed the product, not the product's own
+    output, so they join the observation like the user's turns do. Only the
+    task-defined initial spec is read; anything the product wrote this run
+    stays out, so a wrong write cannot vouch for itself.
+    """
+    initial = task.get("initial_trip_spec")
+    if not isinstance(initial, dict) or not initial:
+        return pack
+    rows = [f"{key}={value}" for key, value in sorted(initial.items()) if value is not None]
+    if not rows:
+        return pack
+    augmented = dict(pack)
+    base = observation_text(pack)
+    lines = ["任务初始卡片（任务给定合同，视为给定）：\n" + "\n".join(rows)]
     augmented["text"] = (base + "\n" if base else "") + "\n".join(lines)
     return augmented
 
@@ -191,6 +218,7 @@ def _contract_label(
     declared_missing: bool = False,
     subject: str = "",
     records: str = "",
+    declaration_context: bool = False,
 ) -> dict[str, Any] | None:
     if UNCERTAINTY.search(claim) or (GAP.search(claim) and OBSERVATION_WORD.search(claim)):
         return {"text": claim, "label": "non-factual", "span": None, "by": "contract"}
@@ -200,6 +228,12 @@ def _contract_label(
     # in the denominator; the records the declaration quotes are a legal
     # number surface for them.
     if declared_missing and subject and subject in claim and not asserted_numbers(claim):
+        return {"text": claim, "label": "non-factual", "span": None, "by": "structure"}
+    # A clause of a declaration sentence that carries no number is the
+    # statement's own context ("两份记录不一致", "页面上只有展陈介绍"), not an
+    # independent factual claim; its sentence-mates with numbers are still
+    # judged on their own.
+    if declaration_context and not asserted_numbers(claim):
         return {"text": claim, "label": "non-factual", "span": None, "by": "structure"}
     for number in asserted_numbers(claim):
         if conflicts:
@@ -254,27 +288,33 @@ def score_delivery(
     records = "\n".join(str(row) for row in uncertainty.get("records") or [])
     pending: list[dict[str, str]] = []
     claims: list[dict[str, Any]] = []
-    for index, claim in enumerate(split_claims(text), start=1):
-        claim_id = f"S{index}"
-        labeled = _contract_label(
-            claim,
-            observation,
-            conflicts=(judge == "rules"),
-            declared_missing=declared_missing,
-            subject=subject,
-            records=records,
-        )
-        if labeled is not None:
-            labeled["claim_id"] = claim_id
-            claims.append(labeled)
-            continue
-        if judge == "rules":
-            labeled = _rules_overlap(claim, observation)
-            labeled["claim_id"] = claim_id
-            claims.append(labeled)
-            continue
-        pending.append({"claim_id": claim_id, "text": claim})
-        claims.append({"claim_id": claim_id, "text": claim, "label": None, "span": None, "by": "llm"})
+    index = 0
+    for sentence in split_claims(text):
+        declared_sentence = bool(uncertainty.get("kind")) and bool(subject) and subject in sentence
+        parts = [part.strip() for part in CLAUSE.split(sentence) if part and part.strip()]
+        for claim in parts or [sentence]:
+            index += 1
+            claim_id = f"S{index}"
+            labeled = _contract_label(
+                claim,
+                observation,
+                conflicts=(judge == "rules"),
+                declared_missing=declared_missing,
+                subject=subject,
+                records=records,
+                declaration_context=declared_sentence,
+            )
+            if labeled is not None:
+                labeled["claim_id"] = claim_id
+                claims.append(labeled)
+                continue
+            if judge == "rules":
+                labeled = _rules_overlap(claim, observation)
+                labeled["claim_id"] = claim_id
+                claims.append(labeled)
+                continue
+            pending.append({"claim_id": claim_id, "text": claim})
+            claims.append({"claim_id": claim_id, "text": claim, "label": None, "span": None, "by": "llm"})
     if pending:
         from .faithfulness_judge import judge_claims
 

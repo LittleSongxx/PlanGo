@@ -13,7 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.trustworthy import PROTOCOL_KINDS, SCORER_VERSION
-from scripts.trustworthy.faithfulness import JUDGES, score_delivery, with_calculator_evidence, with_user_turns
+from scripts.trustworthy.faithfulness import JUDGES, score_delivery, with_calculator_evidence, with_contract_values, with_user_turns
 from scripts.trustworthy.faithfulness_judge import JudgeError, judge_meta as llm_judge_meta
 from scripts.trustworthy.report import summarize
 from scripts.trustworthy.actor import load_actor_dataset
@@ -47,6 +47,7 @@ def _score_rows(
         pack = attempt.get("observation_pack") or world_pack(world)
         pack = with_calculator_evidence(pack, attempt)
         pack = with_user_turns(pack, task)
+        pack = with_contract_values(pack, task)
         tsr = score_attempt(attempt, oracle)
         # Faithfulness judges delivered answers. A run whose outcome is not
         # completed never delivered one — its fallback text is process, not

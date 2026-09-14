@@ -21,6 +21,7 @@ from scripts.trustworthy.faithfulness import (  # noqa: E402
     asserted_numbers,
     score_delivery,
     with_calculator_evidence,
+    with_contract_values,
     with_user_turns,
 )
 from scripts.trustworthy.faithfulness_judge import (  # noqa: E402
@@ -170,8 +171,13 @@ def test_page_number_does_not_support_invented_sentence():
         },
         observation,
     )
-    assert scored["claims"][0]["label"] == "unsupported"
-    assert scored["faithfulness"] == 0.0
+    # Atomic clauses: the invented clause stays unsupported on its own, and
+    # the two page facts beside it are no longer condemned with it.
+    labels = {row["text"].rstrip("，。"): row["label"] for row in scored["claims"]}
+    assert labels["冻结世界无法确认重启后字段是否仍在"] == "unsupported"
+    assert labels["尽管页上写了总预算是 460"] == "supported"
+    assert labels["开始时刻是 12:00"] == "supported"
+    assert scored["faithfulness"] == pytest.approx(2 / 3)
 
 
 def test_number_and_unit_alone_do_not_support_a_rewrite():
@@ -283,7 +289,7 @@ def test_cli_validate_and_score(tmp_path, capsys):
     assert report["tsr"]["wilson_95"]["low"] < report["tsr"]["point"] < report["tsr"]["wilson_95"]["high"]
     assert "not a holdout official score" in report["disclaimer"]
     assert report["faithfulness"]["bootstrap_95"]["draws"] == 2000
-    assert report["scorer_version"] == "trustworthy.v1.8-rules"
+    assert report["scorer_version"] == "trustworthy.v1.9-rules"
     coverage = report["coverage"]
     assert coverage["faithfulness_lower_bound"] is not None
     assert coverage["faithfulness_scored"] == len([row for row in report["cases"] if row["faithfulness"] is not None])
@@ -333,8 +339,14 @@ def test_llm_judge_accepts_entailed_paraphrase():
 
 def test_llm_judge_rejects_invented_commentary():
     def complete(messages):
+        payload = json.loads(messages[-1]["content"])
         return json.dumps(
-            {"labels": [{"claim_id": "S1", "label": "unsupported", "span": None}]},
+            {
+                "labels": [
+                    {"claim_id": row["claim_id"], "label": "unsupported", "span": None}
+                    for row in payload["claims"]
+                ]
+            },
             ensure_ascii=False,
         )
 
@@ -344,7 +356,7 @@ def test_llm_judge_rejects_invented_commentary():
         judge="llm",
         complete=complete,
     )
-    assert scored["claims"][0]["label"] == "unsupported"
+    assert [row["label"] for row in scored["claims"]] == ["unsupported", "unsupported"]
     assert scored["faithfulness"] == 0.0
 
 
@@ -385,7 +397,10 @@ def test_list_ordinals_are_not_asserted_numbers():
     judged = [row["text"] for batch in seen for row in batch]
     assert any(text.startswith("1.") for text in judged)
     assert any(text.startswith("2.") for text in judged)
-    assert [row["label"] for row in scored["claims"]] == ["supported", "supported", "supported"]
+    # The clause split reaches the judge: the status clause after the comma is
+    # its own claim, and every one of the four is supported by the draft text.
+    assert [row["label"] for row in scored["claims"]] == ["supported"] * len(scored["claims"])
+    assert len(scored["claims"]) >= 3
 
 
 def test_invented_number_still_fails_before_the_judge():
@@ -474,8 +489,14 @@ def test_llm_judge_keeps_contract_filters_and_hides_oracles():
 
 def test_llm_judge_can_support_reporting_both_conflict_values():
     def complete(messages):
+        payload = json.loads(messages[-1]["content"])
         return json.dumps(
-            {"labels": [{"claim_id": "S1", "label": "supported", "span": "当前价格 128 元"}]},
+            {
+                "labels": [
+                    {"claim_id": row["claim_id"], "label": "supported", "span": row["text"]}
+                    for row in payload["claims"]
+                ]
+            },
             ensure_ascii=False,
         )
 
@@ -485,7 +506,7 @@ def test_llm_judge_can_support_reporting_both_conflict_values():
         judge="llm",
         complete=complete,
     )
-    assert scored["claims"][0]["label"] == "supported"
+    assert [row["label"] for row in scored["claims"]] == ["supported", "supported"]
 
 
 def test_judge_parser_requires_every_claim_and_drops_foreign_span():
@@ -511,8 +532,12 @@ def test_declared_missing_value_sentence_is_non_factual_by_structure():
         {"text": "展陈分三个展区，都在一层。"},
     )
     by_id = {row["claim_id"]: row for row in scored["claims"]}
+    # The gap statement keeps its context clause; the page facts beside it
+    # are judged as their own atomic claims.
     assert by_id["S1"]["label"] == "non-factual" and by_id["S1"]["by"] == "structure"
-    assert by_id["S2"]["label"] == "supported"
+    assert by_id["S2"]["label"] == "non-factual"
+    assert by_id["S3"]["label"] == "supported"
+    assert by_id["S4"]["label"] == "supported"
 
 
 def test_declared_conflict_keeps_citations_factual_and_covers_record_numbers():
@@ -528,8 +553,9 @@ def test_declared_conflict_keeps_citations_factual_and_covers_record_numbers():
     scored = score_delivery(declared, observation)
     by_id = {row["claim_id"]: row for row in scored["claims"]}
     assert by_id["S1"]["label"] == "supported"
-    assert by_id["S2"]["label"] == "non-factual"
-    assert scored["faithfulness"] == 1.0 and scored["factual_claims"] == 1
+    assert by_id["S2"]["label"] == "supported"
+    assert by_id["S3"]["label"] == "non-factual"
+    assert scored["faithfulness"] == 1.0 and scored["factual_claims"] == 2
 
 
 def test_records_declaration_allows_numbers_the_pack_omits():
@@ -628,9 +654,21 @@ def test_validate_accepts_string_turns_and_rejects_empty_ones(tmp_path):
 def test_with_user_turns_adds_the_users_own_figures(tmp_path):
     task = {"user_turns": ["3 名大人和 1 名小孩门票一共多少元？"]}
     pack = with_user_turns({"text": "成人票 58 元/人。"}, task)
-    assert "用户本轮原话" in pack["text"] and "3 名大人" in pack["text"]
+    assert "用户全部输入" in pack["text"] and "3 名大人" in pack["text"]
     bare = with_user_turns({"text": "页文。"}, {"user_turns": ["  "]})
     assert bare["text"] == "页文。"
+
+
+def test_with_contract_values_adds_the_seeded_card_only():
+    task = {
+        "initial_trip_spec": {"party_size": 9, "budget": 3400, "travel_mode": "transit"},
+        "user_turns": ["预算字段更新为 6300 元。"],
+    }
+    pack = with_contract_values({"text": "页文。"}, task)
+    assert "任务初始卡片" in pack["text"] and "party_size=9" in pack["text"] and "budget=3400" in pack["text"]
+    # The product's own writes this run are never a vouching surface.
+    assert "6300" not in pack["text"]
+    assert with_contract_values({"text": "页文。"}, {"initial_trip_spec": {}})["text"] == "页文。"
 
 
 def test_user_stated_operands_reach_the_judge_not_the_gate():
@@ -660,7 +698,7 @@ def test_user_stated_operands_reach_the_judge_not_the_gate():
     )
     assert all(row["by"] != "contract" for row in scored["claims"])
     payload = "".join(str(m.get("content") or "") for m in seen[0])
-    assert "用户本轮原话" in payload and "本跑计算器验算" in payload
+    assert "用户全部输入" in payload and "本跑计算器验算" in payload
 
 
 def test_structure_declared_reads_the_delivery_uncertainty():

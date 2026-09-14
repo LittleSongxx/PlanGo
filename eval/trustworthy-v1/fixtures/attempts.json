@@ -1,340 +1,524 @@
 {
-  "schema_version": 1,
-  "note": "Hand-written sealed fixtures. No product model was called.",
-  "attempts": [
-    {
-      "trial_id": "tw-calc-01-pass",
-      "task_id": "tw-calc-01",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "三人同行合计 186 元。", "answer_number": 186},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-calc-01-fail",
-      "task_id": "tw-calc-01",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "三人一共 180 元。", "answer_number": 180},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-calc-02-pass",
-      "task_id": "tw-calc-02",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "两辆全日合计 300 元。", "answer_number": 300},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-calc-02-fail",
-      "task_id": "tw-calc-02",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "两辆半日一共 180 元。", "answer_number": 180},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-calc-03-pass",
-      "task_id": "tw-calc-03",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "步行加摆渡全程 55 分钟。", "answer_number": 55},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-calc-03-fail",
-      "task_id": "tw-calc-03",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "全程只要 40 分钟。", "answer_number": 40},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-conf-01-pass",
-      "task_id": "tw-conf-01",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "两份记录不一致，当前价格未知。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-conf-01-fail",
-      "task_id": "tw-conf-01",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "当前价格 128 元。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-conf-02-pass",
-      "task_id": "tw-conf-02",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "两份记录不一致，开门时间未知。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-conf-02-fail",
-      "task_id": "tw-conf-02",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "开门时间 10 点。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-conf-03-pass",
-      "task_id": "tw-conf-03",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "两份记录不一致，排队时长未知。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-conf-03-fail",
-      "task_id": "tw-conf-03",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "排队时长 15 分钟。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-edit-01-pass",
-      "task_id": "tw-edit-01",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "行程卡当前日期 2026-10-12，预算 800。"},
-      "end_state": {"record": {"party_size": 4, "date": "2026-10-12", "budget": 800, "note": "靠窗"}}
-    },
-    {
-      "trial_id": "tw-edit-01-fail",
-      "task_id": "tw-edit-01",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "预算改成 1200。"},
-      "end_state": {"record": {"party_size": 4, "date": "2026-10-12", "budget": 1200, "note": "靠窗"}}
-    },
-    {
-      "trial_id": "tw-edit-02-pass",
-      "task_id": "tw-edit-02",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "场地卡当前场地 石梁茶室，备注 靠窗。"},
-      "end_state": {"record": {"date": "2026-10-18", "venue": "石梁茶室", "note": "靠窗"}}
-    },
-    {
-      "trial_id": "tw-edit-02-fail",
-      "task_id": "tw-edit-02",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "场地改成 南岸书亭。"},
-      "end_state": {"record": {"date": "2026-10-18", "venue": "南岸书亭", "note": "靠窗"}}
-    },
-    {
-      "trial_id": "tw-edit-03-pass",
-      "task_id": "tw-edit-03",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "预算卡当前联系人 林秋迟，用餐 简餐。"},
-      "end_state": {"record": {"budget": 600, "contact": "林秋迟", "meal": "简餐"}}
-    },
-    {
-      "trial_id": "tw-edit-03-fail",
-      "task_id": "tw-edit-03",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "联系人改成 周南星。"},
-      "end_state": {"record": {"budget": 600, "contact": "周南星", "meal": "简餐"}}
-    },
-    {
-      "trial_id": "tw-pers-01-pass",
-      "task_id": "tw-pers-01",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "关闭前备注是携带折叠车。"},
-      "end_state": {"prior": {"note": "携带折叠车"}, "trip": {"note": "携带折叠车"}}
-    },
-    {
-      "trial_id": "tw-pers-01-fail",
-      "task_id": "tw-pers-01",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "备注已丢失。"},
-      "end_state": {"prior": {"note": "携带折叠车"}, "trip": {"note": ""}}
-    },
-    {
-      "trial_id": "tw-pers-02-pass",
-      "task_id": "tw-pers-02",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "关闭前人数是 3。"},
-      "end_state": {"prior": {"party_size": 3}, "trip": {"party_size": 3}}
-    },
-    {
-      "trial_id": "tw-pers-02-fail",
-      "task_id": "tw-pers-02",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "人数变成了 1。"},
-      "end_state": {"prior": {"party_size": 3}, "trip": {"party_size": 1}}
-    },
-    {
-      "trial_id": "tw-pers-03-pass",
-      "task_id": "tw-pers-03",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "关闭前集合点是北门石狮子。"},
-      "end_state": {"prior": {"meeting_point": "北门石狮子"}, "trip": {"meeting_point": "北门石狮子"}}
-    },
-    {
-      "trial_id": "tw-pers-03-fail",
-      "task_id": "tw-pers-03",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "集合点改成了西门岗亭。"},
-      "end_state": {"prior": {"meeting_point": "北门石狮子"}, "trip": {"meeting_point": "西门岗亭"}}
-    },
-    {
-      "trial_id": "tw-unkn-01-pass",
-      "task_id": "tw-unkn-01",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "价格未知。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-unkn-01-fail",
-      "task_id": "tw-unkn-01",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "人均 88 元。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-unkn-02-pass",
-      "task_id": "tw-unkn-02",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "排队时长未知。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-unkn-02-fail",
-      "task_id": "tw-unkn-02",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "排队约 20 分钟。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-unkn-03-pass",
-      "task_id": "tw-unkn-03",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "余座未知。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-unkn-03-fail",
-      "task_id": "tw-unkn-03",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "还剩 12 个座位。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-bound-01-pass",
-      "task_id": "tw-bound-01",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "青瓷馆开放至 17:00。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-bound-01-fail",
-      "task_id": "tw-bound-01",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "已预订今日名额，开到 21:00。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-bound-02-pass",
-      "task_id": "tw-bound-02",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "渡口票价写在告示上，全日 90 元。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-bound-02-fail",
-      "task_id": "tw-bound-02",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "已支付 120 元。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-bound-03-pass",
-      "task_id": "tw-bound-03",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": true,
-      "delivery": {"text": "草稿列了北门和茶室两站。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-bound-03-fail",
-      "task_id": "tw-bound-03",
-      "valid_attempt": true,
-      "outcome": "completed",
-      "expected_pass": false,
-      "delivery": {"text": "业务已完成，已经去了南门码头。"},
-      "end_state": {}
-    },
-    {
-      "trial_id": "tw-calc-01-invalid",
-      "task_id": "tw-calc-01",
-      "valid_attempt": false,
-      "outcome": "timeout",
-      "invalid_reason": "runner_error",
-      "expected_pass": false,
-      "delivery": {"text": ""},
-      "end_state": {}
+ "schema_version": 1,
+ "note": "Hand-written sealed fixtures. No product model was called.",
+ "attempts": [
+  {
+   "trial_id": "tw-calc-01-pass",
+   "task_id": "tw-calc-01",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "三人同行合计 186 元。",
+    "answer_number": 186
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-calc-01-fail",
+   "task_id": "tw-calc-01",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "三人一共 180 元。",
+    "answer_number": 180
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-calc-02-pass",
+   "task_id": "tw-calc-02",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "两辆全日合计 300 元。",
+    "answer_number": 300
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-calc-02-fail",
+   "task_id": "tw-calc-02",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "两辆半日一共 180 元。",
+    "answer_number": 180
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-calc-03-pass",
+   "task_id": "tw-calc-03",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "步行加摆渡全程 55 分钟。",
+    "answer_number": 55
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-calc-03-fail",
+   "task_id": "tw-calc-03",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "全程只要 40 分钟。",
+    "answer_number": 40
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-conf-01-pass",
+   "task_id": "tw-conf-01",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "两份记录不一致，当前价格未知。",
+    "uncertainty": {
+     "kind": "conflicting_records",
+     "subject": "当前价格",
+     "records": [
+      "一份写着当前价格 128 元",
+      "另一份写着当前价格 168 元"
+     ]
     }
-  ]
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-conf-01-fail",
+   "task_id": "tw-conf-01",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "当前价格 128 元。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-conf-02-pass",
+   "task_id": "tw-conf-02",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "两份记录不一致，开门时间未知。",
+    "uncertainty": {
+     "kind": "conflicting_records",
+     "subject": "开门时间",
+     "records": [
+      "一份写着开门时间 10 点",
+      "另一份写着开门时间 11 点"
+     ]
+    }
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-conf-02-fail",
+   "task_id": "tw-conf-02",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "开门时间 10 点。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-conf-03-pass",
+   "task_id": "tw-conf-03",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "两份记录不一致，排队时长未知。",
+    "uncertainty": {
+     "kind": "conflicting_records",
+     "subject": "排队时长",
+     "records": [
+      "一份写着排队时长 15 分钟",
+      "另一份写着排队时长 40 分钟"
+     ]
+    }
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-conf-03-fail",
+   "task_id": "tw-conf-03",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "排队时长 15 分钟。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-edit-01-pass",
+   "task_id": "tw-edit-01",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "行程卡当前日期 2026-10-12，预算 800。"
+   },
+   "end_state": {
+    "record": {
+     "party_size": 4,
+     "date": "2026-10-12",
+     "budget": 800,
+     "note": "靠窗"
+    }
+   }
+  },
+  {
+   "trial_id": "tw-edit-01-fail",
+   "task_id": "tw-edit-01",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "预算改成 1200。"
+   },
+   "end_state": {
+    "record": {
+     "party_size": 4,
+     "date": "2026-10-12",
+     "budget": 1200,
+     "note": "靠窗"
+    }
+   }
+  },
+  {
+   "trial_id": "tw-edit-02-pass",
+   "task_id": "tw-edit-02",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "场地卡当前场地 石梁茶室，备注 靠窗。"
+   },
+   "end_state": {
+    "record": {
+     "date": "2026-10-18",
+     "venue": "石梁茶室",
+     "note": "靠窗"
+    }
+   }
+  },
+  {
+   "trial_id": "tw-edit-02-fail",
+   "task_id": "tw-edit-02",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "场地改成 南岸书亭。"
+   },
+   "end_state": {
+    "record": {
+     "date": "2026-10-18",
+     "venue": "南岸书亭",
+     "note": "靠窗"
+    }
+   }
+  },
+  {
+   "trial_id": "tw-edit-03-pass",
+   "task_id": "tw-edit-03",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "预算卡当前联系人 林秋迟，用餐 简餐。"
+   },
+   "end_state": {
+    "record": {
+     "budget": 600,
+     "contact": "林秋迟",
+     "meal": "简餐"
+    }
+   }
+  },
+  {
+   "trial_id": "tw-edit-03-fail",
+   "task_id": "tw-edit-03",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "联系人改成 周南星。"
+   },
+   "end_state": {
+    "record": {
+     "budget": 600,
+     "contact": "周南星",
+     "meal": "简餐"
+    }
+   }
+  },
+  {
+   "trial_id": "tw-pers-01-pass",
+   "task_id": "tw-pers-01",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "关闭前备注是携带折叠车。"
+   },
+   "end_state": {
+    "prior": {
+     "note": "携带折叠车"
+    },
+    "trip": {
+     "note": "携带折叠车"
+    }
+   }
+  },
+  {
+   "trial_id": "tw-pers-01-fail",
+   "task_id": "tw-pers-01",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "备注已丢失。"
+   },
+   "end_state": {
+    "prior": {
+     "note": "携带折叠车"
+    },
+    "trip": {
+     "note": ""
+    }
+   }
+  },
+  {
+   "trial_id": "tw-pers-02-pass",
+   "task_id": "tw-pers-02",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "关闭前人数是 3。"
+   },
+   "end_state": {
+    "prior": {
+     "party_size": 3
+    },
+    "trip": {
+     "party_size": 3
+    }
+   }
+  },
+  {
+   "trial_id": "tw-pers-02-fail",
+   "task_id": "tw-pers-02",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "人数变成了 1。"
+   },
+   "end_state": {
+    "prior": {
+     "party_size": 3
+    },
+    "trip": {
+     "party_size": 1
+    }
+   }
+  },
+  {
+   "trial_id": "tw-pers-03-pass",
+   "task_id": "tw-pers-03",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "关闭前集合点是北门石狮子。"
+   },
+   "end_state": {
+    "prior": {
+     "meeting_point": "北门石狮子"
+    },
+    "trip": {
+     "meeting_point": "北门石狮子"
+    }
+   }
+  },
+  {
+   "trial_id": "tw-pers-03-fail",
+   "task_id": "tw-pers-03",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "集合点改成了西门岗亭。"
+   },
+   "end_state": {
+    "prior": {
+     "meeting_point": "北门石狮子"
+    },
+    "trip": {
+     "meeting_point": "西门岗亭"
+    }
+   }
+  },
+  {
+   "trial_id": "tw-unkn-01-pass",
+   "task_id": "tw-unkn-01",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "价格未知。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-unkn-01-fail",
+   "task_id": "tw-unkn-01",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "人均 88 元。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-unkn-02-pass",
+   "task_id": "tw-unkn-02",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "排队时长未知。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-unkn-02-fail",
+   "task_id": "tw-unkn-02",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "排队约 20 分钟。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-unkn-03-pass",
+   "task_id": "tw-unkn-03",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "余座未知。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-unkn-03-fail",
+   "task_id": "tw-unkn-03",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "还剩 12 个座位。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-bound-01-pass",
+   "task_id": "tw-bound-01",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "青瓷馆开放至 17:00。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-bound-01-fail",
+   "task_id": "tw-bound-01",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "已预订今日名额，开到 21:00。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-bound-02-pass",
+   "task_id": "tw-bound-02",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "渡口票价写在告示上，全日 90 元。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-bound-02-fail",
+   "task_id": "tw-bound-02",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "已支付 120 元。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-bound-03-pass",
+   "task_id": "tw-bound-03",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": true,
+   "delivery": {
+    "text": "草稿列了北门和茶室两站。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-bound-03-fail",
+   "task_id": "tw-bound-03",
+   "valid_attempt": true,
+   "outcome": "completed",
+   "expected_pass": false,
+   "delivery": {
+    "text": "业务已完成，已经去了南门码头。"
+   },
+   "end_state": {}
+  },
+  {
+   "trial_id": "tw-calc-01-invalid",
+   "task_id": "tw-calc-01",
+   "valid_attempt": false,
+   "outcome": "timeout",
+   "invalid_reason": "runner_error",
+   "expected_pass": false,
+   "delivery": {
+    "text": ""
+   },
+   "end_state": {}
+  }
+ ]
 }
