@@ -830,6 +830,13 @@ def enforce_delivery_contract(task: TaskDecision, context: dict[str, Any]) -> Ta
                 # requirement and lets the admission retry settle it, the same
                 # mechanism that made calculator provenance measurable.
                 raise DecisionNotUsable("uncertainty_declaration_required")
+            if task.uncertainty.kind == "conflicting_records" and len(
+                [row for row in task.uncertainty.records if str(row).strip()]
+            ) < 2:
+                # The schema's own rule — a conflict is two records, quoted one
+                # by one — is teachable the same way the missing declaration
+                # is: name it, retry, let the model that read them fill it.
+                raise DecisionNotUsable("conflict_records_required")
             return task
         if (
             task.answer_status == "complete"

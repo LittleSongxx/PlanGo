@@ -756,6 +756,25 @@ def test_unknown_answer_without_declaration_is_an_admission_error():
         enforce_delivery_contract(task, context)
 
 
+def test_conflict_declaration_with_one_record_is_an_admission_error():
+    """The schema's own rule — a conflict is two records quoted one by one."""
+    task = TaskDecision(
+        operation="answer",
+        answer="闭店时间未知，两份记录互相冲突。",
+        uncertainty=UncertaintyClaim(kind="conflicting_records", records=["公告页写明 21:30"]),
+    )
+    context = {"current_request": "几点闭店？", "sources": [], "tool_results": []}
+    with pytest.raises(DecisionNotUsable, match="conflict_records_required"):
+        enforce_delivery_contract(task, context)
+    both = TaskDecision(
+        operation="answer",
+        answer="闭店时间未知，两份记录互相冲突。",
+        uncertainty=UncertaintyClaim(kind="conflicting_records", records=["公告页写明 21:30", "指南页写明 22:30"]),
+    )
+    out = enforce_delivery_contract(both, context)
+    assert out.uncertainty is not None and len(out.uncertainty.records) == 2
+
+
 def test_unknown_answer_with_declaration_passes_through():
     task = TaskDecision(
         operation="answer",

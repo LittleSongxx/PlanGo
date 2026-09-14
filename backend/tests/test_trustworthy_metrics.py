@@ -165,7 +165,7 @@ def test_page_number_does_not_support_invented_sentence():
     scored = score_delivery(
         {
             "text": (
-                "冻结世界无法确认重启后字段是否仍在，"
+                "重启后这些字段都会保留，"
                 "尽管页上写了总预算是 460，开始时刻是 12:00。"
             )
         },
@@ -174,7 +174,7 @@ def test_page_number_does_not_support_invented_sentence():
     # Atomic clauses: the invented clause stays unsupported on its own, and
     # the two page facts beside it are no longer condemned with it.
     labels = {row["text"].rstrip("，。"): row["label"] for row in scored["claims"]}
-    assert labels["冻结世界无法确认重启后字段是否仍在"] == "unsupported"
+    assert labels["重启后这些字段都会保留"] == "unsupported"
     assert labels["尽管页上写了总预算是 460"] == "supported"
     assert labels["开始时刻是 12:00"] == "supported"
     assert scored["faithfulness"] == pytest.approx(2 / 3)
@@ -219,9 +219,19 @@ def test_card_hold_summary_is_supported_against_persist_world():
         {"text": summary},
         {"text": "关闭前快照：人数是 3，日期是 2026-12-10。"},
     )
-    assert summary == "人数是 3，日期是 2026-12-10。"
+    assert summary == "人数是 3 人，日期是 2026-12-10。"
     assert scored["faithfulness"] == 1.0
     assert scored["claims"][0]["span"]
+
+
+def test_a_refusal_that_says_it_cannot_confirm_is_non_factual():
+    # "无法确认" is the uncertainty family's own wording for a boundary
+    # refusal; it says the run cannot conclude, not that something is so.
+    scored = score_delivery(
+        {"text": "无法确认报名与支付结果，本产品不代客完成交易。"},
+        {"text": "门店页： workshop 报名到店办理。"},
+    )
+    assert scored["claims"][0]["label"] == "non-factual"
 
 
 def test_conflicted_number_is_contradicted():
@@ -351,7 +361,7 @@ def test_llm_judge_rejects_invented_commentary():
         )
 
     scored = score_delivery(
-        {"text": "冻结世界无法确认重启后字段是否仍在，尽管页上写了总预算是 460。"},
+        {"text": "重启后这些字段都会保留，尽管页上写了总预算是 460。"},
         {"text": "关闭前快照：总预算是 460，开始时刻是 12:00。"},
         judge="llm",
         complete=complete,

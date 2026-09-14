@@ -448,27 +448,27 @@ def _inventory_shown(value: Any) -> str:
 
 
 def _card_hold_summary(spec: TripSpec) -> str:
-    """Recite non-default card fields. Do not invent persistence or page commentary."""
+    """Recite non-default card fields with their units. Do not invent persistence or page commentary."""
     blank = TripSpec(goal=spec.goal)
     parts: list[str] = []
     if spec.party_size is not None:
-        parts.append(f"人数是 {_inventory_shown(spec.party_size)}")
+        parts.append(f"人数是 {_inventory_shown(spec.party_size)} 人")
     if spec.visit_date is not None:
         parts.append(f"日期是 {_inventory_shown(spec.visit_date)}")
     if spec.budget is not None:
-        parts.append(f"总预算是 {_inventory_shown(spec.budget)}")
+        parts.append(f"总预算是 {_inventory_shown(spec.budget)} 元")
     if spec.per_person_budget is not None:
-        parts.append(f"人均预算是 {_inventory_shown(spec.per_person_budget)}")
+        parts.append(f"人均预算是 {_inventory_shown(spec.per_person_budget)} 元")
     if spec.time_window_start:
         parts.append(f"开始时刻是 {spec.time_window_start}")
     if spec.travel_mode != blank.travel_mode:
         parts.append(f"出行方式是 {_CARD_HOLD_MODE.get(spec.travel_mode, spec.travel_mode)}")
     if spec.max_distance_km is not None:
-        parts.append(f"路程上限是 {_inventory_shown(spec.max_distance_km)}")
+        parts.append(f"路程上限是 {_inventory_shown(spec.max_distance_km)} 公里")
     if spec.search_radius_km is not None and spec.search_radius_km != spec.max_distance_km:
-        parts.append(f"搜索半径是 {_inventory_shown(spec.search_radius_km)}")
+        parts.append(f"搜索半径是 {_inventory_shown(spec.search_radius_km)} 公里")
     if spec.duration_minutes != blank.duration_minutes:
-        parts.append(f"时长是 {_inventory_shown(spec.duration_minutes)}")
+        parts.append(f"时长是 {_inventory_shown(spec.duration_minutes)} 分钟")
     if spec.hard_constraints:
         parts.append("硬约束是 " + "、".join(spec.hard_constraints))
     if spec.location and spec.location.name:
@@ -1265,7 +1265,7 @@ def build_desktop_graph(runtime, deps, checkpointer):
                 except ValueError as error:
                     last_error = str(error)
                     results.append({"tool": "decision_validation", "ok": False, "error": last_error})
-                    if last_error in {"quantity_requires_calculate", "uncertainty_declaration_required"}:
+                    if last_error in {"quantity_requires_calculate", "uncertainty_declaration_required", "conflict_records_required"}:
                         # Admission errors teach the requirement on retry; they
                         # are the contract's way of asking, not failing.
                         max_attempts = 4

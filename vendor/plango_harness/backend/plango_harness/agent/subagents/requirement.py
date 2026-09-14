@@ -27,6 +27,7 @@ REQUIREMENT_INSTRUCTIONS = (
     "一个数值可能落在多个字段上时（例如只说“预算180”，既可能是总额budget也可能是人均per_person_budget），"
     "不要替用户挑一个写进去：把该字段列入clarification_fields并询问，其余能确定的修改照常返回。"
     "预算总额用budget，人均用per_person_budget；金额单位元，时长和排队单位分钟，距离单位公里。"
+    "数字按用户原话逐字提取，不补零、不换算、不按人数相乘；拿不准的数字列入clarification_fields询问。"
     "搜索范围用search_radius_km，实际路程上限用route_distance_km，不使用旧字段max_distance_km。"
     "party记录角色资料，party_size记录总人数，party_counts只修改已知角色人数，退出记0，不猜未知分配。"
     "goal留空，由系统保留用户原话；不要改写成分类标签或英文标识。"

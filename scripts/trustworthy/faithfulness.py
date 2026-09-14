@@ -19,7 +19,7 @@ ORDINAL = re.compile(r"^\s*(?:[-*•·]\s*)?(?:[（(]\s*\d{1,3}\s*[)）]|\d{1,3}
 # Non-factual, group 1: the uncertainty family. "无法得出/推算/判断" is the same
 # move as "无法确定" — the answer says it cannot conclude, not that something is so.
 UNCERTAINTY = re.compile(
-    r"未知|无法确定|资料未写明|当前值未知|没有写明|未公布|无法得出|无法推算|无法判断"
+    "未知|无法确定|无法确认|资料未写明|当前值未知|没有写明|未公布|无法得出|无法推算|无法判断"
 )
 # Non-factual, group 2: an answer that names what this run's observation does not
 # contain. It counts next to a word for the observation, because a bare 未包含 can
