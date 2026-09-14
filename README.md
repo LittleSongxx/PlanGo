@@ -1,239 +1,111 @@
 # PlanGo
 
-PlanGo 是可恢复的本地生活规划 Agent：基于门店资料比较优惠，在同一任务中修改人数、日期和预算，保留来源与待核验项，保存草案并在中断后继续。Electron 提供可见浏览器与画布，Python Harness 管理模型、证据、审批和恢复。
+**可恢复的本地生活规划 Agent** —— 驱动真实浏览器读取门店与优惠，每个结论保留来源与未知项，任务中断后可继续。
 
-![PlanGo 桌面主界面：内嵌真实浏览器与任务画布](docs/assets/desktop-workspace.png)
+Electron 桌面 × Python Harness（FastAPI / PostgreSQL / Redis / worker）× 高德开放平台
 
-![开始新安排：真实网页快捷入口与场景卡片](docs/assets/onboarding.png)
+![PlanGo 桌面：内嵌真实浏览器与任务画布](docs/assets/desktop-workspace.png)
 
-**核心能力**
+## 它能做什么
 
-- 真实浏览器受控执行：导航、滚动、输入、点击；登录页与验证码暂停等待人工接管，操作绑定页面快照与参数，全程可核对。
-- 结构化需求与优惠比较：同一任务内修改人数、日期、预算并重新规划；面值、售价、原价分列展示，不适用原因与缺失规则直接可见。
-- 证据链与诚实边界：网页、菜单、优惠都带来源；缺价保持未知，套餐总价不当人均，邻店报价不归给目标店，未确认结果不写成完成。
-- 可恢复任务：发送中断可"核对送达并取回"原任务，不复制成新任务；重启后接续同一任务与累计预算。
-- 独立质量评测体系：TSR / Faithfulness 双指标，出题、金标审阅、评分器演进全留痕（见 [eval/trustworthy-v1/](eval/trustworthy-v1/README.md)）。
+- **真实浏览器受控执行**：导航、滚动、输入、点击；登录页与验证码暂停等待人工接管；每步操作绑定页面快照与参数，全程可核对。
+- **结构化需求与优惠比较**：同一任务内修改人数、日期、预算并重新规划；面值、售价、原价分列，不适用原因与缺失规则直接可见。
+- **证据链与诚实边界**：网页、菜单、优惠都带来源；缺价保持未知，套餐总价不当人均，未确认结果不写成完成。
+- **可恢复任务**：发送中断可"核对送达并取回"原任务；重启后接续同一任务与累计预算。
+- **独立质量评测**：TSR / Faithfulness 双指标，出题、金标独立评审、评分器演进全留痕。
 
-**质量评测摘要**（权威入口：[eval/trustworthy-v1/README.md](eval/trustworthy-v1/README.md)，三套 204 题金标均经独立会话评审接受，评分器 `trustworthy.v1.10`，Faithfulness 为作答层口径）
+## 界面一览
 
-| holdout | 金标 | 最新 TSR / Faithfulness |
-| --- | --- | --- |
-| v5（现行线） | accepted | **0.966 / 0.957** |
-| v3 | accepted | 0.926 / 0.981 |
-| v4（含已声明测量偏差） | accepted_with_errata | 0.662 / 0.575 |
-
-**体验方式**：① Linux/WSLg [试用包](docs/试用安装.md)，下载即用，不需要 Node/conda；② 源码运行，见下文「安装与启动」；③ [云端 noVNC 在线演示](deploy/aliyun/README.md)，一台 ECS 十分钟拉起的按需演示形态。
-
-> **English summary** — PlanGo is a resumable local-life planning agent built as an Electron desktop app with a Python harness backend (PostgreSQL/Redis/FastAPI/worker). It drives a real embedded browser to read merchant pages and offers, keeps every claim source-linked with explicit unknowns, supports in-task edits of party size/date/budget, and resumes interrupted tasks after restart. Quality is measured by an independent eval suite (`eval/trustworthy-v1/`, 3×204 reviewed holdout tasks): current line TSR 0.966 / Faithfulness 0.96. Screenshots above were captured from the current build.
-
-运行和构建只使用本仓库源码、配置及依赖锁，不需要外部 Planora 仓库或服务。宿主机与容器内的 Python 均使用名为 `plango` 的 conda 环境；原 `planora` 环境保留，不作更名或修改。
-
-进度看 `git log`，评测结果看 `output/trustworthy-v1/` 下各批次报告原件；本文只描述当前如何安装、运行和验证。
-
-默认窗口为屏幕工作区的 75%（不小于 1280×840），并限制在屏幕工作区内；门店资料按已读/待核对范围分层展示，原始网页与证据可展开查看。
-
-功能暂不可用时，界面会说明当前情况和下一步，不直接展示内部异常。优惠读取失败可重新打开来源页核对；消息显示“送达待核实”或“已接收待取回”时，使用“核对送达并取回”继续原请求。不要用新建任务代替核对。
-
-质量评测体系是 `eval/trustworthy-v1/` 加 `scripts/trustworthy/`（CLI、执行器、TSR/Faithfulness 评分器），唯一权威入口与现行分数表见 `eval/trustworthy-v1/README.md`：TSR 为程序化 0/1 判定（附 Wilson 95% CI），Faithfulness 为规则层 + LLM-as-Judge 双层，两者定义见 `eval/trustworthy-v1/ATTEMPT_CONTRACT.md`。现行评分器 `trustworthy.v1.10`（v1.9 修观测面与原子子句，v1.10 起 Faithfulness 只计作答层——拒答文句属产品政策陈述、由 TSR 行为检查度量；演进见各 `SCORER_V*_NOTES.md`）；三套已审 holdout v3/v4/v5（各 204 题）金标均 accepted（v4 带勘误），当前线为 holdout-v5 r10：TSR 0.966 / Faithfulness 0.957（作答层口径，bootstrap [0.937, 0.974]；v3 为 0.926 / 0.981），双口径归因链见 `eval/trustworthy-v1/holdout-v5/RESULTS.md`。批次分数仍全部为 provisional_holdout——原因是评委与被测同模型，official 还差一次独立 runner 审计；**每批实际分数以 `output/trustworthy-v1/` 报告原件为准，重评不重跑**。旧 `quality-v*` 体系已于 2026-09-12 从工作树清理，历史在 git 中。
-
-真实门店已有局部开发验收；独立使用验收仍未完成。
-
-## 安装与启动
-
-Linux/WSLg 试用包的独立安装、非开发启动、配置诊断、升级与冷备份恢复见 [试用安装](docs/试用安装.md)。下面是源码开发环境的启动方式；试用包不需要 Node/npm、Vite 或主机 conda。
-
-需要 Node.js 22.12+、conda、uv、Docker Engine 与 Compose，以及能运行 Electron 的桌面环境。先安装依赖并初始化本项目配置：
-
-Linux/WSL 图形桌面可直接使用一键脚本，脚本会自动定位本仓库：
-
-```bash
-./start.sh  # 准备依赖和 plango 环境，等待 PlanGo Docker 就绪，后台启动桌面
-./stop.sh   # 停止本仓库桌面和 PlanGo 容器，保留数据库等数据卷
-```
-
-重复启动会复用已运行的本仓库桌面；更改 `.env` 后先停止再启动。脚本校验进程归属、PID 启动时间和容器目录标签，不按通用进程名停止其他项目。启动日志在 `output/lifecycle/setup.log` 和 `output/lifecycle/desktop.log`；并发启停会被拒绝。纯服务器没有图形显示时，请仅运行下方 Docker 服务命令。
-
-也可手动分步操作：
-
-```bash
-npm ci
-npm exec -- install-electron --no
-npm run setup:backend
-```
-
-Electron 44 不在 `npm ci` 的安装钩子里下载二进制；上面的 `install-electron` 使用官方入口下载并校验锁定版本，不启动窗口。一键启动和试用构建也会检查版本，只在依赖变化或二进制缺失/不匹配时补装，下载失败不会启动桌面。网络代理按本机 Node/npm 环境配置，不写入项目默认代理。
-
-已有 Electron 33 profile 首次升级前保留完整冷备份，先运行[隔离兼容检查](docs/试用安装.md#升级已有安装与接续当前项目)。试用升级仍需显式 `--allow-electron-upgrade`；已知降级拒绝。旧备份版本未知时可显式恢复到独立空目标，不会丢弃旧备份或伪造来源版本。
-
-Python 安装脚本创建或复用 Python 3.12 的 `plango` 环境，按本仓库 `uv.lock` 安装运行依赖，环境独立于兄弟项目。它保留已有 `.env`，不存在时从模板创建；自动生成缺失的后端 token、数据库密码，并写入 `PLANGO_PYTHON`。`.env` 被 Git 忽略，权限设为 0600，不要再用模板覆盖它。
-
-在本项目 `.env` 填写模型与高德配置。默认模板使用 `PLANGO_BACKEND_AUTOSTART=false` 连接 Docker 后端；已有配置不会被自动改成这个模式。
-
-```dotenv
-OPENAI_API_KEY=填写模型服务Key
-OPENAI_BASE_URL=填写兼容接口地址
-OPENAI_MODEL=填写模型名
-AMAP_WEBSERVICE_KEY=填写高德Web服务Key
-AMAP_JS_KEY=填写高德JavaScript Key
-AMAP_JS_SECURITY=填写高德JavaScript安全码
-```
-
-高德 JS 配置获取：登录[高德控制台](https://console.amap.com/)，在「应用管理 → 我的应用」创建或选择应用，再添加服务平台为 **Web端（JS API）** 的 Key。把该 Key 填入 `AMAP_JS_KEY`，对应安全密钥 `securityJsCode` 填入 `AMAP_JS_SECURITY`；它们和 Web 服务 Key 是不同的平台凭证。参见[官方申请步骤](https://lbs.amap.com/api/javascript-api-v2/prerequisites)。个人认证开发者可用于个人研究学习；获取这两个值不要求先升级企业认证。商业用途的技术服务许可和配额应另按[官方规则](https://lbs.amap.com/faq/advisory/authorization/43168)确认。
-
-「附近发现」统一请求本项目后端高德服务。明确地址/设备坐标使用 `/v5/place/around` 和 5 公里半径；城市、区级或 IP 参考位置使用 `/v5/place/text` 并标为同城发现。界面显示来源时间，缓存保留原时间，刷新明确绕过缓存。选店时后端按 POI ID 重新核对详情，保留用户起点。这不依赖 JS Key，也不证明实时库存、排队或可预约。
-
-然后启动服务与桌面：
-
-```bash
-npm run services:up
-npm run dev
-```
-
-默认后端地址为 `http://127.0.0.1:8011`。Docker 中包含 PostgreSQL、Redis、迁移、API 和 worker；浏览器由桌面 Electron 提供，API 容器本身没有浏览器。修改 Docker 模型或高德 Web 配置后，重新执行 `npm run services:up` 使配置生效；桌面设置不会改写已部署后端的环境。
-
-- 模型未配置时可观测页面、确定性解析受支持的菜单表格；规划和复杂抽取需要可用模型。图片导入还需要模型支持图像输入。
-- 地点、路线和天气需要高德 Web Key；地图展示需要 JavaScript Key 与安全码。浏览器读取当前页面不依赖高德。
-- 在应用内浏览器完成需要的账号登录。任务暂停时处理登录或验证码，再继续；手动接管会取消尚未执行的自动操作。
-
-最小演示：打开可读取的菜单页面，发送“读取当前页面的真实菜单”，核对名称、价格、未知项和来源。完整讲解见 [3 分钟 Demo](docs/Demo脚本_3分钟.md)。
-
-发送中断时，输入区会保留文字、图片和已选门店，并显示“未送达”“送达待核实”或“已接收·待取回任务”。点击“核对送达并取回”只查询原请求；需要重试时使用“继续发送原请求”或“按原请求重试”。不要复制成新任务来恢复同一次发送。只有确定未送达的请求可以取消并返回草稿；已经接收的请求只取回原任务。重启后先核对送达，保留同一任务及累计预算。
-
-“设置”或“连接与能力”中的“执行服务与能力”显示连接的服务、服务配置模型、最近任务记录的模型及能力范围。“测试服务模型”发起一次有界文本诊断；“测试桌面模型”使用桌面配置，两者不同。独立 worker 的当前配置尚未单独核对时会明确注明，历史调用或健康状态不能证明现在的模型和工具可用。新版可恢复发送需要支持该协议的后端；连接旧服务时会保留草稿并提示升级。
-
-读取同店优惠后，可先在比较卡修改人数、日期和预算，查看“不适用”原因或缺失规则。面值、售价和原价分别显示；98元双人餐不代表足够3人，代金券标价不代表全部餐费。选择“用于本次行程”后，核对网页与高德候选分店的名称、地址，再明确确认；原任务会保留选中的优惠来源，规则未齐或来源过期仍提示待核对，不自动抵扣优惠。
-
-聊天按接受顺序保留每轮输入和已记录的回复，关闭再打开也能回看；旧任务仅恢复真实保存过的澄清内容，不补写缺失回答。主界面采用明黄色、暖白底和深色文字，向上阅读时保持滚动位置。
-
-进入行程后，在需求卡修改条件会重新规划，保存后可从历史继续同一任务。搜索半径围绕搜索中心，单段路程上限核对实际路线，两者独立。公交仅覆盖能核实两端城市并完整解析的同城公交/步行组合；缺线路时路线未知，缺票价时费用未知。预算显示餐饮、活动和去程交通的已知估算小计；返程、额外消费、驾驶油费和停车费等仍需核对。
-
-也可以直接发送“人数改为3人，其他不变”或“日期改成2026年9月12日，取消单段路程上限”。修改保留同一任务和未提及条件；角色人数与总人数分开，日期不会作为目标地区查询。
-
-打开包含明确报价、规则或路线的资料页后，可以发送“只按这份条款判断适用性并给出总价”或“根据给定路线核对费用、路程和到达时间”。当前代码按来源记录区分选项，核对计价单位、抵扣门槛、分段路线和日期时段；每项结果保留原文和缺失条件。明确收费才计入已知小计，未确认优惠仅显示条件计算，缺票价、资格或使用规则仍为未知。费用、比较、适用性、距离、用时和到达时间分别检查是否回答；这些实现尚不证明新资料下可靠交付，也不自动购买或预约。
-
-悦廊的网页预约条件可通过官方预填链接核对，当前仅支持参数预览：购物车、空位查询与预约接口保持阻断，不能据此判断有位。结果会保留实际网页标签和核对时间，关闭后可继续原任务。
-
-## 配置与运行方式
-
-| 配置 | 作用 |
+| | |
 |---|---|
-| `OPENAI_API_KEY` / `OPENAI_BASE_URL` / `OPENAI_MODEL` | Docker 与后端使用的 OpenAI 兼容模型配置 |
-| `PLANGO_LLM_PROVIDER` / `LONGCAT_*` / `MINIMAX_*` | 桌面本地模式的兼容配置；Docker 统一填写 `OPENAI_*` |
-| `AMAP_WEBSERVICE_KEY` / `AMAP_JS_KEY` / `AMAP_JS_SECURITY` | 地点、路线、天气、地图与定位 |
-| `PLANGO_BACKEND_URL` | 桌面连接地址，默认 `http://127.0.0.1:8011` |
-| `PLANGO_BACKEND_AUTOSTART` | 模板为 `false`；设 `true` 可在无服务时启动本地后端 |
-| `PLANGO_BACKEND_TOKEN` | 桌面与后端共享的认证 token，由安装脚本补全 |
-| `PLANGO_POSTGRES_PASSWORD` | PlanGo Docker 数据库密码，由安装脚本补全 |
-| `PLANGO_SERVICE_PORT` | Docker 宿主机端口，默认 8011；改动后同步 `PLANGO_BACKEND_URL` |
-| `PLANGO_PYTHON` | `plango` 环境解释器绝对路径，由安装脚本写入 |
-| `PLANGO_DATA_DIR` | 本地模式数据目录；桌面默认 `app userData/harness`，容器为 `/data` |
-| `PLANGO_RUNTIME_PROFILE` | 本地为 `desktop`；Compose 固定为 `service` |
-| `PLANGO_AGENT_MODE` | `multi`/`single` 视角策略，默认 multi；不改变审批权限 |
-| `PLANGO_MAX_MODEL_TOKENS` / `PLANGO_MAX_TOOL_CALLS` / `PLANGO_MAX_RUN_SECONDS` | 每次明确用户输入的有界预算，默认 12000 / 48 / 300；累计用量保留，人工等待另存剩余时间 |
-| `PLANGO_EMBEDDING_API_KEY` / `PLANGO_EMBEDDING_BASE_URL` / `PLANGO_EMBEDDING_MODEL` | 可选独立向量接口；不配置独立 Key 时保持关闭，不借用聊天 Key |
-| `PLANGO_BROWSER_VISION_ENABLED` | 显式启用按需只读截图理解，示例默认 false；需已验证模型读图能力 |
+| ![开始新安排](docs/assets/onboarding.png) | ![内嵌浏览器读取真实门店](docs/assets/browser-reading.png) |
+| 从真实网页或场景开始一次安排 | 大众点评 / 美团 / 高德在应用内真实打开并读取 |
+| ![任务中的人工核对步骤](docs/assets/task-browser.png) | ![附近发现](docs/assets/discover-nearby.png) |
+| 浏览器步骤逐个人工核对后继续 | 基于高德的周边真实门店发现（带来源与定位说明） |
 
-不使用 Docker 时，可以让 Electron 启动 SQLite 后端与本地消费者。使用空闲端口，避免连接到仍在运行的 Docker API：
+## 质量评测
 
-```bash
-PLANGO_BACKEND_AUTOSTART=true PLANGO_RUNTIME_PROFILE=desktop PLANGO_BACKEND_URL=http://127.0.0.1:8012 npm run dev
+唯一权威入口：[eval/trustworthy-v1/README.md](eval/trustworthy-v1/README.md)。三套 204 题 holdout 金标均经独立会话评审接受，评分器 `trustworthy.v1.10`，Faithfulness 为作答层口径。
+
+| holdout | 金标 | TSR | Faithfulness |
+| --- | --- | --- | --- |
+| **v5（现行线，r10）** | accepted | **0.966** | **0.957** |
+| v3 | accepted | 0.926 | 0.981 |
+| v4（含已声明测量偏差） | accepted_with_errata | 0.662 | 0.575 |
+
+TSR 为程序化 0/1 判定（v5 Wilson 95% CI [0.931, 0.983]）；Faithfulness 为规则层 + LLM-as-Judge 双层（v5 bootstrap 95% CI [0.937, 0.974]）。批次分数均为 provisional_holdout（评委与被测同模型），每批实际分数以 `output/trustworthy-v1/` 报告原件为准，重评不重跑。
+
+## 架构
+
+![Agent 架构](figures/plango-agent-architecture.png)
+
+外层是集中式 Plan-and-Execute 工作流，页面内是受控 ReAct 循环；确定性协调器、LLM 专业节点与领域服务职责分离。任务闭环见[任务生命周期图](figures/plango-task-lifecycle.md)，固定决策见[架构决策](docs/架构决策.md)。
+
+```text
+src/renderer/            产品界面与展示投影（React + Zustand）
+src/main/                桌面壳层：后端连接、受信浏览器驱动（WebContentsView + CDP）
+backend/plango/          浏览器、业务、审批、记忆与提醒扩展（FastAPI + worker）
+vendor/plango_harness/   固定 Harness：规划图、执行器与上游基线
+eval/ + scripts/         可信评测体系与评分器
 ```
 
-两种模式都使用真实浏览器 Provider。它们的数据库独立，切换模式不会自动迁移历史。修改桌面模型配置会重启由桌面启动的后端；不会停止另外启动的服务。
+## 快速开始
 
-手动启动本地后端可用 `npm run backend`，它读取本项目 `.env` 并使用 conda `plango`；默认监听 8011，需先释放端口。桌面连接时设置 `PLANGO_BACKEND_AUTOSTART=false` 并使用相同 token。
+**① 试用包（Linux / WSLg，推荐）** —— 从 [Releases](https://github.com/LittleSongxx/PlanGo/releases) 下载 `plango-0.1.0-linux-x64-trustworthy-v5.tar.gz`，下载即用，不需要 Node/conda：
 
-## 功能与真实边界
+```bash
+sha256sum -c plango-0.1.0-linux-x64-trustworthy-v5.tar.gz.sha256
+python3 plango-unpack/scripts/trial.py install plango-0.1.0-linux-x64-trustworthy-v5.tar.gz \
+  "$HOME/.local/share/plango-trial" --project plango-trial --port 18021
+```
 
-- 行程经过需求、候选、编译与验证；数量以有效结果为准，选方案需提交确切 ID 和版本。
-- 成果页的“行程需求”卡可直接修改起点、搜索中心/范围、日期/时间、人数、预算及交通方式，并锁定/解锁当前方案的一站。保存走同一任务的稀疏规范补丁；空预算即取消，旧方案审批失效，原记录保留。搜索范围与单段路程分别校验，直接编辑上限50公里；锁定不冻结营业/价格证据。
-- 登录或验证码页会暂停到人工接管；已实测的大众点评扫码路由也在模型读取前暂停。首站已由用户完成登录，真实门店地址/推荐菜/优惠预览有只读证据；完整菜单、使用细则和真实表单仍未覆盖。登录页本身不算商家读取成功。
-- 浏览器实际导航、读取、滚动、输入和点击。审批绑定任务轮次、页面、快照与参数；改需求或页面后需重新核对。
-- 网页、菜单和优惠标记来源；缺价保持未知，套餐总价不当人均，邻店报价不归给目标店。复杂饮食等未完整验证的条件可保持部分完成。
-- 页面步骤完成后另行读取结果；通用“成功”文案不能证明商家、人数、金额和外部履约都正确。未确认结果保持 `UNKNOWN`，不会自动重复下单；用户核实后的说明与编号始终标为 `user` 来源。
-- 分享固定方案版本，投票与意见在桌面本地持久化；手机需能访问电脑的局域网分享地址，电脑需保持运行。
-- 明确偏好、收藏、任务经历和显式反馈保存在运行服务，可查看与删除；提醒支持恢复后补发。Skills 是本地任务指导，启用列表在新任务创建时固定，开关跨桌面重启保存。首启不生成虚构偏好、足迹或随机关怀。
-- 微信渠道、具体网站交易适配、账号流程、支付和外部对账仍需单独接入与验收；正常运行不会用模拟二维码、排队号或订单成功补齐流程。
+详见[试用安装](docs/试用安装.md)（安装、配置、诊断、升级与冷备份恢复）。
 
-Cookie 留在 Electron 持久会话分区，不直接发送给模型或后端。使用远程模型时，对话、相关记忆、网页片段和提交的截图可能发送到所配置的模型服务；高德也会接收查询与位置信息。默认本机 Docker 数据在本机数据卷，部署到其他机器时后端任务和记忆随部署端存储。分享链接会向持有链接且网络可达的人提供选定方案，不能概括为“所有数据绝不出电脑”。
+**② 源码运行** —— 需要 Node.js 22.12+、conda、uv、Docker 与桌面环境：
+
+```bash
+./start.sh    # 一键：依赖、plango 环境、Docker 服务就绪、后台启动桌面
+./stop.sh     # 停止桌面与容器，保留数据卷
+```
+
+在 `.env` 填写模型（OpenAI 兼容端点）与高德 Key（模板见 `.env.example`；`npm run setup:backend` 自动生成缺失 token 与数据库密码）。手动分步：`npm ci && npm exec -- install-electron --no && npm run setup:backend && npm run services:up && npm run dev`。
+
+**③ 云端在线演示** —— [deploy/aliyun/](deploy/aliyun/README.md)：一台阿里云 ECS 十分钟拉起完整桌面（noVNC 网页遥控），按需演示形态，已本地端到端验证。
+
+## 配置要点
+
+| 变量 | 作用 |
+|---|---|
+| `OPENAI_API_KEY` / `OPENAI_BASE_URL` / `OPENAI_MODEL` | 模型配置（OpenAI 兼容端点） |
+| `AMAP_WEBSERVICE_KEY` / `AMAP_JS_KEY` / `AMAP_JS_SECURITY` | 高德 Web 服务 / JS 地图凭证 |
+| `PLANGO_BACKEND_URL` / `PLANGO_BACKEND_TOKEN` | 桌面连接的后端地址与共享 token |
+| `PLANGO_MAX_MODEL_TOKENS` / `PLANGO_MAX_TOOL_CALLS` / `PLANGO_MAX_RUN_SECONDS` | 每次输入的有界预算（默认 12000 / 48 / 300） |
+| `PLANGO_RUNTIME_PROFILE` | `desktop` 本地 SQLite；Compose 固定 `service` |
+
+完整变量见 `.env.example` 与[设计文档](docs/设计文档_PlanGo.md)。
+
+## 能力边界（如实声明）
+
+- 登录、验证码与所有关键页面操作由人工确认；审批绑定任务轮次、页面快照与参数。
+- 未确认结果保持 `UNKNOWN`，不会自动下单；通用"成功"文案不能证明商家、金额与履约正确。
+- 真实商家履约、支付、任意网站表单不在能力内；正常运行不用模拟数据补齐流程。
+- Cookie 留在本地持久会话分区；使用远程模型时对话与网页片段会发送至所配置的模型服务。
+- 独立试用验收尚未完成（[验收记录](docs/独立试用验收.md)）；质量成绩以评测体系为准，不把局部演示当成全部完成。
 
 ## 检查与验收
 
-旧报告保留原结论与失败分母，不作为现行版本的通过凭据。
-
-进入行程后支持接续的结构化卡与真实扫码暂停；相关回归由 `backend/tests` 覆盖，不会自动联网或写库。
-
 ```bash
 npm run setup:backend -- --dev
-npm run check
-python3 scripts/check_lifecycle.py
-python3 scripts/migrate_config.py
-conda run --no-capture-output -n plango python backend/plango/migrations/check.py
-npm run test:independent
+npm run check            # 类型、UI/传输/分享回归、Python 回归与构建
+npm run test:independent # 独立验收检查
 ```
 
-`check` 包含类型、状态/定位/迁移、传输、模型错误处理、分享、Python 回归及构建；这些回归使用隔离测试数据。真实 Chromium/Electron 受控页面另行检查：
+真实 Chromium/Electron 页面另有 `test:browser*` / `test:desktop` / `test:deployed` 系列（见 `package.json`）；部署恢复门禁为 `scripts/check_service_recovery.py`，CI 沿用此门禁。
 
-```bash
-env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:browser
-env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:browser-view
-env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop
-env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:full-stack
-env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:map-title
-env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:desktop-storage-browser
-```
+## 文档
 
-浏览器已采用主进程 WebContentsView、经实测的 Playwright/CDP 与原生截图。renderer 只发送固定用户意图与布局，不持有任意脚本或 CDP 能力。用户、模型与执行器操作同一浏览会话；原生弹窗也保持该会话。截图理解每轮最多一次，须显式启用 `PLANGO_BROWSER_VISION_ENABLED`，目前仅用于只读理解/核验，不能代替提交审批或证明业务完成。
+[设计文档](docs/设计文档_PlanGo.md) · [架构决策](docs/架构决策.md) · [3 分钟 Demo](docs/Demo脚本_3分钟.md) · [试用安装](docs/试用安装.md) · [评测体系](eval/trustworthy-v1/README.md) · [上游维护](vendor/plango_harness/SNAPSHOT.json)
 
-部署 API 与实际模型检查须在本项目无进行中操作时运行：
+---
 
-```bash
-conda run --no-capture-output -n plango python scripts/check_service_recovery.py
-PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plango-e2e env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed
-PLANGO_TEST_BACKEND_URL=http://127.0.0.1:18011 PLANGO_TEST_COMPOSE_PROJECT=plango-e2e env -u ELECTRON_RUN_AS_NODE xvfb-run -a npm run test:deployed -- --vision
-```
-
-`check_service_recovery.py` 自动创建并清理专属 `plango-e2e-*` Compose项目，使用无模型、无真实浏览器的受控传输样本检查PostgreSQL/Redis/API/worker队列与恢复；CI沿用此门禁，报告保存在 `output/service-recovery-*/report.json`。它不读取用户模型凭据，不属于质量评测。
-
-`test:deployed` 必须连接独立 `plango-e2e` 服务（先用 `PLANGO_SERVICE_PORT=18011 docker compose -p plango-e2e up --build -d --wait` 启动），脚本核对容器归属和端口，拒绝主用户服务。它调用真实模型并仅重启测试 API/worker，页面分别为受控菜单和 Canvas，保留任务与恢复证据；不进行真实商家交易。完整链路脚本默认写入带时间目录的 `output/full-stack-smoke/`，不覆盖历史。
-
-测试中的 `--no-sandbox` 仅用于隔离 Linux 测试；正常应用保留浏览器沙箱。真实商家履约、任意网站表单和支付均不能由这些受控检查推断。
-
-## 服务维护
-
-```bash
-docker compose ps
-npm run services:down
-```
-
-`services:down` 停止服务并保留数据卷。Compose 使用 PlanGo 专属项目名与数据卷，API 默认只绑定本机；PostgreSQL/Redis 不暴露宿主机端口。首次及后续迁移由 `migrate` 服务执行，消费者为本项目 `plango.worker`。
-
-容器基于 Miniforge，创建 `plango` conda 环境并安装本仓库锁定依赖；uv 用于导出锁和安装到该环境，不创建项目 `.venv`。旧 `.venv` 与缓存已清理，`node_modules` 和 `out` 保留用于当前桌面启动。
-
-## 模块与上游维护
-
-当前实现见 [设计文档](docs/设计文档_PlanGo.md)、[架构图](figures/plango-agent-architecture.md) 与 [任务闭环图](figures/plango-task-lifecycle.md)。外层是集中式 Plan-and-Execute 工作流，页面内是受控 ReAct 循环；确定性协调器、LLM专业节点和领域服务职责分开。single/multi 表示是否启用额外视角，并非两套运行架构。产品当前不集成 MCP，Skills 不授予工具权限。
-
-自然语言轮次先加载记忆，再用同一结构化调用产生目标和稀疏需求补丁；规划复用同轮已核验补丁，结构化需求卡沿原入口提交。浏览器大结果在回执确认落盘后释放，命令身份继续防重放。未配置外部追踪平台，也未证明长期稳定或成本优势。
-
-固定决策见 [架构决策](docs/架构决策.md)。
-
-```text
-src/renderer/            产品界面与展示投影
-src/main/harness*.ts     后端启动、认证、任务与回执传输
-src/main/browser-bridge.ts
-src/shared/browser.ts   浏览器命令契约与执行边界
-backend/plango/            浏览器、业务、审批、记忆和提醒扩展
-vendor/plango_harness/          固定 Harness 源码与上游基线
-pyproject.toml / uv.lock 本项目 Python 依赖声明与锁
-```
-
-本次清理移除了不可达的旧 TypeScript Agent/规划器、模拟供给与交易链、旧 CLI/eval 入口，以及过时设计 PDF/LaTeX 和专用截图；2026-09-12 进一步移除了旧 `quality-v*` 评测体系（数据集、harness、报告与说明，git 历史可查），现行评测体系为 `eval/trustworthy-v1/`。10 个场景 Skill 保留需求要点，执行指导已同步到当前操作与审批。当前 [设计文档](docs/设计文档_PlanGo.md) 与 [Demo](docs/Demo脚本_3分钟.md) 已同步到实现边界。
-
-Planora 基线来自 v7 公开冻结归档，包含当时未提交的公开实现。来源和逐文件哈希见 [SNAPSHOT.json](vendor/plango_harness/SNAPSHOT.json)，完整基线在 `vendor/plango_harness/upstream-base.tar.gz`。日常构建与运行都不读取外部仓库；维护时可显式检查上游：
-
-```bash
-npm run upstream:check -- --source /path/to/Planora
-```
-
-该命令只读报告上游变化、本地补丁和需要三方合并的文件，不会覆盖任何仓库。
+> **English summary** — PlanGo is a resumable local-life planning agent: an Electron desktop app driving a real embedded browser, backed by a Python harness (FastAPI/PostgreSQL/Redis). Every delivered claim keeps its source link and explicit unknowns; tasks survive interruption and restart. Quality is measured by an independently reviewed eval suite (`eval/trustworthy-v1/`, 3×204 holdout tasks): current line TSR 0.966 / Faithfulness 0.957. All screenshots are from the current build.
