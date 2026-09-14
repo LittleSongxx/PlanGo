@@ -259,6 +259,7 @@ def calculate(
             operation, operands = calculation.operation, [
                 _resolve_operand(item, known) for item in calculation.operands
             ]
+            result["operands_resolved"] = list(operands)
             expected = 1 if operation == "date_weekday" else 2
             if operation not in {"sum", "multiply", "add"} and len(operands) != expected:
                 raise ValueError("wrong_operand_count")
@@ -800,12 +801,15 @@ def _calculation_trail(answer: str, context: dict[str, Any]) -> str | None:
         )
         scope = quotes or sources
         parts = []
-        for operand in [str(item) for item in (row.get("operands") or [])]:
+        # A step may name an earlier result; the trail shows the number that
+        # was actually computed, never the identifier, and each operation
+        # prints its own sign so the recited arithmetic stays true.
+        for operand in [str(item) for item in (row.get("operands_resolved") or row.get("operands") or [])]:
             label = _label_for_number(operand, scope)
             parts.append(f"{label}{operand}" if label else operand)
         if len(parts) < 2 or all(part in answer for part in parts[:2]):
             return None
-        joiner = "×" if row.get("operation") == "multiply" else "+"
+        joiner = {"multiply": "×", "subtract": "−", "divide": "÷"}.get(row.get("operation"), "+")
         return f"计算过程：{joiner.join(parts)}={value}。"
     return None
 

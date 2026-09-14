@@ -776,13 +776,31 @@ def test_calculated_answer_carries_the_worked_trail():
         "sources": [{"records": [{"text": "茶位212 元、例汤一盅256 元、时令沙拉238 元。"}]}],
         "tool_results": [
             {"tool": "calculate", "scope": "arithmetic_only", "ok": True, "id": "t", "operation": "sum",
-             "operands": ["212", "256", "238"], "value": "1186"}
+             "operands": ["212", "256", "238"], "operands_resolved": ["212", "256", "238"], "value": "1186"}
         ],
     }
     out = enforce_delivery_contract(task, context)
     assert "计算过程" in out.answer and "茶位212" in out.answer and "=1186" in out.answer
     again = enforce_delivery_contract(out, context)
     assert again.answer.count("计算过程") == 1
+
+
+def test_the_worked_trail_prints_its_own_sign_and_resolved_numbers():
+    # "794+718=76" was a subtraction shown as a sum — the recited arithmetic
+    # contradicted itself; a step named by an earlier result printed its
+    # identifier instead of the number that was computed.
+    task = TaskDecision(operation="answer", answer="甲店比乙店贵 76 元。")
+    context = {
+        "current_request": "贵多少？",
+        "sources": [{"records": [{"text": "甲店合计 794 元，乙店合计 718 元。"}]}],
+        "tool_results": [
+            {"tool": "calculate", "scope": "arithmetic_only", "ok": True, "id": "diff", "operation": "subtract",
+             "operands": ["total_a", "total_b"], "operands_resolved": ["794", "718"], "value": "76"}
+        ],
+    }
+    out = enforce_delivery_contract(task, context)
+    assert "计算过程：" in out.answer and "794−718=76" in out.answer
+    assert "total_a" not in out.answer
 
 
 def test_clear_flag_alone_clears_but_not_beside_the_other_budget():
