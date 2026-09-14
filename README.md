@@ -4,6 +4,8 @@ PlanGo 是可恢复的本地生活规划 Agent：基于门店资料比较优惠�
 
 ![PlanGo 桌面主界面：内嵌真实浏览器与任务画布](docs/assets/desktop-workspace.png)
 
+![开始新安排：真实网页快捷入口与场景卡片](docs/assets/onboarding.png)
+
 **核心能力**
 
 - 真实浏览器受控执行：导航、滚动、输入、点击；登录页与验证码暂停等待人工接管，操作绑定页面快照与参数，全程可核对。
@@ -21,6 +23,8 @@ PlanGo 是可恢复的本地生活规划 Agent：基于门店资料比较优惠�
 | v4（含已声明测量偏差） | accepted_with_errata | 0.662 / 0.505 |
 
 **体验方式**：① Linux/WSLg [试用包](docs/试用安装.md)，下载即用，不需要 Node/conda；② 源码运行，见下文「安装与启动」；③ [云端 noVNC 在线演示](deploy/aliyun/README.md)，一台 ECS 十分钟拉起的按需演示形态。
+
+> **English summary** — PlanGo is a resumable local-life planning agent built as an Electron desktop app with a Python harness backend (PostgreSQL/Redis/FastAPI/worker). It drives a real embedded browser to read merchant pages and offers, keeps every claim source-linked with explicit unknowns, supports in-task edits of party size/date/budget, and resumes interrupted tasks after restart. Quality is measured by an independent eval suite (`eval/trustworthy-v1/`, 3×204 reviewed holdout tasks): current line TSR 0.951 / Faithfulness 0.51. Screenshots above were captured from the current build.
 
 运行和构建只使用本仓库源码、配置及依赖锁，不需要外部 Planora 仓库或服务。宿主机与容器内的 Python 均使用名为 `plango` 的 conda 环境；原 `planora` 环境保留，不作更名或修改。
 
