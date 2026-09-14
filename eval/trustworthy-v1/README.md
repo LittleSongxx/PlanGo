@@ -4,7 +4,7 @@ PlanGo 的质量评测与产品优化主线。双指标：**TSR**（任务成功
 与 **Faithfulness**（事实支持率，规则层 + LLM-as-Judge 双层，幻觉数字在规则层即判不支持）。
 本文是这条线的唯一权威入口；被清理的早期文档与 v1/v2 数据集在 git 历史中（`1b17cc0` 及更早）。
 
-- 评分器：`trustworthy.v1.8`（`scripts/trustworthy/`），演进实录见 `SCORER_V1_3_NOTES.md` … `SCORER_V1_8_NOTES.md`
+- 评分器：`trustworthy.v1.9`（`scripts/trustworthy/`），演进实录见 `SCORER_V1_3_NOTES.md` … `SCORER_V1_9_NOTES.md`
 - 合同：`ATTEMPT_CONTRACT.md`（七种 check、uncertainty 投影、F 只评 completed）
 - 出题与审阅纪律：`AUTHORING.md`（出题另开会话）、`PRODUCT_INVENTORY.md`（字段白名单）
 - 最高原则：见仓库根 `AGENTS.md`——功能与任务完成优先，避免过拟合；不能为抬分改金标/加词表。
@@ -15,23 +15,25 @@ PlanGo 的质量评测与产品优化主线。双指标：**TSR**（任务成功
 | --- | --- | --- | --- |
 | holdout-v3 | accepted | 0.926–0.931 / 0.99 | `holdout-v3/RESULTS-*.md`；同码方差 ±1 题 |
 | holdout-v4 | accepted_with_errata | 0.662 / 0.505（r3+v1.8）；去针反事实 0.917 | `holdout-v4/RESULTS-*.md`；「两/没」针为已声明测量偏差 |
-| holdout-v5 | accepted（2026-09-13，无勘误） | **0.951 / 0.51**（r7/r7b） | `holdout-v5/RESULTS-r2-r4.md`、`RESULTS-r6-r7.md` |
+| holdout-v5 | accepted（2026-09-13，无勘误） | **0.951 / 0.846**（r7c，评分器 v1.9） | `holdout-v5/RESULTS-r2-r4.md`、`RESULTS-r6-r7.md`、`RESULTS-r8-v1.9.md` |
 
 全部 provisional_holdout（评委与被测同模型）；official 还差一次独立 runner 审计。
 分数出处：`output/trustworthy-v1/holdout-v{3,4,5}-*.json`（attempts 内嵌 product_sha /
 scorer_sha / prompt_sha 溯源；报告重评不重跑）。
 
-## v5 优化主线（0.588 → 0.951 的修复链）
+## v5 优化主线（TSR 0.588 → 0.951、F 0.43 → 0.85 的修复链）
 
-| 轮 | 产品 commit | TSR | 修复 |
-| --- | --- | --- | --- |
-| r1 | `01af6c0` 基线 | 0.588 | 结构声明仅靠 schema 说明 |
-| r4 | `6eafe17` | 0.799 | 准入重试（`uncertainty_declaration_required`），conflict 34/34 |
-| r6 | `7f63c82` | 0.912 | ①缺值答复复述页上相邻事实；②goal 回声剔除（口述落卡不再被 plan 卡死） |
-| r7 | `89adacb` | **0.951** | ③合计口径合同（费用项全计入）；④已赋值澄清不扣卡；⑤距离组清除护栏 |
+| 轮 | 产品 commit | TSR | F* | 修复 |
+| --- | --- | --- | --- | --- |
+| r1 | `01af6c0` 基线 | 0.588 | — | 结构声明仅靠 schema 说明 |
+| r4 | `6eafe17` | 0.799 | 0.432 | 准入重试（`uncertainty_declaration_required`），conflict 34/34 |
+| r6 | `7f63c82` | 0.912 | 0.528 | ①缺值答复复述页上相邻事实；②goal 回声剔除（口述落卡不再被 plan 卡死） |
+| r7c | `89adacb` | **0.951** | **0.846** | ③合计口径合同；④已赋值澄清不扣卡；⑤距离组清除护栏（F 为 v1.9 重评） |
+| r8 | `5db7127` | 0.931 | 0.861 | ⑥算式附注符号与变量解析（正确性优先；2 题 substance 阈值边缘交互，见 RESULTS） |
 
+\* F 列在 r4/r6 为当轮 v1.8 口径、r7c/r8 为 v1.9 口径；跨评分器不可直接相减，
+v1.8→v1.9 的差是评分器观测面修复（同一份 attempts 重评：0.517→0.846）。
 r7 分层：conflict 34/34、sparse 34/34、unknown 33/34、calculate 32/34、persist 31/34、boundary 30/34。
-剩余 10 失败：boundary 拒答复述实义不足 4（下一个优化目标）、substance 阈值边界 4、提取噪声方差 2。
 
 ## 常用命令
 
