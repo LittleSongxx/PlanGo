@@ -33,6 +33,13 @@ TSR 与 F 的裁决矛盾是最强证据：同一份读卡交付，`field_equals
   值仍按无来源处理，那条子句独立承担 unsupported，不连坐邻句）。
 - 不动 `_contract_label` 的幻觉数字判死规则、不动 boundary 拒答复述的已知限制。
 
+## 勘误补记（r9 轮，`f06f0c9`）
+
+- UNCERTAINTY 家族补「无法确认」（与"无法确定"一字之差，同族同义）：
+  boundary 拒答复述中的"无法确认X结果"从此按 non-factual 处理。带数字的
+  拒答句仍走数字 gate（电话类幻觉不放过）。
+- 版本号保持 v1.9：词表补丁以 `scorer_sha` 区分（指纹覆盖源码）。
+
 ## 验证
 
 - `backend/tests/test_trustworthy_metrics.py` 42 passed：豁免单元（句号级）保持、
