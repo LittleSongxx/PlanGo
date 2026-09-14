@@ -22,6 +22,8 @@ Electron 桌面 × Python Harness（FastAPI / PostgreSQL / Redis / worker）× �
 | 从真实网页或场景开始一次安排 | 大众点评 / 美团 / 高德在应用内真实打开并读取 |
 | ![任务中的人工核对步骤](docs/assets/task-browser.png) | ![附近发现](docs/assets/discover-nearby.png) |
 | 浏览器步骤逐个人工核对后继续 | 基于高德的周边真实门店发现（带来源与定位说明） |
+| ![执行服务与能力](docs/assets/capabilities.png) | ![诚实结论](docs/assets/task-verdict.png) |
+| 连接、模型与能力范围透明可核 | 约束不可行时如实说明，不伪造方案 |
 
 ## 质量评测
 
