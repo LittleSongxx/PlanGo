@@ -1,0 +1,34 @@
+# PlanGo 作品集演示栈：include 仓库主 compose（postgres/redis/migrate/api/worker），
+# 只新增 desktop-demo 服务——Electron 桌面跑在容器内，经 noVNC 用浏览器遥控。
+# 用法与安全注意事项见 deploy/aliyun/README.md；密钥全部来自 --env-file 指向的 .env，不写入镜像。
+include:
+  - ../../docker-compose.yml
+
+services:
+  desktop-demo:
+    image: plango-desktop-demo:local
+    build:
+      context: ../..
+      dockerfile: deploy/aliyun/desktop-demo/Dockerfile
+    environment:
+      # 桌面经 compose 内部网络连接本项目 API，不走公网
+      PLANGO_BACKEND_URL: http://api:8011
+      PLANGO_BACKEND_TOKEN: ${PLANGO_BACKEND_TOKEN:?Set PLANGO_BACKEND_TOKEN before starting the demo}
+      PLANGO_BACKEND_AUTOSTART: 'false'
+      PLANGO_RUNTIME_PROFILE: desktop
+      PLANGO_AGENT_MODE: ${PLANGO_AGENT_MODE:-multi}
+      # 桌面侧模型配置（连接测试/视觉理解用）；任务执行模型由 api/worker 容器读取同一组值
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      # 地图展示需要 JS Key 与安全码；Web 服务 Key 只给 api 容器
+      AMAP_JS_KEY: ${AMAP_JS_KEY:-}
+      AMAP_JS_SECURITY: ${AMAP_JS_SECURITY:-}
+    ports:
+      - '${PLANGO_DEMO_BIND:-0.0.0.0}:${PLANGO_DEMO_PORT:-6080}:6080'
+    # Electron/Chromium 需要较大的共享内存，否则内嵌浏览器页签易崩
+    shm_size: 1gb
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

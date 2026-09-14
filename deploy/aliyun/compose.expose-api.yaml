@@ -1,0 +1,8 @@
+# 可选叠加层：把 API 发布到公网（主 compose 默认只绑 127.0.0.1）。
+# 供作品集展示 API 健康/能力信息或桌面试用包直连远程后端；API 全程要求 Bearer token。
+# 不含 TLS/反代/限流，不要当生产配置用。用法：
+#   docker compose -f deploy/aliyun/compose.demo.yaml -f deploy/aliyun/compose.expose-api.yaml up -d
+services:
+  api:
+    ports: !override
+      - '${PLANGO_DEMO_BIND:-0.0.0.0}:${PLANGO_SERVICE_PORT:-8011}:8011'
