@@ -19,7 +19,7 @@ PlanGo 是可恢复的本地生活规划 Agent：基于门店资料比较优惠�
 | holdout | 金标 | 最新 TSR / Faithfulness |
 | --- | --- | --- |
 | v5（现行线） | accepted | **0.951 / 0.51** |
-| v3 | accepted | 0.926–0.931 / 0.99 |
+| v3 | accepted | 0.926 / 0.99 |
 | v4（含已声明测量偏差） | accepted_with_errata | 0.662 / 0.505 |
 
 **体验方式**：① Linux/WSLg [试用包](docs/试用安装.md)，下载即用，不需要 Node/conda；② 源码运行，见下文「安装与启动」；③ [云端 noVNC 在线演示](deploy/aliyun/README.md)，一台 ECS 十分钟拉起的按需演示形态。
@@ -30,11 +30,11 @@ PlanGo 是可恢复的本地生活规划 Agent：基于门店资料比较优惠�
 
 进度看 `git log`，评测结果看 `output/trustworthy-v1/` 下各批次报告原件；本文只描述当前如何安装、运行和验证。
 
-默认窗口为1800×1120，并限制在屏幕工作区内；门店资料按已读/待核对范围分层展示，原始网页与证据可展开查看。
+默认窗口为屏幕工作区的 75%（不小于 1280×840），并限制在屏幕工作区内；门店资料按已读/待核对范围分层展示，原始网页与证据可展开查看。
 
 功能暂不可用时，界面会说明当前情况和下一步，不直接展示内部异常。优惠读取失败可重新打开来源页核对；消息显示“送达待核实”或“已接收待取回”时，使用“核对送达并取回”继续原请求。不要用新建任务代替核对。
 
-质量评测体系是 `eval/trustworthy-v1/` 加 `scripts/trustworthy/`（CLI、执行器、TSR/Faithfulness 评分器），唯一权威入口与现行分数表见 `eval/trustworthy-v1/README.md`：TSR 为程序化 0/1 判定（附 Wilson 95% CI），Faithfulness 为规则层 + LLM-as-Judge 双层，两者定义见 `eval/trustworthy-v1/ATTEMPT_CONTRACT.md`。现行评分器 `trustworthy.v1.8`；三套已审 holdout v3/v4/v5（各 204 题）金标均 accepted（v4 带勘误），当前线为 holdout-v5 r7：TSR 0.951 / Faithfulness 0.51（v3 为 0.926–0.931 / 0.99）。批次分数仍全部为 provisional_holdout——原因是评委与被测同模型，official 还差一次独立 runner 审计；**每批实际分数以 `output/trustworthy-v1/` 报告原件为准，重评不重跑**。旧 `quality-v*` 体系已于 2026-09-12 从工作树清理，历史在 git 中。
+质量评测体系是 `eval/trustworthy-v1/` 加 `scripts/trustworthy/`（CLI、执行器、TSR/Faithfulness 评分器），唯一权威入口与现行分数表见 `eval/trustworthy-v1/README.md`：TSR 为程序化 0/1 判定（附 Wilson 95% CI），Faithfulness 为规则层 + LLM-as-Judge 双层，两者定义见 `eval/trustworthy-v1/ATTEMPT_CONTRACT.md`。现行评分器 `trustworthy.v1.8`；三套已审 holdout v3/v4/v5（各 204 题）金标均 accepted（v4 带勘误），当前线为 holdout-v5 r7：TSR 0.951 / Faithfulness 0.51（v3 为 0.926 / 0.99）。批次分数仍全部为 provisional_holdout——原因是评委与被测同模型，official 还差一次独立 runner 审计；**每批实际分数以 `output/trustworthy-v1/` 报告原件为准，重评不重跑**。旧 `quality-v*` 体系已于 2026-09-12 从工作树清理，历史在 git 中。
 
 真实门店已有局部开发验收；独立使用验收仍未完成。
 

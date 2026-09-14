@@ -38,7 +38,7 @@ printf 'PLANGO_BACKEND_TOKEN=%s\nPLANGO_POSTGRES_PASSWORD=%s\n' \
 docker compose -p plango --env-file .env -f deploy/aliyun/compose.demo.yaml up -d --build
 ```
 
-6. 浏览器打开 `http://<ECS公网IP>:6080/vnc.html`，点 Connect，即可看到 1800×1120 的 PlanGo 桌面。中文输入用 noVNC 左侧剪贴板面板粘贴（容器内无输入法）。
+6. 浏览器打开 `http://<ECS公网IP>:6080/vnc.html`，点 Connect，即可看到 PlanGo 桌面（默认窗口约为虚拟显示的 75%）。中文输入用 noVNC 左侧剪贴板面板粘贴（容器内无输入法）。
 7. （可选）公开 API 供展示或桌面试用包直连：再叠加 `-f deploy/aliyun/compose.expose-api.yaml` 后 `up -d`；API 全程要求 Bearer `PLANGO_BACKEND_TOKEN`。
 
 ## 安全与成本（务必读）
