@@ -216,7 +216,7 @@ npm run services:down
 
 自然语言轮次先加载记忆，再用同一结构化调用产生目标和稀疏需求补丁；规划复用同轮已核验补丁，结构化需求卡沿原入口提交。浏览器大结果在回执确认落盘后释放，命令身份继续防重放。未配置外部追踪平台，也未证明长期稳定或成本优势。
 
-固定决策见 [架构决策](docs/架构决策.md)。[旧工作流](figures/yoyu-current-workflow.md) 和 [历史目标建议](figures/yoyu-target-workflow.md) 保留作历史证据，不代表当前缺口或已实现功能。
+固定决策见 [架构决策](docs/架构决策.md)。
 
 ```text
 src/renderer/            产品界面与展示投影
