@@ -299,7 +299,7 @@ def test_cli_validate_and_score(tmp_path, capsys):
     assert report["tsr"]["wilson_95"]["low"] < report["tsr"]["point"] < report["tsr"]["wilson_95"]["high"]
     assert "not a holdout official score" in report["disclaimer"]
     assert report["faithfulness"]["bootstrap_95"]["draws"] == 2000
-    assert report["scorer_version"] == "trustworthy.v1.9-rules"
+    assert report["scorer_version"] == "trustworthy.v1.10-rules"
     coverage = report["coverage"]
     assert coverage["faithfulness_lower_bound"] is not None
     assert coverage["faithfulness_scored"] == len([row for row in report["cases"] if row["faithfulness"] is not None])

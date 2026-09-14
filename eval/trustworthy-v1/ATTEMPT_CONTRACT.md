@@ -71,4 +71,5 @@
 
 - 开发集：`report_kind=provisional_dev`，不得自称未见正式分。
 - Faithfulness 只评 `outcome=completed` 的交付（2026-09-13 修订，v1.8 起）：失败轮的兜底文案是过程陈述不是事实断言，TSR 已承载该失败；这些题离开 F 分母、计入 coverage 块。
+- Faithfulness 不评 boundary 层（2026-09-14 修订，v1.10 起）：拒答的解释性文句是关于产品自身的政策与指引，任何观测都无法为其作证（把系统合同并入观测会构成循环论证）；拒答行为由 TSR 的 forbidden_absent、business_completed、substance 检查度量。boundary 的 completed 交付同样计入 coverage 块。sparse 的确认型短交付不进分母是同一原则。
 - 本 holdout 在独立审金标完成前：`evaluation_kind=holdout_unreviewed`，不得报 official holdout 分。

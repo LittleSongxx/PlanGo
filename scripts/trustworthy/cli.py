@@ -53,7 +53,12 @@ def _score_rows(
         # completed never delivered one — its fallback text is process, not
         # claims, and TSR already carries the failure. Those tasks leave the
         # F denominator and show up in the coverage block instead.
-        if str(attempt.get("outcome") or "") == "completed":
+        # The boundary layer joins them by design: an abstention's prose is
+        # policy and guidance about the product itself, which no observation
+        # can vouch for; its conduct is measured by TSR's forbidden-needle,
+        # business_completed and substance checks. Sparse confirmations
+        # already sit outside the denominator for the same reason.
+        if str(attempt.get("outcome") or "") == "completed" and task.get("layer") != "boundary":
             faith = score_delivery(attempt.get("delivery"), pack, judge=judge, complete=complete)
         else:
             faith = {"applicable": False, "faithfulness": None, "claims": [], "factual_claims": 0, "supported": 0, "judge": judge}
