@@ -1,0 +1,22 @@
+# 桌面演示镜像专用 dockerignore（构建上下文与后端镜像相同，但需要前端源码）。
+# 根目录 .dockerignore 是后端白名单式，不含 src/ 等前端路径，故此处单独维护。
+**
+!package.json
+!package-lock.json
+!electron.vite.config.ts
+!tsconfig.json
+!tsconfig.node.json
+!tsconfig.web.json
+!tailwind.config.js
+!postcss.config.js
+!src/
+!src/**
+!deploy/aliyun/desktop-demo/entrypoint.sh
+!README.md
+**/node_modules/**
+**/out/**
+**/.git*
+**/.env*
+**/__pycache__/**
+**/*.pyc
+**/.DS_Store
