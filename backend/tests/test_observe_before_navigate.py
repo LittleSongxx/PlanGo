@@ -629,3 +629,34 @@ async def test_quantity_answer_gives_up_after_calculate_retries(tmp_path, monkey
     assert update["outcome"] == "PARTIAL_FAILED"
     assert update["trace"][-1]["event"] == "task_decision_unusable"
     assert update["trace"][-1]["payload"]["error"] == "quantity_requires_calculate"
+
+
+async def test_an_address_the_user_wrote_is_opened_whatever_its_spelling(tmp_path, monkeypatch):
+    """The user typed a link with its real characters; the model sends it percent-encoded.
+
+    One address, two spellings. Refusing the canonical one strands the run on a page it
+    was told to leave, and the model then re-reads that page until the budget is gone.
+    """
+    encoded = "https://www.dianping.com/search/keyword/68/0_%E4%BA%B2%E5%AD%90%E9%A4%90%E5%8E%85"
+    written = "打开 https://www.dianping.com/search/keyword/68/0_亲子餐厅 ，读取第一页前3家"
+    node = decide_node(tmp_path, monkeypatch, TaskDecision(
+        operation="read", browser=BrowserDecision(operation="navigate", url=encoded)))
+    update = await node.ainvoke(read_state(browser_task_context={
+        "mode": "browser", "kind": "task", "operation": "read",
+        "request": written, "edits": [], "tool_results": [],
+    }))
+    assert update["browser_next"]["operation"] == "navigate", update["browser_next"]
+    assert update["browser_next"]["url"] == encoded
+    assert not [t for t in update["browser_task_context"]["tool_results"] if t.get("tool") == "observe_current_page"]
+
+
+async def test_an_address_the_user_never_wrote_is_still_refused_in_any_spelling(tmp_path, monkeypatch):
+    """Canonicalising must not turn into a licence to leave for somewhere unasked."""
+    written = "打开 https://www.dianping.com/search/keyword/68/0_亲子餐厅 ，读取第一页前3家"
+    node = decide_node(tmp_path, monkeypatch, TaskDecision(
+        operation="read", browser=BrowserDecision(operation="navigate", url="https://www.meituan.com/s/%E7%81%AB%E9%94%85")))
+    update = await node.ainvoke(read_state(browser_task_context={
+        "mode": "browser", "kind": "task", "operation": "read",
+        "request": written, "edits": [], "tool_results": [],
+    }))
+    assert update["browser_next"]["operation"] == "extract", update["browser_next"]

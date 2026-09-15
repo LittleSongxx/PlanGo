@@ -6,7 +6,7 @@ import re
 import time
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Literal
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from langgraph.graph import END
 from langgraph.types import interrupt
@@ -92,8 +92,31 @@ def _working_from_draft(state) -> bool:
     return bool(spec.get("selected_offer") or spec.get("must_visit_place_ids"))
 
 
+def _address(value):
+    """The address a spelling points at: encoding, case and a missing slash are not part of it."""
+    try:
+        parts = urlsplit(str(value or "").strip())
+    except ValueError:
+        return None
+    if not parts.scheme or not parts.netloc:
+        return None
+    return (parts.scheme.lower(), parts.netloc.lower(), unquote(parts.path) or "/", unquote(parts.query))
+
+
 def _user_wrote_url(state, url) -> bool:
-    return bool(url) and str(url) in task_text(state)
+    """Compare addresses, not spellings, so the user's own link is recognised.
+
+    A user types a link as it reads; the model answers with the same address
+    percent-encoded. The literal check refused the user's own target and left the run
+    re-reading the page it was told to leave.
+    """
+    wanted = _address(url)
+    if wanted is None:
+        return False
+    text = task_text(state)
+    if str(url) in text:
+        return True
+    return any(_address(token) == wanted for token in re.findall(r"https?://[^\s，。；、）】》\"']+", text))
 
 
 def _live_page(state) -> bool:
@@ -901,8 +924,12 @@ def build_desktop_graph(runtime, deps, checkpointer):
         runtime.world_service.provider.bind_run_state(state)
         decision = BrowserDecision.model_validate(state["browser_next"])
         steps = state.get("browser_steps", 0)
+        # browser_steps is a run-wide progress counter (artifact ids and the vision gate
+        # read it), so one command's allowance is measured against its grant baseline the
+        # way tool_call_count is -- never by resetting the counter.
+        spent = max(0, steps - int((state.get("turn_budget") or {}).get("browser_baseline", 0) or 0))
         if (
-            steps >= min(12, deps.max_tool_calls)
+            spent >= min(12, deps.max_tool_calls)
             or state.get("tool_call_count", 0) >= deps.tool_limit(state)
         ):
             return {
