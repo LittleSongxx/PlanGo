@@ -65,6 +65,10 @@ class DiscoveryAgent:
         places: dict[str, PlaceCandidate] = {}
         evidence: list[Evidence] = []
         searched: set[str] = set()
+        # A typed activity phrased so the provider retrieves nothing (verbatim user
+        # words are not provider keywords). Its supplement rows are recorded under
+        # the activity so stop-level activity coverage still binds to real evidence.
+        starved: list[str] = []
         for attempt in range(2 if primary else 1):
             for query in queries:
                 if query in searched:
@@ -79,13 +83,38 @@ class DiscoveryAgent:
                 )
                 place_ids = {row.place_id for row in rows}
                 evidence.extend(_bind_search_query(refs, query, place_ids))
-                if query in typed_queries and any(row.category == query for row in rows):
-                    # A category query can also match unrelated venues' tags.
-                    rows = [row for row in rows if row.category in typed_queries]
+                if query in typed_queries:
+                    if any(row.category == query for row in rows):
+                        # A category query can also match unrelated venues' tags.
+                        rows = [row for row in rows if row.category in typed_queries]
+                    elif not rows:
+                        starved.append(query)
                 for row in rows:
                     places[row.place_id] = row
+            if not attempt and primary and starved:
+                # One bounded model-selected supplement per starved activity.
+                supplements = [q for q in await model_queries() if q not in searched]
+                for activity in list(starved):
+                    for supplement in supplements:
+                        if supplement in searched:
+                            continue
+                        searched.add(supplement)
+                        self.last_tool_calls += 1
+                        rows, refs = (
+                            await search(supplement, spec.search_location or spec.location, 10)
+                            if search
+                            else await self.world.search_places(supplement, spec.search_location or spec.location, limit=10)
+                        )
+                        if not rows:
+                            continue
+                        starved.remove(activity)
+                        place_ids = {row.place_id for row in rows}
+                        evidence.extend(_bind_search_query(refs, activity, place_ids, actual=supplement))
+                        for row in rows:
+                            places[row.place_id] = row
+                        break
             covered = {p.category for p in places.values()} | {
-                item for item in spec.required_activities if item in searched
+                item for item in spec.required_activities if item in searched and item not in starved
             }
             if not primary or attempt or (places and not (set(spec.required_activities) - covered)):
                 break
@@ -101,8 +130,12 @@ class DiscoveryAgent:
         return (list(spec.required_activities) or list(filter(None, [DiscoveryAgent._goal_search_query(spec)])) or ["活动"])[:6]
 
 
-def _bind_search_query(refs: list[Evidence], query: str, place_ids: set[str]) -> list[Evidence]:
-    """Record which search produced each observed place, without inventing venue facts."""
+def _bind_search_query(refs: list[Evidence], query: str, place_ids: set[str], actual: str | None = None) -> list[Evidence]:
+    """Record which search produced each observed place, without inventing venue facts.
+
+    ``actual`` keeps the provider keyword when rows retrieved on an activity's behalf
+    used a model-shortened supplement; coverage binds to ``query``, provenance to both.
+    """
     bound: list[Evidence] = []
     for ref in refs:
         payload = dict(ref.payload or {})
@@ -110,7 +143,10 @@ def _bind_search_query(refs: list[Evidence], query: str, place_ids: set[str]) ->
             bound.append(ref)
             continue
         if payload.get("place_id") in place_ids:
-            bound.append(ref.model_copy(update={"payload": {**payload, "query": query}}))
+            update = {"query": query}
+            if actual and actual != query:
+                update["search_keywords"] = actual
+            bound.append(ref.model_copy(update={"payload": {**payload, **update}}))
         else:
             bound.append(ref)
     return bound
