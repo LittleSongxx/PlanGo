@@ -27,15 +27,14 @@ Electron 桌面 × Python Harness（FastAPI / PostgreSQL / Redis / worker）× �
 
 ## 质量评测
 
-唯一权威入口：[eval/trustworthy-v1/README.md](eval/trustworthy-v1/README.md)。三套 204 题 holdout 金标均经独立会话评审接受，评分器 `trustworthy.v1.10`，Faithfulness 为作答层口径。
+独立评测体系见 [eval/trustworthy-v1/](eval/trustworthy-v1/README.md)（204 题 holdout 金标经独立会话评审接受，出题、审阅、评分器演进全留痕）：
 
-| holdout | 金标 | TSR | Faithfulness |
-| --- | --- | --- | --- |
-| **v5（现行线，r10）** | accepted | **0.966** | **0.957** |
-| v3 | accepted | 0.926 | 0.981 |
-| v4（含已声明测量偏差） | accepted_with_errata | 0.662 | 0.575 |
+| 指标 | 最终结果 |
+| --- | --- |
+| TSR 任务成功率（程序化 0/1 判定） | **0.966**（Wilson 95% CI [0.931, 0.983]） |
+| Faithfulness 事实支持率（规则层 + LLM-as-Judge，作答层） | **0.957**（bootstrap 95% CI [0.937, 0.974]） |
 
-TSR 为程序化 0/1 判定（v5 Wilson 95% CI [0.931, 0.983]）；Faithfulness 为规则层 + LLM-as-Judge 双层（v5 bootstrap 95% CI [0.937, 0.974]）。批次分数均为 provisional_holdout（评委与被测同模型），每批实际分数以 `output/trustworthy-v1/` 报告原件为准，重评不重跑。
+批次分数以 `output/trustworthy-v1/` 报告原件为准，重评不重跑；指标为 provisional_holdout（评委与被测同模型），official 还差一次独立 runner 审计。
 
 ## 架构
 
@@ -110,4 +109,4 @@ npm run test:independent # 独立验收检查
 
 ---
 
-> **English summary** — PlanGo is a resumable local-life planning agent: an Electron desktop app driving a real embedded browser, backed by a Python harness (FastAPI/PostgreSQL/Redis). Every delivered claim keeps its source link and explicit unknowns; tasks survive interruption and restart. Quality is measured by an independently reviewed eval suite (`eval/trustworthy-v1/`, 3×204 holdout tasks): current line TSR 0.966 / Faithfulness 0.957. All screenshots are from the current build.
+> **English summary** — PlanGo is a resumable local-life planning agent: an Electron desktop app driving a real embedded browser, backed by a Python harness (FastAPI/PostgreSQL/Redis). Every delivered claim keeps its source link and explicit unknowns; tasks survive interruption and restart. Independently reviewed eval: TSR 0.966 / Faithfulness 0.957. All screenshots are from the current build.
