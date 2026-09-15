@@ -1,8 +1,13 @@
 """Read reports and print the comparison a reviewer needs. Read-only.
 
     conda run --no-capture-output -n plango python scripts/trustworthy/analyze.py \
-      output/trustworthy-v1/holdout-v5-report-r6-llm.json \
-      output/trustworthy-v1/holdout-v5-report-r7-llm.json
+      output/trustworthy-v1/holdout-v5-report-r9-llm.json \
+      output/trustworthy-v1/holdout-v5-report-r10-v110-llm.json
+
+Report names carry the scorer tag they were produced with (``-v19-``, ``-v110-``),
+so list the directory before picking two to compare:
+
+    ls output/trustworthy-v1/ | grep holdout-v5-report
 
 Prints one row per report (scorer, TSR, F, coverage, actor identity) and, for
 holdout-v3 reports, the same numbers split by layer and by wording family.

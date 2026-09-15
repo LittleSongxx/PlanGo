@@ -23,6 +23,6 @@
   "split": "holdout",
   "seed": 20260912,
   "generated_at": "2026-09-12T12:00:00+08:00",
-  "dataset_sha": "f8669a7f96da95b727b61712d89dc69bffa0d22584eeaee375b9cb634a105429",
+  "dataset_sha": "2eddca3e9a3c61ed8a68c06281962b33fb9455bed45c2a9e0d177d0097467e97",
   "generator": "scripts/trustworthy/build_holdout_v4.py"
 }

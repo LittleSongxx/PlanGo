@@ -55,7 +55,7 @@
   ],
   "errata": [],
   "mechanical_checks": {
-    "validate_dataset": "ok=true, 204 tasks, 每层 34, dataset_sha=b2e9d40fced5f27ba070551d51e0dc7e4d8ac6cccaf07b7ac90ec39596512836（与 README 一致）",
+    "validate_dataset": "ok=true, 204 tasks, 每层 34, dataset_sha=b2e9d40fced5f27ba070551d51e0dc7e4d8ac6cccaf07b7ac90ec39596512836（审阅当天值；现行为 8601275167af22615ad194f842381158d863745099ceda1a0fa5bea3d8f18354，差异来自 protocol.json 里写入的审阅结论与通知措辞，题目内容未动）",
     "role_isolation": "tasks.json / worlds.json 原文不含 expected/checks/forbidden/oracle/needles/equals_path 字样；期望值仅存在于 oracles.json",
     "path_whitelist": "全部 check 的 path/equals_path 均在 ATTEMPT_CONTRACT 五类白名单内；无 notes/contact/venue/record",
     "calculate": "34/34 题重算值==expected==页文已写出的合计；evidence_spans 全部为 world 原文子串",

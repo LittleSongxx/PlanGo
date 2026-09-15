@@ -1,6 +1,6 @@
 # PlanGo 当前 Agent 架构
 
-代码对应 docs/Agent架构与选型.md。专业节点不是自治进程；当前不集成产品 MCP，也不采用自由 Agent Team。Redis承载调度，持久业务事实仍在数据库。图中聚焦Agent链；附近发现/地址解析也可直接走后端Geo API，地图展示由高德JS SDK完成，不必经过模型。
+代码对应 `backend/plango/graph.py` 的 `build_desktop_graph` 与 `vendor/plango_harness/` 的图定义。专业节点不是自治进程；当前不集成产品 MCP，也不采用自由 Agent Team。Redis承载调度，持久业务事实仍在数据库。图中聚焦Agent链；附近发现/地址解析也可直接走后端Geo API，地图展示由高德JS SDK完成，不必经过模型。
 
 ```mermaid
 %%{init: {'layout':'elk','flowchart':{'wrappingWidth':340},'theme':'base','themeVariables':{'primaryColor':'#edf7f1','primaryTextColor':'#183e32','primaryBorderColor':'#70a68b','lineColor':'#55776a','fontFamily':'Noto Sans CJK SC, sans-serif','fontSize':'17px'}}}%%

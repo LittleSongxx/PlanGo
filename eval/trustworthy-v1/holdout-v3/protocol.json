@@ -14,5 +14,5 @@
     "boundary"
   ],
   "min_tasks_per_layer": 25,
-  "notice": "Third set. New inventory, new numbers and new surface forms; conflict and unknown no longer announce the gap in the page text, and both require substance beyond the uncertainty token. Authored inside the implementation stream, so it is not an independently authored set; gold has not been independently reviewed. Do not report official holdout TSR or Faithfulness."
+  "notice": "Third set. New inventory, new numbers and new surface forms; conflict and unknown no longer announce the gap in the page text, and both require substance beyond the uncertainty token. Authored inside the implementation stream, so it is not an independently authored set: the reported figures stay provisional_holdout regardless of review. The gold review that this file records as accepted happened later, in its own session; see gold_review.json for the four rulings and README.md for the digests that moved with it."
 }

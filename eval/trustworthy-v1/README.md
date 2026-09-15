@@ -7,7 +7,9 @@ PlanGo 的质量评测与产品优化主线。双指标：**TSR**（任务成功
 - 评分器：`trustworthy.v1.10`（`scripts/trustworthy/`），演进实录见 `SCORER_V1_3_NOTES.md` … `SCORER_V1_10_NOTES.md`
 - 合同：`ATTEMPT_CONTRACT.md`（七种 check、uncertainty 投影、F 只评 completed）
 - 出题与审阅纪律：`AUTHORING.md`（出题另开会话）、`PRODUCT_INVENTORY.md`（字段白名单）
-- 最高原则：见仓库根 `AGENTS.md`——功能与任务完成优先，避免过拟合；不能为抬分改金标/加词表。
+- 最高原则（项目长期规则，本文件即是它在本线的落点）：功能与任务完成优先，避免过拟合；
+  不能为抬分改金标、加词表或为单个 badcase 加特例。仓库根的 `AGENTS.md` 是这条规则的工作副本，
+  它在 .gitignore 内、不随公开库分发，所以这里直接写出内容，不依赖那个文件存在。
 
 ## 三套已审 holdout（各 204 题 = 6 层 × 34，均 accepted）
 

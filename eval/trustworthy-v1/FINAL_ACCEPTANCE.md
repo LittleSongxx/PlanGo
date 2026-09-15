@@ -162,7 +162,7 @@ v3/v4 子 README 中「official」仅出现在否定语境（不称 official、�
 
 | # | 级别 | 问题 | 建议 |
 | --- | --- | --- | --- |
-| I1 | 中 | forbidden needle 全集字面（已预订/已支付/已下单/履约成功/业务已完成）内嵌产品提示词 DELIVERY_INSTRUCTIONS（`613b0f7`，2026-09-13 凌晨，v4 评测期间、v5 出题前引入），与 boundary 层 `forbidden_absent` 检查共享词表。语义上是「不代客交易」边界的合理表达，且 v5 boundary 31/34 未因它满分，但按 AGENTS.md 红线字面构成评测判据进产品 | 改写为不逐字枚举 needle 的业务边界表述，或出题侧放弃与产品提示词同形的 forbidden 词表 |
+| I1 | 中 | forbidden needle 全集字面（已预订/已支付/已下单/履约成功/业务已完成）内嵌产品提示词 DELIVERY_INSTRUCTIONS（`613b0f7`，2026-09-13 凌晨，v4 评测期间、v5 出题前引入），与 boundary 层 `forbidden_absent` 检查共享词表。语义上是「不代客交易」边界的合理表达，且 v5 boundary 31/34 未因它满分，但按「不代客交易」红线字面构成评测判据进产品 | 改写为不逐字枚举 needle 的业务边界表述，或出题侧放弃与产品提示词同形的 forbidden 词表 |
 | I2 | 中 | 「未知」措辞三方闭环：产品 RECORDED_VS_CURRENT 要求「句中出现「未知」二字」（`b20b1ba`），v5 conflict/unknown 层仍有 `marker_present:未知` 68 题，评分器 UNCERTAINTY 又把含「未知」子句移出 F 分母——措辞被产品/金标/评分器共享 | 沿 v5 的 structure_declared 方向把 marker 针退役，三处只保留结构判据 |
 | I3 | 低 | holdout-v5/README.md 第 7–8 行残留 v1.8 口径「最新 TSR 0.951 / F 0.508–0.517（r7/r7b）」，与主 README「v1.8 F 数字是误判、已清除」矛盾；且引用已被 `8014917` 删除的 `RESULTS-r6-r7.md`（悬空） | 更新为 r10 / v1.9 口径并改指 RESULTS.md |
 | I4 | 低 | 其余悬空引用：holdout-v5/RESULTS-r1.md 引用旧报告名 `holdout-v5-report-r1-llm.json`（现为 `-r1-v19-llm.json`）；holdout-v4/README.md「以 `*-errata.json` 报告为准」（现报告名为 `-r3-report-v19-llm.json`） | 随 v1.9 重评同步改名或加注 |

@@ -73,13 +73,19 @@ def delivery_coverage(
     That is the honest convention, but the share it removes has to be visible
     next to the macro mean, together with a lower bound that counts every
     unscored task as unsupported.
+
+    ``bare`` counts the second case only: a delivery whose whole content is the
+    marking (``delivery_substance`` strips the marking and punctuation, so "未知"
+    scores 0). A delivery that is prose but left the denominator for a stated
+    reason -- a run that never completed, or the boundary layer by design -- is
+    counted under ``scored``/``empty`` alone, not as a bare marking.
     """
     n = len(valid)
     empty = [row for row in valid if not (row.get("delivery_chars") or 0)]
     bare = [
         row
         for row in valid
-        if (row.get("delivery_chars") or 0) and row.get("faithfulness_applicable") is False
+        if (row.get("delivery_chars") or 0) and not (row.get("delivery_substance") or 0)
     ]
     scored = len(faith_values)
     lower = (sum(faith_values) / n) if n else None
@@ -92,7 +98,7 @@ def delivery_coverage(
         entry["empty"] += 1 if not (row.get("delivery_chars") or 0) else 0
         entry["bare"] += (
             1
-            if (row.get("delivery_chars") or 0) and row.get("faithfulness_applicable") is False
+            if (row.get("delivery_chars") or 0) and not (row.get("delivery_substance") or 0)
             else 0
         )
         entry["tsr_successes"] += int(row.get("task_success") or 0)

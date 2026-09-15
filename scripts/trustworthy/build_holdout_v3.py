@@ -1,4 +1,4 @@
-"""Build holdout-v3. Writes holdout-v3 only; never touches holdout/ or holdout-v2/.
+"""Build holdout-v3. Writes holdout-v3 only.
 
 Differences from v2, all deliberate:
 

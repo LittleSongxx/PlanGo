@@ -1,8 +1,12 @@
 # holdout-v4 数据集说明
 
 - 生成器：`scripts/trustworthy/build_holdout_v4.py`（种子 20260912，确定性可复现）
-- 规模：6 层 × 34 = 204 题，`split=holdout`，`evaluation_kind=holdout_unreviewed`
-- `dataset_sha`（勘误后，2026-09-13）：校验器 `270658ff452bc0038ea46d509e63d105a063ae3e19f79137cb67cc609c2473f9`；生成器口径 sha 见 `authoring.json` 更新
+- 规模：6 层 × 34 = 204 题，`split=holdout`，`evaluation_kind=holdout_reviewed`（见下方审阅结论）
+- `dataset_sha`：生成器口径 `2eddca3e9a3c61ed8a68c06281962b33fb9455bed45c2a9e0d177d0097467e97`
+  （tasks/worlds/oracles 三份内容的 canonical JSON 拼接 sha，与 `protocol.json` 的记录一致）；
+  校验器口径 `900b6070045c606cecf92ec0bfe11da2302b22a6983d060d287c86a1eaf23c0d`
+  （另把 `protocol.json` 一起哈希，所以审阅结论与勘误记录写进该文件时它就会移动）。
+  勘误前记录的 `f8669a7f…`（生成器口径）与 `270658ff…`（校验器口径）都已过期。
 - **勘误记录（金标审阅触发，2026-09-13）**：`hv4-persist-030-c1` 与 `hv4-persist-032-c3` 的 hard_constraints 期望各含一条任何合法输入都未出现过的约束（生成器缺陷：口述子句只写一条、期望保留两条）。已削去无来源项；生成器同步修复，修复后重生成与勘误数据集**逐字节一致**。勘误前的一切分数作废；现行口径以 v1.9 重评报告 `holdout-v4-attempts-r3-report-v19-llm.json` 为准（TSR 0.662 / F 0.575），勘误时代报告原件已随 v1.8 口径清理退役（git 历史可查）。
 - **金标独立审阅已完成并复确认（2026-09-13，`gold_review.json`）**：verdict=**accepted_with_errata**（两处 oracle 勘误已应用、生成器已修复、复确认通过），`evaluation_kind=holdout_reviewed`、`gold_review=accepted`；conflict「两」/unknown「没」单字针记为 major（措辞针而非缺口类型语义，保留并在 `RESULTS-r2.md` 声明测量偏差，根修排 v5）；boundary 八词禁句判定名实相符。`report_kind` 仍为 `provisional_holdout`，分数不称 official
 

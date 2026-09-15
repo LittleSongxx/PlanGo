@@ -2,10 +2,13 @@
 
 - `evaluation_kind=holdout_reviewed`（2026-09-12 独立会话全量 204 题审阅，`gold_review.json` verdict=accepted、errata 为空）
 - `report_kind=provisional_holdout`（金标已审；正式报分前还须修正下述时间锚并复核 runner 审计，在此之前仍不称 official）
-- 规模：6 层 × 34 题 = 204，`dataset_sha=b2e9d40fced5f27ba070551d51e0dc7e4d8ac6cccaf07b7ac90ec39596512836`
+- 规模：6 层 × 34 题 = 204，`dataset_sha=8601275167af22615ad194f842381158d863745099ceda1a0fa5bea3d8f18354`
+  （校验器口径：对 protocol/tasks/worlds/oracles 四份文件求 sha。审阅受理当天记录的是 `b2e9d40f…`；
+  审阅结论本身写在 `protocol.json` 里，而它属于被哈希的内容，所以受理、通知措辞与后续任何一次
+  protocol 编辑都会移动这个摘要。题目内容未动。）
 - 执行器只读 `tasks.json` 与 `worlds.json`，不要打开 `oracles.json`
 
-生成器：`scripts/trustworthy/build_holdout_v3.py`（只写本目录，不会覆盖 `holdout/` 与 `holdout-v2/`）。
+生成器：`scripts/trustworthy/build_holdout_v3.py`（只写本目录）。
 
 ## 相对 holdout-v2 的三处设计改动
 

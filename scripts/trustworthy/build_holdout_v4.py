@@ -1276,6 +1276,26 @@ def build_all() -> tuple[list, list, list, dict]:
     return tasks, worlds, oracles, meta
 
 
+def reviewed_state(out_dir: Path) -> dict[str, str]:
+    """Review metadata the generator must not revert.
+
+    The data files are this script's to rewrite; the record that a reviewed set was
+    reviewed is not. A plain --force re-run would otherwise write today's
+    "unreviewed" template over an accepted review and contradict gold_review.json.
+    """
+    path = out_dir / "protocol.json"
+    if not path.exists():
+        return {}
+    try:
+        existing = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    kind, review = existing.get("evaluation_kind"), existing.get("gold_review")
+    if kind == "holdout_reviewed" or review in {"accepted", "accepted_with_errata"}:
+        return {"evaluation_kind": kind or "holdout_reviewed", **({"gold_review": review} if review else {})}
+    return {}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--force", action="store_true",
@@ -1288,6 +1308,7 @@ def main() -> int:
             print(f"中止：{OUT_DIR} 下已存在 {existing}；确认由本脚本生成后可用 --force 重新生成。")
             return 1
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    reviewed = reviewed_state(OUT_DIR)
 
     tasks, worlds, oracles, meta = build_all()
     run_structural_asserts(tasks, worlds, oracles, meta)
@@ -1317,7 +1338,7 @@ def main() -> int:
     dump("oracles.json", oracles)
     dump("protocol.json", {
         "schema_version": 1,
-        "evaluation_kind": EVALUATION_KIND,
+        "evaluation_kind": reviewed.get("evaluation_kind", EVALUATION_KIND),
         "report_kind": "provisional_holdout",
         "holdout_planned": PER_LAYER * len(LAYERS),
         "layers": LAYERS,
@@ -1328,7 +1349,12 @@ def main() -> int:
         "dataset_sha": dataset_sha,
         "generator": "scripts/trustworthy/build_holdout_v4.py",
     })
-    (OUT_DIR / "README.md").write_text(build_readme(fam_lists, dataset_sha), encoding="utf-8")
+    if reviewed:
+        # Rewriting the readme would replace the review narrative with the generated
+        # one; the digests above still describe the data this run just wrote.
+        print("保留既有 README.md：该目录已记录金标审阅结论，生成器不覆盖它。")
+    else:
+        (OUT_DIR / "README.md").write_text(build_readme(fam_lists, dataset_sha), encoding="utf-8")
     dump("authoring.json", build_authoring())
 
     print(f"OK: {len(tasks)} tasks -> {OUT_DIR}")

@@ -854,6 +854,25 @@ def verify_conflict_shape(tasks: list[dict[str, Any]], worlds: dict[str, dict[st
         require(len(kinds) == 1 and kinds[0].get("kind") == "conflicting_records" and kinds[0].get("min_records") == 2, f"{task['task_id']}: conflict structure check malformed")
 
 
+def reviewed_state(root: Path) -> dict[str, str]:
+    """Review metadata the generator must not revert.
+
+    Re-running writes today's "unreviewed, gold review pending" template; doing that
+    over an accepted set would contradict gold_review.json and the acceptance chain.
+    """
+    path = root / "protocol.json"
+    if not path.exists():
+        return {}
+    try:
+        existing = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    kind, review = existing.get("evaluation_kind"), existing.get("gold_review")
+    if kind == "holdout_reviewed" or review in {"accepted", "accepted_with_errata"}:
+        return {"evaluation_kind": kind or "holdout_reviewed", **({"gold_review": review} if review else {})}
+    return {}
+
+
 def main() -> None:
     rng = random.Random(SEED)
     pool = EntityPool(rng)
@@ -910,9 +929,11 @@ def main() -> None:
     require(persist_clause2 == 18, "persist: clause-2 tasks must be 18")
 
     ROOT.mkdir(parents=True, exist_ok=True)
+    reviewed = reviewed_state(ROOT)
     protocol = {
         "schema_version": 1,
-        "evaluation_kind": "holdout_unreviewed",
+        "evaluation_kind": reviewed.get("evaluation_kind", "holdout_unreviewed"),
+        **({"gold_review": reviewed["gold_review"]} if "gold_review" in reviewed else {}),
         "report_kind": "provisional_holdout",
         "holdout_planned": 204,
         "min_tasks_per_layer": PER_LAYER,
@@ -1015,7 +1036,11 @@ def main() -> None:
 `protocol.json` / `tasks.json` / `worlds.json` / `oracles.json` / `authoring.json` / `README.md`；
 `cli.py validate-dataset --dataset eval/trustworthy-v1/holdout-v5` 收口。
 """
-    (ROOT / "README.md").write_text(readme, encoding="utf-8")
+    if reviewed:
+        # The generated readme says the review is pending; that is no longer true here.
+        print("保留既有 README.md：该目录已记录金标审阅结论，生成器不覆盖它。")
+    else:
+        (ROOT / "README.md").write_text(readme, encoding="utf-8")
 
     summary = {
         "tasks": len(tasks_sorted),

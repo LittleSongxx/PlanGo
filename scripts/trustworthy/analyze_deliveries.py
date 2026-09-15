@@ -6,8 +6,11 @@
 
 TSR comes from the dataset oracle, so this prints the same programmatic score the
 report carries, plus the delivery facts behind each failure: empty deliveries,
-bare uncertainty markings (substance below the check threshold) and the failed
+deliveries below the substance threshold their own oracle sets, and the failed
 check ids. Use it to diagnose a run without spending judge calls.
+
+The threshold is read from each task's ``substance_min`` check rather than being
+fixed here, so a set that raises its own bar is reported against that bar.
 """
 
 from __future__ import annotations
@@ -33,6 +36,16 @@ def actor_line(actor: dict) -> str:
     )
 
 
+def substance_thresholds(dataset: dict[str, Any]) -> dict[str, int]:
+    """Each task's own substance bar; tasks that set none are not counted against one."""
+    thresholds: dict[str, int] = {}
+    for task_id, oracle in dataset["oracles"].items():
+        for check in oracle.get("checks") or []:
+            if check.get("type") == "substance_min":
+                thresholds[task_id] = int(check.get("chars") or 0)
+    return thresholds
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Inspect sealed attempts without scoring calls")
     parser.add_argument("attempts")
@@ -43,6 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     dataset = load_dataset(Path(args.dataset))
+    thresholds = substance_thresholds(dataset)
     bundle = json.loads(Path(args.attempts).read_text(encoding="utf-8"))
     attempts = bundle["attempts"] if isinstance(bundle, dict) else bundle
     actor = bundle.get("actor") if isinstance(bundle, dict) else None
@@ -64,12 +78,13 @@ def main(argv: list[str] | None = None) -> int:
         entry["ok"] += int(bool(result.get("task_success")))
         entry["empty"] += 1 if not text.strip() else 0
         entry["unknown_mark"] += 1 if "未知" in text else 0
-        entry["substance_lt_12"] += 1 if substance < 12 else 0
+        bar = thresholds.get(task_id)
+        entry["below_substance"] += 1 if bar is not None and substance < bar else 0
         if not result.get("task_success"):
             fails[layer].append((task_id, list(result.get("failed_checks") or [])))
 
     print()
-    print("{:14s} {:>10s} {:>6s} {:>8s} {:>7s}".format("layer", "TSR", "empty", "unknown", "sub<12"))
+    print("{:14s} {:>10s} {:>6s} {:>8s} {:>9s}".format("layer", "TSR", "empty", "unknown", "below-min"))
     total_ok = total_n = 0
     for layer in (*LAYERS, *(name for name in sorted(stats) if name not in LAYERS)):
         entry = stats.get(layer)
@@ -86,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
                 rate,
                 entry["empty"],
                 entry["unknown_mark"],
-                entry["substance_lt_12"],
+                entry["below_substance"],
             )
         )
     if total_n:
