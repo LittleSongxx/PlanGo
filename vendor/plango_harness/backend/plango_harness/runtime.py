@@ -676,9 +676,10 @@ class PlanGoRuntime:
         if fresh:
             budget.update(started_at=now, deadline_at=now + self.settings.max_run_seconds,
                           model_baseline=max(int(budget.get("model_baseline", 0)), int(previous_state.get("model_token_count", 0))),
-                          tool_baseline=max(int(budget.get("tool_baseline", 0)), int(previous_state.get("tool_call_count", 0))))
+                          tool_baseline=max(int(budget.get("tool_baseline", 0)), int(previous_state.get("tool_call_count", 0))),
+                          browser_baseline=max(int(budget.get("browser_baseline", 0)), int(previous_state.get("browser_steps", 0))))
         elif not budget:
-            budget = {"id": "initial", "grant_seq": 1, "model_baseline": 0, "tool_baseline": 0,
+            budget = {"id": "initial", "grant_seq": 1, "model_baseline": 0, "tool_baseline": 0, "browser_baseline": 0,
                       "started_at": previous_state.get("started_at") or now,
                       "deadline_at": previous_state.get("deadline_at") or (previous_state.get("started_at") or now) + self.settings.max_run_seconds}
         pause = projection.get("budget_pause")

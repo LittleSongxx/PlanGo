@@ -180,3 +180,48 @@ def test_all_interrupts_preserve_remaining_time_and_crash_replay_does_not_refill
                 await runtime.close()
 
     asyncio.run(exercise())
+
+
+async def test_a_later_command_gets_its_own_browser_step_allowance(tmp_path, monkeypatch):
+    """12 browser steps is one user command's allowance, not the run's whole life.
+
+    ``browser_steps`` stays a monotonic progress counter because artifact ids and the
+    vision gate read it, so a new grant carries a baseline the way ``tool_baseline``
+    does instead of resetting the counter. Without that baseline the second command of
+    a run that already browsed dies at ``operate`` with "达到浏览器步骤预算" before it
+    can read anything.
+    """
+    import plango.graph as module
+    from plango_harness.agent.graph import GraphDeps
+
+    runtime = create_app(settings(tmp_path), token=TOKEN).state.runtime
+    deps = GraphDeps(model=runtime.model, tools=runtime.tools, world=runtime.world_service.provider,
+                     planner=None, memory=None, runs=None, action_provider=None)
+    actual, nodes = module.build_graph, {}
+
+    def build(deps, *, extension, **kwargs):
+        def capture(graph):
+            extension(graph)
+            nodes["operate"] = graph.nodes["browser_operate"].runnable
+        return actual(deps, extension=capture, **kwargs)
+
+    monkeypatch.setattr(module, "build_graph", build)
+    module.build_desktop_graph(runtime, deps, None)
+    # ``operate`` reads the per-run context ``_run_graph`` installs around the graph.
+    from plango.browser import run_context
+    token = run_context.set({"run_id": "budget-fixture", "turn_id": 2, "browser_calls": 0, "places": {}})
+
+    state = {"run_id": "budget-fixture", "user_id": "fixture", "turn_id": 2, "browser_steps": 12,
+             "tool_call_count": 12, "browser_next": BrowserDecision(operation="finish").model_dump(),
+             "turn_budget": {"id": "user:2", "grant_seq": 2, "started_at": 100.0, "deadline_at": 400.0,
+                             "browser_baseline": 12, "tool_baseline": 12},
+             "browser_task_context": {"mode": "browser", "kind": "task", "operation": "read"}}
+    update = await nodes["operate"].ainvoke(state)
+    assert update.get("outcome") != "FAILED", update.get("reason")
+    assert update["browser_steps"] == 13, "the progress counter still advances monotonically"
+
+    # The cap still applies inside one command: 12 steps past the baseline is the limit.
+    spent = {**state, "browser_steps": 24, "turn_budget": {**state["turn_budget"], "browser_baseline": 24}}
+    capped = await nodes["operate"].ainvoke({**spent, "browser_steps": 36})
+    assert capped.get("reason") == "达到浏览器步骤预算", capped
+    run_context.reset(token)

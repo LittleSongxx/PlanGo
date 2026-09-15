@@ -522,7 +522,8 @@ class RunRepository:
                     ):
                         projection = dict(row[2] or {})
                         grant = {"id": f"user:{seq}", "grant_seq": seq, "model_baseline": int(projection.get("model_token_count", 0)),
-                                 "tool_baseline": int(projection.get("tool_call_count", 0))}
+                                 "tool_baseline": int(projection.get("tool_call_count", 0)),
+                                 "browser_baseline": int(projection.get("browser_steps", 0))}
                         values["state_json"] = {**projection, "turn_budget": grant}
                         event_payload["budget_grant_id"] = grant["id"]
                     await session.execute(
