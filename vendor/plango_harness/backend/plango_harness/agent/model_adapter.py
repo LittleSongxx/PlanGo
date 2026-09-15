@@ -88,6 +88,22 @@ class ModelMetadata:
     thinking_mode: str
 
 
+# 混合推理模型默认开着 thinking，单次补全上限就变得无法核算；各家 OpenAI 兼容端点
+# 关掉它的字段名不同，表里没有的端点保持 provider 默认。
+_THINKING_OFF: tuple[tuple[str, str, dict[str, Any]], ...] = (
+    ("dashscope.aliyuncs.com", "dashscope", {"enable_thinking": False}),
+    ("bigmodel.cn", "zhipu", {"thinking": {"type": "disabled"}}),
+)
+
+
+def thinking_off_endpoint(base_url: str | None) -> tuple[str, dict[str, Any]]:
+    """Which provider this endpoint is, and the field that turns its thinking off."""
+    for host, provider, payload in _THINKING_OFF:
+        if host in (base_url or ""):
+            return provider, dict(payload)
+    return "openai-compatible", {}
+
+
 class ModelAdapter:
     """Provider-neutral chat, tool-call and structured-output adapter."""
 
@@ -99,14 +115,14 @@ class ModelAdapter:
         # ponytail: serialize one run's model budget; add reservations only if
         # parallel model latency is worth the accounting complexity.
         self._call_lock = asyncio.Lock()
+        provider, thinking_off = thinking_off_endpoint(settings.openai_base_url)
         self.metadata = ModelMetadata(
-            provider="dashscope"
-            if "dashscope" in settings.openai_base_url
-            else "openai-compatible",
+            provider=provider,
             model=settings.openai_model,
             prompt_version="plango-structured-v4-task-owner",
-            thinking_mode="disabled" if "dashscope" in settings.openai_base_url else "provider_default",
+            thinking_mode="disabled" if thinking_off else "provider_default",
         )
+        self._thinking_off = thinking_off
         self.call_count = 0
         self.fallback_count = 0
         self.last_usage: dict[str, int] = {}
@@ -288,10 +304,10 @@ class ModelAdapter:
                 "max_retries": self.settings.openai_max_retries,
                 "max_completion_tokens": self.settings.max_model_tokens,
             }
-            if "dashscope" in self.settings.openai_base_url:
-                # Qwen hybrid models enable thinking by default; disabling it
-                # makes the per-call completion cap auditable and predictable.
-                model_kwargs["extra_body"] = {"enable_thinking": False}
+            if self._thinking_off:
+                # Hybrid models enable thinking by default; disabling it makes the
+                # per-call completion cap auditable and predictable.
+                model_kwargs["extra_body"] = dict(self._thinking_off)
             self._model = ChatOpenAI(
                 **model_kwargs
             )
