@@ -144,6 +144,7 @@ interface State {
   sidePanelOpen: boolean
   discoverOpen: false | 'discover' | 'deals'
   aiBrowsing: { active: boolean; site: string; action: string } // 顶部浮条：PlanGo正在浏览
+  browserAttention: boolean // AI 在本轮任务里操作过浏览器，且用户当前不在浏览器页
 
   browserSeq: number
   browserError: string
@@ -185,6 +186,7 @@ interface State {
   setSidePanelOpen: (open: boolean) => void
   setDiscoverOpen: (v: false | 'discover' | 'deals') => void
   setAiBrowsing: (v: { active: boolean; site?: string; action?: string }) => void
+  setBrowserAttention: (v: boolean) => void
   newSession: () => void
   restoreSession: (id: string) => void
   deleteSession: (id: string) => void
@@ -237,6 +239,7 @@ export const useStore = create<State>((set, get) => ({
   sidePanelOpen: false,
   discoverOpen: false,
   aiBrowsing: { active: false, site: '', action: '' },
+  browserAttention: false,
 
   browserSeq: -1,
   browserError: '',
@@ -265,6 +268,7 @@ export const useStore = create<State>((set, get) => ({
       ...(run.events ? { events: run.events, steps: projectEvents(run.events) } : {}),
       backendReady: true, backendError: '', busy: s.requestBusy || runBusy(run),
       aiBrowsing: run.outcome || run.state.browser_wait ? { active: false, site: '', action: '' } : s.aiBrowsing,
+      browserAttention: run.outcome || run.state.browser_wait ? false : s.browserAttention,
       view: projected.cards.length && (!s.cards.length || newlyFinished || newDecision) ? 'outcome' : s.view }))
     get().persistSession()
   },
@@ -566,7 +570,7 @@ export const useStore = create<State>((set, get) => ({
 
   addProactive: (p) => set((s) => ({ proactive: [p, ...s.proactive].slice(0, 20) })),
   setSettings: (open) => set({ settingsOpen: open }),
-  setView: (v) => set({ view: v }),
+  setView: (v) => set((s) => ({ view: v, browserAttention: v === 'browser' ? false : s.browserAttention })),
   setChatWidth: (w) => set({ chatWidth: Math.max(CHAT_MIN, Math.min(CHAT_MAX, w)) }),
   setCity: (city, source) => set((s) => ({ city, citySource: source ?? s.citySource })),
   setCoords: (coords) => set({ coords }),
@@ -595,6 +599,7 @@ export const useStore = create<State>((set, get) => ({
   setSidePanelOpen: (open) => set({ sidePanelOpen: open }),
   setDiscoverOpen: (v) => set({ discoverOpen: v }),
   setAiBrowsing: (v) => set((s) => ({ aiBrowsing: { active: v.active, site: v.site ?? s.aiBrowsing.site, action: v.action ?? s.aiBrowsing.action } })),
+  setBrowserAttention: (v) => set((s) => ({ browserAttention: v && s.view !== 'browser' })),
   newSession: () => {
     const previous = get().run?.run_id
     if (previous) void window.plango.harness.releaseRun(previous)

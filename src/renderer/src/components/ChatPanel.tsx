@@ -31,6 +31,10 @@ export function ChatPanel(): JSX.Element {
   const newSession = useStore((s) => s.newSession)
   const setHistoryOpen = useStore((s) => s.setHistoryOpen)
   const activeSessionId = useStore(s => s.activeSessionId)
+  // 一次指令用了多少浏览器步数、上限多少；没有上限就不显示分母。
+  const stepsUsed = Math.max(0, Number(run?.state.browser_steps || 0) - Number((run?.state.turn_budget as { browser_baseline?: number } | undefined)?.browser_baseline || 0))
+  const stepLimit = Number((run?.state.browser_task_context as { browser_step_limit?: number } | undefined)?.browser_step_limit || 0)
+  const browserProgress = stepsUsed > 0 ? (stepLimit > 0 && stepsUsed <= stepLimit ? `浏览器 ${stepsUsed}/${stepLimit} 步` : `浏览器 ${stepsUsed} 步`) : ''
   const draft = useStore(s => s.drafts[s.activeSessionId])
   const text = draft?.text || ''
   const setDraft = useStore(s => s.setDraft)
@@ -153,7 +157,11 @@ export function ChatPanel(): JSX.Element {
         </div>
       </div>
       <div className="flex items-center justify-between gap-2 px-5 py-2.5 text-[11px] bg-[var(--surface-soft)] border-b border-[var(--line)]">
-        <span role="status" className={backendReady ? 'text-neutral-600' : 'text-amber-700'}>{backendReady ? phaseLabel(run) : '未连接服务'}</span>
+        <span role="status" className={backendReady ? 'text-neutral-600' : 'text-amber-700'}>
+          {backendReady ? phaseLabel(run) : '未连接服务'}
+          {/* 预算不是黑盒：让它和步数一起出现在状态行里。 */}
+          {backendReady && run && !run.outcome && browserProgress && <span className="ml-2 text-[var(--muted)]">{browserProgress}</span>}
+        </span>
         {run && !run.outcome && <button onClick={() => void cancelRun()} className="text-neutral-500 hover:text-red-600">停止任务</button>}
         {!run && <span className="text-[var(--muted)]">从你的需求开始</span>}
       </div>

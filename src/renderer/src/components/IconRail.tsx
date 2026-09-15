@@ -9,6 +9,7 @@ interface NavItem {
   onClick: () => void
   active?: boolean
   badge?: number
+  attention?: boolean
 }
 
 export function IconRail(): JSX.Element {
@@ -27,10 +28,11 @@ export function IconRail(): JSX.Element {
   const granularity = useStore((s) => s.locationGranularity)
 
   const planCount = cards.filter((c) => c.kind === 'plan' || c.kind === 'plans').length
+  const attention = useStore((s) => s.browserAttention)
   const locLabel = locationLabel(citySource, locAccuracy, granularity)
 
   const top: NavItem[] = [
-    { id: 'browser', label: '浏览器', icon: <Globe size={20} />, onClick: () => setView('browser'), active: view === 'browser' },
+    { id: 'browser', label: '浏览器', icon: <Globe size={20} />, onClick: () => setView('browser'), active: view === 'browser', attention },
     { id: 'outcome', label: '成果区', icon: <LayoutList size={20} />, onClick: () => setView('outcome'), active: view === 'outcome', badge: planCount || undefined }
   ]
 
@@ -64,6 +66,8 @@ export function IconRail(): JSX.Element {
 function RailButton({ item }: { item: NavItem }): JSX.Element {
   return <button onClick={item.onClick} title={item.label} aria-label={item.label} aria-current={item.active ? 'page' : undefined}
     className={`relative w-full h-11 rounded-xl flex items-center gap-3 px-3 transition-colors text-[13px] ${item.active ? 'bg-brand-soft text-brand-ink font-semibold shadow-card border border-brand/50' : 'border border-transparent text-neutral-600 hover:bg-white/70 hover:text-brand-ink'}`}>
-    {item.icon}<span>{item.id === 'outcome' ? '方案与结果' : item.id === 'plugins' ? '连接与能力' : item.label}</span>{item.badge ? <span className="ml-auto rounded-md bg-brand-soft text-brand-strong px-1.5 py-0.5 text-[10px] tabular-nums">{item.badge}</span> : null}
+    {item.icon}<span>{item.id === 'outcome' ? '方案与结果' : item.id === 'plugins' ? '连接与能力' : item.label}</span>
+    {item.attention ? <span className="ml-auto flex items-center gap-1 text-[10px] text-brand-strong"><span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-brand" /></span>AI 在操作</span> : null}
+    {item.badge ? <span className={`${item.attention ? '' : 'ml-auto '}rounded-md bg-brand-soft text-brand-strong px-1.5 py-0.5 text-[10px] tabular-nums`}>{item.badge}</span> : null}
   </button>
 }
