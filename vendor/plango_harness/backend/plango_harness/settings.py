@@ -87,6 +87,9 @@ class Settings(BaseSettings):
     # A run may include an edit/replan before approval; keep one bounded
     # budget that still leaves room for the final write-tool pass.
     max_tool_calls: int = Field(48, validation_alias="PLANGO_MAX_TOOL_CALLS", ge=1, le=1000)
+    # Browser steps one accepted command may spend. Paging through a listing needs more
+    # than reading a single page, so this is a knob rather than a constant.
+    max_browser_steps: int = Field(12, validation_alias="PLANGO_MAX_BROWSER_STEPS", ge=1, le=200)
     max_queue_retries: int = Field(3, validation_alias="PLANGO_MAX_QUEUE_RETRIES", ge=1, le=20)
     max_repair_rounds: int = Field(2, validation_alias="PLANGO_MAX_REPAIR_ROUNDS", ge=0, le=20)
     max_context_tokens: int = Field(6000, validation_alias="PLANGO_MAX_CONTEXT_TOKENS")

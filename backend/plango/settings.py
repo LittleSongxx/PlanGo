@@ -87,6 +87,7 @@ def settings_from_env():
         "agent_mode": "PLANGO_AGENT_MODE",  # Perspective strategy; topology remains one central workflow.
         "max_turns": "PLANGO_MAX_TURNS",
         "max_tool_calls": "PLANGO_MAX_TOOL_CALLS",
+        "max_browser_steps": "PLANGO_MAX_BROWSER_STEPS",
         "max_model_tokens": "PLANGO_MAX_MODEL_TOKENS",
         "max_run_seconds": "PLANGO_MAX_RUN_SECONDS",
         "max_repair_rounds": "PLANGO_MAX_REPAIR_ROUNDS",

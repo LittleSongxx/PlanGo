@@ -84,6 +84,7 @@ class GraphDeps:
     max_repair_rounds: int = 2
     max_context_tokens: int = 6000
     max_tool_calls: int = 48
+    max_browser_steps: int = 12
     max_run_seconds: int = 300
     max_model_tokens: int = 200000
     node_timeout_seconds: int = 60

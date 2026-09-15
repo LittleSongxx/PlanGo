@@ -119,6 +119,100 @@ def _user_wrote_url(state, url) -> bool:
     return any(_address(token) == wanted for token in re.findall(r"https?://[^\s，。；、）】》\"']+", text))
 
 
+# Reads that could have brought something back, as opposed to writes that change the page.
+_READ_OPERATIONS = {"extract", "snapshot", "read_page", "extract_tables", "current"}
+# Operations that spend a browser step; the rest of a task decision is answered from state.
+_STEP_OPERATIONS = _READ_OPERATIONS | {"navigate", "open_tab", "screenshot", "click", "type", "scroll", "highlight", "read_skill", "finish"}
+# The notes that close the pages for a command, so they are not mistaken for failures.
+_PRESSURE_TOOLS = {"browser_step_budget", "browser_tool_budget", "browser_page_unchanged"}
+
+
+def _browser_steps_used(state) -> int:
+    """Steps the current command spent; ``browser_steps`` itself never resets."""
+    baseline = int((state.get("turn_budget") or {}).get("browser_baseline", 0) or 0)
+    return max(0, int(state.get("browser_steps", 0) or 0) - baseline)
+
+
+def _browser_step_limit(deps) -> int:
+    """Steps one command may spend: its own knob, never more than the run's tool budget."""
+    return max(1, min(int(deps.max_browser_steps), int(deps.max_tool_calls)))
+
+
+def _unchanged_reads(context) -> int:
+    """How many trailing reads returned the page version already on file."""
+    versions = [version for version in (context.get("read_versions") or []) if version]
+    repeats = 0
+    for index in range(len(versions) - 1, 0, -1):
+        if versions[index] != versions[index - 1]:
+            break
+        repeats += 1
+    return repeats
+
+
+def _delivery_pressure(state, deps) -> dict[str, Any] | None:
+    """Why this command may not spend another browser step, if it may not.
+
+    Handing the task owner the reason turns "read again" into "answer with what is
+    already on file": the difference between a run that delivers what it read and one
+    that reports nothing at all.
+
+    ``closes`` says what the note actually rules out. A budget closes every step; a page
+    that stopped changing only closes further reads, because clicking or typing is how
+    such a page gets anywhere.
+    """
+    context = state.get("browser_task_context") or {}
+    used, limit = _browser_steps_used(state), _browser_step_limit(deps)
+    if used >= limit:
+        return {"tool": "browser_step_budget", "ok": False, "closes": "all", "used": used, "limit": limit,
+                "note": f"本次指令的浏览器步数已用尽（{used}/{limit}，写入后的回执核对也计步）：不能再读取或点击页面，"
+                        "只能用已经读到的资料作答；资料不够就说明还缺什么。"}
+    if state.get("tool_call_count", 0) >= deps.tool_limit(state):
+        return {"tool": "browser_tool_budget", "ok": False, "closes": "all",
+                "note": "本次指令的工具预算已用尽：不能再读取或点击页面，只能用已经读到的资料作答；资料不够就说明还缺什么。"}
+    repeats = _unchanged_reads(context)
+    if repeats >= 2:
+        return {"tool": "browser_page_unchanged", "ok": False, "closes": "reads", "repeats": repeats,
+                "note": f"这一页连续 {repeats + 1} 次读到完全相同的内容，再读不会有新信息："
+                        "请改用已经读到的资料作答，或者说明还缺什么。"}
+    return None
+
+
+def _last_pressure(context) -> dict[str, Any] | None:
+    """The most recent note that closed the pages for this command, if any."""
+    for row in reversed(context.get("tool_results") or []):
+        if isinstance(row, dict) and row.get("tool") in _PRESSURE_TOOLS:
+            return row
+    return None
+
+
+def _browser_operation(task) -> str:
+    """The browser operation this decision would run, if it runs one at all."""
+    if task.operation in {"ask", "answer", "plan", "calculate", "refresh_place"}:
+        return ""
+    return (task.browser.operation if task.browser else "") or ("extract" if task.operation == "read" else "")
+
+
+def _asks_for_a_browser_step(task) -> bool:
+    """Whether carrying this decision out would spend a browser step."""
+    return _browser_operation(task) in _STEP_OPERATIONS
+
+
+def _pressure_blocks(note, operation: str) -> bool:
+    """Whether the note closes off this operation."""
+    if not operation:
+        return False
+    if note.get("closes") == "reads":
+        return operation in _READ_OPERATIONS
+    return operation in _STEP_OPERATIONS
+
+
+def _delivery_hint(state) -> str:
+    """What a person can actually do about a command whose pages are closed."""
+    if (state.get("browser_task_context") or {}).get("kind") == "prepare":
+        return "已读到的表单参数保持不变；可以教我下一步具体填什么，或稍后再试。"
+    return "可以让我只读其中一家、给我一个更具体的页面网址，或允许我打开门店页再试。"
+
+
 def _live_page(state) -> bool:
     observation = state.get("browser_observation") or {}
     return bool(observation.get("snapshot_id") and observation.get("tab_id"))
@@ -726,6 +820,9 @@ def build_desktop_graph(runtime, deps, checkpointer):
                    "question": (state.get("clarification") or {}).get("question") or old.get("question"),
                    "location_context": binding.get("location_context"),
                    "tool_results": old.get("tool_results", []) if same_turn else [],
+                   "read_versions": old.get("read_versions", []) if same_turn else [],
+                   # The desktop shows this as "已读 n/m 步"; without it the budget is a black box.
+                   "browser_step_limit": _browser_step_limit(deps),
                    "decision_count": old.get("decision_count", 0) if same_turn else 0}
         edit = state.get("structured_requirement_edit") or {}
         if edit.get("turn_id") == turn:
@@ -924,19 +1021,24 @@ def build_desktop_graph(runtime, deps, checkpointer):
         runtime.world_service.provider.bind_run_state(state)
         decision = BrowserDecision.model_validate(state["browser_next"])
         steps = state.get("browser_steps", 0)
-        # browser_steps is a run-wide progress counter (artifact ids and the vision gate
-        # read it), so one command's allowance is measured against its grant baseline the
-        # way tool_call_count is -- never by resetting the counter.
-        spent = max(0, steps - int((state.get("turn_budget") or {}).get("browser_baseline", 0) or 0))
-        if (
-            spent >= min(12, deps.max_tool_calls)
-            or state.get("tool_call_count", 0) >= deps.tool_limit(state)
-        ):
+        pressure = _delivery_pressure(state, deps)
+        if pressure and _pressure_blocks(pressure, decision.operation):
+            # Not a failure. The pages are closed for this command, so hand the task
+            # owner the reason and let it answer from what it already read, instead of
+            # ending the run with nothing delivered.
+            context = dict(state.get("browser_task_context") or {})
+            context["tool_results"] = [*(context.get("tool_results") or []), pressure]
             return {
-                "phase": RunPhase.FAILED,
-                "outcome": "FAILED",
-                "reason": "达到浏览器步骤预算",
+                "browser_task_context": context,
                 "browser_next": BrowserDecision().model_dump(),
+                "browser_wait": None,
+                "interrupt_id": None,
+                "trace": [{
+                    "event": "browser_delivery_pressure",
+                    "phase": "RESEARCHING",
+                    "agent_id": "browser",
+                    "payload": {**pressure, "turn_id": state.get("turn_id", 1)},
+                }],
             }
         if decision.operation == "read_skill":
             binding = await runtime.bridge.binding(state["run_id"])
@@ -1120,11 +1222,20 @@ def build_desktop_graph(runtime, deps, checkpointer):
         artifacts = [
             a for a in state.get("browser_artifacts", []) if a.get("url") != observation.get("url")
         ] + [page_artifact]
+        context = dict(state.get("browser_task_context") or {})
+        if decision.operation in _READ_OPERATIONS:
+            # Only the reads that could have brought something back are counted, so a
+            # page that is genuinely being worked on (click, type) never looks stalled.
+            context["read_versions"] = [
+                *(context.get("read_versions") or []),
+                str(observation.get("page_version") or observation.get("snapshot_id") or ""),
+            ][-4:]
         return {
             "browser_observation": observation,
             "browser_steps": steps + 1,
             "browser_retry_read": False,
             "browser_artifacts": artifacts,
+            "browser_task_context": context,
             "browser_wait": None,
             "interrupt_id": None,
             "tool_call_count": state.get("tool_call_count", 0) + 1,
@@ -1309,6 +1420,15 @@ def build_desktop_graph(runtime, deps, checkpointer):
                                        "payload": {"error": last_error, "turn_id": state.get("turn_id", 1)}}]}
         assert task is not None
         task = _with_confirmed_requirements(task, state)
+        note = _last_pressure(context)
+        if note and _pressure_blocks(note, _browser_operation(task)):
+            # The pages were already closed for this command and the task owner asked for
+            # another step anyway. Stop spending and say plainly what was obtained.
+            return {**update, "browser_next": BrowserDecision().model_dump(),
+                    "phase": RunPhase.PARTIAL_FAILED, "outcome": "PARTIAL_FAILED",
+                    "reason": "浏览器资料已经读到本次指令的上限" + _kept(state, context.get("tool_results")) + "；" + _delivery_hint(state),
+                    "trace": [{"event": "browser_delivery_forced", "phase": "RESEARCHING", "agent_id": "task",
+                               "payload": {"operation": task.operation, "turn_id": state.get("turn_id", 1)}}]}
         context["decision_count"] = context.get("decision_count", 0) + 1
         context["operation"] = task.operation
         update.update(browser_task_context=context, clarification=None,

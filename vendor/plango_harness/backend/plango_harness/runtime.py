@@ -128,6 +128,7 @@ class PlanGoRuntime:
             max_repair_rounds=self.settings.max_repair_rounds,
             max_context_tokens=self.settings.max_context_tokens,
             max_tool_calls=self.settings.max_tool_calls,
+            max_browser_steps=self.settings.max_browser_steps,
             max_run_seconds=self.settings.max_run_seconds,
             max_model_tokens=self.settings.max_model_tokens,
             node_timeout_seconds=max(

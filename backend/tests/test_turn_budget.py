@@ -220,8 +220,12 @@ async def test_a_later_command_gets_its_own_browser_step_allowance(tmp_path, mon
     assert update.get("outcome") != "FAILED", update.get("reason")
     assert update["browser_steps"] == 13, "the progress counter still advances monotonically"
 
-    # The cap still applies inside one command: 12 steps past the baseline is the limit.
+    # The cap still applies inside one command: past 12 steps past the baseline the
+    # pages close for this command, and the task owner is told to answer from what it
+    # read instead of the run ending with nothing delivered.
     spent = {**state, "browser_steps": 24, "turn_budget": {**state["turn_budget"], "browser_baseline": 24}}
     capped = await nodes["operate"].ainvoke({**spent, "browser_steps": 36})
-    assert capped.get("reason") == "达到浏览器步骤预算", capped
+    assert "browser_steps" not in capped, "an exhausted command must not spend another step"
+    note = capped["browser_task_context"]["tool_results"][-1]
+    assert (note["tool"], note["used"], note["limit"]) == ("browser_step_budget", 12, 12)
     run_context.reset(token)
