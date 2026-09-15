@@ -9,11 +9,11 @@ import { X, Cpu, Puzzle, Brain, Check, Loader2, Plug, Heart, Lock, Bell } from '
 // 当前可用的模型配置、技能、记忆与提醒。
 type Tab = 'model' | 'skills' | 'memory' | 'reminders'
 
-// Existing OpenAI-compatible provider presets; credentials are supplied by the user.
+// 四家国内主流 OpenAI 兼容端点；凭证由用户提供。
 const PRESETS: { id: string; name: string; baseURL: string; model: string; note: string }[] = [
-  { id: 'longcat', name: 'LongCat-2.0', baseURL: 'https://api.longcat.chat/openai/v1', model: 'LongCat-2', note: '预设配置' },
-  { id: 'minimax', name: 'MiniMax-M2', baseURL: 'https://api.minimaxi.com/v1', model: 'MiniMax-M2', note: '预设配置' },
+  { id: 'glm', name: 'GLM (智谱)', baseURL: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4.6', note: '预设配置' },
   { id: 'deepseek', name: 'DeepSeek', baseURL: 'https://api.deepseek.com/v1', model: 'deepseek-chat', note: '预设配置' },
+  { id: 'qwen', name: 'Qwen (通义千问)', baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen3.7-plus-2026-05-26', note: '预设配置' },
   { id: 'kimi', name: 'Kimi (Moonshot)', baseURL: 'https://api.moonshot.cn/v1', model: 'moonshot-v1-8k', note: '预设配置' }
 ]
 

@@ -90,25 +90,23 @@ function loadOverride(): Partial<AppConfig> {
   return {}
 }
 
+// 桌面可切换的四家国内主流 OpenAI 兼容端点。PLANGO_LLM_PROVIDER 选一家；
+// 选定的没配 key 时回退到任意已配 key 的一家，避免"选了没配的就没有模型"。
+const DEFAULT_PROVIDER = 'glm'
+const PROVIDERS: Record<string, (env: Record<string, string | undefined>) => AppConfig['llm']> = {
+  glm: (env) => ({ apiKey: env.GLM_API_KEY || '', baseURL: env.GLM_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4', model: env.GLM_MODEL || 'glm-4.6' }),
+  deepseek: (env) => ({ apiKey: env.DEEPSEEK_API_KEY || '', baseURL: env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1', model: env.DEEPSEEK_MODEL || 'deepseek-chat' }),
+  qwen: (env) => ({ apiKey: env.QWEN_API_KEY || '', baseURL: env.QWEN_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: env.QWEN_MODEL || 'qwen3.7-plus-2026-05-26' }),
+  kimi: (env) => ({ apiKey: env.KIMI_API_KEY || '', baseURL: env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1', model: env.KIMI_MODEL || 'moonshot-v1-8k' })
+}
+
 export function getConfig(): AppConfig {
   if (cache) return cache
   const env = currentEnvironment()
-  // LLM provider 可切换：longcat（默认）/ minimax。MiniMax 为 OpenAI 兼容端点。
-  const provider = (env.PLANGO_LLM_PROVIDER || 'longcat').toLowerCase()
-  const longcat = {
-    apiKey: env.LONGCAT_API_KEY || '',
-    baseURL: env.LONGCAT_BASE_URL || 'https://api.longcat.chat/openai/v1',
-    model: env.LONGCAT_MODEL || 'LongCat-2.0'
-  }
-  const minimax = {
-    apiKey: env.MINIMAX_API_KEY || '',
-    baseURL: env.MINIMAX_BASE_URL || 'https://api.minimaxi.com/v1',
-    model: env.MINIMAX_MODEL || 'MiniMax-M2.7'
-  }
-  // 选定 provider；若选定的没配 key 而另一个有，则自动回退到有 key 的那个
-  let llm = provider === 'minimax' ? minimax : longcat
-  if (!llm.apiKey) llm = provider === 'minimax' ? longcat : minimax.apiKey ? minimax : llm
-  if (env.OPENAI_API_KEY || provider === 'openai') {
+  const chosen = (env.PLANGO_LLM_PROVIDER || DEFAULT_PROVIDER).toLowerCase()
+  const ordered = [chosen, ...Object.keys(PROVIDERS)].filter((id, index, all) => id in PROVIDERS && all.indexOf(id) === index)
+  let llm = ordered.map((id) => PROVIDERS[id](env)).find((candidate) => candidate.apiKey) || PROVIDERS[DEFAULT_PROVIDER](env)
+  if (env.OPENAI_API_KEY || chosen === 'openai') {
     llm = { apiKey: env.OPENAI_API_KEY || '', baseURL: env.OPENAI_BASE_URL || 'https://api.openai.com/v1', model: env.OPENAI_MODEL || '' }
   }
   const base: AppConfig = {
