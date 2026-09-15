@@ -515,7 +515,7 @@ class DesktopRuntime(PlanGoRuntime):
                 acceptance.statements.append(update(bindings).where(bindings.c.run_id == run_id).values(generation=bindings.c.generation + 1))
             else:
                 payload = command.get("payload") or {}
-                receipt_snapshot = str(payload.get("slot") or "").startswith("receipt:") or (
+                receipt_snapshot = str(payload.get("_slot") or "").startswith("receipt:") or (
                     (row.get("state_json") or {}).get("browser_receipt_pending")
                     and payload.get("operation") == "snapshot"
                 )

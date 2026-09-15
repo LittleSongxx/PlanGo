@@ -61,6 +61,29 @@ def fixture(command, **extra):
 
 
 class BrowserHarnessCheck(unittest.TestCase):
+    # The desktop validates every command against a strict schema, so one stray internal
+    # key rejects the whole command -- an unknown field is a silent loss of the browser.
+    DESKTOP_COMMAND_FIELDS = {
+        "command_id", "run_id", "browser_session_id", "tab_id", "operation",
+        "arguments", "expected_snapshot_id", "expires_at", "approved_action_id",
+    }
+
+    def test_dispatched_commands_carry_only_the_desktop_protocol_fields(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with TestClient(
+                create_app(settings(directory), token=TOKEN),
+                headers={"Authorization": "Bearer " + TOKEN},
+            ) as client:
+                run_id = client.post(
+                    "/api/v1/runs",
+                    json={"input_text": "读取当前网页菜单", "browser_session_id": "fixture-desktop"},
+                ).json()["run_id"]
+                wait_for(client, run_id, lambda v: bool(v["state"].get("browser_wait")))
+                command = client.get(
+                    "/api/v1/browser/commands?browser_session_id=fixture-desktop"
+                ).json()["commands"][0]
+                self.assertEqual(set(command) - self.DESKTOP_COMMAND_FIELDS, set(), command)
+
     def test_read_restart_auth_provenance_and_replay(self):
         with tempfile.TemporaryDirectory() as directory:
             config = settings(directory)

@@ -305,7 +305,7 @@ class BrowserBridge:
                 _generation=binding["generation"],
             )
             if slot:
-                payload["slot"] = slot
+                payload["_slot"] = slot
             if operation == "screenshot":
                 payload["_expected_page"] = expected_page
             try:
