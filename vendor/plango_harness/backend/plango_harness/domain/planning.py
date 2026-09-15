@@ -106,13 +106,18 @@ def goal_errors(spec: TripSpec, stops: list[Any], evidence: list[Evidence] | Non
     errors = [f"required_place:{place_id}" for place_id in spec.must_visit_place_ids if place_id not in {stop.place_id for stop in stops}]
     errors += [f"activity:{category}" for category in spec.required_activities if not activity_is_covered(category, stops, evidence)]
     errors.extend(f"activity_excluded:{category}" for category in spec.excluded_activities if category in categories)
+    # Order enforcement uses the same coverage notion as activity_is_covered: a stop
+    # retrieved by an activity's own search satisfies that activity's slot even when
+    # the provider normalized its category (e.g. 亲子游乐场 places carry category 亲子).
     cursor = 0
     for category in spec.activity_order:
-        if category in spec.optional_activities and category not in categories:
+        if category in spec.optional_activities and not any(_stop_covers_activity(category, stop, evidence) for stop in stops):
             continue
-        try:
-            cursor = categories.index(category, cursor) + 1
-        except ValueError:
+        for index in range(cursor, len(stops)):
+            if _stop_covers_activity(category, stops[index], evidence):
+                cursor = index + 1
+                break
+        else:
             errors.append("activity_order")
             break
     return errors
