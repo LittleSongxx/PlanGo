@@ -55,6 +55,9 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
         if (disposed || !ref.current) return
         const map = new AMap.Map(ref.current, { zoom: 12, center: [pts[0].lng, pts[0].lat], viewMode: '2D', resizeEnable: true })
         mapRef.current = map
+        // resizeEnable 只跟随窗口尺寸；视图切换或布局稳定导致的容器变化需要主动重测，
+        // 否则画布停留在初始化瞬间的宽度，右侧留白。
+        map.resize()
         map.addControl && AMap.Scale && map.addControl(new AMap.Scale())
 
         let viaNo = 0
@@ -146,6 +149,21 @@ export function PlanMap({ plan }: { plan: Plan }): JSX.Element {
       mapRef.current = null
     }
   }, [plan, coords, locationGranularity])
+
+  // resizeEnable 只跟随窗口尺寸；视图切换、面板收起等容器变化需要 ResizeObserver 主动重测，
+  // 否则画布停留在初始化瞬间的宽度，右侧留白。
+  useEffect(() => {
+    if (!ref.current) return
+    const observer = new ResizeObserver(() => {
+      try {
+        mapRef.current?.resize?.()
+      } catch {
+        /* ignore */
+      }
+    })
+    observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [])
 
   const hasCoords = plan.nodes.some((n) => n.poi?.lng && n.poi?.lat)
   if (!hasCoords) return <></>
