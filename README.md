@@ -20,8 +20,8 @@ Electron 桌面 × Python Harness（FastAPI / PostgreSQL / Redis / worker）× �
 |---|---|
 | ![开始新安排](docs/assets/onboarding.png) | ![内嵌浏览器读取真实门店](docs/assets/browser-reading.png) |
 | 从真实网页或场景开始一次安排 | 大众点评 / 美团 / 高德在应用内真实打开并读取 |
-| ![成功规划：两站方案与待核验清单](docs/assets/plan-success.png) | |
-| 餐厅 → 亲子场馆两站草案：时段、预算与"仍未核验"清单并存 | |
+| ![成功规划：两站方案与待核验清单](docs/assets/plan-success.png) | ![对话指令驱动登录态浏览器](docs/assets/command-browser.png) |
+| 餐厅 → 亲子场馆两站草案：时段、预算与"仍未核验"清单并存 | 对话指令驱动登录态浏览器读取真实搜索结果，每步人工核对 |
 | ![任务中的人工核对步骤](docs/assets/task-browser.png) | ![附近发现](docs/assets/discover-nearby.png) |
 | 浏览器步骤逐个人工核对后继续 | 基于高德的周边真实门店发现（带来源与定位说明） |
 | ![执行服务与能力](docs/assets/capabilities.png) | ![诚实结论](docs/assets/task-verdict.png) |
