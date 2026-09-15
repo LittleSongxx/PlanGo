@@ -82,7 +82,7 @@ python3 plango-unpack/scripts/trial.py install plango-0.1.0-linux-x64-trustworth
 | `OPENAI_API_KEY` / `OPENAI_BASE_URL` / `OPENAI_MODEL` | 模型配置（OpenAI 兼容端点） |
 | `AMAP_WEBSERVICE_KEY` / `AMAP_JS_KEY` / `AMAP_JS_SECURITY` | 高德 Web 服务 / JS 地图凭证 |
 | `PLANGO_BACKEND_URL` / `PLANGO_BACKEND_TOKEN` | 桌面连接的后端地址与共享 token |
-| `PLANGO_MAX_MODEL_TOKENS` / `PLANGO_MAX_TOOL_CALLS` / `PLANGO_MAX_RUN_SECONDS` | 每次输入的有界预算（默认 12000 / 48 / 300） |
+| `PLANGO_MAX_MODEL_TOKENS` / `PLANGO_MAX_TOOL_CALLS` / `PLANGO_MAX_BROWSER_STEPS` / `PLANGO_MAX_RUN_SECONDS` | 每次输入的有界预算（默认 12000 / 48 / 12 / 300）；预算用尽时用已读到的资料作答，并说明还缺什么 |
 | `PLANGO_RUNTIME_PROFILE` | `desktop` 本地 SQLite；Compose 固定 `service` |
 
 完整变量见 `.env.example` 与[设计文档](docs/设计文档_PlanGo.md)。
